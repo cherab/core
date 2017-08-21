@@ -1,8 +1,6 @@
 
 
-"""
-Demo for pulse 79666 at t=61s
-"""
+# Demo for pulse 79666 at t=61s
 PULSE = 79666
 TIME = 61.
 
