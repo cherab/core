@@ -21,7 +21,17 @@ from matplotlib import pyplot as plt
 from cherab.core.math import sample1d, sample2d, samplevector2d
 
 
-def plot_equilibrium(eq, resolution=0.025):
+def plot_equilibrium(equilibrium, resolution=0.025):
+    """
+    Generates some overview plots of a given EFIT equilibrium.
+
+    Generates plots of normalised psi,
+
+    :param equilibrium: The input EFIT equilibrium object.
+    :param float resolution: Spatial resolution for sampling.
+    """
+
+    eq = equilibrium
 
     # plot equilibrium
     rmin, rmax = eq.r_range

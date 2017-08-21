@@ -27,8 +27,26 @@ from cherab.core.math cimport PolygonMask2D
 
 
 cdef class EFITEquilibrium:
+
     """
-    EFIT equilibrium class.
+    An object representing an EFIT equilibrium time-slice.
+
+    The EFIT data is interpolated to produced continuous functions of the
+    equilibrium attributes, such as the magnetic flux (psi) and magnetic
+    field.
+
+    :param r: EFIT grid radius axis values (array).
+    :param z: EFIT grid height axis values (array).
+    :param psi_grid: EFIT psi grid values (array).
+    :param float psi_axis: The psi value at the magnetic axis.
+    :param float psi_lcfs: The psi value at the LCFS.
+    :param Point2D magnetic_axis: The coordinates of the magnetic axis.
+    :param f_profile_psin: The normalised psi axis values for the current flux profile (array).
+    :param f_profile_magnitude: The magnitudes of the current flux profile (array).
+    :param float b_vacuum_radius: Vacuum B-field reference radius (in meters).
+    :param float b_vacuum_magnitude: Vacuum B-Field magnitude at the reference radius.
+    :param lcfs_polygon: An Nx2 array of (x, y) vertices specifying the LCFS boundary.
+    :param float time: The time stamp of the time-slice (in seconds).
     """
 
     cdef:
@@ -47,26 +65,6 @@ cdef class EFITEquilibrium:
     def __init__(self, object r, object z, object psi_grid, double psi_axis, double psi_lcfs,
                  Point2D magnetic_axis not None, object f_profile_psin, object f_profile_magnitude,
                  double b_vacuum_radius, double b_vacuum_magnitude, object lcfs_polygon, double time):
-        """
-        An object representing an EFIT equilibrium time-slice.
-
-        The EFIT data is interpolated to produced continuous functions of the
-        equilibrium attributes, such as the magnetic flux (psi) and magnetic
-        field.
-
-        :param r: EFIT grid radius axis values.
-        :param z: EFIT grid height axis values.
-        :param psi_grid: EFIT psi grid values
-        :param psi_axis: The psi value at the magnetic axis.
-        :param psi_lcfs: The psi value at the LCFS.
-        :param magnetic_axis: The coordinates of the magnetic axis.
-        :param f_profile_psin: The normalised psi axis values for the current flux profile.
-        :param f_profile_magnitude: The magnitudes of the current flux profile.
-        :param b_vacuum_radius: Vacuum B-field reference radius (in meters).
-        :param b_vacuum_magnitude: Vacuum B-Field magnitude at the reference radius.
-        :param lcfs_polygon: An Nx2 array of (x, y) vertices specifying the LCFS boundary.
-        :param time: The time stamp of the time-slice (in seconds).
-        """
 
         self.time = time
 
