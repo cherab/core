@@ -5,23 +5,23 @@ Core Plasma Classes
 Plasma Species
 --------------
 
-..  autoclass:: cherab.core.Species
+.. autoclass:: cherab.core.Species
    :members:
 
 Main Plasma Object
 ------------------
 
-..  autoclass:: cherab.core.Plasma
+.. autoclass:: cherab.core.Plasma
    :members:
 
 Distribution functions
 ----------------------
 
-.. autoclass:: cherab.distribution.DistributionFunction
+.. autoclass:: cherab.core.distribution.DistributionFunction
    :members:
    :special-members: __call__
 
-.. autoclass:: cherab.distribution.Maxwellian
+.. autoclass:: cherab.core.distribution.Maxwellian
    :members:
    :special-members: __call__
 

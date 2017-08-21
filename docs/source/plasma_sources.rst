@@ -86,11 +86,10 @@ If you have the raw SOLPS output, it is also possible to load the simulation fro
 SOLPSMesh Class
 ^^^^^^^^^^^^^^^
 
-.. autoclass:: cherab_contrib.simulation_data.SOLPSMesh
+Documentation coming soon.
+
+.. Commented out
+   autoclass:: cherab_contrib.simulation_data.SOLPSMesh
    :members:
-
-SOLPSSimulation Class
-^^^^^^^^^^^^^^^^^^^^^
-
-.. autoclass:: cherab_contrib.simulation_data.SOLPSSimulation
+   autoclass:: cherab_contrib.simulation_data.SOLPSSimulation
    :members:

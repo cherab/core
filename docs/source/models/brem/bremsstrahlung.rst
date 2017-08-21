@@ -2,5 +2,5 @@
 Bremsstrahlung
 ==============
 
-.. autoclass:: cherab.model.brem.bremsstrahlung.BremsstrahlungEmitter
+.. autoclass:: cherab.core.model.plasma.bremsstrahlung.Bremsstrahlung
    :members:

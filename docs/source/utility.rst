@@ -1,33 +1,27 @@
+
 Utilities
-=============================
+=========
 
 
-Helper functions.
+Small module of helper functions and classes.
 
 
-:mod:`cherab.utility.notify`
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Unit Conversions
+~~~~~~~~~~~~~~~~
 
-.. automodule:: cherab.utility.notify
+.. automodule:: cherab.core.utility.conversion
    :members:
 
 
-:mod:`cherab.utility.conversion`
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Notify
+~~~~~~
 
-.. automodule:: cherab.utility.conversion
+.. automodule:: cherab.core.utility.notify
    :members:
 
 
-:mod:`cherab.utility.logging`
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Recursive Dict
+~~~~~~~~~~~~~~
 
-.. automodule:: cherab.utility.logging
-   :members:
-
-
-:mod:`cherab.utility.recursivedict`
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-.. automodule:: cherab.utility.recursivedict
+.. automodule:: cherab.core.utility.recursivedict
    :members:
