@@ -27,13 +27,13 @@ Importable isotopes:
 Elements
 --------
 
-.. autoclass:: cherab.atomic.elements.Element
+.. autoclass:: cherab.core.atomic.elements.Element
    :members:
 
 Isotopes
 --------
 
-.. autoclass:: cherab.atomic.elements.Isotope
+.. autoclass:: cherab.core.atomic.elements.Isotope
    :members:
 
 
@@ -42,15 +42,12 @@ Reading atomic coefficients
 
 Classes to read atomic coefficients.
 
-.. autoclass:: cherab.atomic.adas.ADAS
+.. Commented out because of module refactoring
+   autoclass:: cherab.atomic.adas.ADAS
    :members:
-
-.. autoclass:: cherab.atomic.adas.adas.CXRate
+   autoclass:: cherab.atomic.adas.adas.CXRate
    :members:
    :special-members: __call__
-
-.. Commented this out because of name changes. Not sure which class this is.
-..
    autoclass:: cherab.atomic.adas.adas.BeamCoefficient
    :members:
    :special-members: __call__
