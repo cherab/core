@@ -10,9 +10,9 @@ all required modules. ::
 
     import matplotlib.pyplot as plt
     import numpy as np
-    from cherab.atomic.elements import carbon, deuterium
-    from cherab_contrib.simulation_data.solps.solps_plasma import SOLPSSimulation
-
+    from cherab.core.atomic.elements import carbon, deuterium
+    from cherab.solps import SOLPSSimulation
+    plt.ion()
 
 Import the SOLPS simulation from AUG MDSplus server. ::
 
@@ -28,15 +28,15 @@ The plasma parameters are loaded automatically from the simulation. We can now a
 `get_species` method. It takes as argument the element/isotope of interest and the desired charge state. If the species
 requested was not in the simulation, an exception will be thrown. ::
 
-    d0 = plasma.get_species(deuterium, 0)
-    d1 = plasma.get_species(deuterium, 1)
-    c0 = plasma.get_species(carbon, 0)
-    c1 = plasma.get_species(carbon, 1)
-    c2 = plasma.get_species(carbon, 2)
-    c3 = plasma.get_species(carbon, 3)
-    c4 = plasma.get_species(carbon, 4)
-    c5 = plasma.get_species(carbon, 5)
-    c6 = plasma.get_species(carbon, 6)
+    d0 = plasma.composition.get(deuterium, 0)
+    d1 = plasma.composition.get(deuterium, 1)
+    c0 = plasma.composition.get(carbon, 0)
+    c1 = plasma.composition.get(carbon, 1)
+    c2 = plasma.composition.get(carbon, 2)
+    c3 = plasma.composition.get(carbon, 3)
+    c4 = plasma.composition.get(carbon, 4)
+    c5 = plasma.composition.get(carbon, 5)
+    c6 = plasma.composition.get(carbon, 6)
 
 The electron distribution is the only exception to the above access pattern. It is accessed with a dedicated plasma
 attribute, `plasma.electron_distribution`.
