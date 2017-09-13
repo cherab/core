@@ -4,7 +4,8 @@
 Loading a MAST-U plasma from SOLPS
 ==================================
 
-Example of how to load a plasma from an existing SOLPS simulation.
+Example of how to load a plasma from an existing SOLPS simulation
+(`demo file <https://github.com/cherab/solps/blob/master/demos/mastu_solps_plasma.py>`_).
 Also, shows how to inspect the plasma parameters. Start by importing
 all required modules. ::
 
