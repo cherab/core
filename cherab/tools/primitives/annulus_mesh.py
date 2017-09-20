@@ -69,7 +69,6 @@ def generate_annulus_mesh_segments(lower_corner, upper_corner, number_segments, 
     # Construct annulus by duplicating and rotating base segment.
     for i in range(number_segments):
         theta_rotation = theta_adjusted * i
-        segment = Mesh(instance=base_segment, transform=rotate_z(theta_rotation),
-                       material=material, parent=annulus_node)
+        segment = base_segment.instance(transform=rotate_z(theta_rotation), material=material, parent=annulus_node)
 
     return annulus_node
