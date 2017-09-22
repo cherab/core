@@ -74,7 +74,7 @@ cdef class Plasma(Node):
 
     cdef inline Composition get_composition(self)
 
-    cpdef double z_effective(self, double x, double y, double z)
+    cpdef double z_effective(self, double x, double y, double z) except -1
 
     cpdef double ion_density(self, double x, double y, double z)
 

@@ -222,7 +222,7 @@ cdef class Plasma(Node):
         return self._composition
 
     @cython.cdivision(True)
-    cpdef double z_effective(self, double x, double y, double z):
+    cpdef double z_effective(self, double x, double y, double z) except -1:
         """
         Calculates the effective Z of the plasma.
 
@@ -235,6 +235,7 @@ cdef class Plasma(Node):
         :param y: y coordinate in meters.
         :param z: z coordinate in meters.
         :return: Calculated Z effective.
+        :raises ValueError: If plasma does not contain any ionised species.
         """
 
         cdef:
@@ -248,6 +249,10 @@ cdef class Plasma(Node):
                 density = species.distribution.density(x, y, z)
                 sum_nz += density * species.ionisation
                 sum_nz2 += density * species.ionisation * species.ionisation
+
+        if sum_nz2 == 0:
+            raise ValueError('Plasma does not contain any ionised species.')
+
         return sum_nz2 / sum_nz
 
     @cython.boundscheck(False)
