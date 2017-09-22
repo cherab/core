@@ -42,6 +42,9 @@ cdef class Species:
         self.ionisation = ionisation
         self.distribution = distribution
 
+    def __repr__(self):
+        return '<Species: element={}, ionisation={}>'.format(self.element.name, self.ionisation)
+
 
 # todo: move to a common exception module
 class SpeciesNotFound(Exception):
