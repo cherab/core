@@ -44,6 +44,15 @@ cdef class Blend1D(Function1D):
 
     cdef double evaluate(self, double x) except? -1e999:
         cdef w = clamp(self._mask.evaluate(x), 0.0, 1.0)
+
+        # only evaluate single function is at end of mask range
+        if w == 0:
+            return self._f1.evaluate(x)
+
+        if w == 1:
+            return self._f2.evaluate(x)
+
+        # perform lerp
         cdef f1 = self._f1.evaluate(x)
         cdef f2 = self._f2.evaluate(x)
         return (1 - w) * f1 + w * f2
@@ -75,6 +84,15 @@ cdef class Blend2D(Function2D):
 
     cdef double evaluate(self, double x, double y) except? -1e999:
         cdef w = clamp(self._mask.evaluate(x, y), 0.0, 1.0)
+
+        # only evaluate single function is at end of mask range
+        if w == 0:
+            return self._f1.evaluate(x, y)
+
+        if w == 1:
+            return self._f2.evaluate(x, y)
+
+        # perform lerp
         cdef f1 = self._f1.evaluate(x, y)
         cdef f2 = self._f2.evaluate(x, y)
         return (1 - w) * f1 + w * f2
@@ -106,6 +124,15 @@ cdef class Blend3D(Function3D):
 
     cdef double evaluate(self, double x, double y, double z) except? -1e999:
         cdef w = clamp(self._mask.evaluate(x, y, z), 0.0, 1.0)
+
+        # only evaluate single function is at end of mask range
+        if w == 0:
+            return self._f1.evaluate(x, y, z)
+
+        if w == 1:
+            return self._f2.evaluate(x, y, z)
+
+        # perform lerp
         cdef f1 = self._f1.evaluate(x, y, z)
         cdef f2 = self._f2.evaluate(x, y, z)
         return (1 - w) * f1 + w * f2
