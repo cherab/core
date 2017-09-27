@@ -17,8 +17,8 @@
 from libc.math cimport M_PI
 
 cdef:
-    public double RECIP_2_PI = 1.5707963267948966
-    public double RECIP_4_PI = 0.7853981633974483
+    public double RECIP_2_PI = 0.15915494309189535
+    public double RECIP_4_PI = 0.07957747154594767
     public double AMU = 1.66053892e-27
     public double ELEMENTARY_CHARGE = 1.6021766208e-19
     public double SPEED_OF_LIGHT = 299792458.0
