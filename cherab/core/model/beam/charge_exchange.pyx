@@ -27,7 +27,7 @@ from raysect.optical.material.emitter.inhomogeneous import NumericalIntegrator
 
 from cherab.core cimport Species, Plasma, Beam, Element, BeamPopulationRate
 from cherab.core.model.spectra import doppler_shift, thermal_broadening, add_gaussian_line
-from cherab.core.utility.constants cimport RECIP_4_PI, SPEED_OF_LIGHT, ELEMENTARY_CHARGE, ATOMIC_MASS
+from cherab.core.utility.constants cimport RECIP_4_PI, ELEMENTARY_CHARGE, ATOMIC_MASS
 
 cdef double RECIP_ELEMENTARY_CHARGE = 1 / ELEMENTARY_CHARGE
 cdef double RECIP_ATOMIC_MASS = 1 / ATOMIC_MASS
