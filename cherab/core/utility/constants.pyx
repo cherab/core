@@ -17,7 +17,7 @@
 cdef:
     double RECIP_2_PI = 1 / (2 * M_PI)
     double RECIP_4_PI = 1 / (4 * M_PI)
-    double AMU = 1.66053892e-27
+    double ATOMIC_MASS = 1.66053892e-27
     double ELEMENTARY_CHARGE = 1.6021766208e-19
     double SPEED_OF_LIGHT = 299792458.0
     double DEGREES_TO_RADIANS = M_PI / 180

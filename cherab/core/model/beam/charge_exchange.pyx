@@ -27,40 +27,34 @@ from raysect.optical.material.emitter.inhomogeneous import NumericalIntegrator
 
 from cherab.core cimport Species, Plasma, Beam, Element, BeamPopulationRate
 from cherab.core.model.spectra import doppler_shift, thermal_broadening, add_gaussian_line
+from cherab.core.utility.constants cimport SPEED_OF_LIGHT, ELEMENTARY_CHARGE, ATOMIC_MASS
 
-
-# todo: switch to using cherab.utility code?
-cdef double _SPEED_OF_LIGHT = constants.speed_of_light
-
-cdef double _ELEMENTARY_CHARGE = constants.elementary_charge
-cdef double _ELEMENTARY_CHARGE_RECIPROCAL = 1 / _ELEMENTARY_CHARGE
-
-cdef double _ATOMIC_MASS = constants.atomic_mass
-cdef double _ATOMIC_MASS_RECIPROCAL = 1 / _ATOMIC_MASS
+cdef double RECIP_ELEMENTARY_CHARGE = 1 / ELEMENTARY_CHARGE
+cdef double RECIP_ATOMIC_MASS = 1 / ATOMIC_MASS
 
 
 cdef double evamu_to_ms(double x):
-    return sqrt(2 * x * _ELEMENTARY_CHARGE * _ATOMIC_MASS_RECIPROCAL)
+    return sqrt(2 * x * ELEMENTARY_CHARGE * RECIP_ATOMIC_MASS)
 
 
 cdef double ms_to_evamu(double x):
-    return 0.5 * (x ** 2) * _ELEMENTARY_CHARGE_RECIPROCAL * _ATOMIC_MASS
+    return 0.5 * (x ** 2) * RECIP_ELEMENTARY_CHARGE * ATOMIC_MASS
 
 
 cdef double amu_to_kg(double x):
-    return x * _ATOMIC_MASS
+    return x * ATOMIC_MASS
 
 
 cdef double kg_to_amu(double x):
-    return x * _ATOMIC_MASS_RECIPROCAL
+    return x * RECIP_ATOMIC_MASS
 
 
 cdef double ev_to_j(double x):
-    return x * _ELEMENTARY_CHARGE
+    return x * ELEMENTARY_CHARGE
 
 
 cdef double j_to_ev(double x):
-    return x * _ELEMENTARY_CHARGE_RECIPROCAL
+    return x * RECIP_ELEMENTARY_CHARGE
 
 
 cdef class BeamCXLine(BeamModel):

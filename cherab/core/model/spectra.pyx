@@ -14,15 +14,9 @@
 # See the Licence for the specific language governing permissions and limitations
 # under the Licence.
 
-from scipy.constants import elementary_charge, speed_of_light
-
 from libc.math cimport sqrt, erf, M_SQRT2, floor, ceil
+from cherab.core.utility.constants cimport ATOMIC_MASS, ELEMENTARY_CHARGE, SPEED_OF_LIGHT
 cimport cython
-
-# todo: use cherab.utility constants?
-cdef float AMU = 1.66053892e-27
-cdef float ELEMENTARY_CHARGE = elementary_charge
-cdef float SPEED_OF_LIGHT = speed_of_light
 
 
 @cython.cdivision(True)
@@ -56,7 +50,7 @@ cpdef double thermal_broadening(double wavelength, double temperature, double at
     """
 
     # todo: add input sanity checks
-    return sqrt(temperature * ELEMENTARY_CHARGE / (atomic_weight * AMU)) * wavelength / SPEED_OF_LIGHT
+    return sqrt(temperature * ELEMENTARY_CHARGE / (atomic_weight * ATOMIC_MASS)) * wavelength / SPEED_OF_LIGHT
 
 
 # the number of standard deviations outside the rest wavelength the line is considered to add negligible value (including a margin for safety)

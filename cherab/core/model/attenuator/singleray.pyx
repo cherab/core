@@ -27,11 +27,11 @@ from cherab.core.math cimport Interpolate1DLinear
 from cherab.core.plasma cimport Plasma
 from cherab.core.beam cimport Beam
 from cherab.core.species cimport Species
+from cherab.core.utility.constants cimport DEGREES_TO_RADIANS
 
 from libc.math cimport exp, sqrt, tan, M_PI
 cimport cython
 
-cdef double DEGREES_TO_RADIANS = (M_PI / 180)
 
 # todo: attenuation calculation could be optimised further using memory views etc...
 cdef class SingleRayAttenuator(BeamAttenuator):

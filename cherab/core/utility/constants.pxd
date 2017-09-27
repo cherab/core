@@ -19,7 +19,7 @@ from libc.math cimport M_PI
 cdef:
     double RECIP_2_PI
     double RECIP_4_PI
-    double AMU
+    double ATOMIC_MASS
     double ELEMENTARY_CHARGE
     double SPEED_OF_LIGHT
     double DEGREES_TO_RADIANS
