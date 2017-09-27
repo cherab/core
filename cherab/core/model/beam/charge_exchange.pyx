@@ -27,7 +27,7 @@ from raysect.optical.material.emitter.inhomogeneous import NumericalIntegrator
 
 from cherab.core cimport Species, Plasma, Beam, Element, BeamPopulationRate
 from cherab.core.model.spectra import doppler_shift, thermal_broadening, add_gaussian_line
-from cherab.core.utility.constants cimport SPEED_OF_LIGHT, ELEMENTARY_CHARGE, ATOMIC_MASS
+from cherab.core.utility.constants cimport RECIP_4_PI, SPEED_OF_LIGHT, ELEMENTARY_CHARGE, ATOMIC_MASS
 
 cdef double RECIP_ELEMENTARY_CHARGE = 1 / ELEMENTARY_CHARGE
 cdef double RECIP_ATOMIC_MASS = 1 / ATOMIC_MASS
@@ -138,8 +138,7 @@ cdef class BeamCXLine(BeamModel):
         central_wavelength = doppler_shift(natural_wavelength, observation_direction, receiver_velocity)
 
         # spectral line emission in W/m^3/str
-        # todo: this should be outputting radiance per meter..... should fix this in openadas? divide by 4 pi here?
-        radiance = donor_density * receiver_density * emission_rate / (4 * pi)
+        radiance = RECIP_4_PI * donor_density * receiver_density * emission_rate
         sigma = thermal_broadening(natural_wavelength, receiver_temperature, receiver_ion_mass)
         return add_gaussian_line(radiance, central_wavelength, sigma, spectrum)
 
