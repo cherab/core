@@ -21,14 +21,14 @@ from libc.math cimport sqrt, log, exp
 cimport cython
 
 
-# RECIP_4_PI = 1 / (4 * pi)
-DEF RECIP_4_PI = 0.7853981633974483
+DEF RECIP_4_PI = 0.07957747154594767
 
 # todo: replace with imports from cherab.utility?
 DEF ELEMENTARY_CHARGE = 1.6021766208e-19
 DEF SPEED_OF_LIGHT = 299792458.0
 DEF PLANCK_CONSTANT = 6.6260700400e-34
 DEF PH_TO_J_FACTOR = PLANCK_CONSTANT * SPEED_OF_LIGHT * 1e9
+
 
 # todo: doppler shift?
 cdef class Bremsstrahlung(PlasmaModel):
@@ -44,6 +44,9 @@ cdef class Bremsstrahlung(PlasmaModel):
     where the emission :math:`\\epsilon (\\lambda)` is in units of radiance (ph/s/sr/m^3/nm).
     """
 
+    def __repr__(self):
+        return '<PlasmaModel - Bremsstrahlung>'
+
     cpdef Spectrum emission(self, Point3D point, Vector3D direction, Spectrum spectrum):
 
         cdef:
@@ -52,9 +55,13 @@ cdef class Bremsstrahlung(PlasmaModel):
             double lower_sample, upper_sample
             int i
 
-        ne = self._plasma.electron_distribution.density(point.x, point.y, point.z)
-        te = self._plasma.electron_distribution.effective_temperature(point.x, point.y, point.z)
-        z_effective = self._plasma.z_effective(point.x, point.y, point.z)
+        # TODO - adding this to resolve equilibrium interpolation issues.
+        try:
+            ne = self._plasma.electron_distribution.density(point.x, point.y, point.z)
+            te = self._plasma.electron_distribution.effective_temperature(point.x, point.y, point.z)
+            z_effective = self._plasma.z_effective(point.x, point.y, point.z)
+        except ValueError:
+            return spectrum
 
         # numerically integrate using trapezium rule
         # todo: add sub-sampling to increase numerical accuracy
@@ -82,17 +89,15 @@ cdef class Bremsstrahlung(PlasmaModel):
         :return: 
         """
 
-        cdef double gaunt, radiance
-
-        wvl = 1e-9 * wvl
-        te = ELEMENTARY_CHARGE * te
-        ne = 1e6 * ne
+        cdef double gaunt_factor, radiance, prefactor, exp_factor, ph_to_j
 
         # gaunt factor
-        gaunt = 0.6183 * log(te) - 0.0821
+        gaunt_factor = 0.6183 * log(te) - 0.0821
 
-        # bremsstrahlung equation ph/s/m^3/str/nm
-        radiance = 0.95E-19 * RECIP_4_PI * gaunt * ne * ne * zeff * exp(-PLANCK_CONSTANT * SPEED_OF_LIGHT / (te * wvl)) / (wvl * sqrt(te))
+        # bremsstrahlung equation W/m^3/str/nm
+        pre_factor = 0.95e-19 * RECIP_4_PI * gaunt_factor * ne * ne * zeff / (sqrt(te) * wvl)
+        exp_factor = - PLANCK_CONSTANT * SPEED_OF_LIGHT / te
+        radiance =  pre_factor * exp(exp_factor / wvl) * PH_TO_J_FACTOR
 
         # convert to W/m^3/str/nm
-        return PLANCK_CONSTANT * SPEED_OF_LIGHT * radiance / wvl
+        return radiance / wvl
