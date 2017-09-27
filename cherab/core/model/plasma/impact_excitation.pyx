@@ -19,7 +19,7 @@ from cherab.core cimport Plasma, AtomicData
 from cherab.core.model.spectra cimport doppler_shift, thermal_broadening, add_gaussian_line
 
 # RECIP_4_PI = 1 / (4 * pi)
-DEF RECIP_4_PI = 0.7853981633974483
+DEF RECIP_4_PI = 0.07957747154594767
 
 
 cdef class ExcitationLine(PlasmaModel):
