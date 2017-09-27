@@ -16,8 +16,6 @@
 
 # cython: language_level=3
 
-from scipy import constants
-
 from cherab.core.utility import Notifier
 
 from libc.math cimport exp, M_PI
@@ -25,10 +23,8 @@ from raysect.optical cimport Vector3D
 cimport cython
 
 from cherab.core.math cimport autowrap_function3d, autowrap_vectorfunction3d
+from cherab.core.utility.constants cimport ELEMENTARY_CHARGE
 
-
-cdef double _ELEMENTARY_CHARGE = constants.elementary_charge
-cdef double _ELEMENTARY_CHARGE_RECIPROCAL = 1 / _ELEMENTARY_CHARGE
 
 # must be immutable, once created cannot be modified as changes are not tracked.
 cdef class DistributionFunction:
@@ -120,7 +116,7 @@ cdef class Maxwellian(DistributionFunction):
             double k1, k2, ux, uy, uz
             Vector3D bulk_velocity
 
-        k1 = self._atomic_mass / (2 * _ELEMENTARY_CHARGE * self._temperature.evaluate(x, y, z))
+        k1 = self._atomic_mass / (2 * ELEMENTARY_CHARGE * self._temperature.evaluate(x, y, z))
         k2 = (k1 / M_PI) ** 1.5
 
         bulk_velocity = self._velocity.evaluate(x, y, z)
