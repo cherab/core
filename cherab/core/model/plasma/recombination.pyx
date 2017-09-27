@@ -17,9 +17,7 @@
 from raysect.optical cimport Spectrum, Point3D, Vector3D
 from cherab.core cimport Plasma, AtomicData
 from cherab.core.model.spectra cimport doppler_shift, thermal_broadening, add_gaussian_line
-
-# RECIP_4_PI = 1 / (4 * pi)
-DEF RECIP_4_PI = 0.07957747154594767
+from cherab.core.utility.constants cimport RECIP_4_PI
 
 
 cdef class RecombinationLine(PlasmaModel):
@@ -61,34 +59,6 @@ cdef class RecombinationLine(PlasmaModel):
         radiance = RECIP_4_PI * self._rates.evaluate(ne, te) * ne * ni
         sigma = thermal_broadening(natural_wavelength, te, self._line.element.atomic_weight)
         return add_gaussian_line(radiance, central_wavelength, sigma, spectrum)
-
-    # cpdef double radiance_at(self, Point3D point, Vector3D direction):
-    #     """
-    #
-    #     :param point: Point3D in local space.
-    #     :param direction: Vector3D in local space.
-    #     :return: Radiance per meter (W/m^3/str/nm)
-    #     """
-    #
-    #     cdef double ne, te, ni, rate
-    #
-    #     # cache data on first run
-    #     if self._target_species is None:
-    #         self._populate_cache()
-    #
-    #     ne = self._plasma.get_electron_distribution().density(point.x, point.y, point.z)
-    #     if ne <= 0.0:
-    #         return 0.0
-    #
-    #     te = self._plasma.get_electron_distribution().effective_temperature(point.x, point.y, point.z)
-    #     if te <= 0.0:
-    #         return 0.0
-    #
-    #     ni = self._target_species.distribution.density(point.x, point.y, point.z)
-    #     if ni <= 0.0:
-    #         return 0.0
-    #
-    #     return RECIP_4_PI * self._rates.evaluate(ne, te) * ne * ni
 
     cdef inline int _populate_cache(self) except -1:
 

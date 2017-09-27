@@ -14,14 +14,12 @@
 # See the Licence for the specific language governing permissions and limitations
 # under the Licence.
 
-from libc.math cimport M_PI
-
 cdef:
-    double RECIP_2_PI
-    double RECIP_4_PI
-    double AMU
-    double ELEMENTARY_CHARGE
-    double SPEED_OF_LIGHT
-    double DEGREES_TO_RADIANS
-    double RADIANS_TO_DEGREES
-    double PLANCK_CONSTANT
+    double RECIP_2_PI = 1 / (2 * M_PI)
+    double RECIP_4_PI = 1 / (4 * M_PI)
+    double AMU = 1.66053892e-27
+    double ELEMENTARY_CHARGE = 1.6021766208e-19
+    double SPEED_OF_LIGHT = 299792458.0
+    double DEGREES_TO_RADIANS = M_PI / 180
+    double RADIANS_TO_DEGREES = 180 / M_PI
+    double PLANCK_CONSTANT = 6.6260700400e-34

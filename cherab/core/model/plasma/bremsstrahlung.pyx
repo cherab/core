@@ -17,17 +17,12 @@
 from raysect.optical cimport Spectrum, Point3D, Vector3D
 from cherab.core cimport Plasma, AtomicData
 from cherab.core.model.spectra cimport doppler_shift, thermal_broadening, add_gaussian_line
+from cherab.core.utility.constants cimport RECIP_4_PI, ELEMENTARY_CHARGE, SPEED_OF_LIGHT, PLANCK_CONSTANT
 from libc.math cimport sqrt, log, exp
 cimport cython
 
 
-DEF RECIP_4_PI = 0.07957747154594767
-
-# todo: replace with imports from cherab.utility?
-DEF ELEMENTARY_CHARGE = 1.6021766208e-19
-DEF SPEED_OF_LIGHT = 299792458.0
-DEF PLANCK_CONSTANT = 6.6260700400e-34
-DEF PH_TO_J_FACTOR = PLANCK_CONSTANT * SPEED_OF_LIGHT * 1e9
+cdef double PH_TO_J_FACTOR = PLANCK_CONSTANT * SPEED_OF_LIGHT * 1e9
 
 
 # todo: doppler shift?
