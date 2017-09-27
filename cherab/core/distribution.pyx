@@ -24,7 +24,7 @@ from libc.math cimport exp, M_PI
 from raysect.optical cimport Vector3D
 cimport cython
 
-from cherab.core.math cimport autowrap_function3d, autowrap_vectorfunction3d, Constant3D, ScalarToVectorFunction3D
+from cherab.core.math cimport autowrap_function3d, autowrap_vectorfunction3d
 
 
 cdef double _ELEMENTARY_CHARGE = constants.elementary_charge
@@ -34,10 +34,9 @@ cdef double _ELEMENTARY_CHARGE_RECIPROCAL = 1 / _ELEMENTARY_CHARGE
 cdef class DistributionFunction:
 
     def __init__(self):
-
         self.notifier = Notifier()
 
-    cdef double evaluate(self, double x, double y, double z, double vx, double vy, double vz):
+    cdef double evaluate(self, double x, double y, double z, double vx, double vy, double vz) except? -1e999:
         """
 
         :param x: position in meters
@@ -65,7 +64,7 @@ cdef class DistributionFunction:
 
         raise NotImplementedError()
 
-    cpdef double effective_temperature(self, double x, double y, double z):
+    cpdef double effective_temperature(self, double x, double y, double z) except? -1e999:
         """
 
         :param x: position in meters
@@ -76,7 +75,7 @@ cdef class DistributionFunction:
 
         raise NotImplementedError()
 
-    cpdef double density(self, double x, double y, double z):
+    cpdef double density(self, double x, double y, double z) except? -1e999:
         """
 
         :param x: position in meters
@@ -105,7 +104,7 @@ cdef class Maxwellian(DistributionFunction):
         self._atomic_mass = atomic_mass
 
     @cython.cdivision(True)
-    cdef double evaluate(self, double x, double y, double z, double vx, double vy, double vz):
+    cdef double evaluate(self, double x, double y, double z, double vx, double vy, double vz) except? -1e999:
         """
 
         :param x: position in meters
@@ -142,7 +141,7 @@ cdef class Maxwellian(DistributionFunction):
 
         return self._velocity.evaluate(x, y, z)
 
-    cpdef double effective_temperature(self, double x, double y, double z):
+    cpdef double effective_temperature(self, double x, double y, double z) except? -1e999:
         """
 
         :param x: position in meters
@@ -153,7 +152,7 @@ cdef class Maxwellian(DistributionFunction):
 
         return self._temperature.evaluate(x, y, z)
 
-    cpdef double density(self, double x, double y, double z):
+    cpdef double density(self, double x, double y, double z) except? -1e999:
         """
 
         :param x: position in meters
