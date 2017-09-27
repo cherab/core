@@ -227,7 +227,7 @@ cdef class Plasma(Node):
         Calculates the effective Z of the plasma.
 
         .. math::
-            Z_{eff} = \sum_{j=1}^N Z_j n_{i(j)} / \sum_{k=1}^N Z_k n_{i(k)}
+            Z_{eff} = \sum_{j=1}^N n_{i(j)} Z_j^2 / \sum_{k=1}^N n_{i(k)} Z_k
 
         where n is the species density and Z is the ionisation of the species.
 
