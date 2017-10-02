@@ -50,12 +50,14 @@ cdef class Bremsstrahlung(PlasmaModel):
             double lower_sample, upper_sample
             int i
 
-        # TODO - adding this to resolve equilibrium interpolation issues.
-        try:
-            ne = self._plasma.electron_distribution.density(point.x, point.y, point.z)
-            te = self._plasma.electron_distribution.effective_temperature(point.x, point.y, point.z)
-            z_effective = self._plasma.z_effective(point.x, point.y, point.z)
-        except ValueError:
+        ne = self._plasma.electron_distribution.density(point.x, point.y, point.z)
+        if ne == 0:
+            return spectrum
+        te = self._plasma.electron_distribution.effective_temperature(point.x, point.y, point.z)
+        if te == 0:
+            return spectrum
+        z_effective = self._plasma.z_effective(point.x, point.y, point.z)
+        if z_effective == 0:
             return spectrum
 
         # numerically integrate using trapezium rule
