@@ -79,8 +79,7 @@ cdef class EFITEquilibrium:
         self.psi = Interpolate2DCubic(r, z, psi_grid)
         self.psi_axis = psi_axis
         self.psi_lcfs = psi_lcfs
-        # TODO - temporarily added this fix to resolve inside/outside simulation issues. Is there a better solution.
-        self.psi_normalised = Interpolate2DCubic(r, z, (psi_grid - psi_axis) / (psi_lcfs - psi_axis), extrapolate=True)
+        self.psi_normalised = Interpolate2DCubic(r, z, (psi_grid - psi_axis) / (psi_lcfs - psi_axis))
 
         # store equilibrium attributes
         self.r_range = r.min(), r.max()
