@@ -14,7 +14,7 @@
 # See the Licence for the specific language governing permissions and limitations
 # under the Licence.
 
-from .spectra import *
+from .lineshape import *
 from .attenuator import *
 from .beam import *
 from .plasma import *

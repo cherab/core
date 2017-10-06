@@ -14,7 +14,7 @@
 # See the Licence for the specific language governing permissions and limitations
 # under the Licence.
 
-from cherab.core.model.spectra cimport *
+from cherab.core.model.lineshape cimport *
 from cherab.core.model.attenuator cimport *
 from cherab.core.model.beam cimport *
 from cherab.core.model.plasma cimport *

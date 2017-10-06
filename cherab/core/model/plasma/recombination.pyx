@@ -16,16 +16,17 @@
 
 from raysect.optical cimport Spectrum, Point3D, Vector3D
 from cherab.core cimport Plasma, AtomicData
-from cherab.core.model.spectra cimport doppler_shift, thermal_broadening, add_gaussian_line
+from cherab.core.model.lineshape cimport doppler_shift, thermal_broadening, Lineshape, GaussianLine
 from cherab.core.utility.constants cimport RECIP_4_PI
 
 
 cdef class RecombinationLine(PlasmaModel):
 
-    def __init__(self, Line line, Plasma plasma=None, AtomicData atomic_data=None):
+    def __init__(self, Line line, Plasma plasma=None, AtomicData atomic_data=None, Lineshape lineshape=None):
 
         super().__init__(plasma, atomic_data)
         self._line = line
+        self._lineshape = lineshape or GaussianLine()
 
     cpdef Spectrum emission(self, Point3D point, Vector3D direction, Spectrum spectrum):
 
@@ -58,7 +59,7 @@ cdef class RecombinationLine(PlasmaModel):
         # add emission line to spectrum
         radiance = RECIP_4_PI * self._rates.evaluate(ne, te) * ne * ni
         sigma = thermal_broadening(natural_wavelength, te, self._line.element.atomic_weight)
-        return add_gaussian_line(radiance, central_wavelength, sigma, spectrum)
+        return self._lineshape.add_line(radiance, central_wavelength, sigma, spectrum, point)
 
     cdef inline int _populate_cache(self) except -1:
 

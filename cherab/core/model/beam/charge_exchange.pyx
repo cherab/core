@@ -26,7 +26,7 @@ cimport cython
 from raysect.optical.material.emitter.inhomogeneous import NumericalIntegrator
 
 from cherab.core cimport Species, Plasma, Beam, Element, BeamPopulationRate
-from cherab.core.model.spectra import doppler_shift, thermal_broadening, add_gaussian_line
+from cherab.core.model.lineshape cimport doppler_shift, thermal_broadening, GaussianLine, Lineshape
 from cherab.core.utility.constants cimport RECIP_4_PI, ELEMENTARY_CHARGE, ATOMIC_MASS
 
 cdef double RECIP_ELEMENTARY_CHARGE = 1 / ELEMENTARY_CHARGE
@@ -76,6 +76,7 @@ cdef class BeamCXLine(BeamModel):
         self._wavelength = 0.0
         self._ground_beam_rate = None
         self._excited_beam_data = None
+        self._lineshape = GaussianLine()
 
     @property
     def line(self):
@@ -140,7 +141,7 @@ cdef class BeamCXLine(BeamModel):
         # spectral line emission in W/m^3/str
         radiance = RECIP_4_PI * donor_density * receiver_density * emission_rate
         sigma = thermal_broadening(natural_wavelength, receiver_temperature, receiver_ion_mass)
-        return add_gaussian_line(radiance, central_wavelength, sigma, spectrum)
+        return self._lineshape.add_line(radiance, central_wavelength, sigma, spectrum, plasma_point)
 
     @cython.boundscheck(False)
     @cython.wraparound(False)

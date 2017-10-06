@@ -17,6 +17,7 @@
 from cherab.core.atomic cimport Line, ImpactExcitationRate
 from cherab.core.plasma cimport PlasmaModel
 from cherab.core.species cimport Species
+from cherab.core.model.lineshape cimport Lineshape
 
 
 cdef class ExcitationLine(PlasmaModel):
@@ -26,6 +27,7 @@ cdef class ExcitationLine(PlasmaModel):
         double _wavelength
         Species _target_species
         ImpactExcitationRate _rates
+        Lineshape _lineshape
 
     # cpdef double radiance_at(self, Point3D point, Vector3D direction)
 

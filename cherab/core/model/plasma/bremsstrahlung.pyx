@@ -15,8 +15,6 @@
 # under the Licence.
 
 from raysect.optical cimport Spectrum, Point3D, Vector3D
-from cherab.core cimport Plasma, AtomicData
-from cherab.core.model.spectra cimport doppler_shift, thermal_broadening, add_gaussian_line
 from cherab.core.utility.constants cimport RECIP_4_PI, ELEMENTARY_CHARGE, SPEED_OF_LIGHT, PLANCK_CONSTANT
 from libc.math cimport sqrt, log, exp
 cimport cython
