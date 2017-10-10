@@ -16,24 +16,32 @@
 
 from raysect.optical cimport Spectrum, Point3D, Vector3D
 from cherab.core.atomic.line cimport Line
+from cherab.core.species cimport Species
 from cherab.core.plasma.node cimport Plasma
 
 cpdef double doppler_shift(double wavelength, Vector3D observation_direction, Vector3D velocity)
 
 cpdef double thermal_broadening(double wavelength, double temperature, double atomic_weight)
 
-
-cdef class Lineshape:
-
-    cpdef Spectrum add_line(self, double radiance, double wavelength, double sigma, Spectrum spectrum, Point3D point)
+cpdef Spectrum add_gaussian_line(double radiance, double wavelength, double sigma, Spectrum spectrum)
 
 
-cdef class GaussianLine(Lineshape):
+cdef class LineShapeModel:
 
+    cdef:
+        Line line
+        double wavelength
+        Species target_species
+        Plasma plasma
+
+    cpdef Spectrum add_line(self, double radiance, Point3D point, Vector3D direction, Spectrum spectrum)
+
+
+cdef class GaussianLine(LineShapeModel):
     pass
 
 
-cdef class StarkBroadenedLine(Lineshape):
+cdef class StarkBroadenedLine(LineShapeModel):
 
     cdef Plasma _plasma
     cdef Line _line

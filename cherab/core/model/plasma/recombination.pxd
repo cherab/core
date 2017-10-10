@@ -17,7 +17,7 @@
 from cherab.core.atomic cimport Line, RecombinationRate
 from cherab.core.plasma cimport PlasmaModel
 from cherab.core.species cimport Species
-from cherab.core.model.lineshape cimport Lineshape
+from cherab.core.model.lineshape cimport LineShapeModel
 
 
 cdef class RecombinationLine(PlasmaModel):
@@ -27,7 +27,8 @@ cdef class RecombinationLine(PlasmaModel):
         double _wavelength
         Species _target_species
         RecombinationRate _rates
-        Lineshape _lineshape
+        LineShapeModel _lineshape
+        object _lineshape_class
 
     # cpdef double radiance_at(self, Point3D point, Vector3D direction)
 

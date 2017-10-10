@@ -19,7 +19,6 @@ from raysect.optical cimport Node, World, Primitive, Ray, Spectrum, SpectralFunc
 
 from cherab.core cimport Species, Plasma, Beam, Line, AtomicData, BeamCXRate
 from cherab.core.beam cimport BeamModel
-from cherab.core.model.lineshape cimport Lineshape
 
 
 cdef class BeamCXLine(BeamModel):
@@ -30,7 +29,6 @@ cdef class BeamCXLine(BeamModel):
         double _wavelength
         BeamCXRate _ground_beam_rate
         list _excited_beam_data
-        Lineshape _lineshape
 
     cdef inline double _composite_cx_rate(self, double x, double y, double z, double interaction_energy,
                                           Vector3D donor_velocity, double receiver_temperature, double receiver_density)

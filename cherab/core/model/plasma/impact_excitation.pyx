@@ -16,23 +16,28 @@
 
 from raysect.optical cimport Spectrum, Point3D, Vector3D
 from cherab.core cimport Plasma, AtomicData
-from cherab.core.model.lineshape cimport doppler_shift, thermal_broadening, GaussianLine
+from cherab.core.model.lineshape cimport GaussianLine, LineShapeModel
 from cherab.core.utility.constants cimport RECIP_4_PI
 
 
 cdef class ExcitationLine(PlasmaModel):
 
-    def __init__(self, Line line, Plasma plasma=None, AtomicData atomic_data=None, Lineshape lineshape=None):
+    def __init__(self, Line line, Plasma plasma=None, AtomicData atomic_data=None, object lineshape=None):
 
         super().__init__(plasma, atomic_data)
+
         self._line = line
-        self._lineshape = lineshape or GaussianLine()
+
+        self._lineshape_class = lineshape or GaussianLine
+        if not issubclass(self._lineshape_class, LineShapeModel):
+            raise TypeError("The attribute lineshape must be a subclass of LineShapeModel.")
+
+        # ensure that cache is initialised
+        self._change()
 
     cpdef Spectrum emission(self, Point3D point, Vector3D direction, Spectrum spectrum):
 
-        cdef double ne, te, ni, radiance, sigma
-        cdef double natural_wavelength, central_wavelength
-        cdef Vector3D ion_velocity
+        cdef double ne, ni, te, radiance
 
         # cache data on first run
         if self._target_species is None:
@@ -50,16 +55,9 @@ cdef class ExcitationLine(PlasmaModel):
         if ni <= 0.0:
             return spectrum
 
-        ion_velocity = self._target_species.distribution.bulk_velocity(point.x, point.y, point.z)
-
-        # calculate emission line central wavelength, doppler shifted along observation direction
-        natural_wavelength = self._wavelength
-        central_wavelength = doppler_shift(natural_wavelength, direction, ion_velocity)
-
         # add emission line to spectrum
         radiance = RECIP_4_PI * self._rates.evaluate(ne, te) * ne * ni
-        sigma = thermal_broadening(natural_wavelength, te, self._line.element.atomic_weight)
-        return self._lineshape.add_line(radiance, central_wavelength, sigma, spectrum, point)
+        return self._lineshape.add_line(radiance, point, direction, spectrum)
 
     cdef inline int _populate_cache(self) except -1:
 
@@ -83,10 +81,13 @@ cdef class ExcitationLine(PlasmaModel):
         # obtain rate function
         self._rates = self._atomic_data.impact_excitation_rate(self._line.element, self._line.ionisation, self._line.transition)
 
+        # instance line shape renderer
+        self._lineshape = self._lineshape_class(self._line, self._wavelength, self._target_species, self._plasma)
+
     def _change(self):
 
         # clear cache to force regeneration on first use
         self._target_species = None
         self._wavelength = 0.0
         self._rates = None
-
+        self._lineshape = None
