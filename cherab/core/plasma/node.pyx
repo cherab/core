@@ -359,9 +359,6 @@ cdef class Plasma(Node):
         # build plasma material
         self._geometry.material = PlasmaMaterial(self, self._atomic_data, list(self._models), self.integrator, local_to_plasma)
 
-    def _change(self):
-        self.notifier.notify()
-
     def _modified(self):
         """
         Called when a scene-graph change occurs that modifies this Node's root
@@ -371,4 +368,4 @@ cdef class Plasma(Node):
         """
 
         # plasma section of the scene-graph has been modified, alert dependents
-        self._change()
+        self.notifier.notify()
