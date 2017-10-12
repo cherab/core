@@ -43,8 +43,6 @@ cdef class GaussianLine(LineShapeModel):
 
 cdef class StarkBroadenedLine(LineShapeModel):
 
-    cdef Plasma _plasma
-    cdef Line _line
     cdef double _aij, _bij, _cij
 
     pass
