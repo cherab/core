@@ -19,7 +19,7 @@ cdef class _PECRate:
     Photon emissivity coefficient base class.
     """
     
-    cpdef double evaluate(self, double density, double temperature):
+    cpdef double evaluate(self, double density, double temperature) except? -1e999:
         """
         Returns a rate at given conditions.
 
