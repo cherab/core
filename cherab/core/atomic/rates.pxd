@@ -15,7 +15,7 @@
 # under the Licence.
 
 cdef class _PECRate:
-    cpdef double evaluate(self, double density, double temperature)
+    cpdef double evaluate(self, double density, double temperature) except? -1e999
 
 
 cdef class ImpactExcitationRate(_PECRate):
