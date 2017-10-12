@@ -304,13 +304,13 @@ cdef class Beam(Node):
 
         # disconnect from previous attenuator's notifications
         if self._attenuator:
-            self._attenuator.notifier.remove(self._change)
+            self._attenuator.notifier.remove(self._modified)
 
         self._attenuator = value
         self._configure_attenuator()
 
         # connect to new attenuator's notifications
-        self._attenuator.notifier.add(self._change)
+        self._attenuator.notifier.add(self._modified)
 
         # attenuator supplies beam density, notify dependents there is a data change
         self.notifier.notify()
@@ -403,9 +403,6 @@ cdef class Beam(Node):
         self._attenuator.plasma = self._plasma
         self._attenuator.atomic_data = self._atomic_data
 
-    def _change(self):
-        self.notifier.notify()
-
     cdef inline int _modified(self) except -1:
         """
         Called when a scene-graph change occurs that modifies this Node's root
@@ -415,4 +412,4 @@ cdef class Beam(Node):
         """
 
         # beams section of the scene-graph has been modified, alert dependents
-        self._change()
+        self.notifier.notify()
