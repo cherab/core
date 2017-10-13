@@ -14,8 +14,9 @@
 # See the Licence for the specific language governing permissions and limitations
 # under the Licence.
 
-from libc.math cimport sqrt, erf, M_SQRT2, floor, ceil
+from libc.math cimport sqrt, erf, M_SQRT2, floor, ceil, fabs
 from cherab.core.utility.constants cimport ATOMIC_MASS, ELEMENTARY_CHARGE, SPEED_OF_LIGHT
+from raysect.optical.spectrum cimport new_spectrum
 cimport cython
 
 
@@ -209,6 +210,7 @@ cdef class StarkBroadenedLine(LineShapeModel):
         cdef double cutoff_lower_wavelength, cutoff_upper_wavelength
         cdef double lower_value, lower_wavelength, upper_value, upper_wavelength
         cdef int start, end, i
+        cdef Spectrum raw_lineshape
 
         ne = self.plasma.get_electron_distribution().density(point.x, point.y, point.z)
         if ne <= 0.0:
@@ -235,16 +237,25 @@ cdef class StarkBroadenedLine(LineShapeModel):
 
         # TODO - replace with cumulative integrals
         # add line to spectrum
-        lower_wavelength = spectrum.min_wavelength + start * spectrum.delta_wavelength
-        lower_value = 1 / ((lower_wavelength - self.wavelength)**2.5 + (0.5*lambda_1_2)**2.5)
+        raw_lineshape = spectrum.new_spectrum()
+
+        lower_wavelength = raw_lineshape.min_wavelength + start * raw_lineshape.delta_wavelength
+        lower_value = 1 / ((fabs(lower_wavelength - self.wavelength))**2.5 + (0.5*lambda_1_2)**2.5)
         for i in range(start, end):
 
-            upper_wavelength = spectrum.min_wavelength + spectrum.delta_wavelength * (i + 1)
-            upper_value = 1 / ((upper_wavelength - self.wavelength)**2.5 + (0.5*lambda_1_2)**2.5)
+            upper_wavelength = raw_lineshape.min_wavelength + raw_lineshape.delta_wavelength * (i + 1)
+            upper_value = 1 / ((fabs(upper_wavelength - self.wavelength))**2.5 + (0.5*lambda_1_2)**2.5)
 
-            spectrum.samples_mv[i] += radiance * 0.5 * (upper_value - lower_value) / spectrum.delta_wavelength
+            raw_lineshape.samples_mv[i] += 0.5 * (upper_value + lower_value)
 
             lower_wavelength = upper_wavelength
             lower_value = upper_value
+
+        # perform normalisation
+        raw_lineshape.div_scalar(raw_lineshape.total())
+
+        for i in range(start, end):
+            # Radiance ???
+            spectrum.samples_mv[i] += radiance * raw_lineshape.samples_mv[i]
 
         return spectrum
