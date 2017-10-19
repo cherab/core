@@ -73,16 +73,6 @@ cdef class Beam(Node):
     """
     Represents a mono-energetic beam of particles with a Gaussian profile.
 
-    :param plasma: A Plasma object.
-    :param energy: energy of beam's particles in eV/amu
-    :param power: total beam power in W
-    :param element: beam material, an Element object
-    :param sigma: gaussian beam width in meters
-    :param divergence: beam divergence in radian
-    :param length: length in meters
-    :param attenuation_model:
-    :param emission_models:
-    :param atomic_data:
     :param parent:
     :param transform:
     :param name:
