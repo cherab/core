@@ -31,8 +31,8 @@ cdef class BeamCXLine(BeamModel):
         list _excited_beam_data
 
     cdef inline double _composite_cx_rate(self, double x, double y, double z, double interaction_energy,
-                                          Vector3D donor_velocity, double receiver_temperature, double receiver_density)
+                                          Vector3D donor_velocity, double receiver_temperature, double receiver_density) except? -1e999
 
-    cdef inline double _beam_population(self, double x, double y, double z, Vector3D beam_velocity, list population_data)
+    cdef inline double _beam_population(self, double x, double y, double z, Vector3D beam_velocity, list population_data) except? -1e999
 
     cdef inline int _populate_cache(self) except -1
