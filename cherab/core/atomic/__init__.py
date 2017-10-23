@@ -15,7 +15,7 @@
 # under the Licence.
 
 from . import elements
-from .elements import Element, Isotope
+from .elements import *
 from .line import Line
 from .interface import AtomicData
 from .rates import *

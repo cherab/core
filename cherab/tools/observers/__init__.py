@@ -16,3 +16,4 @@
 # under the Licence.
 
 from .calcam import load_calcam_calibration
+from .spectroscopic import LineOfSightGroup, SpectroscopicSightLine

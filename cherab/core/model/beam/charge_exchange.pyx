@@ -119,8 +119,16 @@ cdef class BeamCXLine(BeamModel):
         y = plasma_point.y
         z = plasma_point.z
 
+        # abort calculation if receiver density is zero
         receiver_density = self._target_species.distribution.density(x, y, z)
+        if receiver_density == 0:
+            return spectrum
+
+        # abort calculation if receiver temperature is zero
         receiver_temperature = self._target_species.distribution.effective_temperature(x, y, z)
+        if receiver_temperature == 0:
+            return spectrum
+
         receiver_velocity = self._target_species.distribution.bulk_velocity(x, y, z)
         receiver_ion_mass = self._target_species.element.atomic_weight
 
@@ -146,7 +154,7 @@ cdef class BeamCXLine(BeamModel):
     @cython.wraparound(False)
     @cython.cdivision(True)
     cdef inline double _composite_cx_rate(self, double x, double y, double z, double interaction_energy,
-                                          Vector3D donor_velocity, double receiver_temperature, double receiver_density):
+                                          Vector3D donor_velocity, double receiver_temperature, double receiver_density) except? -1e999:
         """
         Performs a beam population weighted average of the effective cx rates.
 
@@ -211,7 +219,7 @@ cdef class BeamCXLine(BeamModel):
     @cython.boundscheck(False)
     @cython.wraparound(False)
     @cython.cdivision(True)
-    cdef inline double _beam_population(self, double x, double y, double z, Vector3D beam_velocity, list population_data):
+    cdef inline double _beam_population(self, double x, double y, double z, Vector3D beam_velocity, list population_data) except? -1e999:
         """
         Calculates the relative beam population.
 
