@@ -184,7 +184,9 @@ class SpectroscopicSightLine:
     def observed_spectrum(self):
         # TODO - throw exception if no observed spectrum
         pipeline = self._spectral_pipeline
-        return Spectrum(pipeline.min_wavelength, pipeline.max_wavelength, pipeline.bins)
+        spectrum = Spectrum(pipeline.min_wavelength, pipeline.max_wavelength, pipeline.bins)
+        spectrum.samples = pipeline.samples.mean
+        return spectrum
 
     def observe(self):
         """
