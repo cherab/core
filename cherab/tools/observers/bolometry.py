@@ -16,7 +16,6 @@
 # under the Licence.
 
 from raysect.core import Node, AffineMatrix3D, translate, rotate_basis, Point3D, Vector3D
-from raysect.optical import Spectrum
 from raysect.optical.observer import PowerPipeline0D, SightLine, TargetedPixel
 
 
@@ -32,7 +31,8 @@ class BolometerCamera(Node):
     def __init__(self, parent=None, transform=None, name=''):
         super().__init__(parent=parent, transform=transform, name=name)
 
-        self._sight_lines = []
+        self._foil_detectors = []
+        self._slits = []
 
     def __getitem__(self, item):
 
@@ -51,51 +51,36 @@ class BolometerCamera(Node):
             raise TypeError("LineOfSightGroup key must be of type int or str.")
 
     @property
-    def sight_lines(self):
-        return self._sight_lines
+    def foil_detectors(self):
+        return self._foil_detectors
 
-    @sight_lines.setter
-    def sight_lines(self, value):
+    @foil_detectors.setter
+    def foil_detectors(self, value):
 
         if not isinstance(value, list):
-            raise TypeError("The sightlines attribute of LineOfSightGroup must be a list of SpectroscopicSightLines.")
-
-        for sight_line in value:
-            if not isinstance(sight_line, SpectroscopicSightLine):
-                raise TypeError("The sightlines attribute of LineOfSightGroup must be a list of "
-                                "SpectroscopicSightLines. Value {} is not a SpectroscopicSightLine.".format(sight_line))
+            raise TypeError("The foil_detectors attribute of LineOfSightGroup must be a list of BolometerFoils.")
 
         # Prevent external changes being made to this list
         value = value.copy()
-        for sight_line in value:
-            sight_line.parent = self
+        for foil_detector in value:
+            if not isinstance(foil_detector, BolometerFoil):
+                raise TypeError("The foil_detectors attribute of BolometerCamera must be a list of "
+                                "BolometerFoil objects. Value {} is not a BolometerFoil.".format(foil_detector))
+            foil_detector.parent = self
 
-        self._sight_lines = value
+        self._foil_detectors = value
 
-    def add_sight_line(self, sight_line):
+    def add_foil_detector(self, foil_detector):
 
-        if not isinstance(sight_line, SpectroscopicSightLine):
-            raise TypeError("The sightline argument must be of type SpectroscopicSightLine.")
+        if not isinstance(foil_detector, BolometerFoil):
+            raise TypeError("The foil_detector argument must be of type BolometerFoil.")
 
-        sight_line.parent = self
-        self._sight_lines.append(sight_line)
+        foil_detector.parent = self
+        self._foil_detectors.append(foil_detector)
 
     def observe(self):
-        for sight_line in self._sight_lines:
-            sight_line.observe()
-
-    def plot_spectra(self, unit='J', ymax=None):
-
-        for sight_line in self.sight_lines:
-            sight_line.plot_spectra(unit=unit, extras=False)
-
-        if ymax is not None:
-            plt.ylim(ymax=ymax)
-
-        plt.title(self.name)
-        plt.xlabel('wavelength (nm)')
-        plt.ylabel('radiance ({}/s/m^2/str/nm)'.format(unit))
-        plt.legend()
+        for foil_detector in self._foil_detectors:
+            foil_detector.observe()
 
 
 class BolometerSlit(Node):
