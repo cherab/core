@@ -119,32 +119,15 @@ class BolometerFoil:
     observer's z axis in world space.
     """
 
-    def __init__(self, name, centre_point, normal_vec, basis_x, dx, basis_y, dy, slit, ray_type="Targeted", parent=None):
+    def __init__(self, name, centre_point, basis_vectors, dx, dy, slit, ray_type="Targeted", parent=None):
 
-        if not isinstance(centre_point, Point3D):
-            raise TypeError("centre_point argument for BolometerFoil must be of type Point3D.")
-        if not isinstance(normal_vec, Vector3D):
-            raise TypeError("normal_vec argument for BolometerFoil must be of type Vector3D.")
-        if not isinstance(basis_x, Vector3D):
-            raise TypeError("basis_x argument for BolometerFoil must be of type Vector3D.")
-        if not isinstance(dx, float):
-            raise TypeError("dx argument for BolometerFoil must be of type float.")
-        if not dx > 0:
-            raise ValueError("dx argument for BolometerFoil must be greater than zero.")
-        if not isinstance(basis_y, Vector3D):
-            raise TypeError("basis_y argument for BolometerFoil must be of type Vector3D.")
-        if not isinstance(dy, float):
-            raise TypeError("dy argument for BolometerFoil must be of type float.")
-        if not dy > 0:
-            raise ValueError("dy argument for BolometerFoil must be greater than zero.")
-        if not isinstance(slit, BolometerSlit):
-            raise TypeError("slit argument for BolometerFoil must be of type BolometerSlit.")
-
-        self._point = Point3D(0, 0, 0)
-        self._direction = Vector3D(1, 0, 0)
+        self._centre_point = Point3D(0, 0, 0)
+        self._normal_vec = Vector3D(1, 0, 0)
+        self._basis_x = Vector3D(0, 1, 0)
         self._transform = AffineMatrix3D()
-
         self._spectral_pipeline = PowerPipeline0D(accumulate=False)
+
+        self.name = name
 
         if ray_type == "Sightline":
             self._observer = SightLine(pipelines=[self._spectral_pipeline], pixel_samples=1, parent=parent, name=name)
@@ -153,35 +136,62 @@ class BolometerFoil:
         else:
             raise ValueError("ray_type argument for BolometerFoil must be in ['Sightline', 'Targeted'].")
 
-        self.name = name
-        self.point = point
-        self.direction = direction
+        if not isinstance(centre_point, Point3D):
+            raise TypeError("centre_point argument for BolometerFoil must be of type Point3D.")
+        self.centre_point = centre_point
+
+        self.basis_vectors = basis_vectors
+
+        if not isinstance(dx, float):
+            raise TypeError("dx argument for BolometerFoil must be of type float.")
+        if not dx > 0:
+            raise ValueError("dx argument for BolometerFoil must be greater than zero.")
+        self.dx = dx
+
+        if not isinstance(dy, float):
+            raise TypeError("dy argument for BolometerFoil must be of type float.")
+        if not dy > 0:
+            raise ValueError("dy argument for BolometerFoil must be greater than zero.")
+        self.dy = dy
+
+        if not isinstance(slit, BolometerSlit):
+            raise TypeError("slit argument for BolometerFoil must be of type BolometerSlit.")
+        self.slit = slit
 
     @property
-    def point(self):
-        return self._point
+    def centre_point(self):
+        return self._centre_point
 
-    @point.setter
-    def point(self, value):
-        if not (self._direction.x == 0 and self._direction.y == 0 and self._direction.z == 1):
-            up = Vector3D(0, 0, 1)
-        else:
-            up = Vector3D(1, 0, 0)
-        self._point = value
-        self._observer.transform = translate(value.x, value.y, value.z) * rotate_basis(self._direction, up)
+    @centre_point.setter
+    def centre_point(self, value):
+        self._centre_point = value
+        self._observer.transform = translate(value.x, value.y, value.z) * rotate_basis(self._normal_vec, self._basis_x)
 
     @property
-    def direction(self):
-        return self._direction
+    def basis_vectors(self):
+        return self._normal_vec, self._basis_x
 
-    @direction.setter
-    def direction(self, value):
-        if value.x != 0 and value.y != 0 and value.z != 1:
-            up = Vector3D(0, 0, 1)
-        else:
-            up = Vector3D(1, 0, 0)
-        self._direction = value
-        self._observer.transform = translate(self._point.x, self._point.y, self._point.z) * rotate_basis(value, up)
+    @basis_vectors.setter
+    def basis_vectors(self, value):
+
+        if not isinstance(value, tuple):
+            raise TypeError("basis_vectors property of BolometerFoil must be a tuple of Vector3Ds.")
+
+        normal_vec = value[0]
+        if not isinstance(normal_vec, Vector3D):
+            raise TypeError("basis_vectors property of BolometerFoil must be a tuple of Vector3Ds.")
+        basis_x = value[1]
+        if not isinstance(basis_x, Vector3D):
+            raise TypeError("basis_vectors property of BolometerFoil must be a tuple of Vector3Ds.")
+
+        if not normal_vec.dot(basis_x) == 0:
+            raise ValueError("The normal and x basis vectors must be orthogonal to define a basis set.")
+
+        self._normal_vec = normal_vec
+        self._basis_x = basis_x
+        translation = translate(self._centre_point.x, self._centre_point.y, self._centre_point.z)
+        rotation = rotate_basis(normal_vec, basis_x)
+        self._observer.transform = translation * rotation
 
     @property
     def min_wavelength(self):
