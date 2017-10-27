@@ -119,28 +119,52 @@ class BolometerFoil:
     observer's z axis in world space.
     """
 
-    def __init__(self, name, centre_point, basis_vectors, dx, dy, slit, ray_type="Targeted", parent=None):
+    def __init__(self, name, centre_point, normal_vec, basis_x, dx, dy, slit, ray_type="Targeted", parent=None):
 
         self._centre_point = Point3D(0, 0, 0)
         self._normal_vec = Vector3D(1, 0, 0)
         self._basis_x = Vector3D(0, 1, 0)
+        self._basis_y = Vector3D(0, 0, 1)
         self._transform = AffineMatrix3D()
-        self._spectral_pipeline = PowerPipeline0D(accumulate=False)
+        self._power_pipeline = PowerPipeline0D(accumulate=False)
 
         self.name = name
 
+        if not isinstance(slit, BolometerSlit):
+            raise TypeError("slit argument for BolometerFoil must be of type BolometerSlit.")
+        self._slit = slit
+
         if ray_type == "Sightline":
-            self._observer = SightLine(pipelines=[self._spectral_pipeline], pixel_samples=1, parent=parent, name=name)
+            self._observer = SightLine(pipelines=[self._power_pipeline],
+                                       pixel_samples=1, spectral_bins=1, parent=parent, name=name)
         elif ray_type == "Targeted":
-            self._observer = TargetedPixel(parent=parent, target=slit, pipelines=[self._spectral_pipeline], name=name)
+            self._observer = TargetedPixel(target=slit, pipelines=[self._power_pipeline],
+                                           pixel_samples=250, spectral_bins=1, parent=parent, name=name)
         else:
             raise ValueError("ray_type argument for BolometerFoil must be in ['Sightline', 'Targeted'].")
+        self.ray_type = ray_type
 
         if not isinstance(centre_point, Point3D):
             raise TypeError("centre_point argument for BolometerFoil must be of type Point3D.")
-        self.centre_point = centre_point
+        self._centre_point = centre_point
 
-        self.basis_vectors = basis_vectors
+        if not isinstance(normal_vec, Vector3D):
+            raise TypeError("basis_vectors property of BolometerFoil must be a tuple of Vector3Ds.")
+        if not isinstance(basis_x, Vector3D):
+            raise TypeError("basis_vectors property of BolometerFoil must be a tuple of Vector3Ds.")
+
+        if not normal_vec.dot(basis_x) == 0:
+            raise ValueError("The normal and x basis vectors must be orthogonal to define a basis set.")
+
+        # set basis vectors
+        self._normal_vec = normal_vec.normalise()
+        self._basis_x = basis_x.normalise()
+        self._basis_y = normal_vec.cross(basis_x)
+
+        # set observer transform
+        translation = translate(self._centre_point.x, self._centre_point.y, self._centre_point.z)
+        rotation = rotate_basis(normal_vec, basis_x)
+        self._observer.transform = translation * rotation
 
         if not isinstance(dx, float):
             raise TypeError("dx argument for BolometerFoil must be of type float.")
@@ -154,106 +178,34 @@ class BolometerFoil:
             raise ValueError("dy argument for BolometerFoil must be greater than zero.")
         self.dy = dy
 
-        if not isinstance(slit, BolometerSlit):
-            raise TypeError("slit argument for BolometerFoil must be of type BolometerSlit.")
-        self.slit = slit
-
     @property
     def centre_point(self):
         return self._centre_point
 
-    @centre_point.setter
-    def centre_point(self, value):
-        self._centre_point = value
-        self._observer.transform = translate(value.x, value.y, value.z) * rotate_basis(self._normal_vec, self._basis_x)
+    @property
+    def normal_vec(self):
+        return self._normal_vec
 
     @property
-    def basis_vectors(self):
-        return self._normal_vec, self._basis_x
-
-    @basis_vectors.setter
-    def basis_vectors(self, value):
-
-        if not isinstance(value, tuple):
-            raise TypeError("basis_vectors property of BolometerFoil must be a tuple of Vector3Ds.")
-
-        normal_vec = value[0]
-        if not isinstance(normal_vec, Vector3D):
-            raise TypeError("basis_vectors property of BolometerFoil must be a tuple of Vector3Ds.")
-        basis_x = value[1]
-        if not isinstance(basis_x, Vector3D):
-            raise TypeError("basis_vectors property of BolometerFoil must be a tuple of Vector3Ds.")
-
-        if not normal_vec.dot(basis_x) == 0:
-            raise ValueError("The normal and x basis vectors must be orthogonal to define a basis set.")
-
-        self._normal_vec = normal_vec
-        self._basis_x = basis_x
-        translation = translate(self._centre_point.x, self._centre_point.y, self._centre_point.z)
-        rotation = rotate_basis(normal_vec, basis_x)
-        self._observer.transform = translation * rotation
+    def basis_x(self):
+        return self._basis_x
 
     @property
-    def min_wavelength(self):
-        return self._observer.min_wavelength
-
-    @min_wavelength.setter
-    def min_wavelength(self, value):
-        self._observer.min_wavelength = value
+    def basis_y(self):
+        return self._basis_y
 
     @property
-    def max_wavelength(self):
-        return self._observer.max_wavelength
-
-    @max_wavelength.setter
-    def max_wavelength(self, value):
-        self._observer.max_wavelength = value
+    def slit(self):
+        return self._slit
 
     @property
-    def spectral_bins(self):
-        return self._observer.spectral_bins
-
-    @spectral_bins.setter
-    def spectral_bins(self, value):
-        self._observer.spectral_bins = value
-
-    @property
-    def observed_spectrum(self):
-        # TODO - throw exception if no observed spectrum
-        pipeline = self._spectral_pipeline
-        spectrum = Spectrum(pipeline.min_wavelength, pipeline.max_wavelength, pipeline.bins)
-        spectrum.samples = pipeline.samples.mean
-        return spectrum
+    def observed_power(self):
+        if self._power_pipeline.value.samples <= 0:
+            raise ValueError("This bolometer has not yet made any observations.")
+        return self._power_pipeline.value.mean
 
     def observe(self):
         """
-        Ask this sight-line to observe its world.
+        Ask this bolometer foil to observe its world.
         """
-
         self._observer.observe()
-
-    def plot_spectra(self, unit='J', ymax=None, extras=True):
-        """
-        Plot the observed spectrum.
-        """
-
-        if unit == 'J':
-            # Spectrum objects are already in J/s/m2/str/nm
-            spectrum = self.observed_spectrum
-        elif unit == 'ph':
-            # turn the samples into ph/s/m2/str/nm
-            spectrum = self.observed_spectrum.new_spectrum()
-            spectrum.samples = self.observed_spectrum.to_photons()
-        else:
-            raise ValueError("unit must be 'J' or 'ph'.")
-
-        plt.plot(spectrum.wavelengths, spectrum.samples)
-
-        if extras:
-            if ymax is not None:
-                plt.ylim(ymax=ymax)
-            plt.title(self.name)
-            plt.xlabel('wavelength (nm)')
-            plt.ylabel('radiance ({}/s/m^2/str/nm)'.format(unit))
-
-
