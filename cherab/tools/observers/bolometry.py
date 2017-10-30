@@ -268,7 +268,7 @@ class BolometerFoil:
         self._observer.observe()
 
 
-def load_bolometer_camera(filename, parent=None):
+def load_bolometer_camera(filename, parent=None, ray_type="Sightline"):
 
     file_handle = open(filename, 'r')
     camera_state = json.load(file_handle)
@@ -315,8 +315,7 @@ def load_bolometer_camera(filename, parent=None):
         dx = detector['dx']
         basis_y = Vector3D(detector['basis_y'][0], detector['basis_y'][1], detector['basis_y'][2])
         dy = detector['dy']
-        slit = slit_dict[detector['Slit_ID']]
-        ray_type = detector['ray_type']
+        slit = slit_dict[detector['slit_id']]
 
         bolometer_foil = BolometerFoil(detector_id, centre_point, basis_x, dx, basis_y, dy, slit,
                                        ray_type=ray_type, parent=camera)
