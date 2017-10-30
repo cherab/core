@@ -16,7 +16,9 @@
 # under the Licence.
 
 from raysect.core import Node, AffineMatrix3D, translate, rotate_basis, Point3D, Vector3D
+from raysect.primitive import Box
 from raysect.optical.observer import PowerPipeline0D, SightLine, TargetedPixel
+from raysect.optical.material.material import NullMaterial
 
 
 class BolometerCamera(Node):
@@ -66,6 +68,8 @@ class BolometerCamera(Node):
             if not isinstance(foil_detector, BolometerFoil):
                 raise TypeError("The foil_detectors attribute of BolometerCamera must be a list of "
                                 "BolometerFoil objects. Value {} is not a BolometerFoil.".format(foil_detector))
+            if not foil_detector.slit in self._slits:
+                self._slits.append(foil_detector.slit)
             foil_detector.parent = self
 
         self._foil_detectors = value
@@ -75,6 +79,9 @@ class BolometerCamera(Node):
         if not isinstance(foil_detector, BolometerFoil):
             raise TypeError("The foil_detector argument must be of type BolometerFoil.")
 
+        if not foil_detector.slit in self._slits:
+            self._slits.append(foil_detector.slit)
+
         foil_detector.parent = self
         self._foil_detectors.append(foil_detector)
 
@@ -83,9 +90,9 @@ class BolometerCamera(Node):
             foil_detector.observe()
 
 
-class BolometerSlit(Node):
+class BolometerSlit:
 
-    def __init__(self, centre_point, basis_x, dx, basis_y, dy, dz=0.001, parent=None, transform=None, name=''):
+    def __init__(self, centre_point, basis_x, dx, basis_y, dy, dz=0.001, parent=None, name=''):
 
         self.name = name
         self.centre_point = centre_point
@@ -94,6 +101,11 @@ class BolometerSlit(Node):
         self.basis_y = basis_y
         self.dy = dy
         self.dz = dz
+
+        slit_normal = basis_x.cross(basis_y)
+        transform = translate(centre_point.x, centre_point.y, centre_point.z) * rotate_basis(slit_normal, basis_x)
+        self.primitive = Box(lower=Point3D(-dx/2, -dy/2, -dz/2), upper=Point3D(dx/2, dy/2, dz/2),
+                             transform=transform, material=NullMaterial(), parent=parent, name=name)
 
 
 class BolometerFoil:
@@ -104,14 +116,7 @@ class BolometerFoil:
     observer's z axis in world space.
     """
 
-    def __init__(self, name, centre_point, normal_vec, basis_x, dx, dy, slit, ray_type="Targeted", parent=None):
-
-        self._centre_point = Point3D(0, 0, 0)
-        self._normal_vec = Vector3D(1, 0, 0)
-        self._basis_x = Vector3D(0, 1, 0)
-        self._basis_y = Vector3D(0, 0, 1)
-        self._transform = AffineMatrix3D()
-        self._power_pipeline = PowerPipeline0D(accumulate=False)
+    def __init__(self, name, centre_point, basis_x, dx, basis_y, dy, slit, ray_type="Targeted", parent=None):
 
         self.name = name
 
@@ -119,11 +124,12 @@ class BolometerFoil:
             raise TypeError("slit argument for BolometerFoil must be of type BolometerSlit.")
         self._slit = slit
 
+        self._power_pipeline = PowerPipeline0D(accumulate=False)
         if ray_type == "Sightline":
             self._observer = SightLine(pipelines=[self._power_pipeline],
                                        pixel_samples=1, spectral_bins=1, parent=parent, name=name)
         elif ray_type == "Targeted":
-            self._observer = TargetedPixel(target=slit, pipelines=[self._power_pipeline],
+            self._observer = TargetedPixel(target=slit.primitive, pipelines=[self._power_pipeline],
                                            pixel_samples=250, spectral_bins=1, parent=parent, name=name)
         else:
             raise ValueError("ray_type argument for BolometerFoil must be in ['Sightline', 'Targeted'].")
@@ -133,22 +139,19 @@ class BolometerFoil:
             raise TypeError("centre_point argument for BolometerFoil must be of type Point3D.")
         self._centre_point = centre_point
 
-        if not isinstance(normal_vec, Vector3D):
-            raise TypeError("basis_vectors property of BolometerFoil must be a tuple of Vector3Ds.")
         if not isinstance(basis_x, Vector3D):
-            raise TypeError("basis_vectors property of BolometerFoil must be a tuple of Vector3Ds.")
-
-        if not normal_vec.dot(basis_x) == 0:
-            raise ValueError("The normal and x basis vectors must be orthogonal to define a basis set.")
+            raise TypeError("The basis vectors of BolometerFoil must be of type Vector3D.")
+        if not isinstance(basis_y, Vector3D):
+            raise TypeError("The basis vectors of BolometerFoil must be of type Vector3D.")
 
         # set basis vectors
-        self._normal_vec = normal_vec.normalise()
         self._basis_x = basis_x.normalise()
-        self._basis_y = normal_vec.cross(basis_x)
+        self._basis_y = basis_y.normalise()
+        self._normal_vec = self._basis_x.cross(self._basis_y)
 
         # set observer transform
         translation = translate(self._centre_point.x, self._centre_point.y, self._centre_point.z)
-        rotation = rotate_basis(normal_vec, basis_x)
+        rotation = rotate_basis(self._normal_vec, self._basis_x)
         self._observer.transform = translation * rotation
 
         if not isinstance(dx, float):
