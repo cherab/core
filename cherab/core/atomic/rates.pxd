@@ -14,6 +14,9 @@
 # See the Licence for the specific language governing permissions and limitations
 # under the Licence.
 
+from cherab.core.atomic.elements cimport Element
+
+
 cdef class _PECRate:
     cpdef double evaluate(self, double density, double temperature) except? -1e999
 
@@ -48,3 +51,33 @@ cdef class BeamPopulationRate(_BeamRate):
 
 cdef class BeamEmissionRate(_BeamRate):
     pass
+
+
+cdef class RadiatedPower:
+
+    cdef:
+        readonly Element element
+        public str name
+        readonly str radiation_type
+
+    cdef double evaluate(self, double electron_density, double electron_temperature) except? -1e999
+
+
+cdef class StageResolvedLineRadiation:
+
+    cdef:
+        readonly int ionisation
+        readonly Element element
+        public str name
+
+    cdef double evaluate(self, double electron_density, double electron_temperature) except? -1e999
+
+
+cdef class FractionalAbundance:
+
+    cdef:
+        readonly Element element
+        readonly int ionisation
+        public str name
+
+    cdef double evaluate(self, double electron_density, double electron_temperature) except? -1e999
