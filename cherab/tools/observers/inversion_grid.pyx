@@ -20,17 +20,24 @@ cimport numpy as np
 import os
 import json
 
+from raysect.core cimport translate
 from raysect.core.math.point cimport new_point2d, Point2D
+from raysect.primitive.cylinder cimport Cylinder
+from raysect.primitive.csg cimport Subtract
+from raysect.optical.material.emitter cimport UnityVolumeEmitter
 
 
 cdef class RectangularGrid:
 
-    cdef readonly np.ndarray cell_data
-    cdef double[:,:,::1] cell_data_mv
-    cdef readonly int count
+    cdef:
+        readonly str grid_id
+        readonly int count
+        readonly np.ndarray cell_data
+        double[:,:,::1] cell_data_mv
 
-    def __init__(self, cell_data):
+    def __init__(self, grid_id, cell_data):
 
+        self.grid_id = grid_id
         self.cell_data = cell_data
         self.cell_data_mv = self.cell_data
         self.count = cell_data.shape[0]
@@ -51,6 +58,11 @@ cdef class RectangularGrid:
         p4 = new_point2d(self.cell_data_mv[item, 3, 0], self.cell_data_mv[item, 3, 1])
 
         return p1, p2, p3, p4
+
+    def __iter__(self):
+
+        for i in range(self.count):
+            yield self.__getitem__(i)
 
     def __getstate__(self):
 
@@ -85,6 +97,61 @@ cdef class RectangularGrid:
         else:
             raise NotImplementedError('Pickle serialisation has not been implemented yet.')
 
+    def calculate_sensitivity(self, observer, pipeline, world):
+
+        sensitivity_grid = SensitivityGrid(self, self.count)
+
+        for i in range(self.count):
+
+            p1, p2, p3, p4 = self.__getitem__(i)
+
+            r_inner = p1.x
+            r_outer = p3.x
+            if r_inner > r_outer:
+                t = r_inner
+                r_inner = r_outer
+                r_outer = t
+
+            z_lower = p2.y
+            z_upper = p1.y
+            if z_lower > z_upper:
+                t = z_lower
+                z_lower = z_upper
+                z_upper = t
+
+            # TODO - switch to using CAD method such that reflections can be included automatically
+            cylinder_height = z_upper - z_lower
+
+            outer_cylinder = Cylinder(radius=r_outer, height=cylinder_height, transform=translate(0, 0, z_lower))
+            inner_cylinder = Cylinder(radius=r_inner, height=cylinder_height, transform=translate(0, 0, z_lower))
+            cell_emitter = Subtract(outer_cylinder, inner_cylinder, parent=world, material=UnityVolumeEmitter())
+
+            observer.observe()
+
+            sensitivity_grid._sensitivity_mv[i] = pipeline.value.mean
+
+            outer_cylinder.parent = None
+            inner_cylinder.parent = None
+            cell_emitter.parent = None
+
+        return sensitivity_grid
+
+
+cdef class SensitivityGrid:
+
+    cdef:
+        readonly RectangularGrid grid_geometry
+        readonly int count
+        readonly np.ndarray sensitivity
+        double[:] _sensitivity_mv
+
+    def __init__(self, grid, cell_count):
+
+        self.grid_geometry = grid
+        self.count = cell_count
+        self.sensitivity = np.zeros(cell_count)
+        self._sensitivity_mv = self.sensitivity
+
 
 def load_inversion_grid(filename):
 
@@ -107,4 +174,4 @@ def load_inversion_grid(filename):
         cell_array[i, 2, :] = cell['p3'][0], cell['p3'][1]
         cell_array[i, 3, :] = cell['p4'][0], cell['p4'][1]
 
-    return RectangularGrid(cell_array)
+    return RectangularGrid(grid_state["Grid_ID"], cell_array)

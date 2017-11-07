@@ -43,17 +43,17 @@ class BolometerCamera(Node):
 
         if isinstance(item, int):
             try:
-                return self._sight_lines[item]
+                return self._foil_detectors[item]
             except IndexError:
-                raise IndexError("Sight-line number {} not available in this LineOfSightGroup.".format(item))
+                raise IndexError("BolometerFoil number {} not available in this BolometerCamera.".format(item))
         elif isinstance(item, str):
-            for sight_line in self._sight_lines:
-                if sight_line.name == item:
-                    return sight_line
+            for detector in self._foil_detectors:
+                if detector.detector_id == item:
+                    return detector
             else:
-                raise ValueError("Sightline '{}' was not found in this LineOfSightGroup.".format(item))
+                raise ValueError("BolometerFoil '{}' was not found in this BolometerCamera.".format(item))
         else:
-            raise TypeError("LineOfSightGroup key must be of type int or str.")
+            raise TypeError("BolometerCamera key must be of type int or str.")
 
     def __getstate__(self):
         state = {
@@ -164,7 +164,7 @@ class BolometerFoil:
     observer's z axis in world space.
     """
 
-    def __init__(self, detector_id, centre_point, basis_x, dx, basis_y, dy, slit, ray_type="Targeted", parent=None):
+    def __init__(self, detector_id, centre_point, basis_x, dx, basis_y, dy, slit, parent=None):
 
         self.detector_id = detector_id
         self._parent = parent
@@ -173,16 +173,13 @@ class BolometerFoil:
             raise TypeError("slit argument for BolometerFoil must be of type BolometerSlit.")
         self._slit = slit
 
-        self._power_pipeline = PowerPipeline0D(accumulate=False)
-        if ray_type == "Sightline":
-            self._observer = SightLine(pipelines=[self._power_pipeline],
-                                       pixel_samples=1, spectral_bins=1, parent=parent, name=detector_id)
-        elif ray_type == "Targeted":
-            self._observer = TargetedPixel(target=slit.primitive, pipelines=[self._power_pipeline],
-                                           pixel_samples=250, spectral_bins=1, parent=parent, name=detector_id)
-        else:
-            raise ValueError("ray_type argument for BolometerFoil must be in ['Sightline', 'Targeted'].")
-        self.ray_type = ray_type
+        # setup the observers
+        self._los_pipeline = PowerPipeline0D(accumulate=False)
+        self._los_observer = SightLine(pipelines=[self._los_pipeline], pixel_samples=1, spectral_bins=1,
+                                       parent=parent, name=detector_id, quiet=True)
+        self._volume_pipeline = PowerPipeline0D(accumulate=False)
+        self._volume_observer = TargetedPixel(target=slit.primitive, pipelines=[self._volume_pipeline], pixel_samples=250,
+                                              spectral_bins=1, parent=parent, name=detector_id, quiet=True)
 
         if not isinstance(centre_point, Point3D):
             raise TypeError("centre_point argument for BolometerFoil must be of type Point3D.")
@@ -201,7 +198,8 @@ class BolometerFoil:
         # set observer transform
         translation = translate(self._centre_point.x, self._centre_point.y, self._centre_point.z)
         rotation = rotate_basis(self._normal_vec, self._basis_x)
-        self._observer.transform = translation * rotation
+        self._los_observer.transform = translation * rotation
+        self._volume_observer.transform = translation * rotation
 
         if not isinstance(dx, float):
             raise TypeError("dx argument for BolometerFoil must be of type float.")
@@ -215,6 +213,9 @@ class BolometerFoil:
             raise ValueError("dy argument for BolometerFoil must be greater than zero.")
         self.dy = dy
 
+        self._los_sensitivity = None
+        self._volume_sensitivity = None
+
     def __getstate__(self):
 
         state = {
@@ -222,17 +223,12 @@ class BolometerFoil:
             'Version': 1,
             'Detector_ID': self.detector_id,
             'centre_point': self.centre_point.__getstate__(),
-            'ray_type': self.ray_type,
             'basis_x': self._basis_x.__getstate__(),
             'basis_y': self._basis_y.__getstate__(),
             'dx': self.dx,
             'dy': self.dy,
             'slit_id': self._slit.slid_id,
         }
-
-        # if self._parent and type(self._parent).__name__ == 'BolometerCamera':
-        #     state['parent_camera_id'] = self._parent.name
-
         return state
 
     @property
@@ -256,19 +252,37 @@ class BolometerFoil:
         return self._slit
 
     @property
-    def observed_power(self):
-        if self._power_pipeline.value.samples <= 0:
-            raise ValueError("This bolometer has not yet made any observations.")
-        return self._power_pipeline.value.mean
+    def los_sensitivity(self):
+        if not self._los_sensitivity:
+            raise ValueError("The sensitivity of this BolometerFoil has not yet been calculated.")
+        return self._los_sensitivity
 
-    def observe(self):
+    @property
+    def volume_sensitivity(self):
+        if not self._volume_sensitivity:
+            raise ValueError("The sensitivity of this BolometerFoil has not yet been calculated.")
+        return self._volume_sensitivity
+
+    def observe_los(self):
         """
         Ask this bolometer foil to observe its world.
         """
-        self._observer.observe()
+        self._los_observer.observe()
+        return self._los_pipeline.value.mean
+
+    def observe_volume(self):
+        """
+        Ask this bolometer foil to observe its world.
+        """
+        self._volume_observer.observe()
+        return self._volume_pipeline.value.mean
+
+    def calculate_sensitivity(self, grid, world):
+        self._los_sensitivity = grid.calculate_sensitivity(self._los_observer, self._los_pipeline, world)
+        self._volume_sensitivity = grid.calculate_sensitivity(self._volume_observer, self._volume_pipeline, world)
 
 
-def load_bolometer_camera(filename, parent=None, ray_type="Sightline"):
+def load_bolometer_camera(filename, parent=None):
 
     file_handle = open(filename, 'r')
     camera_state = json.load(file_handle)
@@ -317,8 +331,7 @@ def load_bolometer_camera(filename, parent=None, ray_type="Sightline"):
         dy = detector['dy']
         slit = slit_dict[detector['slit_id']]
 
-        bolometer_foil = BolometerFoil(detector_id, centre_point, basis_x, dx, basis_y, dy, slit,
-                                       ray_type=ray_type, parent=camera)
+        bolometer_foil = BolometerFoil(detector_id, centre_point, basis_x, dx, basis_y, dy, slit, parent=camera)
 
         camera.add_foil_detector(bolometer_foil)
 
