@@ -33,7 +33,7 @@ cdef class RectangularGrid:
         readonly str grid_id
         readonly int count
         readonly np.ndarray cell_data
-        double[:,:,::1] cell_data_mv
+        double[:,:,:] cell_data_mv
 
     def __init__(self, grid_id, cell_data):
 
@@ -92,7 +92,7 @@ cdef class RectangularGrid:
 
         if extention == '.json':
             file_handle = open(filename, 'w')
-            json.dump(self.__getstate__(), file_handle, indent=4, sort_keys=True)
+            json.dump(self.__getstate__(), file_handle, indent=2, sort_keys=True)
 
         else:
             raise NotImplementedError('Pickle serialisation has not been implemented yet.')
@@ -128,7 +128,7 @@ cdef class RectangularGrid:
 
             observer.observe()
 
-            sensitivity_grid._sensitivity_mv[i] = pipeline.value.mean
+            sensitivity_grid.sensitivity[i] = pipeline.value.mean
 
             outer_cylinder.parent = None
             inner_cylinder.parent = None

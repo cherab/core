@@ -117,7 +117,7 @@ class BolometerCamera(Node):
 
         if extention == '.json':
             file_handle = open(filename, 'w')
-            json.dump(self.__getstate__(), file_handle, indent=4, sort_keys=True)
+            json.dump(self.__getstate__(), file_handle, indent=2, sort_keys=True)
 
         else:
             raise NotImplementedError('Pickle serialisation has not been implemented yet.')
