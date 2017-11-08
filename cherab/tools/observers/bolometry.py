@@ -17,14 +17,15 @@
 
 import os
 import json
-import numpy as np
 
 from raysect.core import Node, AffineMatrix3D, translate, rotate_basis, Point3D, Vector3D
-from raysect.primitive import Box
+from raysect.primitive import Box, Subtract
 from raysect.optical.observer import PowerPipeline0D, SightLine, TargetedPixel
 from raysect.optical.material.material import NullMaterial
+from raysect.optical.material import AbsorbingSurface
 
 
+# TODO - add support for CAD files as camera box geometry
 class BolometerCamera(Node):
     """
     A group of bolometer sight-lines under a single scene-graph node.
@@ -34,11 +35,12 @@ class BolometerCamera(Node):
     control simultaneously.
     """
 
-    def __init__(self, parent=None, transform=None, name=''):
+    def __init__(self, box_geometry=None, parent=None, transform=None, name=''):
         super().__init__(parent=parent, transform=transform, name=name)
 
         self._foil_detectors = []
         self._slits = []
+        self._box_geometry = box_geometry
 
     def __getitem__(self, item):
 
@@ -62,6 +64,11 @@ class BolometerCamera(Node):
             'Version': 1,
             'Camera_ID': self.name,
         }
+
+        if self._box_geometry:
+            pass
+        else:
+            state['box_geometry'] = False
 
         slit_list = []
         for slit in self._slits:
@@ -126,7 +133,7 @@ class BolometerCamera(Node):
 
 class BolometerSlit:
 
-    def __init__(self, slit_id, centre_point, basis_x, dx, basis_y, dy, dz=0.001, parent=None):
+    def __init__(self, slit_id, centre_point, basis_x, dx, basis_y, dy, dz=0.001, parent=None, csg_aperture=False):
 
         self.slit_id = slit_id
         self.centre_point = centre_point
@@ -141,6 +148,14 @@ class BolometerSlit:
         self.primitive = Box(lower=Point3D(-dx/2, -dy/2, -dz/2), upper=Point3D(dx/2, dy/2, dz/2),
                              transform=transform, material=NullMaterial(), parent=parent, name=slit_id)
 
+        if csg_aperture:
+            face = Box(Point3D(-dx, -dy, -dz/2), Point3D(dx, dy, dz/2))
+            slit = Box(lower=Point3D(-dx/2, -dy/2, -dz/2 - dz*0.1), upper=Point3D(dx/2, dy/2, dz/2 + dz*0.1))
+            self.csg_aperture = Subtract(face, slit, parent=parent, material=AbsorbingSurface(), name=slit_id)
+            self.csg_aperture.transform = transform
+        else:
+            self.csg_aperture = None
+
     def __getstate__(self):
 
         state = {
@@ -154,6 +169,12 @@ class BolometerSlit:
             'dy': self.dy,
             'dz': self.dz,
         }
+
+        if self.csg_aperture:
+            state['csg_aperture'] = True
+        else:
+            state['csg_aperture'] = False
+
         return state
 
 
@@ -192,7 +213,7 @@ class BolometerFoil:
                                        parent=parent, name=detector_id, quiet=True)
         self._volume_pipeline = PowerPipeline0D(accumulate=False)
         self._volume_observer = TargetedPixel(target=slit.primitive, pipelines=[self._volume_pipeline],
-                                              pixel_samples=250, x_width=dx, y_width=dy,
+                                              pixel_samples=750, x_width=dx, y_width=dy,
                                               spectral_bins=1, parent=parent, name=detector_id, quiet=True)
 
         if not isinstance(centre_point, Point3D):
@@ -235,7 +256,7 @@ class BolometerFoil:
             'basis_y': self._basis_y.__getstate__(),
             'dx': self.dx,
             'dy': self.dy,
-            'slit_id': self._slit.slid_id,
+            'slit_id': self._slit.slit_id,
         }
         return state
 
@@ -319,7 +340,9 @@ def load_bolometer_camera(filename, parent=None):
         basis_y = Vector3D(slit['basis_y'][0], slit['basis_y'][1], slit['basis_y'][2])
         dy = slit['dy']
         dz = slit['dz']
-        slit_dict[slid_id] = BolometerSlit(slid_id, centre_point, basis_x, dx, basis_y, dy, dz=dz, parent=camera)
+        csg_aperture = slit['csg_aperture']
+        slit_dict[slid_id] = BolometerSlit(slid_id, centre_point, basis_x, dx, basis_y, dy,
+                                           dz=dz, parent=camera, csg_aperture=csg_aperture)
 
     for detector in camera_state['foil_detectors']:
 
