@@ -17,12 +17,15 @@
 
 import os
 import json
+import pickle
 
 from raysect.core import Node, AffineMatrix3D, translate, rotate_basis, Point3D, Vector3D
 from raysect.primitive import Box, Subtract
 from raysect.optical.observer import PowerPipeline0D, SightLine, TargetedPixel
 from raysect.optical.material.material import NullMaterial
 from raysect.optical.material import AbsorbingSurface
+
+from cherab.tools.observers.inversion_grid import calculate_sensitivity, SensitivityMatrix
 
 
 # TODO - add support for CAD files as camera box geometry
@@ -41,6 +44,10 @@ class BolometerCamera(Node):
         self._foil_detectors = []
         self._slits = []
         self._box_geometry = box_geometry
+
+    def __iter__(self):
+        for detector in self._foil_detectors:
+            yield detector
 
     def __getitem__(self, item):
 
@@ -213,7 +220,7 @@ class BolometerFoil:
                                        parent=parent, name=detector_id, quiet=True)
         self._volume_pipeline = PowerPipeline0D(accumulate=False)
         self._volume_observer = TargetedPixel(target=slit.primitive, pipelines=[self._volume_pipeline],
-                                              pixel_samples=750, x_width=dx, y_width=dy,
+                                              pixel_samples=1000, x_width=dx, y_width=dy,
                                               spectral_bins=1, parent=parent, name=detector_id, quiet=True)
 
         if not isinstance(centre_point, Point3D):
@@ -306,9 +313,38 @@ class BolometerFoil:
         self._volume_observer.observe()
         return self._volume_pipeline.value.mean
 
-    def calculate_sensitivity(self, grid, world):
-        self._los_sensitivity = grid.calculate_sensitivity(self._los_observer, self._los_pipeline, world)
-        self._volume_sensitivity = grid.calculate_sensitivity(self._volume_observer, self._volume_pipeline, world)
+    def calculate_sensitivity(self, grid):
+        self._los_sensitivity = calculate_sensitivity(grid, self._los_observer, self._los_pipeline, self.detector_id, 'los')
+        self._volume_sensitivity = calculate_sensitivity(grid, self._volume_observer, self._volume_pipeline, self.detector_id, 'volume')
+
+    def save_sensitivities(self, dir_path=None):
+
+        filename = "{}_sensitivity.pickle".format(self.detector_id)
+        if dir_path:
+            file_path = os.path.join(dir_path, filename)
+        else:
+            file_path = filename
+
+        state = {
+            'los_sensitivity': self._los_sensitivity.__getstate__(),
+            'volume_sensitivity': self._volume_sensitivity.__getstate__()
+        }
+        pickle.dump(state, open(file_path, 'wb'))
+
+    def reload_sensitivity(self, file_path, grid):
+
+        state = pickle.load(open(file_path, 'rb'))
+
+        # TODO - check grid uid against saved uid
+        detector_uid = state['los_sensitivity']['detector_uid']
+        description = state['los_sensitivity']['description']
+        self._los_sensitivity = SensitivityMatrix(grid, detector_uid, description=description)
+        self._los_sensitivity.sensitivity[:] = state['los_sensitivity']['sensitivity']
+
+        detector_uid = state['volume_sensitivity']['detector_uid']
+        description = state['volume_sensitivity']['description']
+        self._volume_sensitivity = SensitivityMatrix(grid, detector_uid, description=description)
+        self._volume_sensitivity.sensitivity[:] = state['volume_sensitivity']['sensitivity']
 
 
 def load_bolometer_camera(filename, parent=None):

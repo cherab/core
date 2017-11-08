@@ -19,6 +19,9 @@ import numpy as np
 cimport numpy as np
 import os
 import json
+import matplotlib.pyplot as plt
+from matplotlib.patches import Polygon
+from matplotlib.collections import PatchCollection
 
 from raysect.core cimport translate
 from raysect.core.math.point cimport new_point2d, Point2D
@@ -97,61 +100,6 @@ cdef class RectangularGrid:
         else:
             raise NotImplementedError('Pickle serialisation has not been implemented yet.')
 
-    def calculate_sensitivity(self, observer, pipeline, world):
-
-        sensitivity_grid = SensitivityGrid(self, self.count)
-
-        for i in range(self.count):
-
-            p1, p2, p3, p4 = self.__getitem__(i)
-
-            r_inner = p1.x
-            r_outer = p3.x
-            if r_inner > r_outer:
-                t = r_inner
-                r_inner = r_outer
-                r_outer = t
-
-            z_lower = p2.y
-            z_upper = p1.y
-            if z_lower > z_upper:
-                t = z_lower
-                z_lower = z_upper
-                z_upper = t
-
-            # TODO - switch to using CAD method such that reflections can be included automatically
-            cylinder_height = z_upper - z_lower
-
-            outer_cylinder = Cylinder(radius=r_outer, height=cylinder_height, transform=translate(0, 0, z_lower))
-            inner_cylinder = Cylinder(radius=r_inner, height=cylinder_height, transform=translate(0, 0, z_lower))
-            cell_emitter = Subtract(outer_cylinder, inner_cylinder, parent=world, material=UnityVolumeEmitter())
-
-            observer.observe()
-
-            sensitivity_grid.sensitivity[i] = pipeline.value.mean
-
-            outer_cylinder.parent = None
-            inner_cylinder.parent = None
-            cell_emitter.parent = None
-
-        return sensitivity_grid
-
-
-cdef class SensitivityGrid:
-
-    cdef:
-        readonly RectangularGrid grid_geometry
-        readonly int count
-        readonly np.ndarray sensitivity
-        double[:] _sensitivity_mv
-
-    def __init__(self, grid, cell_count):
-
-        self.grid_geometry = grid
-        self.count = cell_count
-        self.sensitivity = np.zeros(cell_count)
-        self._sensitivity_mv = self.sensitivity
-
 
 def load_inversion_grid(filename):
 
@@ -175,3 +123,95 @@ def load_inversion_grid(filename):
         cell_array[i, 3, :] = cell['p4'][0], cell['p4'][1]
 
     return RectangularGrid(grid_state["Grid_ID"], cell_array)
+
+
+cdef class SensitivityMatrix:
+
+    cdef:
+        readonly str detector_uid, description
+        readonly RectangularGrid grid_geometry
+        readonly int count
+        readonly np.ndarray sensitivity
+        double[:] _sensitivity_mv
+
+    def __init__(self, grid, detector_uid, description=''):
+
+        self.detector_uid = detector_uid
+        self.description = description
+        self.grid_geometry = grid
+        self.count = grid.count
+        self.sensitivity = np.zeros(grid.count)
+        self._sensitivity_mv = self.sensitivity
+
+    def __getstate__(self):
+
+        state = {
+            'CHERAB_Object_Type': 'SensitivityMatrix',
+            'Version': 1,
+            'detector_uid': self.detector_uid,
+            'description': self.description,
+            'grid_uid': self.grid_geometry.grid_id,
+            'count': self.count,
+            'sensitivity': self.sensitivity.tolist(),
+        }
+
+        return state
+
+    def plot(self, title=None):
+
+        patches = []
+        for i in range(self.count):
+            polygon = Polygon(self.grid_geometry.cell_data[i], True)
+            patches.append(polygon)
+
+        p = PatchCollection(patches)
+        p.set_array(self.sensitivity)
+
+        fig, ax = plt.subplots()
+        ax.add_collection(p)
+        plt.xlim(1, 2.5)
+        plt.ylim(-1.5, 1.5)
+        title = title or self.detector_uid + " - Sensitivity"
+        plt.title(title)
+
+
+def calculate_sensitivity(grid, observer, pipeline, detector_id, sensitivity_desc):
+
+    world = observer.root
+
+    sensitivity_grid = SensitivityMatrix(grid, detector_id, sensitivity_desc)
+
+    for i in range(grid.count):
+
+        p1, p2, p3, p4 = grid[i]
+
+        r_inner = p1.x
+        r_outer = p3.x
+        if r_inner > r_outer:
+            t = r_inner
+            r_inner = r_outer
+            r_outer = t
+
+        z_lower = p2.y
+        z_upper = p1.y
+        if z_lower > z_upper:
+            t = z_lower
+            z_lower = z_upper
+            z_upper = t
+
+        # TODO - switch to using CAD method such that reflections can be included automatically
+        cylinder_height = z_upper - z_lower
+
+        outer_cylinder = Cylinder(radius=r_outer, height=cylinder_height, transform=translate(0, 0, z_lower))
+        inner_cylinder = Cylinder(radius=r_inner, height=cylinder_height, transform=translate(0, 0, z_lower))
+        cell_emitter = Subtract(outer_cylinder, inner_cylinder, parent=world, material=UnityVolumeEmitter())
+
+        observer.observe()
+
+        sensitivity_grid.sensitivity[i] = pipeline.value.mean
+
+        outer_cylinder.parent = None
+        inner_cylinder.parent = None
+        cell_emitter.parent = None
+
+    return sensitivity_grid
