@@ -17,6 +17,7 @@
 
 import os
 import json
+import numpy as np
 
 from raysect.core import Node, AffineMatrix3D, translate, rotate_basis, Point3D, Vector3D
 from raysect.primitive import Box
@@ -125,9 +126,9 @@ class BolometerCamera(Node):
 
 class BolometerSlit:
 
-    def __init__(self, slid_id, centre_point, basis_x, dx, basis_y, dy, dz=0.001, parent=None):
+    def __init__(self, slit_id, centre_point, basis_x, dx, basis_y, dy, dz=0.001, parent=None):
 
-        self.slid_id = slid_id
+        self.slit_id = slit_id
         self.centre_point = centre_point
         self.basis_x = basis_x
         self.dx = dx
@@ -138,14 +139,14 @@ class BolometerSlit:
         slit_normal = basis_x.cross(basis_y)
         transform = translate(centre_point.x, centre_point.y, centre_point.z) * rotate_basis(slit_normal, basis_x)
         self.primitive = Box(lower=Point3D(-dx/2, -dy/2, -dz/2), upper=Point3D(dx/2, dy/2, dz/2),
-                             transform=transform, material=NullMaterial(), parent=parent, name=slid_id)
+                             transform=transform, material=NullMaterial(), parent=parent, name=slit_id)
 
     def __getstate__(self):
 
         state = {
             'CHERAB_Object_Type': 'BolometerSlit',
             'Version': 1,
-            'Slit_ID': self.slid_id,
+            'Slit_ID': self.slit_id,
             'centre_point': self.centre_point.__getstate__(),
             'basis_x': self.basis_x.__getstate__(),
             'basis_y': self.basis_y.__getstate__(),
@@ -169,6 +170,18 @@ class BolometerFoil:
         self.detector_id = detector_id
         self._parent = parent
 
+        if not isinstance(dx, float):
+            raise TypeError("dx argument for BolometerFoil must be of type float.")
+        if not dx > 0:
+            raise ValueError("dx argument for BolometerFoil must be greater than zero.")
+        self.dx = dx
+
+        if not isinstance(dy, float):
+            raise TypeError("dy argument for BolometerFoil must be of type float.")
+        if not dy > 0:
+            raise ValueError("dy argument for BolometerFoil must be greater than zero.")
+        self.dy = dy
+
         if not isinstance(slit, BolometerSlit):
             raise TypeError("slit argument for BolometerFoil must be of type BolometerSlit.")
         self._slit = slit
@@ -178,7 +191,8 @@ class BolometerFoil:
         self._los_observer = SightLine(pipelines=[self._los_pipeline], pixel_samples=1, spectral_bins=1,
                                        parent=parent, name=detector_id, quiet=True)
         self._volume_pipeline = PowerPipeline0D(accumulate=False)
-        self._volume_observer = TargetedPixel(target=slit.primitive, pipelines=[self._volume_pipeline], pixel_samples=250,
+        self._volume_observer = TargetedPixel(target=slit.primitive, pipelines=[self._volume_pipeline],
+                                              pixel_samples=250, x_width=dx, y_width=dy,
                                               spectral_bins=1, parent=parent, name=detector_id, quiet=True)
 
         if not isinstance(centre_point, Point3D):
@@ -194,24 +208,18 @@ class BolometerFoil:
         self._basis_x = basis_x.normalise()
         self._basis_y = basis_y.normalise()
         self._normal_vec = self._basis_x.cross(self._basis_y)
+        self._foil_to_slit_vec = self._centre_point.vector_to(self._slit.centre_point).normalise()
 
-        # set observer transform
+        # set los observer transform
+        translation = translate(self._centre_point.x, self._centre_point.y, self._centre_point.z)
+        rotation = rotate_basis(self._foil_to_slit_vec, self._basis_x)
+        self._los_observer.transform = translation * rotation
+        self._los_cos_theta = self._normal_vec.dot(self._foil_to_slit_vec)  # sight-line might be off foil normal
+
+        # set volume observer transform
         translation = translate(self._centre_point.x, self._centre_point.y, self._centre_point.z)
         rotation = rotate_basis(self._normal_vec, self._basis_x)
-        self._los_observer.transform = translation * rotation
         self._volume_observer.transform = translation * rotation
-
-        if not isinstance(dx, float):
-            raise TypeError("dx argument for BolometerFoil must be of type float.")
-        if not dx > 0:
-            raise ValueError("dx argument for BolometerFoil must be greater than zero.")
-        self.dx = dx
-
-        if not isinstance(dy, float):
-            raise TypeError("dy argument for BolometerFoil must be of type float.")
-        if not dy > 0:
-            raise ValueError("dy argument for BolometerFoil must be greater than zero.")
-        self.dy = dy
 
         self._los_sensitivity = None
         self._volume_sensitivity = None
@@ -268,7 +276,7 @@ class BolometerFoil:
         Ask this bolometer foil to observe its world.
         """
         self._los_observer.observe()
-        return self._los_pipeline.value.mean
+        return self._los_pipeline.value.mean * self._los_cos_theta
 
     def observe_volume(self):
         """
