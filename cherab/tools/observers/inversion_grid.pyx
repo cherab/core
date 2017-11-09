@@ -19,6 +19,7 @@ import numpy as np
 cimport numpy as np
 import os
 import json
+import datetime
 import matplotlib.pyplot as plt
 from matplotlib.patches import Polygon
 from matplotlib.collections import PatchCollection
@@ -215,3 +216,62 @@ def calculate_sensitivity(grid, observer, pipeline, detector_id, sensitivity_des
         cell_emitter.parent = None
 
     return sensitivity_grid
+
+
+cdef class EmissivityGrid:
+
+    cdef:
+        readonly str description, case_id
+        readonly RectangularGrid grid_geometry
+        readonly int count
+        readonly np.ndarray sensitivity
+        double[:] _sensitivity_mv
+
+    def __init__(self, grid, case_id='', description='', emissivities=None):
+
+        self.case_id = case_id
+        self.description = description
+        self.grid_geometry = grid
+        self.count = grid.count
+
+        if emissivities:
+            self.sensitivity = np.array(emissivities)
+            if not len(emissivities) == grid.count:
+                raise ValueError("Emissivity array must be of shape (N) where N is the number of grid cells. "
+                                 "N = {} values given while the inversion grid has N = {}."
+                                 "".format(len(emissivities), grid.count))
+        else:
+            self.sensitivity = np.zeros(grid.count)
+
+        self._sensitivity_mv = self.sensitivity
+
+    def __getstate__(self):
+
+        state = {
+            'CHERAB_Object_Type': 'EmissivityGrid',
+            'Version': 1,
+            'description': self.description,
+            'grid_uid': self.grid_geometry.grid_id,
+            'count': self.count,
+            'sensitivity': self.sensitivity.tolist(),
+        }
+
+        return state
+
+    def plot(self, title=None):
+
+        patches = []
+        for i in range(self.count):
+            polygon = Polygon(self.grid_geometry.cell_data[i], True)
+            patches.append(polygon)
+
+        p = PatchCollection(patches)
+        p.set_array(self.sensitivity)
+
+        fig, ax = plt.subplots()
+        ax.add_collection(p)
+        plt.xlim(1, 2.5)
+        plt.ylim(-1.5, 1.5)
+        title = title or self.case_id + " - Emissivity"
+        plt.title(title)
+
