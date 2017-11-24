@@ -21,7 +21,7 @@ import pickle
 
 from raysect.core import Node, AffineMatrix3D, translate, rotate_basis, Point3D, Vector3D
 from raysect.primitive import Box, Subtract
-from raysect.optical.observer import PowerPipeline0D, SightLine, TargetedPixel
+from raysect.optical.observer import PowerPipeline0D, SightLine, TargettedPixel
 from raysect.optical.material.material import NullMaterial
 from raysect.optical.material import AbsorbingSurface
 
@@ -219,9 +219,9 @@ class BolometerFoil:
         self._los_observer = SightLine(pipelines=[self._los_pipeline], pixel_samples=1, spectral_bins=1,
                                        parent=parent, name=detector_id, quiet=True)
         self._volume_pipeline = PowerPipeline0D(accumulate=False)
-        self._volume_observer = TargetedPixel(target=slit.primitive, pipelines=[self._volume_pipeline],
-                                              pixel_samples=1000, x_width=dx, y_width=dy,
-                                              spectral_bins=1, parent=parent, name=detector_id, quiet=True)
+        self._volume_observer = TargettedPixel([slit.primitive], pipelines=[self._volume_pipeline],
+                                               pixel_samples=1000, x_width=dx, y_width=dy,
+                                               spectral_bins=1, parent=parent, name=detector_id, quiet=True)
 
         if not isinstance(centre_point, Point3D):
             raise TypeError("centre_point argument for BolometerFoil must be of type Point3D.")
