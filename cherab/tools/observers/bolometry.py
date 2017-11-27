@@ -20,12 +20,12 @@ import json
 import pickle
 
 from raysect.core import Node, AffineMatrix3D, translate, rotate_basis, Point3D, Vector3D
-from raysect.primitive import Box, Subtract
-from raysect.optical.observer import PowerPipeline0D, SightLine, TargetedPixel
+from raysect.primitive import Box, Cylinder, Subtract
+from raysect.optical.observer import PowerPipeline0D, RadiancePipeline0D, SightLine, TargettedPixel
 from raysect.optical.material.material import NullMaterial
-from raysect.optical.material import AbsorbingSurface
+from raysect.optical.material import AbsorbingSurface, UnityVolumeEmitter
 
-from cherab.tools.observers.inversion_grid import calculate_sensitivity, SensitivityMatrix
+from cherab.tools.observers.inversion_grid import SensitivityMatrix
 
 
 # TODO - add support for CAD files as camera box geometry
@@ -65,7 +65,7 @@ class BolometerCamera(Node):
         else:
             raise TypeError("BolometerCamera key must be of type int or str.")
 
-    def __getstate__(self):
+    def __getstate__(self, serialisation_format=None):
         state = {
             'CHERAB_Object_Type': 'BolometerCamera',
             'Version': 1,
@@ -84,7 +84,7 @@ class BolometerCamera(Node):
 
         detector_list = []
         for detector in self._foil_detectors:
-            detector_list.append(detector.__getstate__())
+            detector_list.append(detector.__getstate__(serialisation_format=serialisation_format))
         state['foil_detectors'] = detector_list
 
         return state
@@ -132,10 +132,14 @@ class BolometerCamera(Node):
 
         if extention == '.json':
             file_handle = open(filename, 'w')
-            json.dump(self.__getstate__(), file_handle, indent=2, sort_keys=True)
+            json.dump(self.__getstate__(serialisation_format=extention), file_handle, indent=2, sort_keys=True)
+
+        elif extention == '.pickle':
+            file_handle = open(filename, 'wb')
+            pickle.dump(self.__getstate__(serialisation_format=extention), file_handle)
 
         else:
-            raise NotImplementedError('Pickle serialisation has not been implemented yet.')
+            raise NotImplementedError("Invalid serialisation format - '{}'.".format(extention))
 
 
 class BolometerSlit:
@@ -185,6 +189,7 @@ class BolometerSlit:
         return state
 
 
+# TODO - make Bolometer Foil a scene-graph node
 class BolometerFoil:
     """
     A rectangular bolometer detector.
@@ -215,13 +220,15 @@ class BolometerFoil:
         self._slit = slit
 
         # setup the observers
-        self._los_pipeline = PowerPipeline0D(accumulate=False)
-        self._los_observer = SightLine(pipelines=[self._los_pipeline], pixel_samples=1, spectral_bins=1,
+        self._los_radiance_pipeline = RadiancePipeline0D(accumulate=False)
+        self._los_observer = SightLine(pipelines=[self._los_radiance_pipeline], pixel_samples=1, spectral_bins=1,
                                        parent=parent, name=detector_id, quiet=True)
-        self._volume_pipeline = PowerPipeline0D(accumulate=False)
-        self._volume_observer = TargetedPixel(target=slit.primitive, pipelines=[self._volume_pipeline],
-                                              pixel_samples=1000, x_width=dx, y_width=dy,
-                                              spectral_bins=1, parent=parent, name=detector_id, quiet=True)
+        self._volume_power_pipeline = PowerPipeline0D(accumulate=False)
+        self._volume_radiance_pipeline = RadiancePipeline0D(accumulate=False)
+        self._volume_observer = TargettedPixel([slit.primitive], targetted_path_prob=1.0,
+                                               pipelines=[self._volume_power_pipeline, self._volume_radiance_pipeline],
+                                               pixel_samples=1000, x_width=dx, y_width=dy,
+                                               spectral_bins=1, parent=parent, name=detector_id, quiet=True)
 
         if not isinstance(centre_point, Point3D):
             raise TypeError("centre_point argument for BolometerFoil must be of type Point3D.")
@@ -249,10 +256,13 @@ class BolometerFoil:
         rotation = rotate_basis(self._normal_vec, self._basis_x)
         self._volume_observer.transform = translation * rotation
 
-        self._los_sensitivity = None
-        self._volume_sensitivity = None
+        # initialise sensitivity values
+        self._los_radiance_sensitivity = None
+        self._volume_radiance_sensitivity = None
+        self._volume_power_sensitivity = None
+        self._etendue = None
 
-    def __getstate__(self):
+    def __getstate__(self, serialisation_format=None):
 
         state = {
             'CHERAB_Object_Type': 'BolometerFoil',
@@ -265,6 +275,14 @@ class BolometerFoil:
             'dy': self.dy,
             'slit_id': self._slit.slit_id,
         }
+
+        # add extra data if saving as binary
+        if serialisation_format == '.pickle' and self._los_radiance_sensitivity is not None:
+            state['los_radiance_sensitivity'] = self._los_radiance_sensitivity.__getstate__()
+            state['volume_radiance_sensitivity'] = self._volume_radiance_sensitivity.__getstate__()
+            state['volume_power_sensitivity'] = self._volume_power_sensitivity.__getstate__()
+            state['etendue'] = self._etendue
+
         return state
 
     @property
@@ -288,69 +306,114 @@ class BolometerFoil:
         return self._slit
 
     @property
-    def los_sensitivity(self):
-        if not self._los_sensitivity:
+    def los_radiance_sensitivity(self):
+        if self._los_radiance_sensitivity is None:
             raise ValueError("The sensitivity of this BolometerFoil has not yet been calculated.")
-        return self._los_sensitivity
+        return self._los_radiance_sensitivity
 
     @property
-    def volume_sensitivity(self):
-        if not self._volume_sensitivity:
+    def volume_power_sensitivity(self):
+        if self._volume_power_sensitivity is None:
             raise ValueError("The sensitivity of this BolometerFoil has not yet been calculated.")
-        return self._volume_sensitivity
+        return self._volume_power_sensitivity
+
+    @property
+    def volume_radiance_sensitivity(self):
+        if self._volume_radiance_sensitivity is None:
+            raise ValueError("The sensitivity of this BolometerFoil has not yet been calculated.")
+        return self._volume_radiance_sensitivity
+
+    @property
+    def etendue(self):
+        if self._etendue is None:
+            raise ValueError("The sensitivity of this BolometerFoil has not yet been calculated.")
+        return self._etendue
 
     def observe_los(self):
         """
         Ask this bolometer foil to observe its world.
         """
         self._los_observer.observe()
-        return self._los_pipeline.value.mean * self._los_cos_theta
+        return self._los_radiance_pipeline.value.mean * self._los_cos_theta
 
-    def observe_volume(self):
+    def observe_volume_radiance(self):
         """
         Ask this bolometer foil to observe its world.
         """
         self._volume_observer.observe()
-        return self._volume_pipeline.value.mean
+        return self._volume_radiance_pipeline.value.mean
+
+    def observe_volume_power(self):
+        """
+        Ask this bolometer foil to observe its world.
+        """
+        self._volume_observer.observe()
+        return self._volume_power_pipeline.value.mean
 
     def calculate_sensitivity(self, grid):
-        self._los_sensitivity = calculate_sensitivity(grid, self._los_observer, self._los_pipeline, self.detector_id, 'los')
-        self._volume_sensitivity = calculate_sensitivity(grid, self._volume_observer, self._volume_pipeline, self.detector_id, 'volume')
 
-    def save_sensitivities(self, dir_path=None):
+        world = self._los_observer.root
 
-        filename = "{}_sensitivity.pickle".format(self.detector_id)
-        if dir_path:
-            file_path = os.path.join(dir_path, filename)
-        else:
-            file_path = filename
+        self._los_radiance_sensitivity = SensitivityMatrix(grid, self.detector_id, 'los radiance')
+        self._volume_radiance_sensitivity = SensitivityMatrix(grid, self.detector_id, 'Volume mean radiance sensitivity')
+        self._volume_power_sensitivity = SensitivityMatrix(grid, self.detector_id, 'Volume power sensitivity')
 
-        state = {
-            'los_sensitivity': self._los_sensitivity.__getstate__(),
-            'volume_sensitivity': self._volume_sensitivity.__getstate__()
-        }
-        pickle.dump(state, open(file_path, 'wb'))
+        for i in range(grid.count):
 
-    def reload_sensitivity(self, file_path, grid):
+            p1, p2, p3, p4 = grid[i]
 
-        state = pickle.load(open(file_path, 'rb'))
+            r_inner = p1.x
+            r_outer = p3.x
+            if r_inner > r_outer:
+                t = r_inner
+                r_inner = r_outer
+                r_outer = t
 
-        # TODO - check grid uid against saved uid
-        detector_uid = state['los_sensitivity']['detector_uid']
-        description = state['los_sensitivity']['description']
-        self._los_sensitivity = SensitivityMatrix(grid, detector_uid, description=description)
-        self._los_sensitivity.sensitivity[:] = state['los_sensitivity']['sensitivity']
+            z_lower = p2.y
+            z_upper = p1.y
+            if z_lower > z_upper:
+                t = z_lower
+                z_lower = z_upper
+                z_upper = t
 
-        detector_uid = state['volume_sensitivity']['detector_uid']
-        description = state['volume_sensitivity']['description']
-        self._volume_sensitivity = SensitivityMatrix(grid, detector_uid, description=description)
-        self._volume_sensitivity.sensitivity[:] = state['volume_sensitivity']['sensitivity']
+            # TODO - switch to using CAD method such that reflections can be included automatically
+            cylinder_height = z_upper - z_lower
+
+            outer_cylinder = Cylinder(radius=r_outer, height=cylinder_height, transform=translate(0, 0, z_lower))
+            inner_cylinder = Cylinder(radius=r_inner, height=cylinder_height, transform=translate(0, 0, z_lower))
+            cell_emitter = Subtract(outer_cylinder, inner_cylinder, parent=world, material=UnityVolumeEmitter())
+
+            self._los_observer.observe()
+            self._los_radiance_sensitivity.sensitivity[i] = self._los_radiance_pipeline.value.mean
+
+            self._volume_observer.observe()
+            self._volume_radiance_sensitivity.sensitivity[i] = self._volume_radiance_pipeline.value.mean
+            self._volume_power_sensitivity.sensitivity[i] = self._volume_power_pipeline.value.mean
+
+            outer_cylinder.parent = None
+            inner_cylinder.parent = None
+            cell_emitter.parent = None
+
+        mean_radiance = self._volume_radiance_sensitivity.sensitivity.sum()
+        total_power = self._volume_power_sensitivity.sensitivity.sum()
+
+        self._etendue = total_power / mean_radiance
 
 
-def load_bolometer_camera(filename, parent=None):
+def load_bolometer_camera(filename, parent=None, inversion_grid=None):
 
-    file_handle = open(filename, 'r')
-    camera_state = json.load(file_handle)
+    name, extention = os.path.splitext(filename)
+
+    if extention == '.json':
+        file_handle = open(filename, 'r')
+        camera_state = json.load(file_handle)
+
+    elif extention == '.pickle':
+        file_handle = open(filename, 'rb')
+        camera_state = pickle.load(file_handle)
+
+    else:
+        raise IOError("Unrecognised CHERAB object file format - '{}'.".format(extention))
 
     if not camera_state['CHERAB_Object_Type'] == 'BolometerCamera':
         raise ValueError("The selected json file does not contain a valid BolometerCamera description.")
@@ -399,6 +462,33 @@ def load_bolometer_camera(filename, parent=None):
         slit = slit_dict[detector['slit_id']]
 
         bolometer_foil = BolometerFoil(detector_id, centre_point, basis_x, dx, basis_y, dy, slit, parent=camera)
+
+        # add extra sensitivity data stored in binary
+        if extention == '.pickle' and inversion_grid is not None:
+            try:
+
+                detector_uid = detector['los_radiance_sensitivity']['detector_uid']
+                description = detector['los_radiance_sensitivity']['description']
+                los_radiance_sensitivity = SensitivityMatrix(inversion_grid, detector_uid, description=description)
+                los_radiance_sensitivity.sensitivity[:] = detector['los_radiance_sensitivity']['sensitivity']
+                bolometer_foil._los_radiance_sensitivity = los_radiance_sensitivity
+
+                detector_uid = detector['volume_radiance_sensitivity']['detector_uid']
+                description = detector['volume_radiance_sensitivity']['description']
+                volume_radiance_sensitivity = SensitivityMatrix(inversion_grid, detector_uid, description=description)
+                volume_radiance_sensitivity.sensitivity[:] = detector['volume_radiance_sensitivity']['sensitivity']
+                bolometer_foil._volume_radiance_sensitivity = volume_radiance_sensitivity
+
+                detector_uid = detector['volume_power_sensitivity']['detector_uid']
+                description = detector['volume_power_sensitivity']['description']
+                volume_power_sensitivity = SensitivityMatrix(inversion_grid, detector_uid, description=description)
+                volume_power_sensitivity.sensitivity[:] = detector['volume_power_sensitivity']['sensitivity']
+                bolometer_foil._volume_power_sensitivity = volume_power_sensitivity
+
+                bolometer_foil._etendue = detector['etendue']
+
+            except IndexError:
+                continue
 
         camera.add_foil_detector(bolometer_foil)
 
