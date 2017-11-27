@@ -234,7 +234,7 @@ cdef class EmissivityGrid:
         self.grid_geometry = grid
         self.count = grid.count
 
-        if emissivities:
+        if emissivities is not None:
             self.sensitivity = np.array(emissivities)
             if not len(emissivities) == grid.count:
                 raise ValueError("Emissivity array must be of shape (N) where N is the number of grid cells. "
@@ -257,6 +257,9 @@ cdef class EmissivityGrid:
         }
 
         return state
+
+    def total_radiated_power(self):
+        return self.sensitivity.sum() * 4 * np.pi
 
     def plot(self, title=None):
 
