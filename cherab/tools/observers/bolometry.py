@@ -225,7 +225,7 @@ class BolometerFoil:
                                        parent=parent, name=detector_id, quiet=True)
         self._volume_power_pipeline = PowerPipeline0D(accumulate=False)
         self._volume_radiance_pipeline = RadiancePipeline0D(accumulate=False)
-        self._volume_observer = TargettedPixel([slit.primitive],
+        self._volume_observer = TargettedPixel([slit.primitive], targetted_path_prob=1.0,
                                                pipelines=[self._volume_power_pipeline, self._volume_radiance_pipeline],
                                                pixel_samples=1000, x_width=dx, y_width=dy,
                                                spectral_bins=1, parent=parent, name=detector_id, quiet=True)
@@ -306,10 +306,10 @@ class BolometerFoil:
         return self._slit
 
     @property
-    def los_sensitivity(self):
-        if self._los_sensitivity is None:
+    def los_radiance_sensitivity(self):
+        if self._los_radiance_sensitivity is None:
             raise ValueError("The sensitivity of this BolometerFoil has not yet been calculated.")
-        return self._los_sensitivity
+        return self._los_radiance_sensitivity
 
     @property
     def volume_power_sensitivity(self):
