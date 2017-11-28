@@ -19,7 +19,8 @@ import os
 import json
 import pickle
 
-from raysect.core import Node, AffineMatrix3D, translate, rotate_basis, Point3D, Vector3D
+from raysect.core import Node, AffineMatrix3D, translate, rotate_basis, Point3D, Vector3D, World, Ray as CoreRay
+from raysect.core.math.sampler import RectangleSampler3D, TargettedHemisphereSampler
 from raysect.primitive import Box, Cylinder, Subtract
 from raysect.optical.observer import PowerPipeline0D, RadiancePipeline0D, SightLine, TargettedPixel
 from raysect.optical.material.material import NullMaterial
@@ -138,11 +139,16 @@ class BolometerCamera(Node):
             file_handle = open(filename, 'wb')
             pickle.dump(self.__getstate__(serialisation_format=extention), file_handle)
 
+        elif extention == '.sav':
+            import idlbridge as idl
+            idl.put("bolometer_camera_data", self.__getstate__(serialisation_format=extention))
+            idl.execute("save, bolometer_camera_data, FILENAME='{}'".format(filename))
+
         else:
             raise NotImplementedError("Invalid serialisation format - '{}'.".format(extention))
 
 
-class BolometerSlit:
+class BolometerSlit(Node):
 
     def __init__(self, slit_id, centre_point, basis_x, dx, basis_y, dy, dz=0.001, parent=None, csg_aperture=False):
 
@@ -154,16 +160,20 @@ class BolometerSlit:
         self.dy = dy
         self.dz = dz
 
+        # NOTE - target primitive and aperture surface cannot be co-incident otherwise numerics will cause Raysect
+        # to be blind to one of the two surfaces.
         slit_normal = basis_x.cross(basis_y)
         transform = translate(centre_point.x, centre_point.y, centre_point.z) * rotate_basis(slit_normal, basis_x)
-        self.primitive = Box(lower=Point3D(-dx/2, -dy/2, -dz/2), upper=Point3D(dx/2, dy/2, dz/2),
-                             transform=transform, material=NullMaterial(), parent=parent, name=slit_id)
+
+        super().__init__(parent=parent, transform=transform, name=self.slit_id)
+
+        self.primitive = Box(lower=Point3D(-dx/2*1.01, -dy/2*1.01, -dz/2), upper=Point3D(dx/2*1.01, dy/2*1.01, dz/2),
+                             transform=None, material=NullMaterial(), parent=self, name=slit_id+' - target')
 
         if csg_aperture:
             face = Box(Point3D(-dx, -dy, -dz/2), Point3D(dx, dy, dz/2))
             slit = Box(lower=Point3D(-dx/2, -dy/2, -dz/2 - dz*0.1), upper=Point3D(dx/2, dy/2, dz/2 + dz*0.1))
-            self.csg_aperture = Subtract(face, slit, parent=parent, material=AbsorbingSurface(), name=slit_id)
-            self.csg_aperture.transform = transform
+            self.csg_aperture = Subtract(face, slit, parent=self, material=AbsorbingSurface(), name=slit_id+' - CSG Aperture')
         else:
             self.csg_aperture = None
 
@@ -189,8 +199,7 @@ class BolometerSlit:
         return state
 
 
-# TODO - make Bolometer Foil a scene-graph node
-class BolometerFoil:
+class BolometerFoil(Node):
     """
     A rectangular bolometer detector.
 
@@ -201,7 +210,8 @@ class BolometerFoil:
     def __init__(self, detector_id, centre_point, basis_x, dx, basis_y, dy, slit, parent=None):
 
         self.detector_id = detector_id
-        self._parent = parent
+
+        # perform validation of input parameters
 
         if not isinstance(dx, float):
             raise TypeError("dx argument for BolometerFoil must be of type float.")
@@ -219,17 +229,6 @@ class BolometerFoil:
             raise TypeError("slit argument for BolometerFoil must be of type BolometerSlit.")
         self._slit = slit
 
-        # setup the observers
-        self._los_radiance_pipeline = RadiancePipeline0D(accumulate=False)
-        self._los_observer = SightLine(pipelines=[self._los_radiance_pipeline], pixel_samples=1, spectral_bins=1,
-                                       parent=parent, name=detector_id, quiet=True)
-        self._volume_power_pipeline = PowerPipeline0D(accumulate=False)
-        self._volume_radiance_pipeline = RadiancePipeline0D(accumulate=False)
-        self._volume_observer = TargettedPixel([slit.primitive], targetted_path_prob=1.0,
-                                               pipelines=[self._volume_power_pipeline, self._volume_radiance_pipeline],
-                                               pixel_samples=1000, x_width=dx, y_width=dy,
-                                               spectral_bins=1, parent=parent, name=detector_id, quiet=True)
-
         if not isinstance(centre_point, Point3D):
             raise TypeError("centre_point argument for BolometerFoil must be of type Point3D.")
         self._centre_point = centre_point
@@ -245,16 +244,32 @@ class BolometerFoil:
         self._normal_vec = self._basis_x.cross(self._basis_y)
         self._foil_to_slit_vec = self._centre_point.vector_to(self._slit.centre_point).normalise()
 
-        # set los observer transform
-        translation = translate(self._centre_point.x, self._centre_point.y, self._centre_point.z)
-        rotation = rotate_basis(self._foil_to_slit_vec, self._basis_x)
-        self._los_observer.transform = translation * rotation
-        self._los_cos_theta = self._normal_vec.dot(self._foil_to_slit_vec)  # sight-line might be off foil normal
-
-        # set volume observer transform
+        # setup root bolometer foil transform
         translation = translate(self._centre_point.x, self._centre_point.y, self._centre_point.z)
         rotation = rotate_basis(self._normal_vec, self._basis_x)
-        self._volume_observer.transform = translation * rotation
+
+        super().__init__(parent=parent, transform=translation * rotation, name=self.detector_id)
+
+        # setup the observers
+        self._los_radiance_pipeline = RadiancePipeline0D(accumulate=False)
+        self._los_observer = SightLine(pipelines=[self._los_radiance_pipeline], pixel_samples=1, spectral_bins=1,
+                                       parent=self, name=detector_id, quiet=True)
+
+        self._volume_power_pipeline = PowerPipeline0D(accumulate=False)
+        self._volume_radiance_pipeline = RadiancePipeline0D(accumulate=False)
+        self._volume_observer = TargettedPixel([slit.primitive], targetted_path_prob=1.0,
+                                               pipelines=[self._volume_power_pipeline, self._volume_radiance_pipeline],
+                                               pixel_samples=1000, x_width=dx, y_width=dy,
+                                               spectral_bins=1, parent=self, name=detector_id, quiet=True)
+
+        # NOTE - the los observer may not be normal to the surface, in which case calculate an extra relative transform
+        if self._normal_vec.dot(self._foil_to_slit_vec) != 1.0:
+            relative_foil_to_slit_vec = self._foil_to_slit_vec.transform(self.to_local())
+            relative_rotation = rotate_basis(relative_foil_to_slit_vec, Vector3D(1, 0, 0))
+            self._los_observer.transform = relative_rotation
+            self._los_cos_theta = self._normal_vec.dot(self._foil_to_slit_vec)
+        else:
+            self._los_cos_theta = 1.0
 
         # initialise sensitivity values
         self._los_radiance_sensitivity = None
@@ -277,7 +292,7 @@ class BolometerFoil:
         }
 
         # add extra data if saving as binary
-        if serialisation_format == '.pickle' and self._los_radiance_sensitivity is not None:
+        if serialisation_format in ['.pickle', '.sav'] and self._los_radiance_sensitivity is not None:
             state['los_radiance_sensitivity'] = self._los_radiance_sensitivity.__getstate__()
             state['volume_radiance_sensitivity'] = self._volume_radiance_sensitivity.__getstate__()
             state['volume_power_sensitivity'] = self._volume_power_sensitivity.__getstate__()
@@ -352,7 +367,7 @@ class BolometerFoil:
 
     def calculate_sensitivity(self, grid):
 
-        world = self._los_observer.root
+        world = self.root
 
         self._los_radiance_sensitivity = SensitivityMatrix(grid, self.detector_id, 'los radiance')
         self._volume_radiance_sensitivity = SensitivityMatrix(grid, self.detector_id, 'Volume mean radiance sensitivity')
@@ -394,10 +409,59 @@ class BolometerFoil:
             inner_cylinder.parent = None
             cell_emitter.parent = None
 
-        mean_radiance = self._volume_radiance_sensitivity.sensitivity.sum()
-        total_power = self._volume_power_sensitivity.sensitivity.sum()
+    def calculate_etendue(self):
 
-        self._etendue = total_power / mean_radiance
+        if self.slit.csg_aperture is None:
+            raise ValueError("CSG aperture is required to support etendue calculation.")
+
+        if self.slit.primitive.transform is not None or self.slit.csg_aperture.transform is not None:
+            raise ValueError("CSG aperture and target cannot have any relative transform when doing etendue calculation.")
+
+        ray_count = 10000
+
+        slit_transform = self.slit.transform
+        target = self.slit.primitive
+        aperture = self.slit.csg_aperture
+
+        # move target and aperture to new scene-graph for etendue calculation
+        temp_world = World()
+        aperture.parent = temp_world
+        aperture.transfrom = slit_transform
+        target.parent = temp_world
+        target.transform = slit_transform
+
+        # generate bounding sphere and convert to local coordinate system
+        sphere = target.bounding_sphere()
+        spheres = [(sphere.centre.transform(self.to_local()), sphere.radius, 1.0)]
+
+        # instance targetted pixel sampler
+        targetted_sampler = TargettedHemisphereSampler(spheres)
+
+        # sample pixel origins
+        origins = self._volume_observer._point_sampler.samples(ray_count)
+
+        rays = []
+        passed = 0
+        for origin in origins:
+
+            # obtain targetted vector sample
+            direction = targetted_sampler.sample(origin)
+
+            intersection = temp_world.hit(CoreRay(origin, direction))
+
+            if intersection is None:
+                passed += 1
+
+        if passed == 0:
+            raise ValueError("Something is wrong with the scene-graph, calculated etendue should not zero.")
+
+        etendue_fraction = passed / ray_count
+
+        self._etendue = self._volume_observer.etendue * etendue_fraction
+
+        # move slit and target back onto bolometer scene-graph
+        self.slit.primitive.parent = self.slit
+        self.slit.csg_aperture.parent = self.slit
 
 
 def load_bolometer_camera(filename, parent=None, inversion_grid=None):
