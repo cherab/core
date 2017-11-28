@@ -19,7 +19,8 @@ import os
 import json
 import pickle
 
-from raysect.core import Node, AffineMatrix3D, translate, rotate_basis, Point3D, Vector3D
+from raysect.core import Node, AffineMatrix3D, translate, rotate_basis, Point3D, Vector3D, World, Ray as CoreRay
+from raysect.core.math.sampler import RectangleSampler3D, TargettedHemisphereSampler
 from raysect.primitive import Box, Cylinder, Subtract
 from raysect.optical.observer import PowerPipeline0D, RadiancePipeline0D, SightLine, TargettedPixel
 from raysect.optical.material.material import NullMaterial
@@ -361,7 +362,7 @@ class BolometerFoil(Node):
 
     def calculate_sensitivity(self, grid):
 
-        world = self._los_observer.root
+        world = self.root
 
         self._los_radiance_sensitivity = SensitivityMatrix(grid, self.detector_id, 'los radiance')
         self._volume_radiance_sensitivity = SensitivityMatrix(grid, self.detector_id, 'Volume mean radiance sensitivity')
@@ -402,6 +403,60 @@ class BolometerFoil(Node):
             outer_cylinder.parent = None
             inner_cylinder.parent = None
             cell_emitter.parent = None
+
+    def calculate_etendue(self):
+
+        if self.slit.csg_aperture is None:
+            raise ValueError("CSG aperture is required to support etendue calculation.")
+
+        if self.slit.primitive.transform is not None or self.slit.csg_aperture.transform is not None:
+            raise ValueError("CSG aperture and target cannot have any relative transform when doing etendue calculation.")
+
+        ray_count = 10000
+
+        slit_transform = self.slit.transform
+        target = self.slit.primitive
+        aperture = self.slit.csg_aperture
+
+        # move target and aperture to new scene-graph for etendue calculation
+        temp_world = World()
+        aperture.parent = temp_world
+        aperture.transfrom = slit_transform
+        target.parent = temp_world
+        target.transform = slit_transform
+
+        # generate bounding sphere and convert to local coordinate system
+        sphere = target.bounding_sphere()
+        spheres = [(sphere.centre.transform(self.to_local()), sphere.radius, 1.0)]
+
+        # instance targetted pixel sampler
+        targetted_sampler = TargettedHemisphereSampler(spheres)
+
+        # sample pixel origins
+        origins = self._volume_observer._point_sampler.samples(ray_count)
+
+        rays = []
+        passed = 0
+        for origin in origins:
+
+            # obtain targetted vector sample
+            direction = targetted_sampler.sample(origin)
+
+            intersection = temp_world.hit(CoreRay(origin, direction))
+
+            if intersection is None:
+                passed += 1
+
+        if passed == 0:
+            raise ValueError("Something is wrong with the scene-graph, calculated etendue should not zero.")
+
+        etendue_fraction = passed / ray_count
+
+        self._etendue = self._volume_observer.etendue * etendue_fraction
+
+        # move slit and target back onto bolometer scene-graph
+        self.slit.primitive.parent = self.slit
+        self.slit.csg_aperture.parent = self.slit
 
 
 def load_bolometer_camera(filename, parent=None, inversion_grid=None):
