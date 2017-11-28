@@ -139,6 +139,11 @@ class BolometerCamera(Node):
             file_handle = open(filename, 'wb')
             pickle.dump(self.__getstate__(serialisation_format=extention), file_handle)
 
+        elif extention == '.sav':
+            import idlbridge as idl
+            idl.put("bolometer_camera_data", self.__getstate__(serialisation_format=extention))
+            idl.execute("save, bolometer_camera_data, FILENAME='{}'".format(filename))
+
         else:
             raise NotImplementedError("Invalid serialisation format - '{}'.".format(extention))
 
@@ -287,7 +292,7 @@ class BolometerFoil(Node):
         }
 
         # add extra data if saving as binary
-        if serialisation_format == '.pickle' and self._los_radiance_sensitivity is not None:
+        if serialisation_format in ['.pickle', '.sav'] and self._los_radiance_sensitivity is not None:
             state['los_radiance_sensitivity'] = self._los_radiance_sensitivity.__getstate__()
             state['volume_radiance_sensitivity'] = self._volume_radiance_sensitivity.__getstate__()
             state['volume_power_sensitivity'] = self._volume_power_sensitivity.__getstate__()
