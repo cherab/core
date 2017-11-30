@@ -18,6 +18,7 @@
 import os
 import json
 import pickle
+import numpy as np
 
 from raysect.core import Node, AffineMatrix3D, translate, rotate_basis, Point3D, Vector3D, World, Ray as CoreRay
 from raysect.core.math.sampler import RectangleSampler3D, TargettedHemisphereSampler
@@ -27,6 +28,9 @@ from raysect.optical.material.material import NullMaterial
 from raysect.optical.material import AbsorbingSurface, UnityVolumeEmitter
 
 from cherab.tools.observers.inversion_grid import SensitivityMatrix
+
+
+R_2_PI = 1/ (2 * np.pi)
 
 
 # TODO - add support for CAD files as camera box geometry
@@ -171,7 +175,8 @@ class BolometerSlit(Node):
                              transform=None, material=NullMaterial(), parent=self, name=slit_id+' - target')
 
         if csg_aperture:
-            face = Box(Point3D(-dx, -dy, -dz/2), Point3D(dx, dy, dz/2))
+            width = max(dx, dy)
+            face = Box(Point3D(-width, -width, -dz/2), Point3D(width, width, dz/2))
             slit = Box(lower=Point3D(-dx/2, -dy/2, -dz/2 - dz*0.1), upper=Point3D(dx/2, dy/2, dz/2 + dz*0.1))
             self.csg_aperture = Subtract(face, slit, parent=self, material=AbsorbingSurface(), name=slit_id+' - CSG Aperture')
         else:
@@ -414,21 +419,19 @@ class BolometerFoil(Node):
         if self.slit.csg_aperture is None:
             raise ValueError("CSG aperture is required to support etendue calculation.")
 
-        if self.slit.primitive.transform is not None or self.slit.csg_aperture.transform is not None:
-            raise ValueError("CSG aperture and target cannot have any relative transform when doing etendue calculation.")
+        # TODO - test for null transform
+        # if self.slit.primitive.transform is not None or self.slit.csg_aperture.transform is not None:
+        #     print(self.slit.primitive.transform)
+        #     print(self.slit.csg_aperture.transform)
+        #     raise ValueError("CSG aperture and target cannot have any relative transform when doing etendue calculation.")
 
         ray_count = 10000
 
-        slit_transform = self.slit.transform
         target = self.slit.primitive
         aperture = self.slit.csg_aperture
 
-        # move target and aperture to new scene-graph for etendue calculation
-        temp_world = World()
-        aperture.parent = temp_world
-        aperture.transfrom = slit_transform
-        target.parent = temp_world
-        target.transform = slit_transform
+        bolometer_world = self.slit.root
+        detector_transform = self.to_root()
 
         # generate bounding sphere and convert to local coordinate system
         sphere = target.bounding_sphere()
@@ -438,19 +441,35 @@ class BolometerFoil(Node):
         targetted_sampler = TargettedHemisphereSampler(spheres)
 
         # sample pixel origins
-        origins = self._volume_observer._point_sampler.samples(ray_count)
+        origins = self._volume_observer._point_sampler(samples=ray_count)
 
         rays = []
-        passed = 0
+        passed = 0.0
         for origin in origins:
 
             # obtain targetted vector sample
-            direction = targetted_sampler.sample(origin)
+            direction, pdf = targetted_sampler(origin, pdf=True)
+            path_weight = R_2_PI * direction.z/pdf
 
-            intersection = temp_world.hit(CoreRay(origin, direction))
+            origin = origin.transform(detector_transform)
+            direction = direction.transform(detector_transform)
 
-            if intersection is None:
-                passed += 1
+            while True:
+
+                # Find the next intersection point of the ray with the world
+                intersection = bolometer_world.hit(CoreRay(origin, direction))
+
+                if intersection is None:
+                    passed += 1 * path_weight
+                    break
+
+                elif isinstance(intersection.primitive.material, NullMaterial):
+                    hit_point = intersection.hit_point.transform(intersection.primitive_to_world)
+                    origin = hit_point + direction * 1E-9
+                    continue
+
+                else:
+                    break
 
         if passed == 0:
             raise ValueError("Something is wrong with the scene-graph, calculated etendue should not zero.")
