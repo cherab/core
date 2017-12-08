@@ -16,4 +16,5 @@
 # under the Licence.
 
 from .calcam import load_calcam_calibration
+from .intersections import find_wall_intersection
 from .spectroscopic import LineOfSightGroup, SpectroscopicSightLine
