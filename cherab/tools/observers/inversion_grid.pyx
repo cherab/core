@@ -31,6 +31,9 @@ from raysect.primitive.csg cimport Subtract
 from raysect.optical.material.emitter cimport UnityVolumeEmitter
 
 
+PI_4 = 4 * np.pi
+
+
 cdef class RectangularGrid:
 
     cdef:
@@ -89,6 +92,37 @@ cdef class RectangularGrid:
         state['cells'] = cells
 
         return state
+
+    def cell_area(self, cell_index):
+        p1, p2, p3, p4 = self.__getitem__(cell_index)
+        return (p3.x - p2.x) * (p2.y - p1.y)
+
+    def cell_volume(self, cell_index):
+        p1, p2, p3, p4 = self.__getitem__(cell_index)
+
+        cell_area = (p3.x - p2.x) * (p2.y - p1.y)
+        cell_radius = (p3.x + p2.x)/2
+
+        # return approximate cell volume
+        return 2 * np.pi * cell_radius * cell_area
+
+    @property
+    def grid_area(self):
+
+        total_area = 0
+        for i in range(self.count):
+            total_area += self.cell_area(i)
+
+        return total_area
+
+    @property
+    def grid_volume(self):
+
+        total_volume = 0
+        for i in range(self.count):
+            total_volume += self.cell_volume(i)
+
+        return total_volume
 
     def save(self, filename):
 
@@ -263,7 +297,12 @@ cdef class EmissivityGrid:
         return state
 
     def total_radiated_power(self):
-        return self.sensitivity.sum() * 4 * np.pi
+
+        total_radiated_power = 0
+        for i in range(self.count):
+            total_radiated_power += self.sensitivity[i] * self.grid_geometry.cell_volume(i) * PI_4
+
+        return total_radiated_power
 
     def plot(self, title=None):
 
