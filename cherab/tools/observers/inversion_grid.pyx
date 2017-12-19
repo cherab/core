@@ -135,13 +135,17 @@ cdef class SensitivityMatrix:
         readonly np.ndarray sensitivity
         double[:] _sensitivity_mv
 
-    def __init__(self, grid, detector_uid, description=''):
+    def __init__(self, grid, detector_uid, description='', sensitivity=None):
 
         self.detector_uid = detector_uid
         self.description = description
         self.grid_geometry = grid
         self.count = grid.count
-        self.sensitivity = np.zeros(grid.count)
+
+        if sensitivity is not None and isinstance(sensitivity, np.ndarray) and sensitivity.shape[0] == grid.count:
+            self.sensitivity = sensitivity
+        else:
+            self.sensitivity = np.zeros(grid.count)
         self._sensitivity_mv = self.sensitivity
 
     def __getstate__(self):
