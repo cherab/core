@@ -15,6 +15,20 @@
 # See the Licence for the specific language governing permissions and limitations
 # under the Licence.
 
-from .sart import invert_sart
-from .nnls import invert_regularised_nnls
-from .svd import invert_svd
+import numpy as np
+from scipy import linalg
+
+
+def invert_svd(w_matrix, b_vector):
+
+    # Compute the Moore-Penrose pseudo-inverse of a matrix from SVD
+    inverse_w_matrix = np.matrix(linalg.pinv(w_matrix))
+
+    # reshape b_vector into a column vector
+    b_vector = b_vector.reshape((len(b_vector), 1))
+
+    print(b_vector.shape)
+
+    inverted_x_vector = (inverse_w_matrix * b_vector).flatten()
+
+    return np.asarray(inverted_x_vector).flatten()
