@@ -576,3 +576,35 @@ def load_bolometer_camera(filename, parent=None, inversion_grid=None):
         camera.add_foil_detector(bolometer_foil)
 
     return camera
+
+
+def assemble_weight_matrix(cameras, excluded_detectors=None):
+
+    detector_keys = []
+    num_detectors = 0
+    for camera in cameras:
+        for detector in camera:
+            if detector.detector_id not in excluded_detectors:
+                num_detectors += 1
+                detector_keys.append(detector.detector_id)
+
+    num_sensitivities = len(detector._volume_radiance_sensitivity.sensitivity)
+
+    los_weight_matrix = np.zeros((num_detectors, num_sensitivities))
+    vol_weight_matrix = np.zeros((num_detectors, num_sensitivities))
+
+    detector_id = 0
+    for camera in cameras:
+        for detector in camera:
+            if detector.detector_id not in excluded_detectors:
+                los_radiance_sensitivity = detector._los_radiance_sensitivity.sensitivity
+                vol_power_sensitivity = detector._volume_power_sensitivity.sensitivity
+
+                l_los = los_radiance_sensitivity.sum()
+                l_vol = vol_power_sensitivity.sum()
+                los_to_vol_factor = l_vol / l_los
+                los_weight_matrix[detector_id, :] = los_radiance_sensitivity * los_to_vol_factor
+                vol_weight_matrix[detector_id, :] = vol_power_sensitivity[:]
+                detector_id += 1
+
+    return detector_keys, los_weight_matrix, vol_weight_matrix

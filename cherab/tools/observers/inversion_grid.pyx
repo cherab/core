@@ -262,8 +262,8 @@ cdef class EmissivityGrid:
         readonly str description, case_id
         readonly RectangularGrid grid_geometry
         readonly int count
-        readonly np.ndarray sensitivity
-        double[:] _sensitivity_mv
+        readonly np.ndarray emissivities
+        double[:] _emissivities_mv
 
     def __init__(self, grid, case_id='', description='', emissivities=None):
 
@@ -273,15 +273,15 @@ cdef class EmissivityGrid:
         self.count = grid.count
 
         if emissivities is not None:
-            self.sensitivity = np.array(emissivities)
+            self.emissivities = np.array(emissivities)
             if not len(emissivities) == grid.count:
                 raise ValueError("Emissivity array must be of shape (N) where N is the number of grid cells. "
                                  "N = {} values given while the inversion grid has N = {}."
                                  "".format(len(emissivities), grid.count))
         else:
-            self.sensitivity = np.zeros(grid.count)
+            self.emissivities = np.zeros(grid.count)
 
-        self._sensitivity_mv = self.sensitivity
+        self._emissivities_mv = self.emissivities
 
     def __getstate__(self):
 
@@ -291,7 +291,7 @@ cdef class EmissivityGrid:
             'description': self.description,
             'grid_uid': self.grid_geometry.grid_id,
             'count': self.count,
-            'sensitivity': self.sensitivity.tolist(),
+            'sensitivity': self.emissivities.tolist(),
         }
 
         return state
@@ -300,7 +300,7 @@ cdef class EmissivityGrid:
 
         total_radiated_power = 0
         for i in range(self.count):
-            total_radiated_power += self.sensitivity[i] * self.grid_geometry.cell_volume(i) * PI_4
+            total_radiated_power += self.emissivities[i] * self.grid_geometry.cell_volume(i) * PI_4
 
         return total_radiated_power
 
@@ -312,7 +312,7 @@ cdef class EmissivityGrid:
             patches.append(polygon)
 
         p = PatchCollection(patches)
-        p.set_array(self.sensitivity)
+        p.set_array(self.emissivities)
 
         fig, ax = plt.subplots()
         ax.add_collection(p)
