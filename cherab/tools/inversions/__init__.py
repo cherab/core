@@ -15,6 +15,6 @@
 # See the Licence for the specific language governing permissions and limitations
 # under the Licence.
 
-from .sart import invert_sart
+from .sart import invert_sart, invert_constrained_sart
 from .nnls import invert_regularised_nnls
 from .svd import invert_svd
