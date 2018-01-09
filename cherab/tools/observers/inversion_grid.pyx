@@ -31,6 +31,9 @@ from raysect.primitive.csg cimport Subtract
 from raysect.optical.material.emitter cimport UnityVolumeEmitter
 
 
+PI_4 = 4 * np.pi
+
+
 cdef class RectangularGrid:
 
     cdef:
@@ -90,6 +93,37 @@ cdef class RectangularGrid:
 
         return state
 
+    def cell_area(self, cell_index):
+        p1, p2, p3, p4 = self.__getitem__(cell_index)
+        return (p3.x - p2.x) * (p2.y - p1.y)
+
+    def cell_volume(self, cell_index):
+        p1, p2, p3, p4 = self.__getitem__(cell_index)
+
+        cell_area = (p3.x - p2.x) * (p2.y - p1.y)
+        cell_radius = (p3.x + p2.x)/2
+
+        # return approximate cell volume
+        return 2 * np.pi * cell_radius * cell_area
+
+    @property
+    def grid_area(self):
+
+        total_area = 0
+        for i in range(self.count):
+            total_area += self.cell_area(i)
+
+        return total_area
+
+    @property
+    def grid_volume(self):
+
+        total_volume = 0
+        for i in range(self.count):
+            total_volume += self.cell_volume(i)
+
+        return total_volume
+
     def save(self, filename):
 
         name, extention = os.path.splitext(filename)
@@ -135,13 +169,17 @@ cdef class SensitivityMatrix:
         readonly np.ndarray sensitivity
         double[:] _sensitivity_mv
 
-    def __init__(self, grid, detector_uid, description=''):
+    def __init__(self, grid, detector_uid, description='', sensitivity=None):
 
         self.detector_uid = detector_uid
         self.description = description
         self.grid_geometry = grid
         self.count = grid.count
-        self.sensitivity = np.zeros(grid.count)
+
+        if sensitivity is not None and isinstance(sensitivity, np.ndarray) and sensitivity.shape[0] == grid.count:
+            self.sensitivity = sensitivity
+        else:
+            self.sensitivity = np.zeros(grid.count)
         self._sensitivity_mv = self.sensitivity
 
     def __getstate__(self):
@@ -224,8 +262,8 @@ cdef class EmissivityGrid:
         readonly str description, case_id
         readonly RectangularGrid grid_geometry
         readonly int count
-        readonly np.ndarray sensitivity
-        double[:] _sensitivity_mv
+        readonly np.ndarray emissivities
+        double[:] _emissivities_mv
 
     def __init__(self, grid, case_id='', description='', emissivities=None):
 
@@ -235,15 +273,15 @@ cdef class EmissivityGrid:
         self.count = grid.count
 
         if emissivities is not None:
-            self.sensitivity = np.array(emissivities)
+            self.emissivities = np.array(emissivities)
             if not len(emissivities) == grid.count:
                 raise ValueError("Emissivity array must be of shape (N) where N is the number of grid cells. "
                                  "N = {} values given while the inversion grid has N = {}."
                                  "".format(len(emissivities), grid.count))
         else:
-            self.sensitivity = np.zeros(grid.count)
+            self.emissivities = np.zeros(grid.count)
 
-        self._sensitivity_mv = self.sensitivity
+        self._emissivities_mv = self.emissivities
 
     def __getstate__(self):
 
@@ -253,13 +291,18 @@ cdef class EmissivityGrid:
             'description': self.description,
             'grid_uid': self.grid_geometry.grid_id,
             'count': self.count,
-            'sensitivity': self.sensitivity.tolist(),
+            'sensitivity': self.emissivities.tolist(),
         }
 
         return state
 
     def total_radiated_power(self):
-        return self.sensitivity.sum() * 4 * np.pi
+
+        total_radiated_power = 0
+        for i in range(self.count):
+            total_radiated_power += self.emissivities[i] * self.grid_geometry.cell_volume(i) * PI_4
+
+        return total_radiated_power
 
     def plot(self, title=None):
 
@@ -269,7 +312,7 @@ cdef class EmissivityGrid:
             patches.append(polygon)
 
         p = PatchCollection(patches)
-        p.set_array(self.sensitivity)
+        p.set_array(self.emissivities)
 
         fig, ax = plt.subplots()
         ax.add_collection(p)

@@ -12,8 +12,10 @@ Carine Giroud (JET Project Management)
 Contributors
 ------------
 
+Joseph Allcock (Code)
 Corentin Bertrand (Code)
 Andrea Callarelli (Code)
+James Harrison (Code)
 Nick Hawkes (Physics)
 Ephrem Delabie (Physics)
 Andy Meigs (Physics)
