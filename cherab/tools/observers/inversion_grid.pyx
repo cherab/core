@@ -77,6 +77,7 @@ cdef class RectangularGrid:
             'CHERAB_Object_Type': 'RectangularGrid',
             'Version': 1,
             'Count': self.count,
+            'Grid_ID': self.grid_id,
         }
 
         cells = []
