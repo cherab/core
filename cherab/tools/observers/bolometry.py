@@ -414,7 +414,7 @@ class BolometerFoil(Node):
             inner_cylinder.parent = None
             cell_emitter.parent = None
 
-    def calculate_etendue(self):
+    def calculate_etendue(self, ray_count=10000):
 
         if self.slit.csg_aperture is None:
             raise ValueError("CSG aperture is required to support etendue calculation.")
@@ -424,8 +424,6 @@ class BolometerFoil(Node):
         #     print(self.slit.primitive.transform)
         #     print(self.slit.csg_aperture.transform)
         #     raise ValueError("CSG aperture and target cannot have any relative transform when doing etendue calculation.")
-
-        ray_count = 10000
 
         target = self.slit.primitive
         aperture = self.slit.csg_aperture
