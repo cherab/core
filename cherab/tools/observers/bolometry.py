@@ -20,7 +20,7 @@ import json
 import pickle
 import numpy as np
 
-from raysect.core import Node, AffineMatrix3D, translate, rotate_basis, Point3D, Vector3D, World, Ray as CoreRay
+from raysect.core import Node, translate, rotate_basis, Point3D, Vector3D, Ray as CoreRay, Primitive
 from raysect.core.math.sampler import RectangleSampler3D, TargettedHemisphereSampler
 from raysect.primitive import Box, Cylinder, Subtract
 from raysect.optical.observer import PowerPipeline0D, RadiancePipeline0D, SightLine, TargettedPixel
@@ -93,6 +93,10 @@ class BolometerCamera(Node):
         state['foil_detectors'] = detector_list
 
         return state
+
+    @property
+    def slits(self):
+        return self._slits
 
     @property
     def foil_detectors(self):
@@ -174,13 +178,28 @@ class BolometerSlit(Node):
         self.primitive = Box(lower=Point3D(-dx/2*1.01, -dy/2*1.01, -dz/2), upper=Point3D(dx/2*1.01, dy/2*1.01, dz/2),
                              transform=None, material=NullMaterial(), parent=self, name=slit_id+' - target')
 
-        if csg_aperture:
-            width = max(dx, dy)
-            face = Box(Point3D(-width, -width, -dz/2), Point3D(width, width, dz/2))
-            slit = Box(lower=Point3D(-dx/2, -dy/2, -dz/2 - dz*0.1), upper=Point3D(dx/2, dy/2, dz/2 + dz*0.1))
-            self.csg_aperture = Subtract(face, slit, parent=self, material=AbsorbingSurface(), name=slit_id+' - CSG Aperture')
+        self._csg_aperture = None
+        self.csg_aperture = csg_aperture
+
+    @property
+    def csg_aperture(self):
+        return self._csg_aperture
+
+    @csg_aperture.setter
+    def csg_aperture(self, value):
+
+        if value is True:
+            width = max(self.dx, self.dy)
+            face = Box(Point3D(-width, -width, -self.dz/2), Point3D(width, width, self.dz/2))
+            slit = Box(lower=Point3D(-self.dx/2, -self.dy/2, -self.dz/2 - self.dz*0.1),
+                       upper=Point3D(self.dx/2, self.dy/2, self.dz/2 + self.dz*0.1))
+            self._csg_aperture = Subtract(face, slit, parent=self,
+                                          material=AbsorbingSurface(), name=self.slit_id+' - CSG Aperture')
+
         else:
-            self.csg_aperture = None
+            if isinstance(self._csg_aperture, Primitive):
+                self._csg_aperture.parent = None
+            self._csg_aperture = None
 
     def __getstate__(self):
 
