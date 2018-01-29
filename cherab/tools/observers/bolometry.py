@@ -21,16 +21,17 @@ import pickle
 import numpy as np
 
 from raysect.core import Node, translate, rotate_basis, Point3D, Vector3D, Ray as CoreRay, Primitive
-from raysect.core.math.sampler import RectangleSampler3D, TargettedHemisphereSampler
+from raysect.core.math.sampler import TargettedHemisphereSampler
 from raysect.primitive import Box, Cylinder, Subtract
+from raysect.optical import ConstantSF
 from raysect.optical.observer import PowerPipeline0D, RadiancePipeline0D, SightLine, TargettedPixel
 from raysect.optical.material.material import NullMaterial
-from raysect.optical.material import AbsorbingSurface, UnityVolumeEmitter
+from raysect.optical.material import AbsorbingSurface, UniformVolumeEmitter
 
 from cherab.tools.observers.inversion_grid import SensitivityMatrix
 
 
-R_2_PI = 1/ (2 * np.pi)
+R_2_PI = 1 / (2 * np.pi)
 
 
 # TODO - add support for CAD files as camera box geometry
@@ -405,6 +406,10 @@ class BolometerFoil(Node):
         self._volume_radiance_sensitivity = SensitivityMatrix(grid, self.detector_id, 'Volume mean radiance sensitivity')
         self._volume_power_sensitivity = SensitivityMatrix(grid, self.detector_id, 'Volume power sensitivity')
 
+        # Make a uniform emitter with 1 W/str/m^3
+        wvl_range = self._volume_observer.max_wavelength - self._volume_observer.min_wavelength
+        emitter = UniformVolumeEmitter(ConstantSF(1/wvl_range))
+
         for i in range(grid.count):
 
             p1, p2, p3, p4 = grid[i]
@@ -428,7 +433,7 @@ class BolometerFoil(Node):
 
             outer_cylinder = Cylinder(radius=r_outer, height=cylinder_height, transform=translate(0, 0, z_lower))
             inner_cylinder = Cylinder(radius=r_inner, height=cylinder_height, transform=translate(0, 0, z_lower))
-            cell_emitter = Subtract(outer_cylinder, inner_cylinder, parent=world, material=UnityVolumeEmitter())
+            cell_emitter = Subtract(outer_cylinder, inner_cylinder, parent=world, material=emitter)
 
             self._los_observer.observe()
             self._los_radiance_sensitivity.sensitivity[i] = self._los_radiance_pipeline.value.mean
