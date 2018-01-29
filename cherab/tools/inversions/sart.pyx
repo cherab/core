@@ -93,7 +93,7 @@ cpdef invert_sart(geometry_matrix, measurement_vector, object initial_guess=None
 
         measurement_squared = np.multiply(measurement_vector, measurement_vector).sum()
         y_hat_squared = np.multiply(y_hat_vector, y_hat_vector).sum()
-        convergence.append(measurement_squared - y_hat_squared) / measurement_squared
+        convergence.append((measurement_squared - y_hat_squared) / measurement_squared)
 
         # Set the new solution to be the old solution and get ready to repeat
         solution_mv[:] = solution_new_mv[:]
@@ -185,7 +185,7 @@ cpdef invert_constrained_sart(geometry_matrix, laplacian_matrix, measurement_vec
 
         measurement_squared = np.multiply(measurement_vector, measurement_vector).sum()
         y_hat_squared = np.multiply(y_hat_vector, y_hat_vector).sum()
-        convergence.append(measurement_squared - y_hat_squared) / measurement_squared
+        convergence.append((measurement_squared - y_hat_squared) / measurement_squared)
 
         # Set the new solution to be the old solution and get ready to repeat
         solution_mv[:] = solution_new_mv[:]
