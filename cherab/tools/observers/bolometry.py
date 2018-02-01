@@ -636,8 +636,10 @@ def assemble_weight_matrix(cameras, excluded_detectors=None):
 
     num_sensitivities = len(detector._volume_radiance_sensitivity.sensitivity)
 
-    los_weight_matrix = np.zeros((num_detectors, num_sensitivities))
-    vol_weight_matrix = np.zeros((num_detectors, num_sensitivities))
+    los_pow_weight_matrix = np.zeros((num_detectors, num_sensitivities))
+    vol_pow_weight_matrix = np.zeros((num_detectors, num_sensitivities))
+    los_rad_weight_matrix = np.zeros((num_detectors, num_sensitivities))
+    vol_rad_weight_matrix = np.zeros((num_detectors, num_sensitivities))
 
     detector_id = 0
     for camera in cameras:
@@ -645,12 +647,17 @@ def assemble_weight_matrix(cameras, excluded_detectors=None):
             if detector.detector_id not in excluded_detectors:
                 los_radiance_sensitivity = detector._los_radiance_sensitivity.sensitivity
                 vol_power_sensitivity = detector._volume_power_sensitivity.sensitivity
+                vol_radiance_sensitivity = detector._volume_radiance_sensitivity.sensitivity
 
                 l_los = los_radiance_sensitivity.sum()
                 l_vol = vol_power_sensitivity.sum()
                 los_to_vol_factor = l_vol / l_los
-                los_weight_matrix[detector_id, :] = los_radiance_sensitivity * los_to_vol_factor
-                vol_weight_matrix[detector_id, :] = vol_power_sensitivity[:]
+                los_pow_weight_matrix[detector_id, :] = los_radiance_sensitivity * los_to_vol_factor
+                vol_pow_weight_matrix[detector_id, :] = vol_power_sensitivity[:]
+
+                los_rad_weight_matrix[detector_id, :] = los_radiance_sensitivity
+                vol_rad_weight_matrix[detector_id, :] = vol_radiance_sensitivity
+
                 detector_id += 1
 
-    return detector_keys, los_weight_matrix, vol_weight_matrix
+    return detector_keys, los_pow_weight_matrix, vol_pow_weight_matrix, los_rad_weight_matrix, vol_rad_weight_matrix
