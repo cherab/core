@@ -27,8 +27,9 @@ from matplotlib.collections import PatchCollection
 from raysect.core cimport translate
 from raysect.core.math.point cimport new_point2d, Point2D
 from raysect.primitive.cylinder cimport Cylinder
-from raysect.primitive.csg cimport Subtract
-from raysect.optical.material.emitter cimport UnityVolumeEmitter
+from raysect.core.math import Discrete2DMesh
+from cherab.core.math import AxisymmetricMapper
+from cherab.tools.emitters.simple_power_emitter import SimplePowerEmitter
 
 
 PI_4 = 4 * np.pi
@@ -214,48 +215,6 @@ cdef class SensitivityMatrix:
         plt.title(title)
 
 
-def calculate_sensitivity(grid, observer, pipeline, detector_id, sensitivity_desc):
-
-    world = observer.root
-
-    sensitivity_grid = SensitivityMatrix(grid, detector_id, sensitivity_desc)
-
-    for i in range(grid.count):
-
-        p1, p2, p3, p4 = grid[i]
-
-        r_inner = p1.x
-        r_outer = p3.x
-        if r_inner > r_outer:
-            t = r_inner
-            r_inner = r_outer
-            r_outer = t
-
-        z_lower = p2.y
-        z_upper = p1.y
-        if z_lower > z_upper:
-            t = z_lower
-            z_lower = z_upper
-            z_upper = t
-
-        # TODO - switch to using CAD method such that reflections can be included automatically
-        cylinder_height = z_upper - z_lower
-
-        outer_cylinder = Cylinder(radius=r_outer, height=cylinder_height, transform=translate(0, 0, z_lower))
-        inner_cylinder = Cylinder(radius=r_inner, height=cylinder_height, transform=translate(0, 0, z_lower))
-        cell_emitter = Subtract(outer_cylinder, inner_cylinder, parent=world, material=UnityVolumeEmitter())
-
-        observer.observe()
-
-        sensitivity_grid.sensitivity[i] = pipeline.value.mean
-
-        outer_cylinder.parent = None
-        inner_cylinder.parent = None
-        cell_emitter.parent = None
-
-    return sensitivity_grid
-
-
 cdef class EmissivityGrid:
 
     cdef:
@@ -303,6 +262,66 @@ cdef class EmissivityGrid:
             total_radiated_power += self.emissivities[i] * self.grid_geometry.cell_volume(i) * PI_4
 
         return total_radiated_power
+
+    def create_emitter(self, parent=None):
+
+        cell_data = self.grid_geometry.cell_data
+        n_cells = cell_data.shape[0]
+
+        # Iterate through the arrays from MDS plus to pull out unique vertices
+        unique_vertices = {}
+        vertex_id = 0
+        for ith_cell in range(n_cells):
+            for j in range(4):
+                    vertex = (cell_data[ith_cell, j, 0], cell_data[ith_cell, j, 1])
+                    try:
+                        unique_vertices[vertex]
+                    except KeyError:
+                        unique_vertices[vertex] = vertex_id
+                        vertex_id += 1
+
+        # Load these unique vertices into a numpy array for later use in Raysect's mesh interpolator object.
+        num_vertices = len(unique_vertices)
+        vertex_coords = np.zeros((num_vertices, 2), dtype=np.float64)
+        for vertex, vertex_id in unique_vertices.items():
+            vertex_coords[vertex_id, :] = vertex
+
+        # Work out the extent of the mesh.
+        rmin = cell_data[:,:,0].min()
+        rmax = cell_data[:,:,0].max()
+        zmin = cell_data[:,:,1].min()
+        zmax = cell_data[:,:,1].max()
+
+        # Number of triangles must be equal to number of rectangle centre points times 2.
+        num_tris = n_cells * 2
+        triangles = np.zeros((num_tris, 3), dtype=np.int32)
+
+        tri_index = 0
+        for ith_cell in range(n_cells):
+            # Pull out the index number for each unique vertex in this rectangular cell.
+            v1_id = unique_vertices[(cell_data[ith_cell, 0, 0], cell_data[ith_cell, 0, 1])]
+            v2_id = unique_vertices[(cell_data[ith_cell, 1, 0], cell_data[ith_cell, 1, 1])]
+            v3_id = unique_vertices[(cell_data[ith_cell, 2, 0], cell_data[ith_cell, 2, 1])]
+            v4_id = unique_vertices[(cell_data[ith_cell, 3, 0], cell_data[ith_cell, 3, 1])]
+
+            # Split the quad cell into two triangular cells.
+            # Each triangle cell is mapped to the tuple ID (ix, iy) of its parent mesh cell.
+            triangles[tri_index, :] = (v1_id, v2_id, v3_id)
+            tri_index += 1
+            triangles[tri_index, :] = (v3_id, v4_id, v1_id)
+            tri_index += 1
+
+        emissivities = np.zeros(len(self.emissivities)*2)
+        for i in range(len(self.emissivities)):
+            j = i * 2
+            emissivities[j] = self.emissivities[i]
+            emissivities[j+1] = self.emissivities[i]
+
+        emission_function = AxisymmetricMapper(Discrete2DMesh(vertex_coords, triangles, emissivities, limit=False))
+        emitter = SimplePowerEmitter(emission_function)
+
+        return Cylinder(radius=rmax, height=zmax-zmin, transform=translate(0, 0, zmin),
+                        material=emitter, parent=parent)
 
     def plot(self, title=None):
 
