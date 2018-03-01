@@ -20,17 +20,18 @@ import json
 import pickle
 import numpy as np
 
-from raysect.core import Node, AffineMatrix3D, translate, rotate_basis, Point3D, Vector3D, World, Ray as CoreRay
-from raysect.core.math.sampler import RectangleSampler3D, TargettedHemisphereSampler
+from raysect.core import Node, translate, rotate_basis, Point3D, Vector3D, Ray as CoreRay, Primitive
+from raysect.core.math.sampler import TargettedHemisphereSampler
 from raysect.primitive import Box, Cylinder, Subtract
+from raysect.optical import ConstantSF
 from raysect.optical.observer import PowerPipeline0D, RadiancePipeline0D, SightLine, TargettedPixel
 from raysect.optical.material.material import NullMaterial
-from raysect.optical.material import AbsorbingSurface, UnityVolumeEmitter
+from raysect.optical.material import AbsorbingSurface, UniformVolumeEmitter
 
 from cherab.tools.observers.inversion_grid import SensitivityMatrix
 
 
-R_2_PI = 1/ (2 * np.pi)
+R_2_PI = 1 / (2 * np.pi)
 
 
 # TODO - add support for CAD files as camera box geometry
@@ -93,6 +94,10 @@ class BolometerCamera(Node):
         state['foil_detectors'] = detector_list
 
         return state
+
+    @property
+    def slits(self):
+        return self._slits
 
     @property
     def foil_detectors(self):
@@ -174,13 +179,28 @@ class BolometerSlit(Node):
         self.primitive = Box(lower=Point3D(-dx/2*1.01, -dy/2*1.01, -dz/2), upper=Point3D(dx/2*1.01, dy/2*1.01, dz/2),
                              transform=None, material=NullMaterial(), parent=self, name=slit_id+' - target')
 
-        if csg_aperture:
-            width = max(dx, dy)
-            face = Box(Point3D(-width, -width, -dz/2), Point3D(width, width, dz/2))
-            slit = Box(lower=Point3D(-dx/2, -dy/2, -dz/2 - dz*0.1), upper=Point3D(dx/2, dy/2, dz/2 + dz*0.1))
-            self.csg_aperture = Subtract(face, slit, parent=self, material=AbsorbingSurface(), name=slit_id+' - CSG Aperture')
+        self._csg_aperture = None
+        self.csg_aperture = csg_aperture
+
+    @property
+    def csg_aperture(self):
+        return self._csg_aperture
+
+    @csg_aperture.setter
+    def csg_aperture(self, value):
+
+        if value is True:
+            width = max(self.dx, self.dy)
+            face = Box(Point3D(-width, -width, -self.dz/2), Point3D(width, width, self.dz/2))
+            slit = Box(lower=Point3D(-self.dx/2, -self.dy/2, -self.dz/2 - self.dz*0.1),
+                       upper=Point3D(self.dx/2, self.dy/2, self.dz/2 + self.dz*0.1))
+            self._csg_aperture = Subtract(face, slit, parent=self,
+                                          material=AbsorbingSurface(), name=self.slit_id+' - CSG Aperture')
+
         else:
-            self.csg_aperture = None
+            if isinstance(self._csg_aperture, Primitive):
+                self._csg_aperture.parent = None
+            self._csg_aperture = None
 
     def __getstate__(self):
 
@@ -281,6 +301,7 @@ class BolometerFoil(Node):
         self._volume_radiance_sensitivity = None
         self._volume_power_sensitivity = None
         self._etendue = None
+        self._etendue_error = None
 
     def __getstate__(self, serialisation_format=None):
 
@@ -302,6 +323,7 @@ class BolometerFoil(Node):
             state['volume_radiance_sensitivity'] = self._volume_radiance_sensitivity.__getstate__()
             state['volume_power_sensitivity'] = self._volume_power_sensitivity.__getstate__()
             state['etendue'] = self._etendue
+            state['etendue_error'] = self._etendue_error
 
         return state
 
@@ -346,8 +368,14 @@ class BolometerFoil(Node):
     @property
     def etendue(self):
         if self._etendue is None:
-            raise ValueError("The sensitivity of this BolometerFoil has not yet been calculated.")
+            raise ValueError("The etendue of this BolometerFoil has not yet been calculated.")
         return self._etendue
+
+    @property
+    def etendue_error(self):
+        if self._etendue_error is None:
+            raise ValueError("The etendue of this BolometerFoil has not yet been calculated.")
+        return self._etendue_error
 
     def observe_los(self):
         """
@@ -378,6 +406,10 @@ class BolometerFoil(Node):
         self._volume_radiance_sensitivity = SensitivityMatrix(grid, self.detector_id, 'Volume mean radiance sensitivity')
         self._volume_power_sensitivity = SensitivityMatrix(grid, self.detector_id, 'Volume power sensitivity')
 
+        # Make a uniform emitter with 1 W/str/m^3
+        wvl_range = self._volume_observer.max_wavelength - self._volume_observer.min_wavelength
+        emitter = UniformVolumeEmitter(ConstantSF(1/wvl_range))
+
         for i in range(grid.count):
 
             p1, p2, p3, p4 = grid[i]
@@ -401,7 +433,7 @@ class BolometerFoil(Node):
 
             outer_cylinder = Cylinder(radius=r_outer, height=cylinder_height, transform=translate(0, 0, z_lower))
             inner_cylinder = Cylinder(radius=r_inner, height=cylinder_height, transform=translate(0, 0, z_lower))
-            cell_emitter = Subtract(outer_cylinder, inner_cylinder, parent=world, material=UnityVolumeEmitter())
+            cell_emitter = Subtract(outer_cylinder, inner_cylinder, parent=world, material=emitter)
 
             self._los_observer.observe()
             self._los_radiance_sensitivity.sensitivity[i] = self._los_radiance_pipeline.value.mean
@@ -414,18 +446,19 @@ class BolometerFoil(Node):
             inner_cylinder.parent = None
             cell_emitter.parent = None
 
-    def calculate_etendue(self):
+    def calculate_etendue(self, ray_count=10000, batches=10, print_results=False):
 
         if self.slit.csg_aperture is None:
             raise ValueError("CSG aperture is required to support etendue calculation.")
+
+        if not batches > 5:
+            raise ValueError("We enforce a minimum batch size of 5 to ensure reasonable statistics.")
 
         # TODO - test for null transform
         # if self.slit.primitive.transform is not None or self.slit.csg_aperture.transform is not None:
         #     print(self.slit.primitive.transform)
         #     print(self.slit.csg_aperture.transform)
         #     raise ValueError("CSG aperture and target cannot have any relative transform when doing etendue calculation.")
-
-        ray_count = 10000
 
         target = self.slit.primitive
         aperture = self.slit.csg_aperture
@@ -440,47 +473,55 @@ class BolometerFoil(Node):
         # instance targetted pixel sampler
         targetted_sampler = TargettedHemisphereSampler(spheres)
 
-        # sample pixel origins
-        origins = self._volume_observer._point_sampler(samples=ray_count)
+        etendues = []
+        for i in range(batches):
 
-        rays = []
-        passed = 0.0
-        for origin in origins:
+            # sample pixel origins
+            origins = self._volume_observer._point_sampler(samples=ray_count)
 
-            # obtain targetted vector sample
-            direction, pdf = targetted_sampler(origin, pdf=True)
-            path_weight = R_2_PI * direction.z/pdf
+            passed = 0.0
+            for origin in origins:
 
-            origin = origin.transform(detector_transform)
-            direction = direction.transform(detector_transform)
+                # obtain targetted vector sample
+                direction, pdf = targetted_sampler(origin, pdf=True)
+                path_weight = R_2_PI * direction.z/pdf
 
-            while True:
+                origin = origin.transform(detector_transform)
+                direction = direction.transform(detector_transform)
 
-                # Find the next intersection point of the ray with the world
-                intersection = bolometer_world.hit(CoreRay(origin, direction))
+                while True:
 
-                if intersection is None:
-                    passed += 1 * path_weight
-                    break
+                    # Find the next intersection point of the ray with the world
+                    intersection = bolometer_world.hit(CoreRay(origin, direction))
 
-                elif isinstance(intersection.primitive.material, NullMaterial):
-                    hit_point = intersection.hit_point.transform(intersection.primitive_to_world)
-                    origin = hit_point + direction * 1E-9
-                    continue
+                    if intersection is None:
+                        passed += 1 * path_weight
+                        break
 
-                else:
-                    break
+                    elif isinstance(intersection.primitive.material, NullMaterial):
+                        hit_point = intersection.hit_point.transform(intersection.primitive_to_world)
+                        origin = hit_point + direction * 1E-9
+                        continue
 
-        if passed == 0:
-            raise ValueError("Something is wrong with the scene-graph, calculated etendue should not zero.")
+                    else:
+                        break
 
-        etendue_fraction = passed / ray_count
+            if passed == 0:
+                raise ValueError("Something is wrong with the scene-graph, calculated etendue should not zero.")
 
-        self._etendue = self._volume_observer.etendue * etendue_fraction
+            etendue_fraction = passed / ray_count
+
+            etendues.append(self._volume_observer.etendue * etendue_fraction)
+
+        self._etendue = np.mean(etendues)
+        self._etendue_error = np.std(etendues)
 
         # move slit and target back onto bolometer scene-graph
         self.slit.primitive.parent = self.slit
         self.slit.csg_aperture.parent = self.slit
+
+        if print_results:
+            print(self.detector_id, 'etendue {:.4G} +- {:.3G} m^2 str'.format(self.etendue, self.etendue_error))
 
 
 def load_bolometer_camera(filename, parent=None, inversion_grid=None):
@@ -549,7 +590,6 @@ def load_bolometer_camera(filename, parent=None, inversion_grid=None):
         # add extra sensitivity data stored in binary
         if extention == '.pickle' and inversion_grid is not None:
             try:
-
                 detector_uid = detector['los_radiance_sensitivity']['detector_uid']
                 description = detector['los_radiance_sensitivity']['description']
                 los_radiance_sensitivity = SensitivityMatrix(inversion_grid, detector_uid, description=description)
@@ -567,11 +607,14 @@ def load_bolometer_camera(filename, parent=None, inversion_grid=None):
                 volume_power_sensitivity = SensitivityMatrix(inversion_grid, detector_uid, description=description)
                 volume_power_sensitivity.sensitivity[:] = detector['volume_power_sensitivity']['sensitivity']
                 bolometer_foil._volume_power_sensitivity = volume_power_sensitivity
+            except KeyError:
+                pass
 
+            try:
                 bolometer_foil._etendue = detector['etendue']
-
-            except IndexError:
-                continue
+                bolometer_foil._etendue_error = detector['etendue_error']
+            except KeyError:
+                pass
 
         camera.add_foil_detector(bolometer_foil)
 
@@ -579,6 +622,9 @@ def load_bolometer_camera(filename, parent=None, inversion_grid=None):
 
 
 def assemble_weight_matrix(cameras, excluded_detectors=None):
+
+    if excluded_detectors is None:
+        excluded_detectors = []
 
     detector_keys = []
     num_detectors = 0
@@ -590,8 +636,10 @@ def assemble_weight_matrix(cameras, excluded_detectors=None):
 
     num_sensitivities = len(detector._volume_radiance_sensitivity.sensitivity)
 
-    los_weight_matrix = np.zeros((num_detectors, num_sensitivities))
-    vol_weight_matrix = np.zeros((num_detectors, num_sensitivities))
+    los_pow_weight_matrix = np.zeros((num_detectors, num_sensitivities))
+    vol_pow_weight_matrix = np.zeros((num_detectors, num_sensitivities))
+    los_rad_weight_matrix = np.zeros((num_detectors, num_sensitivities))
+    vol_rad_weight_matrix = np.zeros((num_detectors, num_sensitivities))
 
     detector_id = 0
     for camera in cameras:
@@ -599,12 +647,17 @@ def assemble_weight_matrix(cameras, excluded_detectors=None):
             if detector.detector_id not in excluded_detectors:
                 los_radiance_sensitivity = detector._los_radiance_sensitivity.sensitivity
                 vol_power_sensitivity = detector._volume_power_sensitivity.sensitivity
+                vol_radiance_sensitivity = detector._volume_radiance_sensitivity.sensitivity
 
                 l_los = los_radiance_sensitivity.sum()
                 l_vol = vol_power_sensitivity.sum()
                 los_to_vol_factor = l_vol / l_los
-                los_weight_matrix[detector_id, :] = los_radiance_sensitivity * los_to_vol_factor
-                vol_weight_matrix[detector_id, :] = vol_power_sensitivity[:]
+                los_pow_weight_matrix[detector_id, :] = los_radiance_sensitivity * los_to_vol_factor
+                vol_pow_weight_matrix[detector_id, :] = vol_power_sensitivity[:]
+
+                los_rad_weight_matrix[detector_id, :] = los_radiance_sensitivity
+                vol_rad_weight_matrix[detector_id, :] = vol_radiance_sensitivity
+
                 detector_id += 1
 
-    return detector_keys, los_weight_matrix, vol_weight_matrix
+    return detector_keys, los_pow_weight_matrix, vol_pow_weight_matrix, los_rad_weight_matrix, vol_rad_weight_matrix

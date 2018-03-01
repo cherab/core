@@ -80,3 +80,19 @@ class RecursiveDict(dict):
                 d[key] = value.freeze()
         return d
 
+    @classmethod
+    def from_dict(cls, dictionary):
+        """
+        Returns a copy of the dictionary as a RecursiveDict.
+        """
+        return cls._convert_dict_tree(dictionary)
+
+    @classmethod
+    def _convert_dict_tree(cls, dict_tree):
+        rd = RecursiveDict()
+        for key, value in dict_tree.items():
+            if isinstance(value, dict):
+                value = cls._convert_dict_tree(value)
+            rd[key] = value
+
+        return rd

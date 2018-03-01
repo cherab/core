@@ -17,6 +17,7 @@
 
 import numpy as np
 cimport numpy as np
+from libc.math cimport abs as cabs
 import os
 import json
 import datetime
@@ -78,6 +79,7 @@ cdef class RectangularGrid:
             'CHERAB_Object_Type': 'RectangularGrid',
             'Version': 1,
             'Count': self.count,
+            'Grid_ID': self.grid_id,
         }
 
         cells = []
@@ -96,12 +98,12 @@ cdef class RectangularGrid:
 
     def cell_area(self, cell_index):
         p1, p2, p3, p4 = self.__getitem__(cell_index)
-        return (p3.x - p2.x) * (p2.y - p1.y)
+        return cabs((p3.x - p2.x) * (p2.y - p1.y))
 
     def cell_volume(self, cell_index):
         p1, p2, p3, p4 = self.__getitem__(cell_index)
 
-        cell_area = (p3.x - p2.x) * (p2.y - p1.y)
+        cell_area = cabs((p3.x - p2.x) * (p2.y - p1.y))
         cell_radius = (p3.x + p2.x)/2
 
         # return approximate cell volume
