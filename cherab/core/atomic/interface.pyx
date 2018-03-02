@@ -14,6 +14,7 @@
 # See the Licence for the specific language governing permissions and limitations
 # under the Licence.
 
+
 cdef class AtomicData:
     """
     Atomic data source abstraction layer.
@@ -22,12 +23,22 @@ cdef class AtomicData:
     atomic data.
     """
 
-    cpdef double wavelength(self, Element ion, int ionisation, tuple transition):
+    cpdef double wavelength(self, Line line):
         """
         Returns the natural wavelength of the specified transition in nm.
         """
 
-        raise NotImplementedError("The wavelength() virtual method is not implemented for this atomic data source.")
+        if line.wavelength > 0:
+            return line.wavelength
+        else:
+            return self.lookup_wavelength(line.element, line.ionisation, line.transition)
+
+    cpdef double lookup_wavelength(self, Element ion, int ionisation, tuple transition):
+        """
+        Looks up the natural wavelength of the specified transition in this atomic data source (nm).
+        """
+
+        raise NotImplementedError("The lookup_wavelength() virtual method is not implemented for this atomic data source.")
 
     cpdef list beam_cx_rate(self, Element donor_ion, Element receiver_ion, int receiver_ionisation, tuple transition):
         """
