@@ -377,25 +377,34 @@ class BolometerFoil(Node):
             raise ValueError("The etendue of this BolometerFoil has not yet been calculated.")
         return self._etendue_error
 
-    def observe_los(self):
+    def observe_los(self, samples=10000):
         """
         Ask this bolometer foil to observe its world.
         """
+        cached_sample_rate = self._los_observer.pixel_samples
+        self._los_observer.pixel_samples = samples
         self._los_observer.observe()
+        self._los_observer.pixel_samples = cached_sample_rate
         return self._los_radiance_pipeline.value.mean * self._los_cos_theta
 
-    def observe_volume_radiance(self):
+    def observe_volume_radiance(self, samples=10000):
         """
         Ask this bolometer foil to observe its world.
         """
+        cached_sample_rate = self._volume_observer.pixel_samples
+        self._volume_observer.pixel_samples = samples
         self._volume_observer.observe()
+        self._volume_observer.pixel_samples = cached_sample_rate
         return self._volume_radiance_pipeline.value.mean
 
-    def observe_volume_power(self):
+    def observe_volume_power(self, samples=10000):
         """
         Ask this bolometer foil to observe its world.
         """
+        cached_sample_rate = self._volume_observer.pixel_samples
+        self._volume_observer.pixel_samples = samples
         self._volume_observer.observe()
+        self._volume_observer.pixel_samples = cached_sample_rate
         return self._volume_power_pipeline.value.mean
 
     def calculate_sensitivity(self, grid):
