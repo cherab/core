@@ -40,7 +40,7 @@ cdef class AtomicData:
 
         raise NotImplementedError("The lookup_wavelength() virtual method is not implemented for this atomic data source.")
 
-    cpdef list beam_cx_rate(self, Element donor_ion, Element receiver_ion, int receiver_ionisation, tuple transition):
+    cpdef list beam_cx_rate(self, Line line, Element donor_ion):
         """
         Returns a list of applicable charge exchange emission rates in W.m^3.
         """

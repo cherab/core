@@ -306,7 +306,7 @@ cdef class BeamCXLine(BeamModel):
         self._wavelength = self._atomic_data.wavelength(self._line)
 
         # obtain cx rates
-        rates = self._atomic_data.beam_cx_rate(donor_element, receiver_element, receiver_ionisation, transition)
+        rates = self._atomic_data.beam_cx_rate(self._line, donor_element)
 
         # obtain beam population coefficients for each rate and assemble data
         # the data is assembled to make access efficient by linking the relevant rates and coefficients together:
