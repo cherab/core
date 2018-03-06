@@ -68,9 +68,6 @@ cdef class ExcitationLine(PlasmaModel):
         if self._line is None:
             raise RuntimeError("The emission line has not been set.")
 
-        # identify wavelength
-        self._wavelength = self._atomic_data.wavelength(self._line.element, self._line.ionisation, self._line.transition)
-
         # locate target species
         try:
             self._target_species = self._plasma.composition.get(self._line.element, self._line.ionisation)
@@ -80,6 +77,9 @@ cdef class ExcitationLine(PlasmaModel):
 
         # obtain rate function
         self._rates = self._atomic_data.impact_excitation_rate(self._line.element, self._line.ionisation, self._line.transition)
+
+        # identify wavelength
+        self._wavelength = self._atomic_data.wavelength(self._line)
 
         # instance line shape renderer
         self._lineshape = self._lineshape_class(self._line, self._wavelength, self._target_species, self._plasma)
