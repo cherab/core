@@ -79,7 +79,7 @@ cdef class ExcitationLine(PlasmaModel):
         self._rates = self._atomic_data.impact_excitation_rate(self._line.element, self._line.ionisation, self._line.transition)
 
         # identify wavelength
-        self._wavelength = self._atomic_data.wavelength(self._line)
+        self._wavelength = self._atomic_data.wavelength(self._line.element, self._line.ionisation, self._line.transition)
 
         # instance line shape renderer
         self._lineshape = self._lineshape_class(self._line, self._wavelength, self._target_species, self._plasma)

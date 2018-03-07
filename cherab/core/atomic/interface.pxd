@@ -21,11 +21,9 @@ from cherab.core.atomic.rates cimport *
 
 cdef class AtomicData:
 
-    cpdef double wavelength(self, Line line)
+    cpdef double wavelength(self, Element ion, int ionisation, tuple transition)
 
-    cpdef double lookup_wavelength(self, Element ion, int ionisation, tuple transition)
-
-    cpdef list beam_cx_rate(self, Line line, Element donor_ion)
+    cpdef list beam_cx_rate(self, Element donor_ion, Element receiver_ion, int receiver_ionisation, tuple transition)
 
     cpdef BeamStoppingRate beam_stopping_rate(self, Element beam_ion, Element plasma_ion, int ionisation)
 

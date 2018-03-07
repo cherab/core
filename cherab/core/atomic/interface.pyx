@@ -23,24 +23,14 @@ cdef class AtomicData:
     atomic data.
     """
 
-    cpdef double wavelength(self, Line line):
-        """
-        Returns the natural wavelength of the specified transition in nm.
-        """
-
-        if line.wavelength > 0:
-            return line.wavelength
-        else:
-            return self.lookup_wavelength(line.element, line.ionisation, line.transition)
-
-    cpdef double lookup_wavelength(self, Element ion, int ionisation, tuple transition):
+    cpdef double wavelength(self, Element ion, int ionisation, tuple transition):
         """
         Looks up the natural wavelength of the specified transition in this atomic data source (nm).
         """
 
         raise NotImplementedError("The lookup_wavelength() virtual method is not implemented for this atomic data source.")
 
-    cpdef list beam_cx_rate(self, Line line, Element donor_ion):
+    cpdef list beam_cx_rate(self, Element donor_ion, Element receiver_ion, int receiver_ionisation, tuple transition):
         """
         Returns a list of applicable charge exchange emission rates in W.m^3.
         """
