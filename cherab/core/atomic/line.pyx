@@ -17,7 +17,7 @@
 
 cdef class Line:
 
-    def __init__(self, Element element, int ionisation, tuple transition, double wavelength=None):
+    def __init__(self, Element element, int ionisation, tuple transition, wavelength=None):
 
         if ionisation > element.atomic_number - 1:
             raise ValueError("Ionisation level cannot be larger than one less than the atomic number.")
