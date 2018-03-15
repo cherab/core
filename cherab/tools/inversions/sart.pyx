@@ -25,7 +25,7 @@ cpdef invert_sart(geometry_matrix, measurement_vector, object initial_guess=None
     cdef:
         int m_observations, n_sources, ith_obs, jth_cell, k
         list convergence
-        double x_j, relax_over_density, obs_diff, measurement_squared, y_hat_squared
+        double x_j, relax_over_density, obs_diff, measurement_squared, y_hat_squared, prop_ray_length
         np.ndarray solution, solution_new, y_hat_vector, cell_ray_densities, ray_lengths
         double[:] obs_vector_mv, solution_mv, solution_new_mv, y_hat_vector_mv, cell_ray_densities_mv, ray_lengths_mv
         double[:,:] geometry_matrix_mv
@@ -64,7 +64,7 @@ cpdef invert_sart(geometry_matrix, measurement_vector, object initial_guess=None
 
         for jth_cell in range(n_sources):
 
-            x_j = solution[jth_cell]  # previous solution value for this cell
+            x_j = solution_mv[jth_cell]  # previous solution value for this cell
 
             if cell_ray_densities_mv[jth_cell] > 0.0:
 
@@ -113,7 +113,7 @@ cpdef invert_constrained_sart(geometry_matrix, laplacian_matrix, measurement_vec
     cdef:
         int m_observations, n_sources, ith_obs, jth_cell, k
         list convergence
-        double x_j, relax_over_density, obs_diff, measurement_squared, y_hat_squared
+        double x_j, relax_over_density, obs_diff, measurement_squared, y_hat_squared, prop_ray_length
         np.ndarray solution, solution_new, y_hat_vector, cell_ray_densities, ray_lengths
         double[:] obs_vector_mv, solution_mv, solution_new_mv, y_hat_vector_mv, cell_ray_densities_mv, ray_lengths_mv, grad_penalty_mv
         double[:,:] geometry_matrix_mv
@@ -155,7 +155,7 @@ cpdef invert_constrained_sart(geometry_matrix, laplacian_matrix, measurement_vec
 
         for jth_cell in range(n_sources):
 
-            x_j = solution[jth_cell]  # previous solution value for this cell
+            x_j = solution_mv[jth_cell]  # previous solution value for this cell
 
             if cell_ray_densities_mv[jth_cell] > 0.0:
 
