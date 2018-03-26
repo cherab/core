@@ -108,7 +108,7 @@ cpdef invert_sart(geometry_matrix, measurement_vector, object initial_guess=None
 
 cpdef invert_constrained_sart(geometry_matrix, laplacian_matrix, measurement_vector,
                               object initial_guess=None, int max_iterations=250, double relaxation=1.0,
-                              double beta_laplace=10.0, double conv_tol=1.0E-4):
+                              double beta_laplace=0.01, double conv_tol=1.0E-4):
 
     cdef:
         int m_observations, n_sources, ith_obs, jth_cell, k
@@ -150,7 +150,7 @@ cpdef invert_constrained_sart(geometry_matrix, laplacian_matrix, measurement_vec
 
     for k in range(max_iterations):
 
-        grad_penalty = np.dot(laplacian_matrix, solution) / beta_laplace
+        grad_penalty = np.dot(laplacian_matrix, solution) * beta_laplace
         grad_penalty_mv = grad_penalty
 
         for jth_cell in range(n_sources):
