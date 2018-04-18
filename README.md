@@ -12,7 +12,7 @@ for guidance on using the code.
 Installation
 ------------
 
-CHERAB is a large code framework consisting of a core package and feature packages. Users will generally install the core packages and the specific feature packages then need for their work. For example, users working on the JET tokamak will require the ``cherab-core`` package, the ``cherab-jet`` package and an atomic data source such as ``cherab-openadas``.
+CHERAB is a large code framework consisting of a core package and feature packages. Users will generally install the core package and the specific feature packages then need for their work. For example, users working on the JET tokamak will require the ``cherab-core`` package, the ``cherab-jet`` package and an atomic data source such as ``cherab-openadas``.
 
 Unless developing new code for a cherab package, most users should clone the master branch. When developing new features for cherab, the development branch should be used as the base.
 
