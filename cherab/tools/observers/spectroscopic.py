@@ -18,7 +18,7 @@
 import matplotlib.pyplot as plt
 from raysect.core import Node, AffineMatrix3D, translate, rotate_basis, Point3D, Vector3D
 from raysect.optical import Spectrum
-from raysect.optical.observer import SpectralPowerPipeline0D, SightLine
+from raysect.optical.observer import SpectralRadiancePipeline0D, SightLine
 
 
 class LineOfSightGroup(Node):
@@ -122,7 +122,7 @@ class SpectroscopicSightLine:
         self._direction = Vector3D(1, 0, 0)
         self._transform = AffineMatrix3D()
 
-        self._spectral_pipeline = SpectralPowerPipeline0D(accumulate=False)
+        self._spectral_pipeline = SpectralRadiancePipeline0D(accumulate=False)
         # TODO - carry over wavelength range and resolution settings
         self._observer = SightLine(pipelines=[self._spectral_pipeline], parent=parent, name=name)
 
