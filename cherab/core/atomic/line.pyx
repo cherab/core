@@ -25,12 +25,14 @@ cdef class Line:
         if ionisation < 0:
             raise ValueError("Ionisation level cannot be less than zero.")
 
-        if transition[0] <= 0 or transition[1] <= 0:
-            raise ValueError("Transition energy levels cannot be <= 0.")
-
-        if transition[0] <= transition[1]:
-            raise ValueError("The initial energy level of a transition must be greater "
-                             "than the resulting energy level.")
+        # These validation tests don't work for more advanced transition tuples, only valid for hydrogen as currently implemented.
+        # TODO - re-instate when we have a more advanced transition objects
+        # if transition[0] <= 0 or transition[1] <= 0:
+        #     raise ValueError("Transition energy levels cannot be <= 0.")
+        #
+        # if transition[0] <= transition[1]:
+        #     raise ValueError("The initial energy level of a transition must be greater "
+        #                      "than the resulting energy level.")
 
         self.element = element
         self.ionisation = ionisation
