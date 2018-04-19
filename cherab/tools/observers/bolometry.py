@@ -163,9 +163,9 @@ class BolometerSlit(Node):
 
         self.slit_id = slit_id
         self.centre_point = centre_point
-        self.basis_x = basis_x
+        self.basis_x = basis_x.normalise()
         self.dx = dx
-        self.basis_y = basis_y
+        self.basis_y = basis_y.normalise()
         self.dy = dy
         self.dz = dz
 
