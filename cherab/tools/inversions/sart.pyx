@@ -17,17 +17,18 @@
 
 import numpy as np
 cimport numpy as np
+cimport cython
 
-
+@cython.boundscheck(False)
 cpdef invert_sart(geometry_matrix, measurement_vector, object initial_guess=None, int max_iterations=250,
                   double relaxation=1.0, double conv_tol=1.0E-4):
 
     cdef:
         int m_observations, n_sources, ith_obs, jth_cell, k
         list convergence
-        double x_j, relax_over_density, obs_diff, measurement_squared, y_hat_squared
+        double x_j, x_j_new, relax_over_density, obs_diff, measurement_squared, y_hat_squared, prop_ray_length
         np.ndarray solution, solution_new, y_hat_vector, cell_ray_densities, ray_lengths
-        double[:] obs_vector_mv, solution_mv, solution_new_mv, y_hat_vector_mv, cell_ray_densities_mv, ray_lengths_mv
+        double[:] obs_vector_mv, solution_mv, solution_new_mv, y_hat_vector_mv, cell_ray_densities_mv, inv_ray_lengths_mv
         double[:,:] geometry_matrix_mv
 
     m_observations, n_sources = geometry_matrix.shape  # (M, N) matrix
@@ -44,7 +45,7 @@ cpdef invert_sart(geometry_matrix, measurement_vector, object initial_guess=None
     solution_new_mv = solution_new
 
     obs_vector_mv = measurement_vector
-    geometry_matrix_mv = geometry_matrix
+    geometry_matrix_mv = geometry_matrix.T # Make second index ith_obs
 
     # Create an array to monitor the convergence
     convergence = []
@@ -55,7 +56,7 @@ cpdef invert_sart(geometry_matrix, measurement_vector, object initial_guess=None
 
     # A_(i,+)  - the total length of each ray
     ray_lengths = np.sum(geometry_matrix, axis=1)
-    ray_lengths_mv = ray_lengths
+    inv_ray_lengths_mv = 1 / ray_lengths
 
     y_hat_vector = np.dot(geometry_matrix, solution)
     y_hat_vector_mv = y_hat_vector
@@ -64,14 +65,15 @@ cpdef invert_sart(geometry_matrix, measurement_vector, object initial_guess=None
 
         for jth_cell in range(n_sources):
 
-            x_j = solution[jth_cell]  # previous solution value for this cell
+            x_j = solution_mv[jth_cell]  # previous solution value for this cell
 
             if cell_ray_densities_mv[jth_cell] > 0.0:
 
-                relax_over_density = relaxation / cell_ray_densities_mv[jth_cell]
+                with cython.cdivision(True):
+                    relax_over_density = relaxation / cell_ray_densities_mv[jth_cell]
                 obs_diff = 0
                 for ith_obs in range(m_observations):
-                    prop_ray_length = geometry_matrix_mv[ith_obs, jth_cell] / ray_lengths_mv[ith_obs]  # fraction of ray length/volume
+                    prop_ray_length = geometry_matrix_mv[jth_cell, ith_obs] * inv_ray_lengths_mv[ith_obs]  # fraction of ray length/volume
                     obs_diff += prop_ray_length * (obs_vector_mv[ith_obs] - y_hat_vector_mv[ith_obs])
 
                 x_j_new = x_j + relax_over_density * obs_diff
@@ -91,8 +93,8 @@ cpdef invert_sart(geometry_matrix, measurement_vector, object initial_guess=None
         y_hat_vector = np.dot(geometry_matrix, solution_new)
         y_hat_vector_mv = y_hat_vector
 
-        measurement_squared = np.multiply(measurement_vector, measurement_vector).sum()
-        y_hat_squared = np.multiply(y_hat_vector, y_hat_vector).sum()
+        measurement_squared = np.dot(measurement_vector, measurement_vector)
+        y_hat_squared = np.dot(y_hat_vector, y_hat_vector)
         convergence.append((measurement_squared - y_hat_squared) / measurement_squared)
 
         # Set the new solution to be the old solution and get ready to repeat
@@ -105,17 +107,17 @@ cpdef invert_sart(geometry_matrix, measurement_vector, object initial_guess=None
 
     return solution, convergence
 
-
+@cython.boundscheck(False)
 cpdef invert_constrained_sart(geometry_matrix, laplacian_matrix, measurement_vector,
                               object initial_guess=None, int max_iterations=250, double relaxation=1.0,
-                              double beta_laplace=10.0, double conv_tol=1.0E-4):
+                              double beta_laplace=0.01, double conv_tol=1.0E-4):
 
     cdef:
         int m_observations, n_sources, ith_obs, jth_cell, k
         list convergence
-        double x_j, relax_over_density, obs_diff, measurement_squared, y_hat_squared
+        double x_j, x_j_new, relax_over_density, obs_diff, measurement_squared, y_hat_squared, prop_ray_length
         np.ndarray solution, solution_new, y_hat_vector, cell_ray_densities, ray_lengths
-        double[:] obs_vector_mv, solution_mv, solution_new_mv, y_hat_vector_mv, cell_ray_densities_mv, ray_lengths_mv, grad_penalty_mv
+        double[:] obs_vector_mv, solution_mv, solution_new_mv, y_hat_vector_mv, cell_ray_densities_mv, inv_ray_lengths_mv, grad_penalty_mv
         double[:,:] geometry_matrix_mv
 
     m_observations, n_sources = geometry_matrix.shape  # (M, N) matrix
@@ -132,7 +134,7 @@ cpdef invert_constrained_sart(geometry_matrix, laplacian_matrix, measurement_vec
     solution_new_mv = solution_new
 
     obs_vector_mv = measurement_vector
-    geometry_matrix_mv = geometry_matrix
+    geometry_matrix_mv = geometry_matrix.T # Make second index ith_obs
 
     # Create an array to monitor the convergence
     convergence = []
@@ -143,27 +145,28 @@ cpdef invert_constrained_sart(geometry_matrix, laplacian_matrix, measurement_vec
 
     # A_(i,+)  - the total length of each ray
     ray_lengths = np.sum(geometry_matrix, axis=1)
-    ray_lengths_mv = ray_lengths
+    inv_ray_lengths_mv = 1 / ray_lengths
 
     y_hat_vector = np.dot(geometry_matrix, solution)
     y_hat_vector_mv = y_hat_vector
 
     for k in range(max_iterations):
 
-        grad_penalty = np.dot(laplacian_matrix, solution) / beta_laplace
+        grad_penalty = np.dot(laplacian_matrix, solution) * beta_laplace
         grad_penalty_mv = grad_penalty
 
         for jth_cell in range(n_sources):
 
-            x_j = solution[jth_cell]  # previous solution value for this cell
+            x_j = solution_mv[jth_cell]  # previous solution value for this cell
 
             if cell_ray_densities_mv[jth_cell] > 0.0:
 
-                relax_over_density = relaxation / cell_ray_densities_mv[jth_cell]
+                with cython.cdivision(True):
+                    relax_over_density = relaxation / cell_ray_densities_mv[jth_cell]
 
                 obs_diff = 0
                 for ith_obs in range(m_observations):
-                    prop_ray_length = geometry_matrix_mv[ith_obs, jth_cell] / ray_lengths_mv[ith_obs]  # fraction of ray length/volume
+                    prop_ray_length = geometry_matrix_mv[jth_cell, ith_obs] * inv_ray_lengths_mv[ith_obs] # fraction of ray length/volume
                     obs_diff += prop_ray_length * (obs_vector_mv[ith_obs] - y_hat_vector_mv[ith_obs])
 
                 x_j_new = x_j + relax_over_density * obs_diff - grad_penalty_mv[jth_cell]
@@ -183,8 +186,8 @@ cpdef invert_constrained_sart(geometry_matrix, laplacian_matrix, measurement_vec
         y_hat_vector = np.dot(geometry_matrix, solution_new)
         y_hat_vector_mv = y_hat_vector
 
-        measurement_squared = np.multiply(measurement_vector, measurement_vector).sum()
-        y_hat_squared = np.multiply(y_hat_vector, y_hat_vector).sum()
+        measurement_squared = np.dot(measurement_vector, measurement_vector)
+        y_hat_squared = np.dot(y_hat_vector, y_hat_vector)
         convergence.append((measurement_squared - y_hat_squared) / measurement_squared)
 
         # Set the new solution to be the old solution and get ready to repeat
