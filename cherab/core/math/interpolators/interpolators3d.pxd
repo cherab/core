@@ -30,13 +30,13 @@ cdef class _Interpolate3DBase(Function3D):
 
     cdef double evaluate(self, double px, double py, double pz) except? -1e999
 
-    cdef double _evaluate(self, double px, double py, double pz, int i_x, int i_y, int i_z)
+    cdef double _evaluate(self, double px, double py, double pz, int i_x, int i_y, int i_z) except? -1e999
 
-    cdef inline double _extrapolate(self, double px, double py, double pz, int i_x, int i_y, int i_z, double nearest_px, double nearest_py, double nearest_pz)
+    cdef inline double _extrapolate(self, double px, double py, double pz, int i_x, int i_y, int i_z, double nearest_px, double nearest_py, double nearest_pz) except? -1e999
 
-    cdef double _extrapol_linear(self, double px, double py, double pz, int i_x, int i_y, int i_z, double nearest_px, double nearest_py, double nearest_pz)
+    cdef double _extrapol_linear(self, double px, double py, double pz, int i_x, int i_y, int i_z, double nearest_px, double nearest_py, double nearest_pz) except? -1e999
 
-    cdef double _extrapol_quadratic(self, double px, double py, double pz, int i_x, int i_y, int i_z, double nearest_px, double nearest_py, double nearest_pz)
+    cdef double _extrapol_quadratic(self, double px, double py, double pz, int i_x, int i_y, int i_z, double nearest_px, double nearest_py, double nearest_pz) except? -1e999
 
     cdef void _set_constant_x(self)
 

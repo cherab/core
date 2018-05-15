@@ -30,13 +30,13 @@ cdef class _Interpolate2DBase(Function2D):
 
     cdef double evaluate(self, double px, double py) except? -1e999
 
-    cdef double _evaluate(self, double px, double py, int i_x, int i_y)
+    cdef double _evaluate(self, double px, double py, int i_x, int i_y) except? -1e999
 
-    cdef inline double _extrapolate(self, double px, double py, int i_x, int i_y, double nearest_px, double nearest_py)
+    cdef inline double _extrapolate(self, double px, double py, int i_x, int i_y, double nearest_px, double nearest_py) except? -1e999
 
-    cdef double _extrapol_linear(self, double px, double py, int i_x, int i_y, double nearest_px, double nearest_py)
+    cdef double _extrapol_linear(self, double px, double py, int i_x, int i_y, double nearest_px, double nearest_py) except? -1e999
 
-    cdef double _extrapol_quadratic(self, double px, double py, int i_x, int i_y, double nearest_px, double nearest_py)
+    cdef double _extrapol_quadratic(self, double px, double py, int i_x, int i_y, double nearest_px, double nearest_py) except? -1e999
 
     cdef void _set_constant_x(self)
 
