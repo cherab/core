@@ -520,7 +520,7 @@ class BolometerFoil(Node):
 
             etendue_fraction = passed / ray_count
 
-            etendues.append(self._volume_observer.etendue * etendue_fraction)
+            etendues.append(self._volume_observer.sensitivity * etendue_fraction)
 
         self._etendue = np.mean(etendues)
         self._etendue_error = np.std(etendues)
