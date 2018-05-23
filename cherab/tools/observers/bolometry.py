@@ -520,7 +520,7 @@ class BolometerFoil(Node):
 
             etendue_fraction = passed / ray_count
 
-            etendues.append(self._volume_observer.etendue * etendue_fraction)
+            etendues.append(self._volume_observer.sensitivity * etendue_fraction)
 
         self._etendue = np.mean(etendues)
         self._etendue_error = np.std(etendues)
@@ -533,20 +533,25 @@ class BolometerFoil(Node):
             print(self.detector_id, 'etendue {:.4G} +- {:.3G} m^2 str'.format(self.etendue, self.etendue_error))
 
 
-def load_bolometer_camera(filename, parent=None, inversion_grid=None):
+def load_bolometer_camera(filename, parent=None, inversion_grid=None, camera_dict=None):
 
-    name, extention = os.path.splitext(filename)
-
-    if extention == '.json':
-        file_handle = open(filename, 'r')
-        camera_state = json.load(file_handle)
-
-    elif extention == '.pickle':
-        file_handle = open(filename, 'rb')
-        camera_state = pickle.load(file_handle)
+    if filename == 'machine_description':
+        name, extention = '', ''
+        camera_state = camera_dict
 
     else:
-        raise IOError("Unrecognised CHERAB object file format - '{}'.".format(extention))
+        name, extention = os.path.splitext(filename)
+
+        if extention == '.json':
+            file_handle = open(filename, 'r')
+            camera_state = json.load(file_handle)
+
+        elif extention == '.pickle':
+            file_handle = open(filename, 'rb')
+            camera_state = pickle.load(file_handle)
+
+        else:
+            raise IOError("Unrecognised CHERAB object file format - '{}'.".format(extention))
 
     if not camera_state['CHERAB_Object_Type'] == 'BolometerCamera':
         raise ValueError("The selected json file does not contain a valid BolometerCamera description.")
