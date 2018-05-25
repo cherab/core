@@ -35,6 +35,9 @@ cdef class RecombinationLine(PlasmaModel):
         # ensure that cache is initialised
         self._change()
 
+    def __repr__(self):
+        return '<RecombinationLine: element={}, ionisation={}, transition={}>'.format(self._line.element.name, self._line.ionisation, self._line.transition)
+
     cpdef Spectrum emission(self, Point3D point, Vector3D direction, Spectrum spectrum):
 
         cdef double ne, ni, te, radiance
