@@ -29,7 +29,7 @@ cdef class _PECRate:
 
         :param temperature: Receiver ion temperature in eV.
         :param density: Receiver ion density in m^-3
-        :return: The effective rate.
+        :return: The effective PEC rate in W/m^3.
         """
         raise NotImplementedError("The evaluate() virtual method must be implemented.")
 
