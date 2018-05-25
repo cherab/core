@@ -15,7 +15,6 @@
 # under the Licence.
 
 from cherab.core.atomic cimport Element
-from cherab.core.atomic.line cimport Line
 from cherab.core.atomic.rates cimport *
 
 
