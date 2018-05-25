@@ -23,4 +23,3 @@ cdef class Line:
         Element element
         int ionisation
         tuple transition
-        double wavelength
