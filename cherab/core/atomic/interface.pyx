@@ -25,10 +25,10 @@ cdef class AtomicData:
 
     cpdef double wavelength(self, Element ion, int ionisation, tuple transition):
         """
-        Looks up the natural wavelength of the specified transition in this atomic data source (nm).
+        Returns the natural wavelength of the specified transition in nm.
         """
 
-        raise NotImplementedError("The lookup_wavelength() virtual method is not implemented for this atomic data source.")
+        raise NotImplementedError("The wavelength() virtual method is not implemented for this atomic data source.")
 
     cpdef list beam_cx_rate(self, Element donor_ion, Element receiver_ion, int receiver_ionisation, tuple transition):
         """
