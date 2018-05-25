@@ -303,7 +303,7 @@ cdef class BeamCXLine(BeamModel):
                                "(element={}, ionisation={}).".format(receiver_element.symbol, receiver_ionisation))
 
         # obtain wavelength for specified line
-        self._wavelength = self._atomic_data.wavelength(self._line.element, self._line.ionisation, self._line.transition)
+        self._wavelength = self._atomic_data.wavelength(receiver_element, receiver_ionisation - 1, transition)
 
         # obtain cx rates
         rates = self._atomic_data.beam_cx_rate(donor_element, receiver_element, receiver_ionisation, transition)
