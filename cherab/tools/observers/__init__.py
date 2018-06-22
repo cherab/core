@@ -18,3 +18,4 @@
 from .calcam import load_calcam_calibration
 from .intersections import find_wall_intersection
 from .spectroscopic import LineOfSightGroup, SpectroscopicSightLine
+from .inversion_grid import RectangularGrid, load_inversion_grid, SensitivityMatrix, EmissivityGrid
