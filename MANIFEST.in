@@ -1,0 +1,4 @@
+include README.md CHANGELOG.md LICENSE.txt CITE.md AUTHORS.md MANIFEST.in setup.py .gitignore
+recursive-include cherab *.py *.pyx *.pxd *.json
+recursive-include demos *.py *.pyx *.pxd
+
