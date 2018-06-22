@@ -27,8 +27,6 @@ def invert_svd(w_matrix, b_vector):
     # reshape b_vector into a column vector
     b_vector = b_vector.reshape((len(b_vector), 1))
 
-    print(b_vector.shape)
-
     inverted_x_vector = (inverse_w_matrix * b_vector).flatten()
 
     return np.asarray(inverted_x_vector).flatten()
