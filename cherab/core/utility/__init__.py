@@ -18,3 +18,4 @@
 
 from .notify import Notifier
 from .conversion import *
+from .recursivedict import RecursiveDict
