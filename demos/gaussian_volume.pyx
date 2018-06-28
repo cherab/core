@@ -16,10 +16,18 @@
 # See the Licence for the specific language governing permissions and limitations
 # under the Licence.
 
-from libc.math cimport exp
 cimport cython
+from libc.math cimport exp
+from cherab.core.math.function cimport Function3D
+
 
 cdef class GaussianVolume(Function3D):
+
+    cdef double peak
+    cdef double sigma
+    cdef double _constant
+    cdef bint _cache
+    cdef double _cache_x, _cache_y, _cache_z, _cache_v
 
     def __init__(self, peak, sigma):
         self.peak = peak
