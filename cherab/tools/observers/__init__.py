@@ -1,5 +1,7 @@
 
-# Copyright 2014-2017 United Kingdom Atomic Energy Authority
+# Copyright 2016-2018 Euratom
+# Copyright 2016-2018 United Kingdom Atomic Energy Authority
+# Copyright 2016-2018 Centro de Investigaciones Energéticas, Medioambientales y Tecnológicas
 #
 # Licensed under the EUPL, Version 1.1 or – as soon they will be approved by the
 # European Commission - subsequent versions of the EUPL (the "Licence");
@@ -18,3 +20,4 @@
 from .calcam import load_calcam_calibration
 from .intersections import find_wall_intersection
 from .spectroscopic import LineOfSightGroup, SpectroscopicSightLine
+from .inversion_grid import RectangularGrid, load_inversion_grid, SensitivityMatrix, EmissivityGrid
