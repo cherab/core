@@ -20,6 +20,7 @@
 import os
 import json
 import pickle
+import gzip
 import numpy as np
 
 from raysect.core import Node, translate, rotate_basis, Point3D, Vector3D, Ray as CoreRay, Primitive
@@ -149,6 +150,10 @@ class BolometerCamera(Node):
         elif extention == '.pickle':
             file_handle = open(filename, 'wb')
             pickle.dump(self.__getstate__(serialisation_format=extention), file_handle)
+
+        elif extention == '.pgz':
+            with gzip.open(filename, 'wb') as file_handle:
+                pickle.dump(self.__getstate__(serialisation_format='.pickle'), file_handle)
 
         elif extention == '.sav':
             import idlbridge as idl
