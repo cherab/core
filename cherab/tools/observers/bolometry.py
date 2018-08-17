@@ -420,7 +420,7 @@ class BolometerFoil(Node):
         self._volume_observer.pixel_samples = cached_sample_rate
         return self._volume_power_pipeline.value.mean
 
-    def calculate_sensitivity(self, grid):
+    def calculate_sensitivity(self, grid, cell_range=None):
 
         world = self.root
 
@@ -432,7 +432,10 @@ class BolometerFoil(Node):
         wvl_range = self._volume_observer.max_wavelength - self._volume_observer.min_wavelength
         emitter = UniformVolumeEmitter(ConstantSF(1/wvl_range))
 
-        for i in range(grid.count):
+        if cell_range is None:
+            cell_range = range(grid.count)
+
+        for i in cell_range:
 
             p1, p2, p3, p4 = grid[i]
 
