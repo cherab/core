@@ -239,7 +239,8 @@ class BolometerFoil(Node):
     observer's z axis in world space.
     """
 
-    def __init__(self, detector_id, centre_point, basis_x, dx, basis_y, dy, slit, parent=None):
+    def __init__(self, detector_id, centre_point, basis_x, dx, basis_y, dy, slit,
+                 parent=None, render_engine=None):
 
         self.detector_id = detector_id
 
@@ -284,15 +285,20 @@ class BolometerFoil(Node):
 
         # setup the observers
         self._los_radiance_pipeline = RadiancePipeline0D(accumulate=False)
-        self._los_observer = SightLine(pipelines=[self._los_radiance_pipeline], pixel_samples=1, spectral_bins=1,
-                                       parent=self, name=detector_id, quiet=True)
+        self._los_observer = SightLine(
+            pipelines=[self._los_radiance_pipeline], pixel_samples=1, spectral_bins=1,
+            parent=self, name=detector_id, quiet=True, render_engine=render_engine
+        )
 
         self._volume_power_pipeline = PowerPipeline0D(accumulate=False)
         self._volume_radiance_pipeline = RadiancePipeline0D(accumulate=False)
-        self._volume_observer = TargettedPixel([slit.primitive], targetted_path_prob=1.0,
-                                               pipelines=[self._volume_power_pipeline, self._volume_radiance_pipeline],
-                                               pixel_samples=1000, x_width=dx, y_width=dy,
-                                               spectral_bins=1, parent=self, name=detector_id, quiet=True)
+        self._volume_observer = TargettedPixel(
+            [slit.primitive], targetted_path_prob=1.0,
+            pipelines=[self._volume_power_pipeline, self._volume_radiance_pipeline],
+            pixel_samples=1000, x_width=dx, y_width=dy,
+            spectral_bins=1, parent=self, name=detector_id, quiet=True,
+            render_engine=render_engine
+        )
 
         # NOTE - the los observer may not be normal to the surface, in which case calculate an extra relative transform
         if self._normal_vec.dot(self._foil_to_slit_vec) != 1.0:
@@ -540,7 +546,8 @@ class BolometerFoil(Node):
             print(self.detector_id, 'etendue {:.4G} +- {:.3G} m^2 str'.format(self.etendue, self.etendue_error))
 
 
-def load_bolometer_camera(filename, parent=None, inversion_grid=None, camera_dict=None):
+def load_bolometer_camera(filename, parent=None, inversion_grid=None, camera_dict=None,
+                          render_engine=None):
 
     if filename == 'machine_description':
         name, extention = '', ''
@@ -606,7 +613,10 @@ def load_bolometer_camera(filename, parent=None, inversion_grid=None, camera_dic
         dy = detector['dy']
         slit = slit_dict[detector['slit_id']]
 
-        bolometer_foil = BolometerFoil(detector_id, centre_point, basis_x, dx, basis_y, dy, slit, parent=camera)
+        bolometer_foil = BolometerFoil(
+            detector_id, centre_point, basis_x, dx, basis_y, dy, slit,
+            parent=camera, render_engine=render_engine
+        )
 
         # add extra sensitivity data stored in binary
         if extention == '.pickle' and inversion_grid is not None:
