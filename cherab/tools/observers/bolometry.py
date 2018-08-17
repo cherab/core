@@ -439,16 +439,12 @@ class BolometerFoil(Node):
             r_inner = p1.x
             r_outer = p3.x
             if r_inner > r_outer:
-                t = r_inner
-                r_inner = r_outer
-                r_outer = t
+                r_inner, r_outer = r_outer, r_inner
 
             z_lower = p2.y
             z_upper = p1.y
             if z_lower > z_upper:
-                t = z_lower
-                z_lower = z_upper
-                z_upper = t
+                z_lower, z_upper = z_upper, z_lower
 
             # TODO - switch to using CAD method such that reflections can be included automatically
             cylinder_height = z_upper - z_lower
