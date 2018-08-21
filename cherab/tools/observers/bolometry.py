@@ -420,7 +420,7 @@ class BolometerFoil(Node):
         self._volume_observer.pixel_samples = cached_sample_rate
         return self._volume_power_pipeline.value.mean
 
-    def calculate_sensitivity(self, grid):
+    def calculate_sensitivity(self, grid, cell_range=None):
 
         world = self.root
 
@@ -432,23 +432,22 @@ class BolometerFoil(Node):
         wvl_range = self._volume_observer.max_wavelength - self._volume_observer.min_wavelength
         emitter = UniformVolumeEmitter(ConstantSF(1/wvl_range))
 
-        for i in range(grid.count):
+        if cell_range is None:
+            cell_range = range(grid.count)
+
+        for i in cell_range:
 
             p1, p2, p3, p4 = grid[i]
 
             r_inner = p1.x
             r_outer = p3.x
             if r_inner > r_outer:
-                t = r_inner
-                r_inner = r_outer
-                r_outer = t
+                r_inner, r_outer = r_outer, r_inner
 
             z_lower = p2.y
             z_upper = p1.y
             if z_lower > z_upper:
-                t = z_lower
-                z_lower = z_upper
-                z_upper = t
+                z_lower, z_upper = z_upper, z_lower
 
             # TODO - switch to using CAD method such that reflections can be included automatically
             cylinder_height = z_upper - z_lower
