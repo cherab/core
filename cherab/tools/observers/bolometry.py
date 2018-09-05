@@ -179,7 +179,7 @@ class BolometerSlit(Node):
         # NOTE - target primitive and aperture surface cannot be co-incident otherwise numerics will cause Raysect
         # to be blind to one of the two surfaces.
         slit_normal = basis_x.cross(basis_y)
-        transform = translate(centre_point.x, centre_point.y, centre_point.z) * rotate_basis(slit_normal, basis_x)
+        transform = translate(centre_point.x, centre_point.y, centre_point.z) * rotate_basis(slit_normal, basis_y)
 
         super().__init__(parent=parent, transform=transform, name=self.slit_id)
 
@@ -279,7 +279,7 @@ class BolometerFoil(Node):
 
         # setup root bolometer foil transform
         translation = translate(self._centre_point.x, self._centre_point.y, self._centre_point.z)
-        rotation = rotate_basis(self._normal_vec, self._basis_x)
+        rotation = rotate_basis(self._normal_vec, self._basis_y)
 
         super().__init__(parent=parent, transform=translation * rotation, name=self.detector_id)
 
