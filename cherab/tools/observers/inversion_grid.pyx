@@ -99,6 +99,12 @@ cdef class RectangularGrid:
 
         return state
 
+    def __setstate__(self, state):
+        grid_id = state['Grid_ID']
+        cell_data = np.asarray([[cell['p1'], cell['p2'], cell['p3'], cell['p4']]
+                                for cell in state['cells']])
+        self.__init__(grid_id, cell_data)
+
     def cell_area(self, cell_index):
         p1, p2, p3, p4 = self.__getitem__(cell_index)
         return cabs((p3.x - p2.x) * (p2.y - p1.y))
