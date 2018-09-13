@@ -28,9 +28,10 @@ from matplotlib.patches import Polygon
 from matplotlib.collections import PatchCollection
 
 from raysect.core cimport translate
-from raysect.core.math.point cimport new_point2d, Point2D
-from raysect.primitive.cylinder cimport Cylinder
 from raysect.core.math import Discrete2DMesh
+from raysect.core.math.point cimport new_point2d, Point2D
+from raysect.core.math.random import uniform
+from raysect.primitive.cylinder cimport Cylinder
 from cherab.core.math import AxisymmetricMapper
 from cherab.tools.emitters.simple_power_emitter import SimplePowerEmitter
 
@@ -339,8 +340,35 @@ cdef class EmissivityGrid:
 
         fig, ax = plt.subplots()
         ax.add_collection(p)
-        plt.xlim(1, 2.5)
-        plt.ylim(-1.5, 1.5)
         title = title or self.case_id + " - Emissivity"
         plt.title(title)
 
+
+def emissivity_grid_from_function(grid_definition, emission_function, grid_samples=10):
+
+    emission_grid = EmissivityGrid(grid_definition)
+
+    for i, cell in enumerate(emission_grid.grid_geometry):
+
+        p1, p2, p3, p4 = cell
+        xl = min(p1.x, p2.x, p3.x, p4.x)
+        xu = max(p1.x, p2.x, p3.x, p4.x)
+        yl = min(p1.y, p2.y, p3.y, p4.y)
+        yu = max(p1.y, p2.y, p3.y, p4.y)
+
+        xm = (xu + xl) / 2
+        ym = (yu + yl) / 2
+
+        dx = xu - xl
+        dy = yu - yl
+
+        emission = 0
+        for _ in range(grid_samples):
+            tx = (uniform() * dx - dx/2) + xm
+            ty = (uniform() * dy - dy/2) + ym
+            emission += emission_function(tx, ty)
+        emission /= grid_samples
+
+        emission_grid.emissivities[i] = emission
+
+    return emission_grid
