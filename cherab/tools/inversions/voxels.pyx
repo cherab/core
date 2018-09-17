@@ -25,7 +25,8 @@ from matplotlib.patches import Polygon
 from matplotlib.collections import PatchCollection
 
 from raysect.core cimport Node, Point2D, Point3D, Vector3D, rotate_z, AffineMatrix3D
-from raysect.core.math cimport winding2d, triangulate2d
+from raysect.core.math cimport triangulate2d
+from raysect.core.math.cython.utility cimport winding2d
 from raysect.primitive import Mesh
 from raysect.optical import UnityVolumeEmitter
 from raysect.optical cimport Spectrum, World, Primitive, Ray
@@ -37,8 +38,6 @@ cdef double PI = 3.141592653589793
 
 cdef class Voxel(Node):
 
-    cdef list _voxel_primitives
-
     @property
     def volume(self):
         raise NotImplementedError()
@@ -48,13 +47,15 @@ cdef class AxisSymmetricVoxel(Voxel):
 
     cdef np.ndarray _vertices, _triangles
 
-    def __init__(self, vertices, material=None, parent=None):
+    def __init__(self, vertices, parent, material=None):
+
+        super().__init__(parent=parent)
 
         material = material or UnityVolumeEmitter()
 
         num_vertices = len(vertices)
         if not num_vertices >= 3:
-            raise TypeError('The AxisSymmetricVoxel can only be specified by a polygon with atleast 3 Point2D objects.')
+            raise TypeError('The AxisSymmetricVoxel can only be specified by a polygon with at least 3 Point2D objects.')
 
         self._vertices = np.zeros((num_vertices, 2))
         for i, vertex in enumerate(vertices):
@@ -63,14 +64,14 @@ cdef class AxisSymmetricVoxel(Voxel):
             self._vertices[i, :] = vertex.x, vertex.y
 
         # Check the polygon is clockwise, if not => reverse it.
-        if winding2d(self._vertices):
+        if not winding2d(self._vertices):
             self._vertices = self._vertices[::-1]
 
         # Generate summary statistics
         radius = self._vertices[:, 0].sum()/num_vertices
         radial_width = self._vertices[:, 0].max() - self._vertices[:, 0].min()
 
-        number_segments = floor(2 * PI * radius / radial_width)
+        number_segments = int(floor(2 * PI * radius / radial_width))
         theta_adjusted = 360 / number_segments
 
         # Construct 3D outline of polygon in x-z plane and the rotated plane
@@ -89,36 +90,24 @@ cdef class AxisSymmetricVoxel(Voxel):
         for p in rotated_points:
             vertices.append([p.x, p.y, p.z])
 
-        # vertices = [[p1a.x, p1a.y, p1a.z], [p2a.x, p2a.y, p2a.z],
-        #             [p3a.x, p3a.y, p3a.z], [p4a.x, p4a.y, p4a.z],
-        #             [p1b.x, p1b.y, p1b.z], [p2b.x, p2b.y, p2b.z],
-        #             [p3b.x, p3b.y, p3b.z], [p4b.x, p4b.y, p4b.z]]
-
         self._triangles = triangulate2d(self._vertices)
 
         # assemble mesh triangles
         triangles = []
         # front face triangles
         for i in range(self._triangles.shape[0]):
-            triangles.append([self._triangles[i, 0], self._triangles[i, 1], self._triangles[i, 2]])
+            triangles.append([self._triangles[i, 2], self._triangles[i, 1], self._triangles[i, 0]])
         # rear face triangles
         for i in range(self._triangles.shape[0]):
-            triangles.append([self._triangles[i+num_vertices, 2], self._triangles[i+num_vertices, 1], self._triangles[i+num_vertices, 0]])
+            triangles.append([self._triangles[i, 0]+num_vertices, self._triangles[i, 1]+num_vertices, self._triangles[i, 2]+num_vertices])
         # Assemble side triangles
         for i in range(num_vertices):
-            if i == 0:
-                triangles.append([i, i+num_vertices, i+num_vertices+1])
-                triangles.append([i+num_vertices+1, num_vertices-1, i])
+            if i == num_vertices-1:
+                triangles.append([i+1, i+num_vertices, i])
+                triangles.append([0, i+1, i])
             else:
-                triangles.append([i, i+num_vertices, i+num_vertices+1])
-                triangles.append([i+num_vertices+1, i-1, i])
-
-        # triangles = [[1, 0, 3], [1, 3, 2],  # front face (x-z)
-        #              [7, 4, 5], [7, 5, 6],  # rear face (rotated out of x-z plane)
-        #              [5, 1, 2], [5, 2, 6],  # top face (x-y plane)
-        #              [3, 0, 4], [3, 4, 7],  # bottom face (x-y plane)
-        #              [4, 0, 5], [1, 5, 0],  # inner face (y-z plane)
-        #              [2, 3, 7], [2, 7, 6]]  # outer face (y-z plane)
+                triangles.append([i+num_vertices+1, i+num_vertices, i])
+                triangles.append([i, i+1, i+num_vertices+1])
 
         base_segment = Mesh(vertices=vertices, triangles=triangles, smoothing=False)
 
@@ -126,7 +115,6 @@ cdef class AxisSymmetricVoxel(Voxel):
         for i in range(number_segments):
             theta_rotation = theta_adjusted * i
             segment = base_segment.instance(transform=rotate_z(theta_rotation), material=material, parent=self)
-            self._voxel_primitives.append(segment)
 
     @property
     def vertices(self):
@@ -205,6 +193,8 @@ cdef class ToroidalVoxelGrid(VoxelCollection):
         double _min_height, _max_height
 
     def __init__(self, voxel_coordinates):
+
+        super().__init__()
 
         self._min_radius = 1E999
         self._max_radius = 0
