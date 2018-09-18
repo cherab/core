@@ -27,17 +27,17 @@ from raysect.core import Node, translate, rotate_basis, Point3D, Vector3D, Ray a
 from raysect.core.math.sampler import TargettedHemisphereSampler
 from raysect.primitive import Box, Cylinder, Subtract
 from raysect.optical import ConstantSF
-from raysect.optical.observer import PowerPipeline0D, RadiancePipeline0D, SightLine, TargettedPixel
+from raysect.optical.observer import PowerPipeline0D, RadiancePipeline0D, \
+    SpectralPowerPipeline0D, SpectralRadiancePipeline0D, SightLine, TargettedPixel
 from raysect.optical.material.material import NullMaterial
 from raysect.optical.material import AbsorbingSurface, UniformVolumeEmitter
 
-from cherab.tools.observers.inversion_grid import SensitivityMatrix
+from cherab.tools.inversions.voxels import VoxelCollection
 
 
 R_2_PI = 1 / (2 * np.pi)
 
 
-# TODO - add support for CAD files as camera box geometry
 class BolometerCamera(Node):
     """
     A group of bolometer sight-lines under a single scene-graph node.
@@ -67,7 +67,7 @@ class BolometerCamera(Node):
                 raise IndexError("BolometerFoil number {} not available in this BolometerCamera.".format(item))
         elif isinstance(item, str):
             for detector in self._foil_detectors:
-                if detector.detector_id == item:
+                if detector.name == item:
                     return detector
             else:
                 raise ValueError("BolometerFoil '{}' was not found in this BolometerCamera.".format(item))
@@ -231,7 +231,7 @@ class BolometerSlit(Node):
         return state
 
 
-class BolometerFoil(Node):
+class BolometerFoil(TargettedPixel):
     """
     A rectangular bolometer detector.
 
@@ -242,21 +242,17 @@ class BolometerFoil(Node):
     def __init__(self, detector_id, centre_point, basis_x, dx, basis_y, dy, slit,
                  parent=None, render_engine=None):
 
-        self.detector_id = detector_id
-
         # perform validation of input parameters
 
         if not isinstance(dx, float):
             raise TypeError("dx argument for BolometerFoil must be of type float.")
         if not dx > 0:
             raise ValueError("dx argument for BolometerFoil must be greater than zero.")
-        self.dx = dx
 
         if not isinstance(dy, float):
             raise TypeError("dy argument for BolometerFoil must be of type float.")
         if not dy > 0:
             raise ValueError("dy argument for BolometerFoil must be greater than zero.")
-        self.dy = dy
 
         if not isinstance(slit, BolometerSlit):
             raise TypeError("slit argument for BolometerFoil must be of type BolometerSlit.")
@@ -281,62 +277,28 @@ class BolometerFoil(Node):
         translation = translate(self._centre_point.x, self._centre_point.y, self._centre_point.z)
         rotation = rotate_basis(self._normal_vec, self._basis_y)
 
-        super().__init__(parent=parent, transform=translation * rotation, name=self.detector_id)
+        super().__init__([slit.primitive], targetted_path_prob=1.0,
+                         pipelines=[PowerPipeline0D(accumulate=False)],
+                         pixel_samples=1000, x_width=dx, y_width=dy, spectral_bins=1, quiet=True,
+                         parent=parent, transform=translation * rotation, name=detector_id)
 
-        # setup the observers
-        self._los_radiance_pipeline = RadiancePipeline0D(accumulate=False)
-        self._los_observer = SightLine(
-            pipelines=[self._los_radiance_pipeline], pixel_samples=1, spectral_bins=1,
-            parent=self, name=detector_id, quiet=True, render_engine=render_engine
-        )
-
-        self._volume_power_pipeline = PowerPipeline0D(accumulate=False)
-        self._volume_radiance_pipeline = RadiancePipeline0D(accumulate=False)
-        self._volume_observer = TargettedPixel(
-            [slit.primitive], targetted_path_prob=1.0,
-            pipelines=[self._volume_power_pipeline, self._volume_radiance_pipeline],
-            pixel_samples=1000, x_width=dx, y_width=dy,
-            spectral_bins=1, parent=self, name=detector_id, quiet=True,
-            render_engine=render_engine
-        )
-
-        # NOTE - the los observer may not be normal to the surface, in which case calculate an extra relative transform
-        if self._normal_vec.dot(self._foil_to_slit_vec) != 1.0:
-            relative_foil_to_slit_vec = self._foil_to_slit_vec.transform(self.to_local())
-            relative_rotation = rotate_basis(relative_foil_to_slit_vec, Vector3D(1, 0, 0))
-            self._los_observer.transform = relative_rotation
-            self._los_cos_theta = self._normal_vec.dot(self._foil_to_slit_vec)
-        else:
-            self._los_cos_theta = 1.0
-
-        # initialise sensitivity values
-        self._los_radiance_sensitivity = None
-        self._volume_radiance_sensitivity = None
-        self._volume_power_sensitivity = None
-        self._etendue = None
-        self._etendue_error = None
+    def __repr__(self):
+        """Returns a string representation of this BolometerFoil object."""
+        return "<BolometerFoil - " + self.name + ">"
 
     def __getstate__(self, serialisation_format=None):
 
         state = {
             'CHERAB_Object_Type': 'BolometerFoil',
             'Version': 1,
-            'Detector_ID': self.detector_id,
+            'Detector_ID': self.name,
             'centre_point': self.centre_point.__getstate__(),
             'basis_x': self._basis_x.__getstate__(),
             'basis_y': self._basis_y.__getstate__(),
-            'dx': self.dx,
-            'dy': self.dy,
+            'x_width': self.x_width,
+            'y_width': self.y_width,
             'slit_id': self._slit.slit_id,
         }
-
-        # add extra data if saving as binary
-        if serialisation_format in ['.pickle', '.sav'] and self._los_radiance_sensitivity is not None:
-            state['los_radiance_sensitivity'] = self._los_radiance_sensitivity.__getstate__()
-            state['volume_radiance_sensitivity'] = self._volume_radiance_sensitivity.__getstate__()
-            state['volume_power_sensitivity'] = self._volume_power_sensitivity.__getstate__()
-            state['etendue'] = self._etendue
-            state['etendue_error'] = self._etendue_error
 
         return state
 
@@ -360,193 +322,47 @@ class BolometerFoil(Node):
     def slit(self):
         return self._slit
 
-    @property
-    def los_radiance_sensitivity(self):
-        if self._los_radiance_sensitivity is None:
-            raise ValueError("The sensitivity of this BolometerFoil has not yet been calculated.")
-        return self._los_radiance_sensitivity
+    def trace_sightline(self):
+        raise NotImplementedError("Please implement me.")
 
-    @property
-    def volume_power_sensitivity(self):
-        if self._volume_power_sensitivity is None:
-            raise ValueError("The sensitivity of this BolometerFoil has not yet been calculated.")
-        return self._volume_power_sensitivity
+    def calculate_sensitivity(self, voxel_collection, ray_count=10000, units="Power"):
 
-    @property
-    def volume_radiance_sensitivity(self):
-        if self._volume_radiance_sensitivity is None:
-            raise ValueError("The sensitivity of this BolometerFoil has not yet been calculated.")
-        return self._volume_radiance_sensitivity
+        if not isinstance(voxel_collection, VoxelCollection):
+            raise TypeError("voxel_collection must be of type VoxelCollection")
 
-    @property
-    def etendue(self):
-        if self._etendue is None:
-            raise ValueError("The etendue of this BolometerFoil has not yet been calculated.")
-        return self._etendue
+        if units == "Power":
+            pipeline = SpectralPowerPipeline0D(display_progress=False)
+        elif units == "Radiance":
+            pipeline = SpectralRadiancePipeline0D(display_progress=False)
+        else:
+            raise ValueError("Sensitivity units can only be of type 'Power' or 'Radiance'.")
 
-    @property
-    def etendue_error(self):
-        if self._etendue_error is None:
-            raise ValueError("The etendue of this BolometerFoil has not yet been calculated.")
-        return self._etendue_error
+        voxel_collection.set_active("all")
 
-    def observe_los(self, samples=10000):
-        """
-        Ask this bolometer foil to observe its world.
-        """
-        cached_sample_rate = self._los_observer.pixel_samples
-        self._los_observer.pixel_samples = samples
-        self._los_observer.observe()
-        self._los_observer.pixel_samples = cached_sample_rate
-        return self._los_radiance_pipeline.value.mean * self._los_cos_theta
+        cached_max_wavelength = self.max_wavelength
+        cached_min_wavelength = self.min_wavelength
+        cached_bins = self.spectral_bins
+        cached_pipelines = self.pipelines
+        cached_ray_count = self.pixel_samples
 
-    def observe_volume_radiance(self, samples=10000):
-        """
-        Ask this bolometer foil to observe its world.
-        """
-        cached_sample_rate = self._volume_observer.pixel_samples
-        self._volume_observer.pixel_samples = samples
-        self._volume_observer.observe()
-        self._volume_observer.pixel_samples = cached_sample_rate
-        return self._volume_radiance_pipeline.value.mean
+        self.pipelines = [pipeline]
+        self.min_wavelength = 1
+        self.max_wavelength = voxel_collection.count + 1
+        self.spectral_bins = voxel_collection.count
+        self.pixel_samples = ray_count
 
-    def observe_volume_power(self, samples=10000):
-        """
-        Ask this bolometer foil to observe its world.
-        """
-        cached_sample_rate = self._volume_observer.pixel_samples
-        self._volume_observer.pixel_samples = samples
-        self._volume_observer.observe()
-        self._volume_observer.pixel_samples = cached_sample_rate
-        return self._volume_power_pipeline.value.mean
+        self.observe()
 
-    def calculate_sensitivity(self, grid, cell_range=None):
+        self.max_wavelength = cached_max_wavelength
+        self.min_wavelength = cached_min_wavelength
+        self.spectral_bins = cached_bins
+        self.pipelines = cached_pipelines
+        self.pixel_samples = cached_ray_count
 
-        world = self.root
-
-        self._los_radiance_sensitivity = SensitivityMatrix(grid, self.detector_id, 'los radiance')
-        self._volume_radiance_sensitivity = SensitivityMatrix(grid, self.detector_id, 'Volume mean radiance sensitivity')
-        self._volume_power_sensitivity = SensitivityMatrix(grid, self.detector_id, 'Volume power sensitivity')
-
-        # Make a uniform emitter with 1 W/str/m^3
-        wvl_range = self._volume_observer.max_wavelength - self._volume_observer.min_wavelength
-        emitter = UniformVolumeEmitter(ConstantSF(1/wvl_range))
-
-        if cell_range is None:
-            cell_range = range(grid.count)
-
-        for i in cell_range:
-
-            p1, p2, p3, p4 = grid[i]
-
-            r_inner = p1.x
-            r_outer = p3.x
-            if r_inner > r_outer:
-                r_inner, r_outer = r_outer, r_inner
-
-            z_lower = p2.y
-            z_upper = p1.y
-            if z_lower > z_upper:
-                z_lower, z_upper = z_upper, z_lower
-
-            # TODO - switch to using CAD method such that reflections can be included automatically
-            cylinder_height = z_upper - z_lower
-
-            outer_cylinder = Cylinder(radius=r_outer, height=cylinder_height, transform=translate(0, 0, z_lower))
-            inner_cylinder = Cylinder(radius=r_inner, height=cylinder_height, transform=translate(0, 0, z_lower))
-            cell_emitter = Subtract(outer_cylinder, inner_cylinder, parent=world, material=emitter)
-
-            self._los_observer.observe()
-            self._los_radiance_sensitivity.sensitivity[i] = self._los_radiance_pipeline.value.mean
-
-            self._volume_observer.observe()
-            self._volume_radiance_sensitivity.sensitivity[i] = self._volume_radiance_pipeline.value.mean
-            self._volume_power_sensitivity.sensitivity[i] = self._volume_power_pipeline.value.mean
-
-            outer_cylinder.parent = None
-            inner_cylinder.parent = None
-            cell_emitter.parent = None
-
-    def calculate_etendue(self, ray_count=10000, batches=10, print_results=False):
-
-        if self.slit.csg_aperture is None:
-            raise ValueError("CSG aperture is required to support etendue calculation.")
-
-        if not batches > 5:
-            raise ValueError("We enforce a minimum batch size of 5 to ensure reasonable statistics.")
-
-        # TODO - test for null transform
-        # if self.slit.primitive.transform is not None or self.slit.csg_aperture.transform is not None:
-        #     print(self.slit.primitive.transform)
-        #     print(self.slit.csg_aperture.transform)
-        #     raise ValueError("CSG aperture and target cannot have any relative transform when doing etendue calculation.")
-
-        target = self.slit.primitive
-        aperture = self.slit.csg_aperture
-
-        bolometer_world = self.slit.root
-        detector_transform = self.to_root()
-
-        # generate bounding sphere and convert to local coordinate system
-        sphere = target.bounding_sphere()
-        spheres = [(sphere.centre.transform(self.to_local()), sphere.radius, 1.0)]
-
-        # instance targetted pixel sampler
-        targetted_sampler = TargettedHemisphereSampler(spheres)
-
-        etendues = []
-        for i in range(batches):
-
-            # sample pixel origins
-            origins = self._volume_observer._point_sampler(samples=ray_count)
-
-            passed = 0.0
-            for origin in origins:
-
-                # obtain targetted vector sample
-                direction, pdf = targetted_sampler(origin, pdf=True)
-                path_weight = R_2_PI * direction.z/pdf
-
-                origin = origin.transform(detector_transform)
-                direction = direction.transform(detector_transform)
-
-                while True:
-
-                    # Find the next intersection point of the ray with the world
-                    intersection = bolometer_world.hit(CoreRay(origin, direction))
-
-                    if intersection is None:
-                        passed += 1 * path_weight
-                        break
-
-                    elif isinstance(intersection.primitive.material, NullMaterial):
-                        hit_point = intersection.hit_point.transform(intersection.primitive_to_world)
-                        origin = hit_point + direction * 1E-9
-                        continue
-
-                    else:
-                        break
-
-            if passed == 0:
-                raise ValueError("Something is wrong with the scene-graph, calculated etendue should not zero.")
-
-            etendue_fraction = passed / ray_count
-
-            etendues.append(self._volume_observer.sensitivity * etendue_fraction)
-
-        self._etendue = np.mean(etendues)
-        self._etendue_error = np.std(etendues)
-
-        # move slit and target back onto bolometer scene-graph
-        self.slit.primitive.parent = self.slit
-        self.slit.csg_aperture.parent = self.slit
-
-        if print_results:
-            print(self.detector_id, 'etendue {:.4G} +- {:.3G} m^2 str'.format(self.etendue, self.etendue_error))
+        return pipeline.samples.mean
 
 
-def load_bolometer_camera(filename, parent=None, inversion_grid=None, camera_dict=None,
-                          render_engine=None):
+def load_bolometer_camera(filename, parent=None, camera_dict=None, render_engine=None):
 
     if filename == 'machine_description':
         name, extention = '', ''
@@ -616,35 +432,6 @@ def load_bolometer_camera(filename, parent=None, inversion_grid=None, camera_dic
             detector_id, centre_point, basis_x, dx, basis_y, dy, slit,
             parent=camera, render_engine=render_engine
         )
-
-        # add extra sensitivity data stored in binary
-        if extention == '.pickle' and inversion_grid is not None:
-            try:
-                detector_uid = detector['los_radiance_sensitivity']['detector_uid']
-                description = detector['los_radiance_sensitivity']['description']
-                los_radiance_sensitivity = SensitivityMatrix(inversion_grid, detector_uid, description=description)
-                los_radiance_sensitivity.sensitivity[:] = detector['los_radiance_sensitivity']['sensitivity']
-                bolometer_foil._los_radiance_sensitivity = los_radiance_sensitivity
-
-                detector_uid = detector['volume_radiance_sensitivity']['detector_uid']
-                description = detector['volume_radiance_sensitivity']['description']
-                volume_radiance_sensitivity = SensitivityMatrix(inversion_grid, detector_uid, description=description)
-                volume_radiance_sensitivity.sensitivity[:] = detector['volume_radiance_sensitivity']['sensitivity']
-                bolometer_foil._volume_radiance_sensitivity = volume_radiance_sensitivity
-
-                detector_uid = detector['volume_power_sensitivity']['detector_uid']
-                description = detector['volume_power_sensitivity']['description']
-                volume_power_sensitivity = SensitivityMatrix(inversion_grid, detector_uid, description=description)
-                volume_power_sensitivity.sensitivity[:] = detector['volume_power_sensitivity']['sensitivity']
-                bolometer_foil._volume_power_sensitivity = volume_power_sensitivity
-            except KeyError:
-                pass
-
-            try:
-                bolometer_foil._etendue = detector['etendue']
-                bolometer_foil._etendue_error = detector['etendue_error']
-            except KeyError:
-                pass
 
         camera.add_foil_detector(bolometer_foil)
 

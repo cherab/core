@@ -33,25 +33,25 @@ from raysect.optical cimport Spectrum, World, Primitive, Ray
 from raysect.optical.material.emitter.homogeneous cimport HomogeneousVolumeEmitter
 
 
-cdef double PI = 3.141592653589793
+PI = 3.141592653589793
 
 
-cdef class Voxel(Node):
+class Voxel(Node):
 
     @property
     def volume(self):
         raise NotImplementedError()
 
 
-cdef class AxisSymmetricVoxel(Voxel):
+class AxisSymmetricVoxel(Voxel):
 
-    cdef np.ndarray _vertices, _triangles
+    # cdef np.ndarray _vertices, _triangles
 
     def __init__(self, vertices, parent, material=None):
 
         super().__init__(parent=parent)
 
-        material = material or UnityVolumeEmitter()
+        self._material = material or UnityVolumeEmitter()
 
         num_vertices = len(vertices)
         if not num_vertices >= 3:
@@ -114,7 +114,17 @@ cdef class AxisSymmetricVoxel(Voxel):
         # Construct annulus by duplicating and rotating base segment.
         for i in range(number_segments):
             theta_rotation = theta_adjusted * i
-            segment = base_segment.instance(transform=rotate_z(theta_rotation), material=material, parent=self)
+            segment = base_segment.instance(transform=rotate_z(theta_rotation), material=self._material, parent=self)
+
+    @property
+    def material(self):
+        return self._material
+
+    @material.setter
+    def material(self, value):
+        self._material = value
+        for mesh_segment in self.children:
+            mesh_segment.material = value
 
     @property
     def vertices(self):
@@ -142,10 +152,10 @@ cdef class AxisSymmetricVoxel(Voxel):
         return 2 * PI * voxel_radius * voxel_area
 
 
-cdef class VoxelCollection(Node):
+class VoxelCollection(Node):
 
-    cdef:
-        list _voxels
+    # cdef:
+    #     list _voxels
 
     def __getitem__(self, item):
 
@@ -175,6 +185,9 @@ cdef class VoxelCollection(Node):
 
         return total_volume
 
+    def set_active(self, item):
+        raise NotImplementedError()
+
     def parent_all_voxels(self):
 
         for voxel in self._voxels:
@@ -186,15 +199,15 @@ cdef class VoxelCollection(Node):
             voxel.parent = None
 
 
-cdef class ToroidalVoxelGrid(VoxelCollection):
+class ToroidalVoxelGrid(VoxelCollection):
 
-    cdef:
-        double _min_radius, _max_radius
-        double _min_height, _max_height
+    # cdef:
+    #     double _min_radius, _max_radius
+    #     double _min_height, _max_height
 
-    def __init__(self, voxel_coordinates):
+    def __init__(self, voxel_coordinates, name='', parent=None, transform=None):
 
-        super().__init__()
+        super().__init__(name=name, parent=parent, transform=transform)
 
         self._min_radius = 1E999
         self._max_radius = 0
@@ -203,9 +216,6 @@ cdef class ToroidalVoxelGrid(VoxelCollection):
 
         self._voxels = []
         for voxel_vertices in voxel_coordinates:
-
-            # if not isinstance(voxel_description, tuple):
-            #     raise TypeError("Must be a list of tuples")
 
             voxel = AxisSymmetricVoxel(voxel_vertices, parent=self)
             self._voxels.append(voxel)
@@ -236,9 +246,31 @@ cdef class ToroidalVoxelGrid(VoxelCollection):
     def max_height(self):
         return self._max_height
 
+    def set_active(self, item):
+
+        if isinstance(item, int):
+
+            if not (0 <= item < self.count):
+                raise IndexError("The specified voxel index is out of range.")
+
+            for i, voxel in enumerate(self._voxels):
+                if i == item:
+                    voxel.parent = self
+                    voxel.material = UnityVolumeEmitter()
+                else:
+                    voxel.parent = None
+
+        elif item == "all":
+            for i, voxel in enumerate(self._voxels):
+                voxel.parent = self
+                voxel.material = UnityVoxelEmitter(i)
+
+        else:
+            raise ValueError("set_active() argument must be an index of type int or the string 'all'")
+
     def plot(self, title=None, voxel_values=None):
 
-        if voxel_values:
+        if voxel_values is not None:
             if not isinstance(voxel_values, (np.ndarray, list, tuple)):
                 raise TypeError("Argument voxel_values should be a list/array of floats with length "
                                 "equal to the number of voxels.")
@@ -260,12 +292,9 @@ cdef class ToroidalVoxelGrid(VoxelCollection):
         ax.add_collection(p)
         plt.xlim(self.min_radius, self.max_radius)
         plt.ylim(self.min_height, self.max_height)
+        plt.axis("equal")
         title = title or self.name + " Voxel Grid"
         plt.title(title)
-
-
-def build_regular_grid_of_toroidal_voxels(lower_point, upper_point, shape):
-    pass
 
 
 cdef class UnityVoxelEmitter(HomogeneousVolumeEmitter):
@@ -283,48 +312,3 @@ cdef class UnityVoxelEmitter(HomogeneousVolumeEmitter):
         spectrum.samples_mv[self.voxel_id] = 1.0
         return spectrum
 
-
-# if not isinstance(lower_corner, Point2D) or not isinstance(upper_corner, Point2D):
-#     raise TypeError('The ToroidalAnnulusVoxel can only be specified with two Point2D objects.')
-#
-# self._lower_corner = lower_corner
-# self._upper_corner = upper_corner
-#
-# material = material or UnityVolumeEmitter()
-#
-# radius = (upper_corner.x + lower_corner.x)/2
-# dr = upper_corner.x - lower_corner.x
-# number_segments = floor(2 * PI * radius / dr)
-# theta_adjusted = 360 / number_segments
-#
-# # Set of points in x-z plane
-# p1a = Point3D(lower_corner.x, 0, lower_corner.y)  # corresponds to lower corner is x-z plane
-# p2a = Point3D(lower_corner.x, 0, upper_corner.y)
-# p3a = Point3D(upper_corner.x, 0, upper_corner.y)  # corresponds to upper corner in x-z plane
-# p4a = Point3D(upper_corner.x, 0, lower_corner.y)
-#
-# # Set of points rotated away from x-z plane
-# p1b = p1a.transform(rotate_z(theta_adjusted))
-# p2b = p2a.transform(rotate_z(theta_adjusted))
-# p3b = p3a.transform(rotate_z(theta_adjusted))
-# p4b = p4a.transform(rotate_z(theta_adjusted))
-#
-# vertices = [[p1a.x, p1a.y, p1a.z], [p2a.x, p2a.y, p2a.z],
-#             [p3a.x, p3a.y, p3a.z], [p4a.x, p4a.y, p4a.z],
-#             [p1b.x, p1b.y, p1b.z], [p2b.x, p2b.y, p2b.z],
-#             [p3b.x, p3b.y, p3b.z], [p4b.x, p4b.y, p4b.z]]
-#
-# triangles = [[1, 0, 3], [1, 3, 2],  # front face (x-z)
-#              [7, 4, 5], [7, 5, 6],  # rear face (rotated out of x-z plane)
-#              [5, 1, 2], [5, 2, 6],  # top face (x-y plane)
-#              [3, 0, 4], [3, 4, 7],  # bottom face (x-y plane)
-#              [4, 0, 5], [1, 5, 0],  # inner face (y-z plane)
-#              [2, 3, 7], [2, 7, 6]]  # outer face (y-z plane)
-#
-# base_segment = Mesh(vertices=vertices, triangles=triangles, smoothing=False)
-#
-# # Construct annulus by duplicating and rotating base segment.
-# for i in range(number_segments):
-#     theta_rotation = theta_adjusted * i
-#     segment = base_segment.instance(transform=rotate_z(theta_rotation), material=material, parent=self)
-#     self._voxel_primitives.append(segment)
