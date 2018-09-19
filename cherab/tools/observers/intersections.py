@@ -32,7 +32,7 @@ def find_wall_intersection(world, centre_point, sightline_vec, delta=1E-3):
             raise ValueError('No intersection with solid material found.')
 
         elif isinstance(intersection.primitive.material, NullMaterial):
-            centre_point = centre_point + sightline_vec * delta
+            centre_point += sightline_vec * delta
             continue
 
         else:
