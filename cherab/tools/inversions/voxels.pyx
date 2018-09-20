@@ -157,6 +157,9 @@ class VoxelCollection(Node):
     # cdef:
     #     list _voxels
 
+    def __len__(self):
+        return len(self._voxels)
+
     def __getitem__(self, item):
 
         if not isinstance(item, int):
