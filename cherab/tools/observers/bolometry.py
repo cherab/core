@@ -279,6 +279,8 @@ class BolometerFoil(TargettedPixel):
             pipeline = PowerPipeline0D(accumulate=False)
         elif self.units == "Radiance":
             pipeline = RadiancePipeline0D(accumulate=False)
+        else:
+            raise ValueError("The units argument of BolometerFoil must be one of 'Power' or 'Radiance'.")
 
         los_observer = SightLine(pipelines=[pipeline], pixel_samples=1, quiet=True,
                                  parent=self, name=self.name, transform=self.transform)
