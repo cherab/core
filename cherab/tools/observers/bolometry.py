@@ -55,6 +55,9 @@ class BolometerCamera(Node):
             camera_geometry.parent = self
         self._camera_geometry = camera_geometry
 
+    def __len__(self):
+        return len(self._foil_detectors)
+
     def __iter__(self):
         for detector in self._foil_detectors:
             yield detector
@@ -270,6 +273,22 @@ class BolometerFoil(TargettedPixel):
     def slit(self):
         return self._slit
 
+    def as_sightline(self):
+
+        if self.units == "Power":
+            pipeline = PowerPipeline0D(accumulate=False)
+        elif self.units == "Radiance":
+            pipeline = RadiancePipeline0D(accumulate=False)
+
+        los_observer = SightLine(pipelines=[pipeline], pixel_samples=1, quiet=True,
+                                 parent=self, name=self.name, transform=self.transform)
+        los_observer.render_engine = self.render_engine
+        los_observer.spectral_bins = self.spectral_bins
+        los_observer.min_wavelength = self.min_wavelength
+        los_observer.max_wavelength = self.max_wavelength
+
+        return los_observer
+
     def trace_sightline(self):
 
         if not isinstance(self.root, World):
@@ -286,7 +305,7 @@ class BolometerFoil(TargettedPixel):
                 raise RuntimeError("No material intersection was found for this sightline.")
 
             elif isinstance(intersection.primitive.material, NullMaterial):
-                centre_point += self.sightline_vector * 1E-9
+                centre_point += self.sightline_vector * 1E-4
                 continue
 
             else:
@@ -373,7 +392,7 @@ class BolometerFoil(TargettedPixel):
 
                     elif isinstance(intersection.primitive.material, NullMaterial):
                         hit_point = intersection.hit_point.transform(intersection.primitive_to_world)
-                        origin = hit_point + direction * 1E-9
+                        origin = hit_point + direction * 1E-4
                         continue
 
                     else:
