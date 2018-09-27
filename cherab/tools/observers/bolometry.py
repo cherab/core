@@ -199,13 +199,13 @@ class BolometerFoil(TargettedPixel):
 
         # perform validation of input parameters
 
-        if not isinstance(dx, float):
-            raise TypeError("dx argument for BolometerFoil must be of type float.")
+        if not isinstance(dx, (float, int)):
+            raise TypeError("dx argument for BolometerFoil must be of type float/int.")
         if not dx > 0:
             raise ValueError("dx argument for BolometerFoil must be greater than zero.")
 
-        if not isinstance(dy, float):
-            raise TypeError("dy argument for BolometerFoil must be of type float.")
+        if not isinstance(dy, (float, int)):
+            raise TypeError("dy argument for BolometerFoil must be of type float/int.")
         if not dy > 0:
             raise ValueError("dy argument for BolometerFoil must be greater than zero.")
 
@@ -307,7 +307,9 @@ class BolometerFoil(TargettedPixel):
                 raise RuntimeError("No material intersection was found for this sightline.")
 
             elif isinstance(intersection.primitive.material, NullMaterial):
-                centre_point += self.sightline_vector * 1E-4
+                # apply a small displacement to avoid infinite self collisions due to numerics
+                ray_displacement = min(self.x_width, self.y_width) / 100
+                centre_point += self.sightline_vector * ray_displacement
                 continue
 
             else:
@@ -352,7 +354,7 @@ class BolometerFoil(TargettedPixel):
 
     def calculate_etendue(self, ray_count=10000, batches=10):
 
-        if not batches > 5:
+        if batches < 5:
             raise ValueError("We enforce a minimum batch size of 5 to ensure reasonable statistics.")
 
         target = self.slit.target
@@ -394,7 +396,9 @@ class BolometerFoil(TargettedPixel):
 
                     elif isinstance(intersection.primitive.material, NullMaterial):
                         hit_point = intersection.hit_point.transform(intersection.primitive_to_world)
-                        origin = hit_point + direction * 1E-4
+                        # apply a small displacement to avoid infinite self collisions due to numerics
+                        ray_displacement = min(self.x_width, self.y_width) / 100
+                        origin = hit_point + direction * ray_displacement
                         continue
 
                     else:
