@@ -43,7 +43,7 @@ class Voxel(Node):
         raise NotImplementedError()
 
 
-class AxisSymmetricVoxel(Voxel):
+class AxisymmetricVoxel(Voxel):
 
     # cdef np.ndarray _vertices, _triangles
 
@@ -68,10 +68,10 @@ class AxisSymmetricVoxel(Voxel):
             self._vertices = self._vertices[::-1]
 
         # Generate summary statistics
-        radius = self._vertices[:, 0].sum()/num_vertices
+        self.radius = self._vertices[:, 0].sum()/num_vertices
         radial_width = self._vertices[:, 0].max() - self._vertices[:, 0].min()
 
-        number_segments = int(floor(2 * PI * radius / radial_width))
+        number_segments = int(floor(2 * PI * self.radius / radial_width))
         theta_adjusted = 360 / number_segments
 
         # Construct 3D outline of polygon in x-z plane and the rotated plane
@@ -135,21 +135,29 @@ class AxisSymmetricVoxel(Voxel):
 
         return vertices
 
-    # TODO - re-write area and volume calculations
     @property
     def cross_sectional_area(self):
-        return cabs((self._upper_corner.x - self._lower_corner.x) * (self._upper_corner.y - self._lower_corner.y))
+
+        # Simple calculation of the polygon area using the shoelace algorithm
+        # https://en.wikipedia.org/wiki/Shoelace_formula
+
+        num_vertices = self._vertices.shape[0]
+
+        area = 0
+        for i in range(num_vertices - 1):
+            area += self._vertices[i, 0] * self._vertices[i+1, 1]
+        area += self._vertices[num_vertices, 0] * self._vertices[0, 1]
+        for i in range(num_vertices - 1):
+            area -= self._vertices[i, 1] * self._vertices[i+1, 0]
+        area -= self._vertices[num_vertices, 1] * self._vertices[0, 0]
+
+        return area / 2
 
     @property
     def volume(self):
 
-        cdef double voxel_area, voxel_radius
-
-        voxel_area = self.cross_sectional_area
-        voxel_radius = (self._upper_corner.x + self._lower_corner.x)/2
-
         # return approximate cell volume
-        return 2 * PI * voxel_radius * voxel_area
+        return 2 * PI * self.radius * self.cross_sectional_area
 
 
 class VoxelCollection(Node):
@@ -220,7 +228,7 @@ class ToroidalVoxelGrid(VoxelCollection):
         self._voxels = []
         for voxel_vertices in voxel_coordinates:
 
-            voxel = AxisSymmetricVoxel(voxel_vertices, parent=self)
+            voxel = AxisymmetricVoxel(voxel_vertices, parent=self)
             self._voxels.append(voxel)
 
             # Test and set extent values
