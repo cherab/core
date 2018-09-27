@@ -109,6 +109,7 @@ cpdef invert_sart(geometry_matrix, measurement_vector, object initial_guess=None
 
     return solution, convergence
 
+
 @cython.boundscheck(False)
 cpdef invert_constrained_sart(geometry_matrix, laplacian_matrix, measurement_vector,
                               object initial_guess=None, int max_iterations=250, double relaxation=1.0,
