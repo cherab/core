@@ -32,4 +32,4 @@
 #         Species _target_species
 #         StageResolvedLineRadiation _plt_rate, _prb_rate
 #
-#     cdef inline int _populate_cache(self) except -1
+#     cdef int _populate_cache(self) except -1

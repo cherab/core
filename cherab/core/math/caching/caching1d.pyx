@@ -143,7 +143,7 @@ cdef class Caching1D(Function1D):
     @cython.cdivision(True)
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    cdef inline double _evaluate(self, double px, int i_x):
+    cdef double _evaluate(self, double px, int i_x):
         """
         Calculate if not already done then evaluate the polynomial valid in the
         area given by i_x at position px.
@@ -222,7 +222,7 @@ cdef class Caching1D(Function1D):
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    cdef inline double _evaluate_polynomial_derivative(self, int i_x, double px, int der_x):
+    cdef double _evaluate_polynomial_derivative(self, int i_x, double px, int der_x):
         """
         Evaluate the derivatives of the polynomial valid in the area given by
         'i_x' at position 'px'. The order of derivative along each axis is
