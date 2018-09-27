@@ -147,7 +147,7 @@ cdef class _Interpolate1DBase(Function1D):
         """
         raise NotImplementedError("This abstract method has not been implemented yet.")
 
-    cdef inline double _extrapolate(self, double px, int index, double nearest_px) except? -1e999:
+    cdef double _extrapolate(self, double px, int index, double nearest_px) except? -1e999:
         """
         Extrapolate the interpolation function valid on area given by
         'index' to position 'px'.
@@ -536,7 +536,7 @@ cdef class Interpolate1DCubic(_Interpolate1DBase):
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    cdef inline double _evaluate_polynomial_derivative(self, int i_x, double px, int der_x):
+    cdef double _evaluate_polynomial_derivative(self, int i_x, double px, int der_x):
         """
         Evaluate the derivatives of the polynomial valid in the area given by
         'i_x' at position 'px'. The order of derivative is given by 'der_x'.

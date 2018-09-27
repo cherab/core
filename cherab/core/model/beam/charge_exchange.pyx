@@ -155,7 +155,7 @@ cdef class BeamCXLine(BeamModel):
     @cython.boundscheck(False)
     @cython.wraparound(False)
     @cython.cdivision(True)
-    cdef inline double _composite_cx_rate(self, double x, double y, double z, double interaction_energy,
+    cdef double _composite_cx_rate(self, double x, double y, double z, double interaction_energy,
                                           Vector3D donor_velocity, double receiver_temperature, double receiver_density) except? -1e999:
         """
         Performs a beam population weighted average of the effective cx rates.
@@ -221,7 +221,7 @@ cdef class BeamCXLine(BeamModel):
     @cython.boundscheck(False)
     @cython.wraparound(False)
     @cython.cdivision(True)
-    cdef inline double _beam_population(self, double x, double y, double z, Vector3D beam_velocity, list population_data) except? -1e999:
+    cdef double _beam_population(self, double x, double y, double z, Vector3D beam_velocity, list population_data) except? -1e999:
         """
         Calculates the relative beam population.
 
@@ -274,7 +274,7 @@ cdef class BeamCXLine(BeamModel):
         # normalise charge density weighted sum
         return pop_coeff / total_ne
 
-    cdef inline int _populate_cache(self) except -1:
+    cdef int _populate_cache(self) except -1:
 
         cdef:
             Element receiver_element, donor_element

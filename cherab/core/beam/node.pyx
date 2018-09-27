@@ -161,7 +161,7 @@ cdef class Beam(Node):
         self._energy = value
         self.notifier.notify()
 
-    cdef inline double get_energy(self):
+    cdef double get_energy(self):
         return self._energy
 
     @property
@@ -175,7 +175,7 @@ cdef class Beam(Node):
         self._power = value
         self.notifier.notify()
 
-    cdef inline double get_power(self):
+    cdef double get_power(self):
         return self._power
 
     @property
@@ -189,7 +189,7 @@ cdef class Beam(Node):
         self._temperature = value
         self.notifier.notify()
 
-    cdef inline double get_temperature(self):
+    cdef double get_temperature(self):
         return self._temperature
 
     @property
@@ -201,7 +201,7 @@ cdef class Beam(Node):
         self._element = value
         self.notifier.notify()
 
-    cdef inline Element get_element(self):
+    cdef Element get_element(self):
         return self._element
 
     @property
@@ -215,7 +215,7 @@ cdef class Beam(Node):
         self._divergence_x = value
         self.notifier.notify()
 
-    cdef inline double get_divergence_x(self):
+    cdef double get_divergence_x(self):
         return self._divergence_x
 
     @property
@@ -229,7 +229,7 @@ cdef class Beam(Node):
         self._divergence_y = value
         self.notifier.notify()
 
-    cdef inline double get_divergence_y(self):
+    cdef double get_divergence_y(self):
         return self._divergence_y
 
     @property
@@ -243,7 +243,7 @@ cdef class Beam(Node):
         self._length = value
         self.notifier.notify()
 
-    cdef inline double get_length(self):
+    cdef double get_length(self):
         return self._length
 
     @property
@@ -257,7 +257,7 @@ cdef class Beam(Node):
         self._sigma = value
         self.notifier.notify()
 
-    cdef inline double get_sigma(self):
+    cdef double get_sigma(self):
         return self._sigma
 
     @property
@@ -395,7 +395,7 @@ cdef class Beam(Node):
         self._attenuator.plasma = self._plasma
         self._attenuator.atomic_data = self._atomic_data
 
-    cdef inline int _modified(self) except -1:
+    cdef int _modified(self) except -1:
         """
         Called when a scene-graph change occurs that modifies this Node's root
         transforms. This will occur if the Node's transform is modified, a

@@ -38,6 +38,6 @@ cdef class Caching2D(Function2D):
 
     cdef double evaluate(self, double px, double py) except? -1e999
 
-    cdef inline double _evaluate(self, double px, double py, int i_x, int i_y)
+    cdef double _evaluate(self, double px, double py, int i_x, int i_y)
 
-    cdef inline double _evaluate_polynomial_derivative(self, int i_x, int i_y, double px, double py, int der_x, int der_y)
+    cdef double _evaluate_polynomial_derivative(self, int i_x, int i_y, double px, double py, int der_x, int der_y)

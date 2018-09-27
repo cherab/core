@@ -65,7 +65,7 @@
 #
 #         return spectrum
 #
-#     cdef inline int _populate_cache(self) except -1:
+#     cdef int _populate_cache(self) except -1:
 #
 #         # sanity checks
 #         if self._plasma is None or self._atomic_data is None:
