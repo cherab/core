@@ -10,7 +10,6 @@ threads = multiprocessing.cpu_count()
 use_cython = False
 force = False
 profile = False
-install_rates = False
 
 if "--use-cython" in sys.argv:
     use_cython = True
@@ -23,10 +22,6 @@ if "--force" in sys.argv:
 if "--profile" in sys.argv:
     profile = True
     del sys.argv[sys.argv.index("--profile")]
-
-if "--install-rates" in sys.argv:
-    install_rates = True
-    del sys.argv[sys.argv.index("--install-rates")]
 
 compilation_includes = [".", numpy.get_include()]
 compilation_args = []
