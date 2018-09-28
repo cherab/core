@@ -29,4 +29,4 @@ cdef class Bremsstrahlung(PlasmaModel):
         Species _target_species
         ImpactExcitationRate _rates
 
-    cdef inline double _bremsstrahlung(self, double wvl, double te, double ne, double zeff)
+    cdef double _bremsstrahlung(self, double wvl, double te, double ne, double zeff)

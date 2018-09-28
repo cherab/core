@@ -195,7 +195,7 @@ cdef class Plasma(Node):
         self._modified()
 
     # cython fast access
-    cdef inline VectorFunction3D get_b_field(self):
+    cdef VectorFunction3D get_b_field(self):
         return self._b_field
 
     @property
@@ -208,7 +208,7 @@ cdef class Plasma(Node):
         self._modified()
 
     # cython fast access
-    cdef inline DistributionFunction get_electron_distribution(self):
+    cdef DistributionFunction get_electron_distribution(self):
         return self._electron_distribution
 
     @property
@@ -220,7 +220,7 @@ cdef class Plasma(Node):
         self._composition.set(values)
 
     # cython fast access
-    cdef inline Composition get_composition(self):
+    cdef Composition get_composition(self):
         return self._composition
 
     @cython.cdivision(True)

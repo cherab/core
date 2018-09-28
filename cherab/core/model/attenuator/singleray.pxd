@@ -32,11 +32,11 @@ cdef class SingleRayAttenuator(BeamAttenuator):
 
     cpdef calculate_attenuation(self)
 
-    cdef inline void _calc_attenuation(self)
+    cdef void _calc_attenuation(self)
 
-    cdef inline np.ndarray _beam_attenuation(self, np.ndarray axis, np.ndarray x, np.ndarray y, np.ndarray z,
+    cdef np.ndarray _beam_attenuation(self, np.ndarray axis, np.ndarray x, np.ndarray y, np.ndarray z,
                                           double energy, double power, double mass, Vector3D direction)
 
-    cdef inline double _beam_stopping(self, double x, double y, double z, Vector3D beam_velocity)
+    cdef double _beam_stopping(self, double x, double y, double z, Vector3D beam_velocity)
 
-    cdef inline int _populate_stopping_data_cache(self) except -1
+    cdef int _populate_stopping_data_cache(self) except -1

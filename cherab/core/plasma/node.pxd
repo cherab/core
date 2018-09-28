@@ -70,11 +70,11 @@ cdef class Plasma(Node):
 
     cdef object __weakref__
 
-    cdef inline VectorFunction3D get_b_field(self)
+    cdef VectorFunction3D get_b_field(self)
 
-    cdef inline DistributionFunction get_electron_distribution(self)
+    cdef DistributionFunction get_electron_distribution(self)
 
-    cdef inline Composition get_composition(self)
+    cdef Composition get_composition(self)
 
     cpdef double z_effective(self, double x, double y, double z) except -1
 

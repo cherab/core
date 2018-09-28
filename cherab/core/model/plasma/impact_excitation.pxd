@@ -32,4 +32,4 @@ cdef class ExcitationLine(PlasmaModel):
         LineShapeModel _lineshape
         object _lineshape_class
 
-    cdef inline int _populate_cache(self) except -1
+    cdef int _populate_cache(self) except -1
