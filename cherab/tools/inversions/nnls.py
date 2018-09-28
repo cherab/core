@@ -21,18 +21,31 @@ import numpy as np
 import scipy
 
 
-def invert_regularised_nnls(w_matrix, b_vector, alpha=0.01):
+def invert_regularised_nnls(w_matrix, b_vector, alpha=0.01, tikhonov_matrix=None):
+    """
+    Solve w_matrix · x = b_vector for the vector x, using Tikhonov
+    regulariastion.
+
+    This is a thin wrapper around scipy.optimize.nnls, which modifies
+    the arguments to include the supplied Tikhonov regularisation matrix.
+
+    If tikhonov_matrix is None, the matrix used is alpha times the
+    identity matrix.
+
+    Returns (x, norm), the solution vector and the residual norm.
+    """
 
     # print('w_matrix shape', w_matrix.shape)
 
     m, n = w_matrix.shape
 
-    alpha_identity = np.identity(n) * alpha
+    if tikhonov_matrix is None:
+        tikhonov_matrix = np.identity(n) * alpha
 
     # Extend W to have form ...
     c_matrix = np.zeros((m+n, n))
     c_matrix[0:m, :] = w_matrix[:, :]
-    c_matrix[m:, :] = alpha_identity[:, :]
+    c_matrix[m:, :] = tikhonov_matrix[:, :]
 
     # Extend b to have form ...
     d_vector = np.zeros(m+n)

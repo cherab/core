@@ -136,7 +136,7 @@ cdef class _Interpolate1DBase(Function1D):
         raise ValueError("The specified value (x={}) is outside the range of the supplied data and/or extrapolation range: "
                          "x bounds=({}, {})".format(px, min_range, max_range))
 
-    cdef double _evaluate(self, double px, int index):
+    cdef double _evaluate(self, double px, int index) except? -1e999:
         """
         Evaluate the interpolating function which is valid in the area given
         by 'index' at any position 'px'.
@@ -147,7 +147,7 @@ cdef class _Interpolate1DBase(Function1D):
         """
         raise NotImplementedError("This abstract method has not been implemented yet.")
 
-    cdef inline double _extrapolate(self, double px, int index, double nearest_px):
+    cdef double _extrapolate(self, double px, int index, double nearest_px) except? -1e999:
         """
         Extrapolate the interpolation function valid on area given by
         'index' to position 'px'.
@@ -168,7 +168,7 @@ cdef class _Interpolate1DBase(Function1D):
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    cdef double _extrapol_linear(self, double px, int index, double nearest_px):
+    cdef double _extrapol_linear(self, double px, int index, double nearest_px) except? -1e999:
         """
         Extrapolate linearly the interpolation function valid on area given by
         'index' to position 'px'.
@@ -183,7 +183,7 @@ cdef class _Interpolate1DBase(Function1D):
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    cdef double _extrapol_quadratic(self, double px, int index, double nearest_px):
+    cdef double _extrapol_quadratic(self, double px, int index, double nearest_px) except? -1e999:
         """
         Extrapolate quadratically the interpolation function valid on area given by
         'index' to position 'px'.
@@ -254,7 +254,7 @@ cdef class Interpolate1DLinear(_Interpolate1DBase):
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    cdef double _evaluate(self, double px, int index):
+    cdef double _evaluate(self, double px, int index) except? -1e999:
         """
         Evaluate the interpolating function which is valid in the area given
         by 'index' at any position 'px'.
@@ -268,7 +268,7 @@ cdef class Interpolate1DLinear(_Interpolate1DBase):
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    cdef double _extrapol_linear(self, double px, int index, double nearest_px):
+    cdef double _extrapol_linear(self, double px, int index, double nearest_px) except? -1e999:
         """
         Extrapolate linearly the interpolation function valid on area given by
         'index' to position 'px'.
@@ -468,7 +468,7 @@ cdef class Interpolate1DCubic(_Interpolate1DBase):
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    cdef double _evaluate(self, double px, int index):
+    cdef double _evaluate(self, double px, int index) except? -1e999:
         """
         Evaluate the interpolating function which is valid in the area given
         by 'index' at any position 'px'.
@@ -487,7 +487,7 @@ cdef class Interpolate1DCubic(_Interpolate1DBase):
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    cdef double _extrapol_linear(self, double px, int index, double nearest_px):
+    cdef double _extrapol_linear(self, double px, int index, double nearest_px) except? -1e999:
         """
         Extrapolate linearly the interpolation function valid on area given by
         'index' to position 'px'.
@@ -504,7 +504,7 @@ cdef class Interpolate1DCubic(_Interpolate1DBase):
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    cdef double _extrapol_quadratic(self, double px, int index, double nearest_px):
+    cdef double _extrapol_quadratic(self, double px, int index, double nearest_px) except? -1e999:
         """
         Extrapolate quadratically the interpolation function valid on area given by
         'index' to position 'px'.
@@ -536,7 +536,7 @@ cdef class Interpolate1DCubic(_Interpolate1DBase):
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    cdef inline double _evaluate_polynomial_derivative(self, int i_x, double px, int der_x):
+    cdef double _evaluate_polynomial_derivative(self, int i_x, double px, int der_x):
         """
         Evaluate the derivatives of the polynomial valid in the area given by
         'i_x' at position 'px'. The order of derivative is given by 'der_x'.

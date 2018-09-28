@@ -1,4 +1,3 @@
-
 # Copyright 2016-2018 Euratom
 # Copyright 2016-2018 United Kingdom Atomic Energy Authority
 # Copyright 2016-2018 Centro de Investigaciones Energéticas, Medioambientales y Tecnológicas
@@ -17,4 +16,20 @@
 # See the Licence for the specific language governing permissions and limitations
 # under the Licence.
 
-from .ir_emitting_tile import IREmittingTile
+# TODO: requires reimplementation in future release
+
+# from cherab.core.atomic.elements cimport Element
+# from cherab.core.atomic.rates cimport StageResolvedLineRadiation
+# from cherab.core.plasma cimport PlasmaModel
+# from cherab.core.species cimport Species
+#
+#
+# cdef class TotalRadiatedPower(PlasmaModel):
+#
+#     cdef:
+#         Element _element
+#         int _ionisation
+#         Species _target_species
+#         StageResolvedLineRadiation _plt_rate, _prb_rate
+#
+#     cdef int _populate_cache(self) except -1

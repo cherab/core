@@ -31,12 +31,20 @@ cdef class _PECRate:
 
         :param temperature: Receiver ion temperature in eV.
         :param density: Receiver ion density in m^-3
-        :return: The effective rate.
+        :return: The effective PEC rate in W/m^3.
         """
         raise NotImplementedError("The evaluate() virtual method must be implemented.")
 
     def __call__(self, double density, double temperature):
         return self.evaluate(density, temperature)
+
+    def plot_temperature(self, temp_low=1, temp_high=1000, num_points=100, dens=1E19):
+
+        temp = [10**x for x in np.linspace(np.log10(temp_low), np.log10(temp_high), num=num_points)]
+        rates = [self.evaluate(dens, te) for te in temp]
+        plt.semilogx(temp, rates, '.-')
+        plt.xlabel("Temperature (eV)")
+        plt.ylabel("PEC")
 
 
 cdef class ImpactExcitationRate(_PECRate):

@@ -29,13 +29,12 @@ def find_wall_intersection(world, centre_point, sightline_vec, delta=1E-3):
         intersection = world.hit(CoreRay(centre_point, sightline_vec))
 
         if intersection is None:
-            hit_point = centre_point + sightline_vec * 2.0
-            return hit_point
+            raise ValueError('No intersection with solid material found.')
 
         elif isinstance(intersection.primitive.material, NullMaterial):
-            centre_point = centre_point + sightline_vec * delta
+            centre_point += sightline_vec * delta
             continue
 
         else:
             hit_point = intersection.hit_point.transform(intersection.primitive_to_world)
-            return hit_point
+            return hit_point, intersection.primitive

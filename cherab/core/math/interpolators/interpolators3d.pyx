@@ -247,7 +247,7 @@ cdef class _Interpolate3DBase(Function3D):
         raise ValueError("The specified value (x={}, y={}, z={}) is outside the range of the supplied data and/or extrapolation range: "
                          "x bounds=({}, {}), y bounds=({}, {}), z bounds=({}, {})".format(px, py, pz, min_range_x, max_range_x, min_range_y, max_range_y, min_range_z, max_range_z))
 
-    cdef double _evaluate(self, double px, double py, double pz, int i_x, int i_y, int i_z):
+    cdef double _evaluate(self, double px, double py, double pz, int i_x, int i_y, int i_z) except? -1e999:
         """
         Evaluate the interpolating function which is valid in the area given
         by 'i_x', 'i_y' and 'i_z' at any position ('px', 'py', 'pz').
@@ -258,7 +258,7 @@ cdef class _Interpolate3DBase(Function3D):
         """
         raise NotImplementedError("This abstract method has not been implemented yet.")
 
-    cdef inline double _extrapolate(self, double px, double py, double pz, int i_x, int i_y, int i_z, double nearest_px, double nearest_py, double nearest_pz):
+    cdef double _extrapolate(self, double px, double py, double pz, int i_x, int i_y, int i_z, double nearest_px, double nearest_py, double nearest_pz) except? -1e999:
         """
         Extrapolate the interpolation function valid on area given by
         'i_x', 'i_y' and 'i_z' to position ('px', 'py', 'pz').
@@ -279,7 +279,7 @@ cdef class _Interpolate3DBase(Function3D):
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    cdef double _extrapol_linear(self, double px, double py, double pz, int i_x, int i_y, int i_z, double nearest_px, double nearest_py, double nearest_pz):
+    cdef double _extrapol_linear(self, double px, double py, double pz, int i_x, int i_y, int i_z, double nearest_px, double nearest_py, double nearest_pz) except? -1e999:
         """
         Extrapolate linearly the interpolation function valid on area given by
         'i_x', 'i_y' and 'i_z' to position ('px', 'py', 'pz').
@@ -294,7 +294,7 @@ cdef class _Interpolate3DBase(Function3D):
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    cdef double _extrapol_quadratic(self, double px, double py, double pz, int i_x, int i_y, int i_z, double nearest_px, double nearest_py, double nearest_pz):
+    cdef double _extrapol_quadratic(self, double px, double py, double pz, int i_x, int i_y, int i_z, double nearest_px, double nearest_py, double nearest_pz) except? -1e999:
         """
         Extrapolate quadratically the interpolation function valid on area given by
         'i_x', 'i_y' and 'i_z' to position ('px', 'py', 'pz').
@@ -403,7 +403,7 @@ cdef class Interpolate3DLinear(_Interpolate3DBase):
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    cdef inline double _evaluate(self, double px, double py, double pz, int i_x, int i_y, int i_z):
+    cdef double _evaluate(self, double px, double py, double pz, int i_x, int i_y, int i_z) except? -1e999:
         """
         Evaluate the interpolating function which is valid in the area given
         by 'i_x', 'i_y' and 'i_z' at any position ('px', 'py', 'pz').
@@ -429,7 +429,7 @@ cdef class Interpolate3DLinear(_Interpolate3DBase):
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    cdef inline double _extrapol_linear(self, double px, double py, double pz, int i_x, int i_y, int i_z, double nearest_px, double nearest_py, double nearest_pz):
+    cdef double _extrapol_linear(self, double px, double py, double pz, int i_x, int i_y, int i_z, double nearest_px, double nearest_py, double nearest_pz) except? -1e999:
         """
         Extrapolate linearly the interpolation function valid on area given by
         'i_x', 'i_y' and 'i_z' to position ('px', 'py', 'pz').
@@ -547,7 +547,7 @@ cdef class Interpolate3DCubic(_Interpolate3DBase):
     @cython.cdivision(True)
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    cdef inline double _evaluate(self, double px, double py, double pz, int i_x, int i_y, int i_z):
+    cdef double _evaluate(self, double px, double py, double pz, int i_x, int i_y, int i_z) except? -1e999:
         """
         Evaluate the interpolating function which is valid in the area given
         by 'i_x', 'i_y' and 'i_z' at any position ('px', 'py', 'pz').
@@ -674,7 +674,7 @@ cdef class Interpolate3DCubic(_Interpolate3DBase):
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    cdef inline double _extrapol_linear(self, double px, double py, double pz, int i_x, int i_y, int i_z, double nearest_px, double nearest_py, double nearest_pz):
+    cdef double _extrapol_linear(self, double px, double py, double pz, int i_x, int i_y, int i_z, double nearest_px, double nearest_py, double nearest_pz) except? -1e999:
         """
         Extrapolate linearly the interpolation function valid on area given by
         'i_x', 'i_y' and 'i_z' to position ('px', 'py', 'pz').
@@ -707,7 +707,7 @@ cdef class Interpolate3DCubic(_Interpolate3DBase):
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    cdef inline double _extrapol_quadratic(self, double px, double py, double pz, int i_x, int i_y, int i_z, double nearest_px, double nearest_py, double nearest_pz):
+    cdef double _extrapol_quadratic(self, double px, double py, double pz, int i_x, int i_y, int i_z, double nearest_px, double nearest_py, double nearest_pz) except? -1e999:
         """
         Extrapolate quadratically the interpolation function valid on area given by
         'i_x', 'i_y' and 'i_z' to position ('px', 'py', 'pz').
@@ -755,7 +755,7 @@ cdef class Interpolate3DCubic(_Interpolate3DBase):
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    cdef inline double _evaluate_polynomial_derivative(self, int i_x, int i_y, int i_z, double px, double py, double pz, int der_x, int der_y, int der_z):
+    cdef double _evaluate_polynomial_derivative(self, int i_x, int i_y, int i_z, double px, double py, double pz, int der_x, int der_y, int der_z):
         """
         Evaluate the derivatives of the polynomial valid in the area given by
         'i_x', 'i_y' and 'i_z' at position ('px', 'py', 'pz'). The order of
@@ -800,7 +800,7 @@ cdef class Interpolate3DCubic(_Interpolate3DBase):
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    cdef inline double[::1] _constraints3d(self, int u, int v, int w, bint x_der, bint y_der, bint z_der):
+    cdef double[::1] _constraints3d(self, int u, int v, int w, bint x_der, bint y_der, bint z_der):
         """
         Return the coefficients of a given constraints and at a given point.
 
