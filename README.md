@@ -24,7 +24,7 @@ All cherab packages are standard python packages and basic installation is achie
 
 This will compile the CHERAB cython extensions and install the package. If you don't have administrator access to install the package, add the ``--user`` flag to the above line to install the package under your own user account.
 
-When developing cherab it is ususally preferred that the packages be installed in "develop" mode:
+When developing cherab it is usually preferred that the packages be installed in "develop" mode:
 
 ```
   python setup.py develop
