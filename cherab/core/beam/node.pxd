@@ -60,20 +60,20 @@ cdef class Beam(Node):
 
     cpdef Vector3D direction(self, double x, double y, double z)
 
-    cdef inline double get_energy(self)
+    cdef double get_energy(self)
 
-    cdef inline double get_power(self)
+    cdef double get_power(self)
 
-    cdef inline double get_temperature(self)
+    cdef double get_temperature(self)
 
-    cdef inline Element get_element(self)
+    cdef Element get_element(self)
 
-    cdef inline double get_divergence_x(self)
+    cdef double get_divergence_x(self)
 
-    cdef inline double get_divergence_y(self)
+    cdef double get_divergence_y(self)
 
-    cdef inline double get_length(self)
+    cdef double get_length(self)
 
-    cdef inline double get_sigma(self)
+    cdef double get_sigma(self)
 
-    cdef inline int _modified(self) except -1
+    cdef int _modified(self) except -1

@@ -27,7 +27,7 @@ import_array()
 @cython.cdivision(True)
 @cython.boundscheck(False)
 @cython.wraparound(False)
-cdef inline int find_index(double[::1] x_view, int size, double v, double padding=0.):
+cdef int find_index(double[::1] x_view, int size, double v, double padding=0.):
     """
     Locates the lower index or the range that contains the specified value.
 
@@ -106,7 +106,7 @@ cdef inline int find_index(double[::1] x_view, int size, double v, double paddin
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-cdef inline double[::1] derivatives_array(double v, int deriv):
+cdef double[::1] derivatives_array(double v, int deriv):
     """
     Return, in the form of a memory view, the array [1, v, v^2, v^3] derivated
     'deriv' times along v.

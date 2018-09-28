@@ -164,7 +164,7 @@ cdef class Caching2D(Function2D):
     @cython.cdivision(True)
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    cdef inline double _evaluate(self, double px, double py, int i_x, int i_y):
+    cdef double _evaluate(self, double px, double py, int i_x, int i_y):
         """
         Calculate if not already done then evaluate the polynomial valid in the
         area given by (i_x, i_y) at position (px, py).
@@ -308,7 +308,7 @@ cdef class Caching2D(Function2D):
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    cdef inline double _evaluate_polynomial_derivative(self, int i_x, int i_y, double px, double py, int der_x, int der_y):
+    cdef double _evaluate_polynomial_derivative(self, int i_x, int i_y, double px, double py, int der_x, int der_y):
         """
         Evaluate the derivatives of the polynomial valid in the area given by
         'i_x', 'i_y' at position ('px', 'py'). The order of
