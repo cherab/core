@@ -78,7 +78,7 @@ cdef class PythonVectorFunction3D(VectorFunction3D):
         return self.function(x, y, z)
 
 
-cdef inline VectorFunction3D autowrap_vectorfunction3d(object function):
+cdef VectorFunction3D autowrap_vectorfunction3d(object function):
     """
     Automatically wraps the supplied python object in a PythonVectorFunction3D
     object.

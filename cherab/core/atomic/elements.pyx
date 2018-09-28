@@ -36,6 +36,9 @@ cdef class Element:
         self.atomic_number = atomic_number
         self.atomic_weight = atomic_weight
 
+    def __repr__(self):
+        return '<Element: {}>'.format(self.name)
+
 
 cdef class Isotope(Element):
     """
@@ -55,6 +58,9 @@ cdef class Isotope(Element):
         self.mass_number = mass_number
         self.element = element
 
+
+    def __repr__(self):
+        return '<Isotope: {}>'.format(self.name)
 
 # Atomic data sourced from www.ciaaw.org and wikipedia.org on 25/1/2015
 

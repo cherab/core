@@ -16,7 +16,7 @@
 # See the Licence for the specific language governing permissions and limitations
 # under the Licence.
 
-# todo: for future expansion the transition tuple should become an object with options such as NResolvedTransition and NLResolvedTransition
+
 cdef class Line:
 
     def __init__(self, Element element, int ionisation, tuple transition):
@@ -27,17 +27,7 @@ cdef class Line:
         if ionisation < 0:
             raise ValueError("Ionisation level cannot be less than zero.")
 
-        # These validation tests don't work for more advanced transition tuples, only valid for hydrogen as currently implemented.
-        # TODO - re-instate when we have a more advanced transition objects
-        # if transition[0] <= 0 or transition[1] <= 0:
-        #     raise ValueError("Transition energy levels cannot be <= 0.")
-        #
-        # if transition[0] <= transition[1]:
-        #     raise ValueError("The initial energy level of a transition must be greater "
-        #                      "than the resulting energy level.")
-
         self.element = element
         self.ionisation = ionisation
         self.transition = transition
-
 
