@@ -7,13 +7,8 @@ import os.path as path
 import multiprocessing
 
 threads = multiprocessing.cpu_count()
-use_cython = False
 force = False
 profile = False
-
-if "--use-cython" in sys.argv:
-    use_cython = True
-    del sys.argv[sys.argv.index("--use-cython")]
 
 if "--force" in sys.argv:
     force = True
@@ -31,35 +26,20 @@ cython_directives = {
 
 setup_path = path.dirname(path.abspath(__file__))
 
-if use_cython:
+# build .pyx extension list
+extensions = []
+for root, dirs, files in os.walk(setup_path):
+    for file in files:
+        if path.splitext(file)[1] == ".pyx":
+            pyx_file = path.relpath(path.join(root, file), setup_path)
+            module = path.splitext(pyx_file)[0].replace("/", ".")
+            extensions.append(Extension(module, [pyx_file], include_dirs=compilation_includes, extra_compile_args=compilation_args),)
 
-    from Cython.Build import cythonize
+if profile:
+    cython_directives["profile"] = True
 
-    # build .pyx extension list
-    extensions = []
-    for root, dirs, files in os.walk(setup_path):
-        for file in files:
-            if path.splitext(file)[1] == ".pyx":
-                pyx_file = path.relpath(path.join(root, file), setup_path)
-                module = path.splitext(pyx_file)[0].replace("/", ".")
-                extensions.append(Extension(module, [pyx_file], include_dirs=compilation_includes, extra_compile_args=compilation_args),)
-
-    if profile:
-        cython_directives["profile"] = True
-
-    # generate .c files from .pyx
-    extensions = cythonize(extensions, nthreads=multiprocessing.cpu_count(), force=force, compiler_directives=cython_directives)
-
-else:
-
-    # build .c extension list
-    extensions = []
-    for root, dirs, files in os.walk(setup_path):
-        for file in files:
-            if path.splitext(file)[1] == ".c":
-                c_file = path.relpath(path.join(root, file), setup_path)
-                module = path.splitext(c_file)[0].replace("/", ".")
-                extensions.append(Extension(module, [c_file], include_dirs=compilation_includes, extra_compile_args=compilation_args),)
+# generate .c files from .pyx
+extensions = cythonize(extensions, nthreads=multiprocessing.cpu_count(), force=force, compiler_directives=cython_directives)
 
 # parse the package version number
 with open(path.join(path.dirname(__file__), 'cherab/core/VERSION')) as version_file:
@@ -82,7 +62,7 @@ setup(
         "Programming Language :: Python :: 3",
         "Topic :: Scientific/Engineering :: Physics"
     ],
-    install_requires=['numpy', 'scipy', 'raysect', 'matplotlib'],
+    install_requires=['numpy', 'scipy', 'matplotlib', 'raysect>=0.5.4', 'cython>=0.28'],
     packages=find_packages(),
     include_package_data=True,
     ext_modules=extensions
