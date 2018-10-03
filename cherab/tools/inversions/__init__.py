@@ -20,4 +20,4 @@
 from .sart import invert_sart, invert_constrained_sart
 from .nnls import invert_regularised_nnls
 from .svd import invert_svd
-from .voxels import Voxel, AxisSymmetricVoxel, VoxelCollection, ToroidalVoxelGrid, UnityVoxelEmitter
+from .voxels import Voxel, AxisymmetricVoxel, VoxelCollection, ToroidalVoxelGrid, UnityVoxelEmitter
