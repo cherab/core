@@ -64,7 +64,7 @@ cdef class ExcitationLine(PlasmaModel):
         radiance = RECIP_4_PI * self._rates.evaluate(ne, te) * ne * ni
         return self._lineshape.add_line(radiance, point, direction, spectrum)
 
-    cdef inline int _populate_cache(self) except -1:
+    cdef int _populate_cache(self) except -1:
 
         # sanity checks
         if self._plasma is None or self._atomic_data is None:

@@ -34,5 +34,5 @@ cdef class RecombinationLine(PlasmaModel):
 
     # cpdef double radiance_at(self, Point3D point, Vector3D direction)
 
-    cdef inline int _populate_cache(self) except -1
+    cdef int _populate_cache(self) except -1
 

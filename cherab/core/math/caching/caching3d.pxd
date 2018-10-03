@@ -38,8 +38,8 @@ cdef class Caching3D(Function3D):
 
     cdef double evaluate(self, double px, double py, double pz) except? -1e999
 
-    cdef inline double _evaluate(self, double px, double py, double pz, int i_x, int i_y, int i_z)
+    cdef double _evaluate(self, double px, double py, double pz, int i_x, int i_y, int i_z)
 
-    cdef inline double _evaluate_polynomial_derivative(self, int i_x, int i_y, int i_z, double px, double py, double pz, int der_x, int der_y, der_z)
+    cdef double _evaluate_polynomial_derivative(self, int i_x, int i_y, int i_z, double px, double py, double pz, int der_x, int der_y, der_z)
 
-    cdef inline double[::1] _constraints3d(self, int u, int v, int w, bint x_der, bint y_der, bint z_der)
+    cdef double[::1] _constraints3d(self, int u, int v, int w, bint x_der, bint y_der, bint z_der)

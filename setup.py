@@ -6,23 +6,14 @@ import os
 import os.path as path
 import multiprocessing
 
-
-def add_extensions(setup_path, folder, extensions):
-    """
-    Adds .pyx files in the specified folder to the list of extensions.
-    """
-    source_path = path.join(setup_path, folder)
-    for root, dirs, files in os.walk(source_path):
-        for file in files:
-            if path.splitext(file)[1] == ".pyx":
-                pyx_file = path.relpath(path.join(root, file), setup_path)
-                module = path.splitext(pyx_file)[0].replace("/", ".")
-                extensions.append(Extension(module, [pyx_file], include_dirs=compilation_includes),)
-
-
 threads = multiprocessing.cpu_count()
+use_cython = False
 force = False
 profile = False
+
+if "--use-cython" in sys.argv:
+    use_cython = True
+    del sys.argv[sys.argv.index("--use-cython")]
 
 if "--force" in sys.argv:
     force = True
@@ -33,27 +24,66 @@ if "--profile" in sys.argv:
     del sys.argv[sys.argv.index("--profile")]
 
 compilation_includes = [".", numpy.get_include()]
+compilation_args = []
+cython_directives = {
+    'language_level': 3
+}
 
 setup_path = path.dirname(path.abspath(__file__))
-source_folders = ['cherab', 'demos']
 
-# build extension list
-extensions = []
-for folder in source_folders:
-    add_extensions(setup_path, folder, extensions)
+if use_cython:
 
-if profile:
-    directives = {"profile": True}
+    from Cython.Build import cythonize
+
+    # build .pyx extension list
+    extensions = []
+    for root, dirs, files in os.walk(setup_path):
+        for file in files:
+            if path.splitext(file)[1] == ".pyx":
+                pyx_file = path.relpath(path.join(root, file), setup_path)
+                module = path.splitext(pyx_file)[0].replace("/", ".")
+                extensions.append(Extension(module, [pyx_file], include_dirs=compilation_includes, extra_compile_args=compilation_args),)
+
+    if profile:
+        cython_directives["profile"] = True
+
+    # generate .c files from .pyx
+    extensions = cythonize(extensions, nthreads=multiprocessing.cpu_count(), force=force, compiler_directives=cython_directives)
+
 else:
-    directives = {}
+
+    # build .c extension list
+    extensions = []
+    for root, dirs, files in os.walk(setup_path):
+        for file in files:
+            if path.splitext(file)[1] == ".c":
+                c_file = path.relpath(path.join(root, file), setup_path)
+                module = path.splitext(c_file)[0].replace("/", ".")
+                extensions.append(Extension(module, [c_file], include_dirs=compilation_includes, extra_compile_args=compilation_args),)
+
+# parse the package version number
+with open(path.join(path.dirname(__file__), 'cherab/core/VERSION')) as version_file:
+    version = version_file.read().strip()
 
 setup(
     name="cherab",
-    version="1.0.0",
+    version=version,
     license="EUPL 1.1",
     namespace_packages=['cherab'],
+    description='Cherab spectroscopy framework',
+    classifiers=[
+        "Development Status :: 5 - Production/Stable",
+        "Intended Audience :: Science/Research",
+        "Intended Audience :: Education",
+        "Intended Audience :: Developers",
+        "Natural Language :: English",
+        "Operating System :: POSIX :: Linux",
+        "Programming Language :: Cython",
+        "Programming Language :: Python :: 3",
+        "Topic :: Scientific/Engineering :: Physics"
+    ],
+    install_requires=['numpy', 'scipy', 'raysect', 'matplotlib'],
     packages=find_packages(),
     include_package_data=True,
-    ext_modules=cythonize(extensions, nthreads=threads, force=force, compiler_directives=directives)
+    ext_modules=extensions
 )
-

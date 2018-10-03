@@ -35,7 +35,7 @@ from cherab.openadas import OpenADAS
 from cherab.core.model import SingleRayAttenuator, BeamCXLine
 from gaussian_volume import GaussianVolume
 
-integration_step = 0.02
+integration_step = 0.01
 
 # setup scenegraph
 world = World()
@@ -83,7 +83,7 @@ from cherab.core.model import ExcitationLine, RecombinationLine
 plasma.geometry = Sphere(sigma * 5.0)
 plasma.geometry_transform = None
 plasma.integrator.step = integration_step
-plasma.integrator.min_samples = 1000
+plasma.integrator.min_samples = 4
 plasma.atomic_data = adas
 
 # Setup elements.deuterium lines
@@ -108,7 +108,7 @@ beam = Beam(parent=world, transform=translate(1.0, 0.0, 0) * rotate(90, 0, 0))
 beam.plasma = plasma
 beam.atomic_data = adas
 beam.energy = 60000
-beam.power = 3e6
+beam.power = 1e4
 beam.element = elements.deuterium
 beam.sigma = 0.025
 beam.divergence_x = 0.5
@@ -125,13 +125,13 @@ beam.models = [
     BeamCXLine(Line(elements.neon, 9, (12, 11))),
 ]
 beam.integrator.step = integration_step
-beam.integrator.min_samples = 10
+beam.integrator.min_samples = 5
 
 beam = Beam(parent=world, transform=translate(1.0, 0.0, 0) * rotate(90, 0, 0))
 beam.plasma = plasma
 beam.atomic_data = adas
 beam.energy = 60000 / 2
-beam.power = 3e6
+beam.power = 1e4
 beam.element = elements.deuterium
 beam.sigma = 0.025
 beam.divergence_x = 0.5
@@ -154,7 +154,7 @@ beam = Beam(parent=world, transform=translate(1.0, 0.0, 0) * rotate(90, 0, 0))
 beam.plasma = plasma
 beam.atomic_data = adas
 beam.energy = 60000 / 3
-beam.power = 3e6
+beam.power = 1e4
 beam.element = elements.deuterium
 beam.sigma = 0.025
 beam.divergence_x = 0.5
@@ -201,14 +201,14 @@ r = Ray(origin=Point3D(0.5, 0, -2.5), min_wavelength=440, max_wavelength=740, bi
 s = r.trace(world)
 plot(s.wavelengths, s.samples)
 
-r = Ray(origin=Point3D(0.5, 0, -2.5), min_wavelength=440, max_wavelength=740, bins=1600)
+r = Ray(origin=Point3D(0.5, 0, -2.5), min_wavelength=440, max_wavelength=740, bins=3200)
 s = r.trace(world)
 plot(s.wavelengths, s.samples)
 show()
 
 camera = PinholeCamera((128, 128), parent=world, transform=translate(0, 0, -2.5))
 camera.spectral_rays = 1
-camera.spectral_bins = 256
+camera.spectral_bins = 15
 camera.pixel_samples = 10
 
 ion()

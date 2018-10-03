@@ -183,7 +183,7 @@ cdef class Caching3D(Function3D):
     @cython.cdivision(True)
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    cdef inline double _evaluate(self, double px, double py, double pz, int i_x, int i_y, int i_z):
+    cdef double _evaluate(self, double px, double py, double pz, int i_x, int i_y, int i_z):
         """
         Calculate if not already done then evaluate the polynomial valid in the
         area given by (i_x, i_y, i_z) at position (px, py, pz).
@@ -328,7 +328,7 @@ cdef class Caching3D(Function3D):
                    py3*(self.coeffs_view[i_x_p, i_y_p, i_z_p, 60] + self.coeffs_view[i_x_p, i_y_p, i_z_p, 61]*pz + self.coeffs_view[i_x_p, i_y_p, i_z_p, 62]*pz2 + self.coeffs_view[i_x_p, i_y_p, i_z_p, 63]*pz3) \
                )
 
-    cdef inline double _evaluate_polynomial_derivative(self, int i_x, int i_y, int i_z, double px, double py, double pz, int der_x, int der_y, der_z):
+    cdef double _evaluate_polynomial_derivative(self, int i_x, int i_y, int i_z, double px, double py, double pz, int der_x, int der_y, der_z):
         """
         Evaluate the derivatives of the polynomial valid in the area given by
         'i_x', 'i_y' and 'i_z' at position ('px', 'py', 'pz'). The order of
@@ -368,7 +368,7 @@ cdef class Caching3D(Function3D):
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    cdef inline double[::1] _constraints3d(self, int u, int v, int w, bint x_der, bint y_der, bint z_der):
+    cdef double[::1] _constraints3d(self, int u, int v, int w, bint x_der, bint y_der, bint z_der):
         """
         Return the coefficients of a given constraints and at a given point.
 
