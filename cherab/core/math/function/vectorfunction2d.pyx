@@ -77,7 +77,7 @@ cdef class PythonVectorFunction2D(VectorFunction2D):
         return self.function(x, y)
 
 
-cdef inline VectorFunction2D autowrap_vectorfunction2d(object function):
+cdef VectorFunction2D autowrap_vectorfunction2d(object function):
     """
     Automatically wraps the supplied python object in a PythonVectorFunction2D
     object.

@@ -30,7 +30,7 @@ cdef class PythonVectorFunction2D(VectorFunction2D):
     cdef public object function
 
 
-cdef inline VectorFunction2D autowrap_vectorfunction2d(object function)
+cdef VectorFunction2D autowrap_vectorfunction2d(object function)
 
 
 cdef class ScalarToVectorFunction2D(VectorFunction2D):

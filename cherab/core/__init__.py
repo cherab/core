@@ -16,9 +16,14 @@
 # See the Licence for the specific language governing permissions and limitations
 # under the Licence.
 
+from os import path as _path
 from .atomic import *
 from .species import *
 from .plasma import *
 from .beam import *
 from .distribution import *
 from .model import *
+
+# parse the package version number
+with open(_path.join(_path.dirname(__file__), 'VERSION')) as _f:
+    __version__ = _f.read().strip()

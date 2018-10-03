@@ -188,7 +188,7 @@ cdef class _Interpolate2DBase(Function2D):
         """
         raise NotImplementedError("This abstract method has not been implemented yet.")
 
-    cdef inline double _extrapolate(self, double px, double py, int i_x, int i_y, double nearest_px, double nearest_py) except? -1e999:
+    cdef double _extrapolate(self, double px, double py, int i_x, int i_y, double nearest_px, double nearest_py) except? -1e999:
         """
         Extrapolate the interpolation function valid on area given by
         'i_x' and 'i_y' to position ('px', 'py').
@@ -438,7 +438,7 @@ cdef class Interpolate2DCubic(_Interpolate2DBase):
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    cdef inline double _evaluate(self, double px, double py, int i_x, int i_y) except? -1e999:
+    cdef double _evaluate(self, double px, double py, int i_x, int i_y) except? -1e999:
         """
         Evaluate the interpolating function which is valid in the area given
         by 'i_x' and 'i_y' at any position ('px', 'py').
@@ -466,7 +466,7 @@ cdef class Interpolate2DCubic(_Interpolate2DBase):
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    cdef inline int _calculate_polynomial(self, int i_x, int i_y) except -1:
+    cdef int _calculate_polynomial(self, int i_x, int i_y) except -1:
         """
         Calculates and caches the polynomial coefficients for area given by
         'i_x', 'i_y'. Declares this area as already calculated.
@@ -681,7 +681,7 @@ cdef class Interpolate2DCubic(_Interpolate2DBase):
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    cdef inline double _evaluate_polynomial_derivative(self, int i_x, int i_y, double px, double py, int der_x, int der_y):
+    cdef double _evaluate_polynomial_derivative(self, int i_x, int i_y, double px, double py, int der_x, int der_y):
         """
         Evaluate the derivatives of the polynomial valid in the area given by
         'i_x', 'i_y' at position ('px', 'py'). The order of

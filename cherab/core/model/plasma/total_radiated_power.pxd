@@ -16,18 +16,20 @@
 # See the Licence for the specific language governing permissions and limitations
 # under the Licence.
 
-from cherab.core.atomic.elements cimport Element
-from cherab.core.atomic.rates cimport StageResolvedLineRadiation
-from cherab.core.plasma cimport PlasmaModel
-from cherab.core.species cimport Species
+# TODO: requires reimplementation in future release
 
-
-cdef class TotalRadiatedPower(PlasmaModel):
-
-    cdef:
-        Element _element
-        int _ionisation
-        Species _target_species
-        StageResolvedLineRadiation _plt_rate, _prb_rate
-
-    cdef inline int _populate_cache(self) except -1
+# from cherab.core.atomic.elements cimport Element
+# from cherab.core.atomic.rates cimport StageResolvedLineRadiation
+# from cherab.core.plasma cimport PlasmaModel
+# from cherab.core.species cimport Species
+#
+#
+# cdef class TotalRadiatedPower(PlasmaModel):
+#
+#     cdef:
+#         Element _element
+#         int _ionisation
+#         Species _target_species
+#         StageResolvedLineRadiation _plt_rate, _prb_rate
+#
+#     cdef int _populate_cache(self) except -1

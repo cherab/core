@@ -77,7 +77,7 @@ cdef class Bremsstrahlung(PlasmaModel):
         return spectrum
 
     @cython.cdivision(True)
-    cdef inline double _bremsstrahlung(self, double wvl, double te, double ne, double zeff):
+    cdef double _bremsstrahlung(self, double wvl, double te, double ne, double zeff):
         """
         :param wvl: in nm 
         :param te: in eV
