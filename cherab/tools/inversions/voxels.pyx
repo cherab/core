@@ -24,9 +24,11 @@ import matplotlib.pyplot as plt
 from matplotlib.patches import Polygon
 from matplotlib.collections import PatchCollection
 
-from raysect.core cimport Node, Point2D, Point3D, Vector3D, rotate_z, AffineMatrix3D
+from raysect.core cimport Node, Point2D, Point3D, Vector3D, rotate_z, AffineMatrix3D, new_point3d
 from raysect.core.math cimport triangulate2d
-from raysect.core.math.cython.utility cimport winding2d
+from raysect.core.math.function cimport Function3D
+from raysect.core.math.cython.utility cimport winding2d, find_index
+from raysect.core.math.random cimport uniform, point_triangle
 from raysect.primitive import Mesh
 from raysect.optical import UnityVolumeEmitter
 from raysect.optical cimport Spectrum, World, Primitive, Ray
@@ -209,6 +211,22 @@ class VoxelCollection(Node):
         for voxel in self._voxels:
             voxel.parent = None
 
+    def emissivities_from_function(self, emission_function, grid_samples=10):
+        """
+        Returns an array of sampled emissivities at each voxel location.
+
+        This is a virtual method and must be implemented in the derived
+        VoxelCollection class.
+
+        Note that the results will be nonsense if you mix an emission function
+        and VoxelCollection with incompatible symmetries.
+
+        :param Function3D emission_function: Emission function to sample over.
+        :param int grid_samples: Number of emission samples to average over.
+        :rtype: np.ndarray
+        """
+        raise NotImplementedError()
+
 
 class ToroidalVoxelGrid(VoxelCollection):
 
@@ -304,8 +322,73 @@ class ToroidalVoxelGrid(VoxelCollection):
         plt.xlim(self.min_radius, self.max_radius)
         plt.ylim(self.min_height, self.max_height)
         plt.axis("equal")
-        title = title or self.name + " Voxel Grid"
+        if title:
+            pass
+        elif self.name:
+            title = self.name + " Voxel Grid"
+        else:
+            title = "Voxel Grid"
         plt.title(title)
+
+    def emissivities_from_function(self, emission_function, grid_samples=10):
+        """
+        Returns an array of sampled emissivities at each voxel location.
+
+        Note that the results will be nonsense if you mix an emission function
+        and VoxelCollection with incompatible symmetries.
+
+        :param Function3D emission_function: Emission function to sample over.
+        :param int grid_samples: Number of emission samples to average over.
+        :rtype: np.ndarray
+        """
+
+        if not isinstance(emission_function, Function3D):
+            raise TypeError("The emission_function argument must be of type Function2D.")
+
+        emissivities = np.zeros(self.count)
+
+        for i in range(self.count):
+
+            voxel = self._voxels[i]
+            num_triangles = voxel._triangles.shape[0]
+            total_area = voxel.cross_sectional_area
+
+            cumulative_areas = np.zeros(num_triangles)
+            for triangle_j in range(num_triangles):
+                u1 = voxel._vertices[1, 0] - voxel._vertices[0, 0]
+                u2 = voxel._vertices[2, 0] - voxel._vertices[0, 0]
+                v1 = voxel._vertices[1, 1] - voxel._vertices[0, 1]
+                v2 = voxel._vertices[2, 1] - voxel._vertices[0, 1]
+                triangle_area = cabs(u1*v2 - u2*v1)
+                if triangle_j == 0:
+                    cumulative_areas[triangle_j] = triangle_area
+                else:
+                    cumulative_areas[triangle_j] = cumulative_areas[triangle_j - 1] + triangle_area
+            cumulative_areas /= total_area
+
+            samples = 0
+            for j in range(grid_samples):
+
+                if num_triangles > 1:
+                    tri_index = np.searchsorted(cumulative_areas, uniform())
+                else:
+                    tri_index = 0
+
+                v1_i = voxel._triangles[tri_index, 0]
+                v1 = new_point3d(voxel._vertices[v1_i, 0], 0.0, voxel._vertices[v1_i, 1])
+                v2_i = voxel._triangles[tri_index, 1]
+                v2 = new_point3d(voxel._vertices[v2_i, 0], 0.0, voxel._vertices[v2_i, 1])
+                v3_i = voxel._triangles[tri_index, 2]
+                v3 = new_point3d(voxel._vertices[v3_i, 0], 0.0, voxel._vertices[v3_i, 1])
+
+                sample_point = point_triangle(v1, v2, v3)
+
+                samples += emission_function(sample_point.x, 0, sample_point.z)
+
+            samples /= grid_samples
+            emissivities[i] = samples
+
+        return emissivities
 
 
 cdef class UnityVoxelEmitter(HomogeneousVolumeEmitter):
