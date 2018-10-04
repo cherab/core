@@ -146,12 +146,12 @@ class AxisymmetricVoxel(Voxel):
         area = 0
         for i in range(num_vertices - 1):
             area += self._vertices[i, 0] * self._vertices[i+1, 1]
-        area += self._vertices[num_vertices, 0] * self._vertices[0, 1]
+        area += self._vertices[num_vertices - 1, 0] * self._vertices[0, 1]
         for i in range(num_vertices - 1):
             area -= self._vertices[i, 1] * self._vertices[i+1, 0]
-        area -= self._vertices[num_vertices, 1] * self._vertices[0, 0]
+        area -= self._vertices[num_vertices - 1, 1] * self._vertices[0, 0]
 
-        return area / 2
+        return abs(area) / 2
 
     @property
     def volume(self):
