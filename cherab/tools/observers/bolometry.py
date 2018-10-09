@@ -131,6 +131,33 @@ class BolometerSlit(Node):
     def __init__(self, slit_id, centre_point, basis_x, dx, basis_y, dy, dz=0.001,
                  parent=None, csg_aperture=False, curvature_radius=0):
 
+        # perform validation of input parameters
+
+        if not isinstance(dx, (float, int)):
+            raise TypeError("dx argument for BolometerSlit must be of type float/int.")
+        if not dx > 0:
+            raise ValueError("dx argument for BolometerSlit must be greater than zero.")
+
+        if not isinstance(dy, (float, int)):
+            raise TypeError("dy argument for BolometerSlit must be of type float/int.")
+        if not dy > 0:
+            raise ValueError("dy argument for BolometerSlit must be greater than zero.")
+
+        if not isinstance(centre_point, Point3D):
+            raise TypeError("centre_point argument for BolometerSlit must be of type Point3D.")
+
+        if not isinstance(curvature_radius, (float, int)):
+            raise TypeError("curvature_radius argument for BolometerSlit "
+                            "must be of type float/int.")
+        if curvature_radius < 0:
+            raise ValueError("curvature_radius argument for BolometerSlit "
+                             "must not be negative.")
+
+        if not isinstance(basis_x, Vector3D):
+            raise TypeError("The basis vectors of BolometerSlit must be of type Vector3D.")
+        if not isinstance(basis_y, Vector3D):
+            raise TypeError("The basis vectors of BolometerSlit must be of type Vector3D.")
+
         self._centre_point = centre_point
         self._basis_x = basis_x.normalise()
         self.dx = dx
@@ -222,27 +249,29 @@ class BolometerFoil(TargettedPixel):
 
         if not isinstance(slit, BolometerSlit):
             raise TypeError("slit argument for BolometerFoil must be of type BolometerSlit.")
-        self._slit = slit
 
         if not isinstance(centre_point, Point3D):
             raise TypeError("centre_point argument for BolometerFoil must be of type Point3D.")
-        self._centre_point = centre_point
 
+        if not isinstance(curvature_radius, (float, int)):
+            raise TypeError("curvature_radius argument for BolometerFoil "
+                            "must be of type float/int.")
         if curvature_radius < 0:
             raise ValueError("curvature_radius argument for BolometerFoil "
                              "must not be negative.")
-        self._curvature_radius = curvature_radius
 
         if not isinstance(basis_x, Vector3D):
             raise TypeError("The basis vectors of BolometerFoil must be of type Vector3D.")
         if not isinstance(basis_y, Vector3D):
             raise TypeError("The basis vectors of BolometerFoil must be of type Vector3D.")
 
-        # set basis vectors
+        self._centre_point = centre_point
         self._basis_x = basis_x.normalise()
         self._basis_y = basis_y.normalise()
         self._normal_vec = self._basis_x.cross(self._basis_y)
+        self._slit = slit
         self._foil_to_slit_vec = self._centre_point.vector_to(self._slit.centre_point).normalise()
+        self._curvature_radius = curvature_radius
         self.units = units
 
         # setup root bolometer foil transform
