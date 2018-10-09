@@ -17,11 +17,12 @@
 # See the Licence for the specific language governing permissions and limitations
 # under the Licence.
 
+import functools
 import numpy as np
 
 from raysect.core import Node, translate, rotate_basis, Point3D, Vector3D, Ray as CoreRay, Primitive, World
 from raysect.core.math.sampler import TargettedHemisphereSampler, RectangleSampler3D
-from raysect.primitive import Box, Cylinder, Subtract
+from raysect.primitive import Box, Cylinder, Subtract, Intersect, Union
 from raysect.optical import ConstantSF
 from raysect.optical.observer import PowerPipeline0D, RadiancePipeline0D, \
     SpectralPowerPipeline0D, SpectralRadiancePipeline0D, SightLine, TargettedPixel
@@ -127,7 +128,35 @@ class BolometerCamera(Node):
 
 class BolometerSlit(Node):
 
-    def __init__(self, slit_id, centre_point, basis_x, dx, basis_y, dy, dz=0.001, parent=None, csg_aperture=False):
+    def __init__(self, slit_id, centre_point, basis_x, dx, basis_y, dy, dz=0.001,
+                 parent=None, csg_aperture=False, curvature_radius=0):
+
+        # perform validation of input parameters
+
+        if not isinstance(dx, (float, int)):
+            raise TypeError("dx argument for BolometerSlit must be of type float/int.")
+        if not dx > 0:
+            raise ValueError("dx argument for BolometerSlit must be greater than zero.")
+
+        if not isinstance(dy, (float, int)):
+            raise TypeError("dy argument for BolometerSlit must be of type float/int.")
+        if not dy > 0:
+            raise ValueError("dy argument for BolometerSlit must be greater than zero.")
+
+        if not isinstance(centre_point, Point3D):
+            raise TypeError("centre_point argument for BolometerSlit must be of type Point3D.")
+
+        if not isinstance(curvature_radius, (float, int)):
+            raise TypeError("curvature_radius argument for BolometerSlit "
+                            "must be of type float/int.")
+        if curvature_radius < 0:
+            raise ValueError("curvature_radius argument for BolometerSlit "
+                             "must not be negative.")
+
+        if not isinstance(basis_x, Vector3D):
+            raise TypeError("The basis vectors of BolometerSlit must be of type Vector3D.")
+        if not isinstance(basis_y, Vector3D):
+            raise TypeError("The basis vectors of BolometerSlit must be of type Vector3D.")
 
         self._centre_point = centre_point
         self._basis_x = basis_x.normalise()
@@ -135,6 +164,7 @@ class BolometerSlit(Node):
         self._basis_y = basis_y.normalise()
         self.dy = dy
         self.dz = dz
+        self._curvature_radius = curvature_radius
 
         # NOTE - target primitive and aperture surface cannot be co-incident otherwise numerics will cause Raysect
         # to be blind to one of the two surfaces.
@@ -148,6 +178,10 @@ class BolometerSlit(Node):
 
         self._csg_aperture = None
         self.csg_aperture = csg_aperture
+
+        # round off the detector corners, if applicable
+        if self._curvature_radius > 0:
+            mask_corners(self)
 
     @property
     def centre_point(self):
@@ -185,6 +219,10 @@ class BolometerSlit(Node):
                 self._csg_aperture.parent = None
             self._csg_aperture = None
 
+    @property
+    def curvature_radius(self):
+        return self._curvature_radius
+
 
 class BolometerFoil(TargettedPixel):
     """
@@ -195,7 +233,7 @@ class BolometerFoil(TargettedPixel):
     """
 
     def __init__(self, detector_id, centre_point, basis_x, dx, basis_y, dy, slit,
-                 parent=None, units="Power", accumulate=False):
+                 parent=None, units="Power", accumulate=False, curvature_radius=0):
 
         # perform validation of input parameters
 
@@ -211,22 +249,29 @@ class BolometerFoil(TargettedPixel):
 
         if not isinstance(slit, BolometerSlit):
             raise TypeError("slit argument for BolometerFoil must be of type BolometerSlit.")
-        self._slit = slit
 
         if not isinstance(centre_point, Point3D):
             raise TypeError("centre_point argument for BolometerFoil must be of type Point3D.")
-        self._centre_point = centre_point
+
+        if not isinstance(curvature_radius, (float, int)):
+            raise TypeError("curvature_radius argument for BolometerFoil "
+                            "must be of type float/int.")
+        if curvature_radius < 0:
+            raise ValueError("curvature_radius argument for BolometerFoil "
+                             "must not be negative.")
 
         if not isinstance(basis_x, Vector3D):
             raise TypeError("The basis vectors of BolometerFoil must be of type Vector3D.")
         if not isinstance(basis_y, Vector3D):
             raise TypeError("The basis vectors of BolometerFoil must be of type Vector3D.")
 
-        # set basis vectors
+        self._centre_point = centre_point
         self._basis_x = basis_x.normalise()
         self._basis_y = basis_y.normalise()
         self._normal_vec = self._basis_x.cross(self._basis_y)
+        self._slit = slit
         self._foil_to_slit_vec = self._centre_point.vector_to(self._slit.centre_point).normalise()
+        self._curvature_radius = curvature_radius
         self.units = units
 
         # setup root bolometer foil transform
@@ -244,6 +289,10 @@ class BolometerFoil(TargettedPixel):
                          pipelines=[pipeline],
                          pixel_samples=1000, x_width=dx, y_width=dy, spectral_bins=1, quiet=True,
                          parent=parent, transform=translation * rotation, name=detector_id)
+
+        # round off the detector corners, if applicable
+        if self._curvature_radius > 0:
+            mask_corners(self)
 
     def __repr__(self):
         """Returns a string representation of this BolometerFoil object."""
@@ -272,6 +321,10 @@ class BolometerFoil(TargettedPixel):
     @property
     def slit(self):
         return self._slit
+
+    @property
+    def curvature_radius(self):
+        return self._curvature_radius
 
     def as_sightline(self):
 
@@ -412,3 +465,79 @@ class BolometerFoil(TargettedPixel):
         etendue_error = np.std(etendues)
 
         return etendue, etendue_error
+
+
+def mask_corners(element):
+    """
+    Support detectors with rounded corners, by producing a mask to cover
+    the corners.
+
+    The mask is produced by placing thin rectangles of side
+    element.curvature_radius at each corner, and then cylinders of
+    radius element.curvature_radius centred on the inner vertex of
+    those rectangles. Then each corner of the mask is the part of the
+    rectangle not covered by the cylinder.
+
+    The curvature radius should be given in units of metres.
+    """
+    # Make the mask very (but not infinitely) thin, so that raysect
+    # can actually detect that it's there. We'll work in the local
+    # coordinate system of the element, with dx=width, dy=height,
+    # dz=depth.
+    dz = 1e-6
+    rc = element.curvature_radius  # Shorthand
+    try:
+        dx = element.x_width
+        dy = element.y_width
+    except AttributeError:
+        dx = element.dx
+        dy = element.dy
+
+    # Create a box and a cylinder of the appropriate size.
+    # Then position copies of these at each corner.
+    box_template = Box(Point3D(0, 0, 0), Point3D(rc, rc, dz))
+    cylinder_template = Cylinder(rc, dz)
+
+    top_left_box = box_template.instance(
+        transform=translate(-dx / 2, dy / 2 - rc, 0),
+    )
+    top_left_cylinder = cylinder_template.instance(
+        transform=translate(-dx / 2 + rc, dy / 2 - rc, 0),
+    )
+    top_left_mask = Subtract(top_left_box,
+                             Intersect(top_left_box, top_left_cylinder))
+
+    top_right_box = box_template.instance(
+        transform=translate(dx / 2 - rc, dy / 2 - rc, 0),
+    )
+    top_right_cylinder = cylinder_template.instance(
+        transform=translate(dx / 2 - rc, dy / 2 - rc, 0),
+    )
+    top_right_mask = Subtract(top_right_box,
+                              Intersect(top_right_box, top_right_cylinder))
+
+    bottom_right_box = box_template.instance(
+        transform=translate(dx / 2 - rc, -dy / 2, 0),
+    )
+    bottom_right_cylinder = cylinder_template.instance(
+        transform=translate(dx / 2 - rc, -dy / 2 + rc, 0),
+    )
+    bottom_right_mask = Subtract(bottom_right_box,
+                                 Intersect(bottom_right_box, bottom_right_cylinder))
+
+    bottom_left_box = box_template.instance(
+        transform=translate(-dx / 2, -dy / 2, 0),
+    )
+    bottom_left_cylinder = cylinder_template.instance(
+        transform=translate(-dx / 2 + rc, -dy / 2 + rc, 0),
+    )
+    bottom_left_mask = Subtract(bottom_left_box,
+                                Intersect(bottom_left_box, bottom_left_cylinder))
+
+    # The foil mask is the sum of all 4 of these corner shapes
+    mask = functools.reduce(Union, (top_left_mask, top_right_mask,
+                                    bottom_right_mask, bottom_left_mask))
+    mask.material = AbsorbingSurface()
+    mask.transform = translate(0, 0, dz)
+    mask.name = element.name + ' - rounded edges mask'
+    mask.parent = element
