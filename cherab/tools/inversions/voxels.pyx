@@ -297,7 +297,7 @@ class ToroidalVoxelGrid(VoxelCollection):
         else:
             raise ValueError("set_active() argument must be an index of type int or the string 'all'")
 
-    def plot(self, title=None, voxel_values=None):
+    def plot(self, title=None, voxel_values=None, ax=None):
 
         if voxel_values is not None:
             if not isinstance(voxel_values, (np.ndarray, list, tuple)):
@@ -306,8 +306,6 @@ class ToroidalVoxelGrid(VoxelCollection):
             if not len(voxel_values) == self.count:
                 raise TypeError("Argument voxel_values should be a list/array of floats with length "
                                 "equal to the number of voxels.")
-        else:
-            voxel_values = np.ones(self.count)
 
         patches = []
         for i in range(self.count):
@@ -315,20 +313,28 @@ class ToroidalVoxelGrid(VoxelCollection):
             patches.append(polygon)
 
         p = PatchCollection(patches)
-        p.set_array(voxel_values)
+        if voxel_values is None:
+            # Plot just the outlines of the grid cells
+            p.set_edgecolor('black')
+            p.set_facecolor('none')
+        else:
+            p.set_array(voxel_values)
 
-        fig, ax = plt.subplots()
+
+        if ax is None:
+            fig, ax = plt.subplots()
         ax.add_collection(p)
-        plt.xlim(self.min_radius, self.max_radius)
-        plt.ylim(self.min_height, self.max_height)
-        plt.axis("equal")
+        ax.set_xlim(self.min_radius, self.max_radius)
+        ax.set_ylim(self.min_height, self.max_height)
+        ax.axis("equal")
         if title:
             pass
         elif self.name:
             title = self.name + " Voxel Grid"
         else:
             title = "Voxel Grid"
-        plt.title(title)
+        ax.set_title(title)
+        return ax
 
     def emissivities_from_function(self, emission_function, grid_samples=10):
         """
