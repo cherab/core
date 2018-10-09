@@ -306,8 +306,6 @@ class ToroidalVoxelGrid(VoxelCollection):
             if not len(voxel_values) == self.count:
                 raise TypeError("Argument voxel_values should be a list/array of floats with length "
                                 "equal to the number of voxels.")
-        else:
-            voxel_values = np.ones(self.count)
 
         patches = []
         for i in range(self.count):
@@ -315,7 +313,13 @@ class ToroidalVoxelGrid(VoxelCollection):
             patches.append(polygon)
 
         p = PatchCollection(patches)
-        p.set_array(voxel_values)
+        if voxel_values is None:
+            # Plot just the outlines of the grid cells
+            p.set_edgecolor('black')
+            p.set_facecolor('none')
+        else:
+            p.set_array(voxel_values)
+
 
         if ax is None:
             fig, ax = plt.subplots()
