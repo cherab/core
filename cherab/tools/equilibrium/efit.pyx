@@ -32,7 +32,6 @@ from cherab.core.math cimport Blend2D, Constant2D
 
 # todo: decide if a load and save routine that stores as json (for now)?
 cdef class EFITEquilibrium:
-
     """
     An object representing an EFIT equilibrium time-slice.
 

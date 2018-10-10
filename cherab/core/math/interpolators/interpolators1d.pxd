@@ -23,9 +23,10 @@ from cherab.core.math.function cimport Function1D
 cdef class _Interpolate1DBase(Function1D):
 
     cdef readonly:
-        ndarray x_np, data_np
-        double[::1] x_domain_view
+        ndarray x, data
+        double[::1] x_mv, data_mv
         bint extrapolate
+        bint constant
         int extrapolation_type
         double extrapolation_range
         int top_index
@@ -40,12 +41,9 @@ cdef class _Interpolate1DBase(Function1D):
 
     cdef double _extrapol_quadratic(self, double px, int index, double nearest_px) except? -1e999
 
-    cdef void _set_constant(self)
-
 
 cdef class Interpolate1DLinear(_Interpolate1DBase):
-
-    cdef readonly double[::1] x_view, data_view
+    pass
 
 
 cdef class Interpolate1DCubic(_Interpolate1DBase):
@@ -54,5 +52,7 @@ cdef class Interpolate1DCubic(_Interpolate1DBase):
         double x_min, x_delta_inv, data_min, data_delta
 
     cdef readonly double[:,:] coeffs_view
+
+    cdef object _calc_coefficients(self, int continuity_order)
 
     cdef double _evaluate_polynomial_derivative(self, int i_x, double px, int der_x)
