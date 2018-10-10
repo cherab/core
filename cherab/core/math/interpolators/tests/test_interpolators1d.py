@@ -223,16 +223,6 @@ class TestInterpolators1D(unittest.TestCase):
 
     # General behaviour
 
-    def test_interpolate_1d_invalid_coordinates(self):
-        """1D interpolation. An error must be raises if coordinates are not an array-like object.
-        """
-        self.assertRaises(ValueError, interpolators1d._Interpolate1DBase, "blah", [1, 2, 3, 4])
-
-    def test_interpolate_1d_invalid_data(self):
-        """1D interpolation. An error must be raises if data is not an array-like object.
-        """
-        self.assertRaises(ValueError, interpolators1d._Interpolate1DBase, [1, 2, 3, 4], "blah")
-
     def test_interpolate_1d_invalid_data_length(self):
         """1D interpolation. An error must be raises if data has not the same length as coordinates.
         """
@@ -315,13 +305,6 @@ class TestInterpolators1D(unittest.TestCase):
         self.init_1dlinear(extrapolate=True, extrapolation_type='linear')
         for i in range(len(self.xsamples_extrapol)):
             self.assertAlmostEqual(self.interp_func(self.xsamples_extrapol[i]), self.extrap_data_lin[i], delta=1e-8)
-
-    def test_interpolate_1d_linear_coord_not_sorted(self):
-        """1D linear interpolation. The coordinates array must be sorted and the values array changed consequently.
-        """
-        self.init_1dlinear([1, 3, 2, 4], [10, 12, 42, 0])
-        self.assertAlmostEqual(self.interp_func(2.), 42., delta=1e-8)
-        self.assertAlmostEqual(self.interp_func(3.), 12., delta=1e-8)
 
     def test_interpolate_1d_linear_type_conversion(self):
         """1D linear interpolation. Whatever the type of input data, the interpolating function must provide float numbers.
@@ -411,13 +394,6 @@ class TestInterpolators1D(unittest.TestCase):
         for i in range(len(self.xsamples_extrapol)):
             self.assertAlmostEqual(self.interp_func(self.xsamples_extrapol[i]), self.extrap_data_qua[i], delta=1e-8)
 
-    def test_interpolate_1d_cubic_c2_coord_not_sorted(self):
-        """1D cubic interpolation. The coordinates array must be sorted and the values array changed consequently.
-        """
-        self.init_1dcubic_c2([1, 3, 2, 4], [10, 12, 42, 0])
-        self.assertAlmostEqual(self.interp_func(2.), 42., delta=1e-8)
-        self.assertAlmostEqual(self.interp_func(3.), 12., delta=1e-8)
-
     def test_interpolate_1d_cubic_c2_type_conversion(self):
         """1D cubic interpolation. Whatever the type of input data, the interpolating function must provide float numbers.
         """
@@ -505,13 +481,6 @@ class TestInterpolators1D(unittest.TestCase):
         self.init_1dcubic_c1(extrapolate=True, extrapolation_type='quadratic')
         for i in range(len(self.xsamples_extrapol)):
             self.assertAlmostEqual(self.interp_func(self.xsamples_extrapol[i]), self.extrap_data_qua[i], delta=1e-8)
-
-    def test_interpolate_1d_cubic_c1_coord_not_sorted(self):
-        """1D cubic interpolation. The coordinates array must be sorted and the values array changed consequently.
-        """
-        self.init_1dcubic_c1([1, 3, 2, 4], [10, 12, 42, 0])
-        self.assertAlmostEqual(self.interp_func(2.), 42., delta=1e-8)
-        self.assertAlmostEqual(self.interp_func(3.), 12., delta=1e-8)
 
     def test_interpolate_1d_cubic_c1_type_conversion(self):
         """1D cubic interpolation. Whatever the type of input data, the interpolating function must provide float numbers.
