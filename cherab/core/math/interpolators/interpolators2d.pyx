@@ -40,6 +40,7 @@ _EXTRAPOLATION_TYPES = {
     'quadratic': EXT_QUADRATIC
 }
 
+# todo: improve validation
 cdef class _Interpolate2DBase(Function2D):
     """
     Base class for 2D interpolators. Coordinates and data arrays are here
@@ -132,6 +133,7 @@ cdef class _Interpolate2DBase(Function2D):
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
+    @cython.initializedcheck(False)
     cdef double evaluate(self, double px, double py) except? -1e999:
         """
         Evaluate the interpolating function.
@@ -142,8 +144,8 @@ cdef class _Interpolate2DBase(Function2D):
 
         cdef int i_x, i_y
 
-        i_x = find_index(self.x_domain_view, self.top_index_x+1, px, self.extrapolation_range)
-        i_y = find_index(self.y_domain_view, self.top_index_y+1, py, self.extrapolation_range)
+        i_x = find_index(self.x_domain_view, px, self.extrapolation_range)
+        i_y = find_index(self.y_domain_view, py, self.extrapolation_range)
 
         if 0 <= i_x <= self.top_index_x-1:
             if 0 <= i_y <= self.top_index_y-1:
@@ -207,8 +209,6 @@ cdef class _Interpolate2DBase(Function2D):
         elif self.extrapolation_type == EXT_QUADRATIC:
             return self._extrapol_quadratic(px, py, i_x, i_y, nearest_px, nearest_py)
 
-    @cython.boundscheck(False)
-    @cython.wraparound(False)
     cdef double _extrapol_linear(self, double px, double py, int i_x, int i_y, double nearest_px, double nearest_py) except? -1e999:
         """
         Extrapolate linearly the interpolation function valid on area given by
@@ -222,8 +222,6 @@ cdef class _Interpolate2DBase(Function2D):
         """
         raise NotImplementedError("There is no linear extrapolation available for this interpolation.")
 
-    @cython.boundscheck(False)
-    @cython.wraparound(False)
     cdef double _extrapol_quadratic(self, double px, double py, int i_x, int i_y, double nearest_px, double nearest_py) except? -1e999:
         """
         Extrapolate quadratically the interpolation function valid on area given by
@@ -315,6 +313,7 @@ cdef class Interpolate2DLinear(_Interpolate2DBase):
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
+    @cython.initializedcheck(False)
     cdef double _evaluate(self, double px, double py, int i_x, int i_y) except? -1e999:
         """
         Evaluate the interpolating function which is valid in the area given
@@ -438,6 +437,7 @@ cdef class Interpolate2DCubic(_Interpolate2DBase):
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
+    @cython.initializedcheck(False)
     cdef double _evaluate(self, double px, double py, int i_x, int i_y) except? -1e999:
         """
         Evaluate the interpolating function which is valid in the area given
@@ -466,6 +466,7 @@ cdef class Interpolate2DCubic(_Interpolate2DBase):
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
+    @cython.initializedcheck(False)
     cdef int _calculate_polynomial(self, int i_x, int i_y) except -1:
         """
         Calculates and caches the polynomial coefficients for area given by
@@ -482,10 +483,6 @@ cdef class Interpolate2DCubic(_Interpolate2DBase):
             double[::1] cv_view, coeffs_view
             double[:, ::1] cm_view
 
-        # Create constraint matrix (un-optimised)
-        # cv_view = zeros((16,), dtype=float64)     # constraints vector
-        # cm_view = zeros((16, 16), dtype=float64)  # constraints matrix
-
         # Create constraint matrix (optimised using numpy c-api)
         cv_size = 16
         cv_view = PyArray_ZEROS(1, &cv_size, NPY_FLOAT64, 0)
@@ -493,7 +490,6 @@ cdef class Interpolate2DCubic(_Interpolate2DBase):
         cm_view = PyArray_ZEROS(2, cm_size, NPY_FLOAT64, 0)
 
         # Fill the constraints matrix
-
         l = 0
         for u in range(i_x+1, i_x+3):
             for v in range(i_y+1, i_y+3):
@@ -580,6 +576,7 @@ cdef class Interpolate2DCubic(_Interpolate2DBase):
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
+    @cython.initializedcheck(False)
     cdef double _extrapol_linear(self, double px, double py, int i_x, int i_y, double nearest_px, double nearest_py) except? -1e999:
         """
         Extrapolate linearly the interpolation function valid on area given by
@@ -624,6 +621,7 @@ cdef class Interpolate2DCubic(_Interpolate2DBase):
     @cython.cdivision(True)
     @cython.boundscheck(False)
     @cython.wraparound(False)
+    @cython.initializedcheck(False)
     cdef double _extrapol_quadratic(self, double px, double py, int i_x, int i_y, double nearest_px, double nearest_py) except? -1e999:
         """
         Extrapolate quadratically the interpolation function valid on area given by
@@ -681,6 +679,7 @@ cdef class Interpolate2DCubic(_Interpolate2DBase):
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
+    @cython.initializedcheck(False)
     cdef double _evaluate_polynomial_derivative(self, int i_x, int i_y, double px, double py, int der_x, int der_y):
         """
         Evaluate the derivatives of the polynomial valid in the area given by

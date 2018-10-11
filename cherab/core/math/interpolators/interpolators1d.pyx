@@ -70,8 +70,6 @@ cdef class _Interpolate1DBase(Function1D):
     def __init__(self, object x, object data, bint extrapolate=False, str extrapolation_type='nearest',
                  double extrapolation_range=INFINITY, bint tolerate_single_value=False):
 
-        cdef ndarray mask
-
         # convert data to numpy arrays
         x = np.array(x, dtype=np.float64)
         data = np.array(data, dtype=np.float64)
@@ -137,7 +135,7 @@ cdef class _Interpolate1DBase(Function1D):
         if self.constant:
             return self.data_mv[0]
 
-        index = find_index(self.x_mv, self.top_index+1, px, self.extrapolation_range)
+        index = find_index(self.x_mv, px, self.extrapolation_range)
 
         if 0 <= index <= self.top_index-1:
             return self._evaluate(px, index)
