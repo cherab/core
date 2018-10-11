@@ -22,13 +22,13 @@ from numpy cimport ndarray, int8_t
 
 cdef class _Interpolate3DBase(Function3D):
 
-    cdef readonly:
-        ndarray x_np, y_np, z_np, data_np
-        double[::1] x_domain_view, y_domain_view, z_domain_view
-        bint extrapolate
-        int extrapolation_type
-        double extrapolation_range
-        int top_index_x, top_index_y, top_index_z
+    cdef:
+        double[::1] _x, _y, _z
+        int _extrapolation_type
+        double _extrapolation_range
+        int _nx, _ny, _nz
+
+    cdef object _build(self, ndarray x, ndarray y, ndarray z, ndarray f)
 
     cdef double evaluate(self, double px, double py, double pz) except? -1e999
 
@@ -40,11 +40,11 @@ cdef class _Interpolate3DBase(Function3D):
 
     cdef double _extrapol_quadratic(self, double px, double py, double pz, int i_x, int i_y, int i_z, double nearest_px, double nearest_py, double nearest_pz) except? -1e999
 
-    cdef void _set_constant_x(self)
+    cdef tuple _set_constant_x(self, ndarray x, ndarray f)
 
-    cdef void _set_constant_y(self)
+    cdef tuple _set_constant_y(self, ndarray y, ndarray f)
 
-    cdef void _set_constant_z(self)
+    cdef tuple _set_constant_z(self, ndarray z, ndarray f)
 
 
 cdef class Interpolate3DLinear(_Interpolate3DBase):

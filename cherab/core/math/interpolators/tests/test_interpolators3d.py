@@ -710,33 +710,6 @@ class TestInterpolators3D(unittest.TestCase):
         self.init_3dlinear(extrapolate=True, extrapolation_range=10, extrapolation_type='linear')
         self.interpolate_3d_extrapolate_assert(2, 2, 2, self.extrap_data_lin[2][2][2], 1e-8)
 
-    def test_interpolate_3d_linear_coord_not_sorted_x(self):
-        """3D linear interpolation. The coordinates array must be sorted and the values array changed consequently.
-        """
-        identity_3d = np.zeros((4, 4, 4))
-        np.fill_diagonal(identity_3d, [1, 1, 1, 1])
-        self.init_3dlinear([1, 3, 2, 4], [2, 3, 4, 5], [3, 4, 5, 6], identity_3d)
-        self.assertAlmostEqual(self.interp_func(3., 3., 4.), 1., delta=1e-8)
-        self.assertAlmostEqual(self.interp_func(2., 4., 5.), 1., delta=1e-8)
-
-    def test_interpolate_3d_linear_coord_not_sorted_y(self):
-        """3D linear interpolation. The coordinates array must be sorted and the values array changed consequently.
-        """
-        identity_3d = np.zeros((4, 4, 4))
-        np.fill_diagonal(identity_3d, [1, 1, 1, 1])
-        self.init_3dlinear([1, 2, 3, 4], [2, 3, 5, 4], [3, 4, 5, 6], identity_3d)
-        self.assertAlmostEqual(self.interp_func(3., 5., 5.), 1., delta=1e-8)
-        self.assertAlmostEqual(self.interp_func(4., 4., 6.), 1., delta=1e-8)
-
-    def test_interpolate_3d_linear_coord_not_sorted_z(self):
-        """3D linear interpolation. The coordinates array must be sorted and the values array changed consequently.
-        """
-        identity_3d = np.zeros((4, 4, 4))
-        np.fill_diagonal(identity_3d, [1, 1, 1, 1])
-        self.init_3dlinear([1, 2, 3, 4], [2, 3, 4, 5], [5, 4, 3, 6], identity_3d)
-        self.assertAlmostEqual(self.interp_func(1., 2., 5.), 1., delta=1e-8)
-        self.assertAlmostEqual(self.interp_func(3., 4., 3.), 1., delta=1e-8)
-
     def test_interpolate_3d_linear_type_conversion(self):
         """3D linear interpolation. Whatever the type of input data, the interpolating function must provide float numbers.
         """
@@ -1392,33 +1365,6 @@ class TestInterpolators3D(unittest.TestCase):
         metaslopey3 = (slopey4 - slopey3) / (-0.14 - -0.10)
         self.assertAlmostEqual(metaslopey1, metaslopey2, delta=1e-8)
         self.assertAlmostEqual(metaslopey2, metaslopey3, delta=1e-8)
-
-    def test_interpolate_3d_cubic_coord_not_sorted_x(self):
-        """3D cubic interpolation. The coordinates array must be sorted and the values array changed consequently.
-        """
-        identity_3d = np.zeros((4, 4, 4))
-        np.fill_diagonal(identity_3d, [1, 1, 1, 1])
-        self.init_3dcubic([1, 3, 2, 4], [2, 3, 4, 5], [3, 4, 5, 6], identity_3d)
-        self.assertAlmostEqual(self.interp_func(3., 3., 4.), 1., delta=1e-8)
-        self.assertAlmostEqual(self.interp_func(2., 4., 5.), 1., delta=1e-8)
-
-    def test_interpolate_3d_cubic_coord_not_sorted_y(self):
-        """3D cubic interpolation. The coordinates array must be sorted and the values array changed consequently.
-        """
-        identity_3d = np.zeros((4, 4, 4))
-        np.fill_diagonal(identity_3d, [1, 1, 1, 1])
-        self.init_3dcubic([1, 2, 3, 4], [2, 3, 5, 4], [3, 4, 5, 6], identity_3d)
-        self.assertAlmostEqual(self.interp_func(3., 5., 5.), 1., delta=1e-8)
-        self.assertAlmostEqual(self.interp_func(4., 4., 6.), 1., delta=1e-8)
-
-    def test_interpolate_3d_cubic_coord_not_sorted_z(self):
-        """3D cubic interpolation. The coordinates array must be sorted and the values array changed consequently.
-        """
-        identity_3d = np.zeros((4, 4, 4))
-        np.fill_diagonal(identity_3d, [1, 1, 1, 1])
-        self.init_3dcubic([1, 2, 3, 4], [2, 3, 4, 5], [5, 4, 3, 6], identity_3d)
-        self.assertAlmostEqual(self.interp_func(1., 2., 5.), 1., delta=1e-8)
-        self.assertAlmostEqual(self.interp_func(3., 4., 3.), 1., delta=1e-8)
 
     def test_interpolate_3d_cubic_type_conversion(self):
         """3D cubic interpolation. Whatever the type of input data, the interpolating function must provide float numbers.
