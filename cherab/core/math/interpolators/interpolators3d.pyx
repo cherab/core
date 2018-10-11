@@ -18,7 +18,7 @@
 # See the Licence for the specific language governing permissions and limitations
 # under the Licence.
 
-from numpy import array, empty, int8, float64, shape, concatenate, argsort, arange
+from numpy import array, empty, int8, float64, shape, concatenate, arange, diff
 from numpy.linalg import solve
 
 cimport cython
@@ -48,7 +48,7 @@ cdef class _Interpolate3DBase(Function3D):
     :param object x: An array-like object containing real values.
     :param object y: An array-like object containing real values.
     :param object z: An array-like object containing real values.
-    :param object data: A 3D array-like object of sample values corresponding to the
+    :param object f: A 3D array-like object of sample values corresponding to the
     `x`, `y` and `z` array points.
     :param bint extrapolate: optional
     If True, the extrapolation of data is enabled outside the range of the
@@ -69,85 +69,117 @@ cdef class _Interpolate3DBase(Function3D):
     in a ValueError being raised.
     """
 
-    def __init__(self, object x, object y, object z, object data, bint extrapolate=False, str extrapolation_type='nearest',
+    def __init__(self, object x, object y, object z, object f, bint extrapolate=False, str extrapolation_type='nearest',
                  double extrapolation_range=float('inf'), bint tolerate_single_value=False):
 
-        cdef ndarray mask_x, mask_y, mask_z
+        # convert data to numpy arrays
+        x = array(x, dtype=float64)
+        y = array(y, dtype=float64)
+        z = array(z, dtype=float64)
+        f = array(f, dtype=float64)
+
+        # check dimensions are 1D
+        if x.ndim != 1:
+            raise ValueError("The x array must be 1D.")
+
+        if y.ndim != 1:
+            raise ValueError("The y array must be 1D.")
+
+        if z.ndim != 1:
+            raise ValueError("The z array must be 1D.")
+
+        # check data is 3D
+        if f.ndim != 3:
+            raise ValueError("The f array must be 3D.")
 
         # check the shapes of data and coordinates are consistent
-        if shape(data) != tuple(list(shape(x))+list(shape(y))+list(shape(z))):
-            raise ValueError("Data and coordinates must have the same shapes.")
+        shape = (x.shape[0], y.shape[0], z.shape[0])
+        if f.shape != shape:
+            raise ValueError("The dimension and data arrays must have consistent shapes ((x, y, z)={}, f={}).".format(shape, f.shape))
+
+        # check the dimension arrays must be monotonically increasing
+        if (diff(x) <= 0).any():
+            raise ValueError("The x array must be monotonically increasing.")
+
+        if (diff(y) <= 0).any():
+            raise ValueError("The y array must be monotonically increasing.")
+
+        if (diff(z) <= 0).any():
+            raise ValueError("The z array must be monotonically increasing.")
 
         # extrapolation is controlled internally by setting a positive extrapolation_range
-        self.extrapolate = extrapolate
         if extrapolate:
-            self.extrapolation_range = max(0, extrapolation_range)
+            self._extrapolation_range = max(0, extrapolation_range)
         else:
-            self.extrapolation_range = 0
+            self._extrapolation_range = 0
 
         # map extrapolation type name to internal constant
         if extrapolation_type in _EXTRAPOLATION_TYPES:
-            self.extrapolation_type = _EXTRAPOLATION_TYPES[extrapolation_type]
+            self._extrapolation_type = _EXTRAPOLATION_TYPES[extrapolation_type]
         else:
             raise ValueError("Extrapolation type {} does not exist.".format(extrapolation_type))
 
-        # copies the arguments converted into double arrays and sort x, y and z
-        mask_x = argsort(x)
-        mask_y = argsort(y)
-        mask_z = argsort(z)
-        self.x_np = array(x, dtype=float64)[mask_x]
-        self.y_np = array(y, dtype=float64)[mask_y]
-        self.z_np = array(z, dtype=float64)[mask_z]
-        self.data_np = array(data, dtype=float64)[mask_x,:,:][:,mask_y,:][:,:,mask_z]
+        # x_domain_view -> x
+        # y_domain_view -> y
+        # z_domain_view -> z
+        # x_np -> removed
+        # y_np -> removed
+        # z_np -> removed
+        # x_top_index -> self._nx - 1
+        # y_top_index -> self._ny - 1
+        # z_top_index -> self._nz - 1
 
-        self.x_domain_view = self.x_np
-        self.y_domain_view = self.y_np
-        self.z_domain_view = self.z_np
-        self.top_index_x = len(x) - 1
-        self.top_index_y = len(y) - 1
-        self.top_index_z = len(z) - 1
+        # populate internal arrays and memory views
+        self._x = x
+        self._y = y
+        self._z = z
+        self._nx = len(x)
+        self._ny = len(y)
+        self._nz = len(z)
 
         # Check for single value in x input
-        if len(self.x_np) == 1:
+        if len(x) == 1:
             if tolerate_single_value:
                 # single value tolerated, set constant
-                self._set_constant_x()
+                x, f = self._set_constant_x(x, f)
             else:
-                raise ValueError("There is only a single value in the x input. "
+                raise ValueError("There is only a single value in the x array. "
                     "Consider turning on the 'tolerate_single_value' argument.")
-
-        # if x is not a single value, check for duplicate values
-        else:
-            if (self.x_np == self.x_np[arange(len(self.x_np))-1]).any():
-                raise ValueError("The x coordinates array has a duplicate value.")
 
         # Check for single value in y input
-        if len(self.y_np) == 1:
+        if len(y) == 1:
             if tolerate_single_value:
                 # single value tolerated, set constant
-                self._set_constant_y()
+                y, f = self._set_constant_y(y, f)
             else:
-                raise ValueError("There is only a single value in the y input. "
+                raise ValueError("There is only a single value in the y array. "
                     "Consider turning on the 'tolerate_single_value' argument.")
-
-        # if y is not a single value, check for duplicate values
-        else:
-            if (self.y_np == self.y_np[arange(len(self.y_np))-1]).any():
-                raise ValueError("The y coordinates array has a duplicate value.")
 
         # Check for single value in z input
-        if len(self.z_np) == 1:
+        if len(z) == 1:
             if tolerate_single_value:
                 # single value tolerated, set constant
-                self._set_constant_z()
+                z, f = self._set_constant_z(z, f)
             else:
-                raise ValueError("There is only a single value in the z input. "
+                raise ValueError("There is only a single value in the z array. "
                     "Consider turning on the 'tolerate_single_value' argument.")
 
-        # if z is not a single value, check for duplicate values
-        else:
-            if (self.z_np == self.z_np[arange(len(self.z_np))-1]).any():
-                raise ValueError("The z coordinates array has a duplicate value.")
+        # build internal state of interpolator
+        self._build(x, y, z, f)
+
+    cdef object _build(self, ndarray x, ndarray y, ndarray z, ndarray f):
+        """
+        Build additional internal state.
+        
+        Implement in sub-classes that require additional state to be build
+        from the source arrays.        
+            
+        :param x: x array 
+        :param y: y array
+        :param z: z array
+        :param f: f array 
+        """
+        pass
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
@@ -159,90 +191,106 @@ cdef class _Interpolate3DBase(Function3D):
         :return: the interpolated value
         """
 
-        cdef int i_x, i_y, i_z
+        cdef:
+            int ix, iy, iz, nx, ny, nz
+            double[::1] x, y, z
 
-        i_x = find_index(self.x_domain_view, self.top_index_x+1, px, self.extrapolation_range)
-        i_y = find_index(self.y_domain_view, self.top_index_y+1, py, self.extrapolation_range)
-        i_z = find_index(self.z_domain_view, self.top_index_z+1, pz, self.extrapolation_range)
+        x = self._x
+        y = self._y
+        z = self._z
 
-        if 0 <= i_x <= self.top_index_x-1:
-            if 0 <= i_y <= self.top_index_y-1:
-                if 0 <= i_z <= self.top_index_z-1:
-                    return self._evaluate(px, py, pz, i_x, i_y, i_z)
-                elif i_z == -1:
-                    return self._extrapolate(px, py, pz, i_x               , i_y               , 0                 , px                                  , py                                  , self.z_domain_view[0])
-                elif i_z == self.top_index_z:
-                    return self._extrapolate(px, py, pz, i_x               , i_y               , self.top_index_z-1, px                                  , py                                  , self.z_domain_view[self.top_index_z])
-            elif i_y == -1:
-                if 0 <= i_z <= self.top_index_z-1:
-                    return self._extrapolate(px, py, pz, i_x               , 0                 , i_z               , px                                  , self.y_domain_view[0]               , pz)
-                elif i_z == -1:
-                    return self._extrapolate(px, py, pz, i_x               , 0                 , 0                 , px                                  , self.y_domain_view[0]               , self.z_domain_view[0])
-                elif i_z == self.top_index_z:
-                    return self._extrapolate(px, py, pz, i_x               , 0                 , self.top_index_z-1, px                                  , self.y_domain_view[0]               , self.z_domain_view[self.top_index_z])
-            elif i_y == self.top_index_y:
-                if 0 <= i_z <= self.top_index_z-1:
-                    return self._extrapolate(px, py, pz, i_x               , self.top_index_y-1, i_z               , px                                  , self.y_domain_view[self.top_index_y], pz)
-                elif i_z == -1:
-                    return self._extrapolate(px, py, pz, i_x               , self.top_index_y-1, 0                 , px                                  , self.y_domain_view[self.top_index_y], self.z_domain_view[0])
-                elif i_z == self.top_index_z:
-                    return self._extrapolate(px, py, pz, i_x               , self.top_index_y-1, self.top_index_z-1, px                                  , self.y_domain_view[self.top_index_y], self.z_domain_view[self.top_index_z])
+        nx = self._nx
+        ny = self._ny
+        nz = self._nz
 
-        elif i_x == -1:
-            if 0 <= i_y <= self.top_index_y-1:
-                if 0 <= i_z <= self.top_index_z-1:
-                    return self._extrapolate(px, py, pz, 0                 , i_y               , i_z               , self.x_domain_view[0]               , py                                  , pz)
-                elif i_z == -1:
-                    return self._extrapolate(px, py, pz, 0                 , i_y               , 0                 , self.x_domain_view[0]               , py                                  , self.z_domain_view[0])
-                elif i_z == self.top_index_z:
-                    return self._extrapolate(px, py, pz, 0                 , i_y               , self.top_index_z-1, self.x_domain_view[0]               , py                                  , self.z_domain_view[self.top_index_z])
-            elif i_y == -1:
-                if 0 <= i_z <= self.top_index_z-1:
-                    return self._extrapolate(px, py, pz, 0                 , 0                 , i_z               , self.x_domain_view[0]               , self.y_domain_view[0]               , pz)
-                elif i_z == -1:
-                    return self._extrapolate(px, py, pz, 0                 , 0                 , 0                 , self.x_domain_view[0]               , self.y_domain_view[0]               , self.z_domain_view[0])
-                elif i_z == self.top_index_z:
-                    return self._extrapolate(px, py, pz, 0                 , 0                 , self.top_index_z-1, self.x_domain_view[0]               , self.y_domain_view[0]               , self.z_domain_view[self.top_index_z])
-            elif i_y == self.top_index_y:
-                if 0 <= i_z <= self.top_index_z-1:
-                    return self._extrapolate(px, py, pz, 0                 , self.top_index_y-1, i_z               , self.x_domain_view[0]               , self.y_domain_view[self.top_index_y], pz)
-                elif i_z == -1:
-                    return self._extrapolate(px, py, pz, 0                 , self.top_index_y-1, 0                 , self.x_domain_view[0]               , self.y_domain_view[self.top_index_y], self.z_domain_view[0])
-                elif i_z == self.top_index_z:
-                    return self._extrapolate(px, py, pz, 0                 , self.top_index_y-1, self.top_index_z-1, self.x_domain_view[0]               , self.y_domain_view[self.top_index_y], self.z_domain_view[self.top_index_z])
+        ix = find_index(x, nx, px, self._extrapolation_range)
+        iy = find_index(y, ny, py, self._extrapolation_range)
+        iz = find_index(z, nz, pz, self._extrapolation_range)
 
-        elif i_x == self.top_index_x:
-            if 0 <= i_y <= self.top_index_y-1:
-                if 0 <= i_z <= self.top_index_z-1:
-                    return self._extrapolate(px, py, pz, self.top_index_x-1, i_y               , i_z               , self.x_domain_view[self.top_index_x], py                                  , pz)
-                elif i_z == -1:
-                    return self._extrapolate(px, py, pz, self.top_index_x-1, i_y               , 0                 , self.x_domain_view[self.top_index_x], py                                  , self.z_domain_view[0])
-                elif i_z == self.top_index_z:
-                    return self._extrapolate(px, py, pz, self.top_index_x-1, i_y               , self.top_index_z-1, self.x_domain_view[self.top_index_x], py                                  , self.z_domain_view[self.top_index_z])
-            elif i_y == -1:
-                if 0 <= i_z <= self.top_index_z-1:
-                    return self._extrapolate(px, py, pz, self.top_index_x-1, 0                 , i_z               , self.x_domain_view[self.top_index_x], self.y_domain_view[0]               , pz)
-                elif i_z == -1:
-                    return self._extrapolate(px, py, pz, self.top_index_x-1, 0                 , 0                 , self.x_domain_view[self.top_index_x], self.y_domain_view[0]               , self.z_domain_view[0])
-                elif i_z == self.top_index_z:
-                    return self._extrapolate(px, py, pz, self.top_index_x-1, 0                 , self.top_index_z-1, self.x_domain_view[self.top_index_x], self.y_domain_view[0]               , self.z_domain_view[self.top_index_z])
-            elif i_y == self.top_index_y:
-                if 0 <= i_z <= self.top_index_z-1:
-                    return self._extrapolate(px, py, pz, self.top_index_x-1, self.top_index_y-1, i_z               , self.x_domain_view[self.top_index_x], self.y_domain_view[self.top_index_y], pz)
-                elif i_z == -1:
-                    return self._extrapolate(px, py, pz, self.top_index_x-1, self.top_index_y-1, 0                 , self.x_domain_view[self.top_index_x], self.y_domain_view[self.top_index_y], self.z_domain_view[0])
-                elif i_z == self.top_index_z:
-                    return self._extrapolate(px, py, pz, self.top_index_x-1, self.top_index_y-1, self.top_index_z-1, self.x_domain_view[self.top_index_x], self.y_domain_view[self.top_index_y], self.z_domain_view[self.top_index_z])
+        if 0 <= ix < nx - 1:
+            if 0 <= iy < ny - 1:
+                if 0 <= iz < nz - 1:
+                    return self._evaluate(px, py, pz, ix, iy, iz)
+                elif iz == -1:
+                    return self._extrapolate(px, py, pz, ix, iy, 0, px, py, z[0])
+                elif iz == nz - 1:
+                    return self._extrapolate(px, py, pz, ix, iy, nz - 2, px, py, z[nz - 1])
+
+            elif iy == -1:
+                if 0 <= iz < nz - 1:
+                    return self._extrapolate(px, py, pz, ix, 0, iz, px, y[0], pz)
+                elif iz == -1:
+                    return self._extrapolate(px, py, pz, ix, 0, 0, px, y[0], z[0])
+                elif iz == nz - 1:
+                    return self._extrapolate(px, py, pz, ix, 0, nz - 2, px, y[0], z[nz - 1])
+
+            elif iy == ny - 1:
+                if 0 <= iz < nz - 1:
+                    return self._extrapolate(px, py, pz, ix, ny - 2, iz, px, y[ny - 1], pz)
+                elif iz == -1:
+                    return self._extrapolate(px, py, pz, ix, ny - 2, 0, px, y[ny - 1], z[0])
+                elif iz == nz - 1:
+                    return self._extrapolate(px, py, pz, ix, ny - 2, nz - 2, px, y[ny - 1], z[nz - 1])
+
+        elif ix == -1:
+            if 0 <= iy < ny - 1:
+                if 0 <= iz < nz - 1:
+                    return self._extrapolate(px, py, pz, 0, iy, iz, x[0], py, pz)
+                elif iz == -1:
+                    return self._extrapolate(px, py, pz, 0, iy, 0, x[0], py, z[0])
+                elif iz == nz - 1:
+                    return self._extrapolate(px, py, pz, 0, iy, nz - 2, x[0], py, z[nz - 1])
+
+            elif iy == -1:
+                if 0 <= iz < nz - 1:
+                    return self._extrapolate(px, py, pz, 0, 0, iz, x[0], y[0], pz)
+                elif iz == -1:
+                    return self._extrapolate(px, py, pz, 0, 0, 0, x[0], y[0], z[0])
+                elif iz == nz - 1:
+                    return self._extrapolate(px, py, pz, 0, 0, nz - 2, x[0], y[0], z[nz - 1])
+
+            elif iy == ny - 1:
+                if 0 <= iz < nz - 1:
+                    return self._extrapolate(px, py, pz, 0, ny - 2, iz, x[0], y[ny - 1], pz)
+                elif iz == -1:
+                    return self._extrapolate(px, py, pz, 0, ny - 2, 0, x[0], y[ny - 1], z[0])
+                elif iz == nz - 1:
+                    return self._extrapolate(px, py, pz, 0, ny - 2, nz - 2, x[0], y[ny - 1], z[nz - 1])
+
+        elif ix == nx - 1:
+            if 0 <= iy < ny - 1:
+                if 0 <= iz < nz - 1:
+                    return self._extrapolate(px, py, pz, nx - 2, iy, iz, x[nx - 1], py, pz)
+                elif iz == -1:
+                    return self._extrapolate(px, py, pz, nx - 2, iy, 0, x[nx - 1], py, z[0])
+                elif iz == nz - 1:
+                    return self._extrapolate(px, py, pz, nx - 2, iy, nz - 2, x[nx - 1], py, z[nz - 1])
+
+            elif iy == -1:
+                if 0 <= iz < nz - 1:
+                    return self._extrapolate(px, py, pz, nx - 2, 0, iz, x[nx - 1], y[0], pz)
+                elif iz == -1:
+                    return self._extrapolate(px, py, pz, nx - 2, 0, 0, x[nx - 1], y[0], z[0])
+                elif iz == nz - 1:
+                    return self._extrapolate(px, py, pz, nx - 2, 0, nz - 2, x[nx - 1], y[0], z[nz - 1])
+
+            elif iy == ny - 1:
+                if 0 <= iz < nz - 1:
+                    return self._extrapolate(px, py, pz, nx - 2, ny - 2, iz, x[nx - 1], y[ny - 1], pz)
+                elif iz == -1:
+                    return self._extrapolate(px, py, pz, nx - 2, ny - 2, 0, x[nx - 1], y[ny - 1], z[0])
+                elif iz == nz - 1:
+                    return self._extrapolate(px, py, pz, nx - 2, ny - 2, nz - 2, x[nx - 1], y[ny - 1], z[nz - 1])
 
         # value is outside of permitted limits
-        min_range_x = self.x_domain_view[0] - self.extrapolation_range
-        max_range_x = self.x_domain_view[self.top_index_x] + self.extrapolation_range
+        min_range_x = x[0] - self._extrapolation_range
+        max_range_x = x[nx - 1] + self._extrapolation_range
 
-        min_range_y = self.y_domain_view[0] - self.extrapolation_range
-        max_range_y = self.y_domain_view[self.top_index_y] + self.extrapolation_range
+        min_range_y = y[0] - self._extrapolation_range
+        max_range_y = y[ny - 1] + self._extrapolation_range
 
-        min_range_z = self.z_domain_view[0] - self.extrapolation_range
-        max_range_z = self.z_domain_view[self.top_index_z] + self.extrapolation_range
+        min_range_z = z[0] - self._extrapolation_range
+        max_range_z = z[nz - 1] + self._extrapolation_range
 
         raise ValueError("The specified value (x={}, y={}, z={}) is outside the range of the supplied data and/or extrapolation range: "
                          "x bounds=({}, {}), y bounds=({}, {}), z bounds=({}, {})".format(px, py, pz, min_range_x, max_range_x, min_range_y, max_range_y, min_range_z, max_range_z))
@@ -270,11 +318,11 @@ cdef class _Interpolate3DBase(Function3D):
         :return: the extrapolated value
         """
 
-        if self.extrapolation_type == EXT_NEAREST:
+        if self._extrapolation_type == EXT_NEAREST:
             return self._evaluate(nearest_px, nearest_py, nearest_pz, i_x, i_y, i_z)
-        elif self.extrapolation_type == EXT_LINEAR:
+        elif self._extrapolation_type == EXT_LINEAR:
             return self._extrapol_linear(px, py, pz, i_x, i_y, i_z, nearest_px, nearest_py, nearest_pz)
-        elif self.extrapolation_type == EXT_QUADRATIC:
+        elif self._extrapolation_type == EXT_QUADRATIC:
             return self._extrapol_quadratic(px, py, pz, i_x, i_y, i_z, nearest_px, nearest_py, nearest_pz)
 
     @cython.boundscheck(False)
@@ -307,53 +355,60 @@ cdef class _Interpolate3DBase(Function3D):
         """
         raise NotImplementedError("There is no quadratic extrapolation available for this interpolation.")
 
-    cdef void _set_constant_x(self):
+    cdef tuple _set_constant_x(self, ndarray x, ndarray f):
         """
         Set the interpolation function constant on the x axis, and extend the
         domain to all the reals.
         """
 
-        cdef ndarray data
+        cdef ndarray ex, ef
 
-        self.x_domain_view = array([-float('Inf'), +float('Inf')], dtype=float64)
-        self.top_index_x = 1
+        # set x array to full real range
+        self._x = array([-float('Inf'), +float('Inf')], dtype=float64)
+        self._nx = 2
 
-        self.x_np = array([-1., +1.], dtype=float64)
-        data = self.data_np
-        self.data_np = empty((2, shape(data)[1], shape(data)[2]), dtype=float64)
-        self.data_np[:,:] = data
+        # duplicate data to provide a pseudo range for interpolation coefficient calculation
+        ex = array([-1., +1.], dtype=float64)
+        ef = empty((2, f.shape[1], f.shape[2]), dtype=float64)
+        ef[:,:] = f
+        return ex, ef
 
-    cdef void _set_constant_y(self):
+    cdef tuple _set_constant_y(self, ndarray y, ndarray f):
         """
         Set the interpolation function constant on the y axis, and extend the
         domain to all the reals.
         """
 
-        cdef ndarray data
+        cdef ndarray ey, ef
 
-        self.y_domain_view = array([-float('Inf'), +float('Inf')], dtype=float64)
-        self.top_index_y = 1
+        # set y array to full real range
+        self._y = array([-float('Inf'), +float('Inf')], dtype=float64)
+        self._ny = 2
 
-        self.y_np = array([-1., +1.], dtype=float64)
-        data = self.data_np
-        self.data_np = empty((shape(data)[0], 2, shape(data)[2]), dtype=float64)
-        self.data_np[:,:] = data
+        # duplicate data to provide a pseudo range for interpolation coefficient calculation
+        ey = array([-1., +1.], dtype=float64)
+        ef = empty((f.shape[0], 2, f.shape[2]), dtype=float64)
+        ef[:,:] = f
+        return ey, ef
 
-    cdef void _set_constant_z(self):
+
+    cdef tuple _set_constant_z(self, ndarray z, ndarray f):
         """
         Set the interpolation function constant on the z axis, and extend the
         domain to all the reals.
         """
 
-        cdef ndarray data
+        cdef ndarray ez, ef
 
-        self.z_domain_view = array([-float('Inf'), +float('Inf')], dtype=float64)
-        self.top_index_z = 1
+        # set z array to full real range
+        self._z = array([-float('Inf'), +float('Inf')], dtype=float64)
+        self._nz = 2
 
-        self.z_np = array([-1., +1.], dtype=float64)
-        data = self.data_np
-        self.data_np = empty((shape(data)[0], shape(data)[1], 2), dtype=float64)
-        self.data_np[:,:,:] = data
+        # duplicate data to provide a pseudo range for interpolation coefficient calculation
+        ez = array([-1., +1.], dtype=float64)
+        ef = empty((f.shape[0], f.shape[1], 2), dtype=float64)
+        ef[:,:] = f
+        return ez, ef
 
 
 cdef class Interpolate3DLinear(_Interpolate3DBase):
@@ -395,11 +450,13 @@ cdef class Interpolate3DLinear(_Interpolate3DBase):
 
         super().__init__(x, y, z, data, extrapolate, extrapolation_type, extrapolation_range, tolerate_single_value)
 
+    cdef object _build(self, ndarray x, ndarray y, ndarray z, ndarray f):
+
         # obtain memory views
-        self.x_view = self.x_np
-        self.y_view = self.y_np
-        self.z_view = self.z_np
-        self.data_view = self.data_np
+        self.x_view = x
+        self.y_view = y
+        self.z_view = z
+        self.data_view = f
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
@@ -494,55 +551,57 @@ cdef class Interpolate3DCubic(_Interpolate3DBase):
 
         super().__init__(x, y, z, data, extrapolate, extrapolation_type, extrapolation_range, tolerate_single_value)
 
+    cdef object _build(self, ndarray x, ndarray y, ndarray z, ndarray f):
+
         # Initialise the caching array
-        self.coeffs_view = empty((self.top_index_x, self.top_index_y, self.top_index_z, 64), dtype=float64)
+        self.coeffs_view = empty((self._nx - 1, self._ny - 1, self._nz - 1, 64), dtype=float64)
         self.coeffs_view[:,:,:,::1] = float('NaN')
-        self.calculated_view = empty((self.top_index_x, self.top_index_y, self.top_index_z), dtype=int8)
+        self.calculated_view = empty((self._nx - 1, self._ny - 1, self._nz - 1), dtype=int8)
         self.calculated_view[:,:,:] = False
 
         # Normalise coordinates and data arrays
-        self.x_delta_inv = 1 / (self.x_np.max() - self.x_np.min())
-        self.x_min = self.x_np.min()
-        self.x_np = (self.x_np - self.x_min) * self.x_delta_inv
-        self.y_delta_inv = 1 / (self.y_np.max() - self.y_np.min())
-        self.y_min = self.y_np.min()
-        self.y_np = (self.y_np - self.y_min) * self.y_delta_inv
-        self.z_delta_inv = 1 / (self.z_np.max() - self.z_np.min())
-        self.z_min = self.z_np.min()
-        self.z_np = (self.z_np - self.z_min) * self.z_delta_inv
-        self.data_delta = self.data_np.max() - self.data_np.min()
-        self.data_min = self.data_np.min()
+        self.x_delta_inv = 1 / (x.max() - x.min())
+        self.x_min = x.min()
+        x = (x - self.x_min) * self.x_delta_inv
+        self.y_delta_inv = 1 / (y.max() - y.min())
+        self.y_min = y.min()
+        y = (y - self.y_min) * self.y_delta_inv
+        self.z_delta_inv = 1 / (z.max() - z.min())
+        self.z_min = z.min()
+        z = (z - self.z_min) * self.z_delta_inv
+        self.data_delta = f.max() - f.min()
+        self.data_min = f.min()
         # If data contains only one value (not filtered before) cancel the
         # normalisation scaling by setting data_delta to 1:
         if self.data_delta == 0:
             self.data_delta = 1
-        self.data_np = (self.data_np - self.data_min) * (1 / self.data_delta)
+        f = (f - self.data_min) * (1 / self.data_delta)
 
         # widen arrays for automatic handling of boundaries polynomials and get memory views
-        self.x_np = concatenate(([self.x_np[0]], self.x_np, [self.x_np[-1]]))
-        self.y_np = concatenate(([self.y_np[0]], self.y_np, [self.y_np[-1]]))
-        self.z_np = concatenate(([self.z_np[0]], self.z_np, [self.z_np[-1]]))
+        x = concatenate(([x[0]], x, [x[-1]]))
+        y = concatenate(([y[0]], y, [y[-1]]))
+        z = concatenate(([z[0]], z, [z[-1]]))
 
-        self.data_view = empty((self.top_index_x+3, self.top_index_y+3, self.top_index_z+3), dtype=float64)
+        self.data_view = empty((self._nx - 1+3, self._ny - 1+3, self._nz - 1+3), dtype=float64)
 
-        for i in range(self.top_index_x+3):
-            for j in range(self.top_index_y+3):
-                for k in range(self.top_index_z+3):
-                    i_narrowed = min(max(0, i-1), self.top_index_x)
-                    j_narrowed = min(max(0, j-1), self.top_index_y)
-                    k_narrowed = min(max(0, k-1), self.top_index_z)
-                    self.data_view[i, j, k] = self.data_np[i_narrowed, j_narrowed, k_narrowed]
+        for i in range(self._nx - 1+3):
+            for j in range(self._ny - 1+3):
+                for k in range(self._nz - 1+3):
+                    i_narrowed = min(max(0, i-1), self._nx - 1)
+                    j_narrowed = min(max(0, j-1), self._ny - 1)
+                    k_narrowed = min(max(0, k-1), self._nz - 1)
+                    self.data_view[i, j, k] = f[i_narrowed, j_narrowed, k_narrowed]
 
         # obtain coordinates memory views
-        self.x_view = self.x_np
-        self.x2_view = self.x_np*self.x_np
-        self.x3_view = self.x_np*self.x_np*self.x_np
-        self.y_view = self.y_np
-        self.y2_view = self.y_np*self.y_np
-        self.y3_view = self.y_np*self.y_np*self.y_np
-        self.z_view = self.z_np
-        self.z2_view = self.z_np*self.z_np
-        self.z3_view = self.z_np*self.z_np*self.z_np
+        self.x_view = x
+        self.x2_view = x*x
+        self.x3_view = x*x*x
+        self.y_view = y
+        self.y2_view = y*y
+        self.y3_view = y*y*y
+        self.z_view = z
+        self.z2_view = z*z
+        self.z3_view = z*z*z
 
     @cython.cdivision(True)
     @cython.boundscheck(False)
