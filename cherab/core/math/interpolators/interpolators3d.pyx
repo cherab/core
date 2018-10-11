@@ -125,91 +125,24 @@ cdef class _Interpolate3DBase(Function3D):
         self._x = x
         self._y = y
         self._z = z
-        self._nx = len(x)
-        self._ny = len(y)
-        self._nz = len(z)
 
         # Check for single value in x input
-        if len(x) == 1:
-            if tolerate_single_value:
-                x, f = self._set_constant_x(x, f)
-            else:
-                raise ValueError("There is only a single value in the x array. "
-                    "Consider turning on the 'tolerate_single_value' argument.")
+        if x.shape[0] == 1 and not tolerate_single_value:
+            raise ValueError("There is only a single value in the x array. "
+                             "Consider turning on the 'tolerate_single_value' argument.")
 
         # Check for single value in y input
-        if len(y) == 1:
-            if tolerate_single_value:
-                y, f = self._set_constant_y(y, f)
-            else:
-                raise ValueError("There is only a single value in the y array. "
-                    "Consider turning on the 'tolerate_single_value' argument.")
+        if y.shape[0] == 1 and not tolerate_single_value:
+            raise ValueError("There is only a single value in the y array. "
+                             "Consider turning on the 'tolerate_single_value' argument.")
 
         # Check for single value in z input
-        if len(z) == 1:
-            if tolerate_single_value:
-                z, f = self._set_constant_z(z, f)
-            else:
-                raise ValueError("There is only a single value in the z array. "
-                    "Consider turning on the 'tolerate_single_value' argument.")
+        if z.shape[0] == 1 and not tolerate_single_value:
+            raise ValueError("There is only a single value in the z array. "
+                             "Consider turning on the 'tolerate_single_value' argument.")
 
         # build internal state of interpolator
         self._build(x, y, z, f)
-
-    cdef tuple _set_constant_x(self, ndarray x, ndarray f):
-        """
-        Set the interpolation function constant on the x axis, and extend the
-        domain to all the reals.
-        """
-
-        cdef ndarray ex, ef
-
-        # set x array to full real range
-        self._x = array([-INFINITY, INFINITY], dtype=float64)
-        self._nx = 2
-
-        # duplicate data to provide a pseudo range for interpolation coefficient calculation
-        ex = array([-1., +1.], dtype=float64)
-        ef = empty((2, f.shape[1], f.shape[2]), dtype=float64)
-        ef[:,:] = f
-        return ex, ef
-
-    cdef tuple _set_constant_y(self, ndarray y, ndarray f):
-        """
-        Set the interpolation function constant on the y axis, and extend the
-        domain to all the reals.
-        """
-
-        cdef ndarray ey, ef
-
-        # set y array to full real range
-        self._y = array([-INFINITY, +INFINITY], dtype=float64)
-        self._ny = 2
-
-        # duplicate data to provide a pseudo range for interpolation coefficient calculation
-        ey = array([-1., +1.], dtype=float64)
-        ef = empty((f.shape[0], 2, f.shape[2]), dtype=float64)
-        ef[:,:] = f
-        return ey, ef
-
-
-    cdef tuple _set_constant_z(self, ndarray z, ndarray f):
-        """
-        Set the interpolation function constant on the z axis, and extend the
-        domain to all the reals.
-        """
-
-        cdef ndarray ez, ef
-
-        # set z array to full real range
-        self._z = array([-INFINITY, +INFINITY], dtype=float64)
-        self._nz = 2
-
-        # duplicate data to provide a pseudo range for interpolation coefficient calculation
-        ez = array([-1., +1.], dtype=float64)
-        ef = empty((f.shape[0], f.shape[1], 2), dtype=float64)
-        ef[:,:] = f
-        return ez, ef
 
     cdef object _build(self, ndarray x, ndarray y, ndarray z, ndarray f):
         """
@@ -227,6 +160,7 @@ cdef class _Interpolate3DBase(Function3D):
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
+    @cython.initializedcheck(False)
     cdef double evaluate(self, double px, double py, double pz) except? -1e999:
         """
         Evaluate the interpolating function.
@@ -243,9 +177,9 @@ cdef class _Interpolate3DBase(Function3D):
         y = self._y
         z = self._z
 
-        nx = self._nx
-        ny = self._ny
-        nz = self._nz
+        nx = x.shape[0]
+        ny = y.shape[0]
+        nz = z.shape[0]
 
         ix = find_index(x, px, self._extrapolation_range)
         iy = find_index(y, py, self._extrapolation_range)
@@ -371,8 +305,6 @@ cdef class _Interpolate3DBase(Function3D):
         elif self._extrapolation_type == EXT_QUADRATIC:
             return self._extrapol_quadratic(px, py, pz, ix, iy, iz, nearest_px, nearest_py, nearest_pz)
 
-    @cython.boundscheck(False)
-    @cython.wraparound(False)
     cdef double _extrapol_linear(self, double px, double py, double pz, int ix, int iy, int iz, double nearest_px, double nearest_py, double nearest_pz) except? -1e999:
         """
         Extrapolate linearly the interpolation function valid on area given by
@@ -386,8 +318,6 @@ cdef class _Interpolate3DBase(Function3D):
         """
         raise NotImplementedError("There is no linear extrapolation available for this interpolation.")
 
-    @cython.boundscheck(False)
-    @cython.wraparound(False)
     cdef double _extrapol_quadratic(self, double px, double py, double pz, int ix, int iy, int iz, double nearest_px, double nearest_py, double nearest_pz) except? -1e999:
         """
         Extrapolate quadratically the interpolation function valid on area given by
@@ -443,7 +373,43 @@ cdef class Interpolate3DLinear(_Interpolate3DBase):
 
     cdef object _build(self, ndarray x, ndarray y, ndarray z, ndarray f):
 
-        # todo move set constant here out of base class - can be used to customise behaviour
+        cdef ndarray temp
+
+        # if x array is single valued, expand x array and data along x axis to simplify interpolation
+        if x.shape[0] == 1:
+
+            # set x array to full real range
+            self._x = array([-INFINITY, INFINITY], dtype=float64)
+
+            # duplicate data to provide a pseudo range for interpolation coefficient calculation
+            temp = f
+            x = array([-1., +1.], dtype=float64)
+            f = empty((2, f.shape[1], f.shape[2]), dtype=float64)
+            f[:, :] = temp
+
+        # if y array is single valued, expand y array and data along y axis to simplify interpolation
+        if y.shape[0] == 1:
+
+            # set y array to full real range
+            self._y = array([-INFINITY, INFINITY], dtype=float64)
+
+            # duplicate data to provide a pseudo range for interpolation coefficient calculation
+            temp = f
+            y = array([-1., +1.], dtype=float64)
+            f = empty((f.shape[0], 2, f.shape[2]), dtype=float64)
+            f[:, :] = temp
+
+        # if z array is single valued, expand z array and data along z axis to simplify interpolation
+        if z.shape[0] == 1:
+
+            # set z array to full real range
+            self._z = array([-INFINITY, INFINITY], dtype=float64)
+
+            # duplicate data to provide a pseudo range for interpolation coefficient calculation
+            temp = f
+            z = array([-1., +1.], dtype=float64)
+            f = empty((f.shape[0], f.shape[1], 2), dtype=float64)
+            f[:, :] = temp
 
         # create memory views
         self._wx = x
@@ -453,6 +419,7 @@ cdef class Interpolate3DLinear(_Interpolate3DBase):
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
+    @cython.initializedcheck(False)
     cdef double _evaluate(self, double px, double py, double pz, int ix, int iy, int iz) except? -1e999:
         """
         Evaluate the interpolating function which is valid in the area given
@@ -487,8 +454,6 @@ cdef class Interpolate3DLinear(_Interpolate3DBase):
         # interpolate along x
         return lerp(x[ix], x[ix+1], c0, c1, px)
 
-    @cython.boundscheck(False)
-    @cython.wraparound(False)
     cdef double _extrapol_linear(self, double px, double py, double pz, int ix, int iy, int iz, double nearest_px, double nearest_py, double nearest_pz) except? -1e999:
         """
         Extrapolate linearly the interpolation function valid on area given by
@@ -502,6 +467,7 @@ cdef class Interpolate3DLinear(_Interpolate3DBase):
         """
 
         return self._evaluate(px, py, pz, ix, iy, iz)
+
 
 cdef class Interpolate3DCubic(_Interpolate3DBase):
     """
@@ -554,61 +520,117 @@ cdef class Interpolate3DCubic(_Interpolate3DBase):
 
     cdef object _build(self, ndarray x, ndarray y, ndarray z, ndarray f):
 
-        cdef int i, j, k, i_narrowed, j_narrowed, k_narrowed
+        cdef:
+            ndarray temp
+            ndarray wx, wy, wz, wf
+            double[:,:,::1] f_mv
+            int nx, ny, nz
+            int i, j, k, i_mapped, j_mapped, k_mapped
 
-        # Initialise the caching array
-        self.coeffs_view = empty((self._nx - 1, self._ny - 1, self._nz - 1, 64), dtype=float64)
-        self.coeffs_view[:,:,:,::1] = NAN
-        self.calculated_view = empty((self._nx - 1, self._ny - 1, self._nz - 1), dtype=int8)
-        self.calculated_view[:,:,:] = False
+        # if x array is single valued, expand x array and data along x axis to simplify interpolation
+        if x.shape[0] == 1:
 
-        # Normalise coordinates and data arrays
-        self.x_delta_inv = 1 / (x.max() - x.min())
-        self.x_min = x.min()
-        x = (x - self.x_min) * self.x_delta_inv
-        self.y_delta_inv = 1 / (y.max() - y.min())
-        self.y_min = y.min()
-        y = (y - self.y_min) * self.y_delta_inv
-        self.z_delta_inv = 1 / (z.max() - z.min())
-        self.z_min = z.min()
-        z = (z - self.z_min) * self.z_delta_inv
-        self.data_delta = f.max() - f.min()
-        self.data_min = f.min()
-        # If data contains only one value (not filtered before) cancel the
-        # normalisation scaling by setting data_delta to 1:
-        if self.data_delta == 0:
-            self.data_delta = 1
-        f = (f - self.data_min) * (1 / self.data_delta)
+            # set x array to full real range
+            self._x = array([-INFINITY, INFINITY], dtype=float64)
 
-        # widen arrays for automatic handling of boundaries polynomials and get memory views
-        x = concatenate(([x[0]], x, [x[-1]]))
-        y = concatenate(([y[0]], y, [y[-1]]))
-        z = concatenate(([z[0]], z, [z[-1]]))
+            # duplicate data to provide a pseudo range for interpolation coefficient calculation
+            temp = f
+            x = array([-1., +1.], dtype=float64)
+            f = empty((2, f.shape[1], f.shape[2]), dtype=float64)
+            f[:, :] = temp
 
-        self.data_view = empty((self._nx - 1+3, self._ny - 1+3, self._nz - 1+3), dtype=float64)
+        # if y array is single valued, expand y array and data along y axis to simplify interpolation
+        if y.shape[0] == 1:
 
-        for i in range(self._nx - 1+3):
-            for j in range(self._ny - 1+3):
-                for k in range(self._nz - 1+3):
-                    i_narrowed = min(max(0, i-1), self._nx - 1)
-                    j_narrowed = min(max(0, j-1), self._ny - 1)
-                    k_narrowed = min(max(0, k-1), self._nz - 1)
-                    self.data_view[i, j, k] = f[i_narrowed, j_narrowed, k_narrowed]
+            # set y array to full real range
+            self._y = array([-INFINITY, INFINITY], dtype=float64)
 
-        # obtain coordinates memory views
-        self.x_view = x
-        self.x2_view = x*x
-        self.x3_view = x*x*x
-        self.y_view = y
-        self.y2_view = y*y
-        self.y3_view = y*y*y
-        self.z_view = z
-        self.z2_view = z*z
-        self.z3_view = z*z*z
+            # duplicate data to provide a pseudo range for interpolation coefficient calculation
+            temp = f
+            y = array([-1., +1.], dtype=float64)
+            f = empty((f.shape[0], 2, f.shape[2]), dtype=float64)
+            f[:, :] = temp
+
+        # if z array is single valued, expand z array and data along z axis to simplify interpolation
+        if z.shape[0] == 1:
+
+            # set z array to full real range
+            self._z = array([-INFINITY, INFINITY], dtype=float64)
+
+            # duplicate data to provide a pseudo range for interpolation coefficient calculation
+            temp = f
+            z = array([-1., +1.], dtype=float64)
+            f = empty((f.shape[0], f.shape[1], 2), dtype=float64)
+            f[:, :] = temp
+
+        nx = x.shape[0]
+        ny = y.shape[0]
+        nz = z.shape[0]
+
+        # initialise the spline coefficient cache arrays
+        self._k = empty((nx - 1, ny - 1, nz - 1, 64), dtype=float64)
+        self._k[:,:,:,:] = NAN
+
+        self._available = empty((nx - 1, ny - 1, nz - 1), dtype=int8)
+        self._available[:,:,:] = False
+
+        # normalise coordinate and data arrays
+        self._sx = 1 / (x.max() - x.min())
+        self._sy = 1 / (y.max() - y.min())
+        self._sz = 1 / (z.max() - z.min())
+        self._sf = f.max() - f.min()
+
+        self._ox = x.min()
+        self._oz = z.min()
+        self._oy = y.min()
+        self._of = f.min()
+
+        x = (x - self._ox) * self._sx
+        y = (y - self._oy) * self._sy
+        z = (z - self._oz) * self._sz
+
+        # if data has zero range (all values identical), skip normalisation
+        if self._sf == 0:
+            self._sf = 1
+
+        f = (f - self._of) * (1 / self._sf)
+
+        # widen arrays for automatic handling of boundaries polynomials
+        wx = concatenate(([x[0]], x, [x[-1]]))
+        wy = concatenate(([y[0]], y, [y[-1]]))
+        wz = concatenate(([z[0]], z, [z[-1]]))
+        wf = empty((nx + 2, ny + 2, nz + 2), dtype=float64)
+
+        # store memory views to widened data
+        self._wx = wx
+        self._wy = wy
+        self._wz = wz
+        self._wf = wf
+
+        # populate expanded f array by duplicating the edges of the array
+        f_mv = f
+        for i in range(nx + 2):
+            for j in range(ny + 2):
+                for k in range(nz + 2):
+                    i_mapped = min(max(0, i - 1), nx - 1)
+                    j_mapped = min(max(0, j - 1), ny - 1)
+                    k_mapped = min(max(0, k - 1), nz - 1)
+                    self._wf[i, j, k] = f_mv[i_mapped, j_mapped, k_mapped]
+
+        # calculate and cache higher powers of the dimension array data
+        self._wx2 = wx * wx
+        self._wx3 = wx * wx * wx
+
+        self._wy2 = wy * wy
+        self._wy3 = wy * wy * wy
+
+        self._wz2 = wz * wz
+        self._wz3 = wz * wz * wz
 
     @cython.cdivision(True)
     @cython.boundscheck(False)
     @cython.wraparound(False)
+    @cython.initializedcheck(False)
     cdef double _evaluate(self, double px, double py, double pz, int ix, int iy, int iz) except? -1e999:
         """
         Evaluate the interpolating function which is valid in the area given
@@ -628,7 +650,7 @@ cdef class Interpolate3DCubic(_Interpolate3DBase):
             double[:, ::1] cm_view
 
         # If the concerned polynomial has not yet been calculated:
-        if not self.calculated_view[ix, iy, iz]:
+        if not self._available[ix, iy, iz]:
 
             # Create constraint matrix (un-optimised)
             # cv_view = zeros((64,), dtype=float64)       # constraints vector
@@ -649,60 +671,60 @@ cdef class Interpolate3DCubic(_Interpolate3DBase):
                         # knot values
 
                         cm_view[l, :] = self._constraints3d(u, v, w, False, False, False)
-                        cv_view[l] = self.data_view[u, v, w]
+                        cv_view[l] = self._wf[u, v, w]
                         l = l+1
 
                         # derivatives along x, y, z
 
                         cm_view[l, :] = self._constraints3d(u, v, w, True, False, False)
-                        delta_x = self.x_view[u+1] - self.x_view[u-1]
-                        cv_view[l] = (self.data_view[u+1, v, w] - self.data_view[u-1, v, w])/delta_x
+                        delta_x = self._wx[u+1] - self._wx[u-1]
+                        cv_view[l] = (self._wf[u+1, v, w] - self._wf[u-1, v, w])/delta_x
                         l = l+1
 
                         cm_view[l, :] = self._constraints3d(u, v, w, False ,True , False)
-                        delta_y = self.y_view[v+1] - self.y_view[v-1]
-                        cv_view[l] = (self.data_view[u, v+1, w] - self.data_view[u, v-1, w])/delta_y
+                        delta_y = self._wy[v+1] - self._wy[v-1]
+                        cv_view[l] = (self._wf[u, v+1, w] - self._wf[u, v-1, w])/delta_y
                         l = l+1
 
                         cm_view[l, :] = self._constraints3d(u, v, w, False, False, True)
-                        delta_z = self.z_view[w+1] - self.z_view[w-1]
-                        cv_view[l] = (self.data_view[u, v, w+1] - self.data_view[u, v, w-1])/delta_z
+                        delta_z = self._wz[w+1] - self._wz[w-1]
+                        cv_view[l] = (self._wf[u, v, w+1] - self._wf[u, v, w-1])/delta_z
                         l = l+1
 
                         # cross derivatives xy, xz, yz
 
                         cm_view[l, :] = self._constraints3d(u, v, w, True, True, False)
-                        cv_view[l] = (self.data_view[u+1, v+1, w] - self.data_view[u+1, v-1, w] - self.data_view[u-1, v+1, w] + self.data_view[u-1, v-1, w])/(delta_x*delta_y)
+                        cv_view[l] = (self._wf[u+1, v+1, w] - self._wf[u+1, v-1, w] - self._wf[u-1, v+1, w] + self._wf[u-1, v-1, w])/(delta_x*delta_y)
                         l = l+1
 
                         cm_view[l, :] = self._constraints3d(u, v, w, True, False, True)
-                        cv_view[l] = (self.data_view[u+1, v, w+1] - self.data_view[u+1, v, w-1] - self.data_view[u-1, v, w+1] + self.data_view[u-1, v, w-1])/(delta_x*delta_z)
+                        cv_view[l] = (self._wf[u+1, v, w+1] - self._wf[u+1, v, w-1] - self._wf[u-1, v, w+1] + self._wf[u-1, v, w-1])/(delta_x*delta_z)
                         l = l+1
 
                         cm_view[l, :] = self._constraints3d(u, v, w, False, True, True)
-                        cv_view[l] = (self.data_view[u, v+1, w+1] - self.data_view[u, v-1, w+1] - self.data_view[u, v+1, w-1] + self.data_view[u, v-1, w-1])/(delta_y*delta_z)
+                        cv_view[l] = (self._wf[u, v+1, w+1] - self._wf[u, v-1, w+1] - self._wf[u, v+1, w-1] + self._wf[u, v-1, w-1])/(delta_y*delta_z)
                         l = l+1
 
                         # cross derivative xyz
 
                         cm_view[l, :] = self._constraints3d(u, v, w, True, True, True)
-                        cv_view[l] = (self.data_view[u+1, v+1, w+1] - self.data_view[u+1, v+1, w-1] - self.data_view[u+1, v-1, w+1] + self.data_view[u+1, v-1, w-1] - self.data_view[u-1, v+1, w+1] + self.data_view[u-1, v+1, w-1] + self.data_view[u-1, v-1, w+1] - self.data_view[u-1, v-1, w-1])/(delta_x*delta_y*delta_z)
+                        cv_view[l] = (self._wf[u+1, v+1, w+1] - self._wf[u+1, v+1, w-1] - self._wf[u+1, v-1, w+1] + self._wf[u+1, v-1, w-1] - self._wf[u-1, v+1, w+1] + self._wf[u-1, v+1, w-1] + self._wf[u-1, v-1, w+1] - self._wf[u-1, v-1, w-1])/(delta_x*delta_y*delta_z)
                         l = l+1
 
             # Solve the linear system and fill the caching coefficients array
             coeffs_view = solve(cm_view, cv_view)
-            self.coeffs_view[ix, iy, iz, :] = coeffs_view
+            self._k[ix, iy, iz, :] = coeffs_view
 
             # Denormalisation
             for i in range(4):
                 for j in range(4):
                     for k in range(4):
-                        coeffs_view[16 * i + 4 * j + k] = self.data_delta * self.x_delta_inv ** i * self.y_delta_inv ** j * self.z_delta_inv ** k / (factorial(k) * factorial(j) * factorial(i)) \
-                                                          * self._evaluate_polynomial_derivative(ix, iy, iz, -self.x_delta_inv * self.x_min, -self.y_delta_inv * self.y_min, -self.z_delta_inv * self.z_min, i, j, k)
-            coeffs_view[0] = coeffs_view[0] + self.data_min
-            self.coeffs_view[ix, iy, iz, :] = coeffs_view
+                        coeffs_view[16 * i + 4 * j + k] = self._sf * self._sx ** i * self._sy ** j * self._sz ** k / (factorial(k) * factorial(j) * factorial(i)) \
+                                                          * self._evaluate_polynomial_derivative(ix, iy, iz, -self._sx * self._ox, -self._sy * self._oy, -self._sz * self._oz, i, j, k)
+            coeffs_view[0] = coeffs_view[0] + self._of
+            self._k[ix, iy, iz, :] = coeffs_view
 
-            self.calculated_view[ix, iy, iz] = True
+            self._available[ix, iy, iz] = True
 
         px2 = px*px
         px3 = px2*px
@@ -711,31 +733,30 @@ cdef class Interpolate3DCubic(_Interpolate3DBase):
         pz2 = pz*pz
         pz3 = pz2*pz
 
-        return         (self.coeffs_view[ix, iy, iz,  0] + self.coeffs_view[ix, iy, iz,  1]*pz + self.coeffs_view[ix, iy, iz,  2]*pz2 + self.coeffs_view[ix, iy, iz,  3]*pz3) + \
-                   py *(self.coeffs_view[ix, iy, iz,  4] + self.coeffs_view[ix, iy, iz,  5]*pz + self.coeffs_view[ix, iy, iz,  6]*pz2 + self.coeffs_view[ix, iy, iz,  7]*pz3) + \
-                   py2*(self.coeffs_view[ix, iy, iz,  8] + self.coeffs_view[ix, iy, iz,  9]*pz + self.coeffs_view[ix, iy, iz, 10]*pz2 + self.coeffs_view[ix, iy, iz, 11]*pz3) + \
-                   py3*(self.coeffs_view[ix, iy, iz, 12] + self.coeffs_view[ix, iy, iz, 13]*pz + self.coeffs_view[ix, iy, iz, 14]*pz2 + self.coeffs_view[ix, iy, iz, 15]*pz3) \
+        return         (self._k[ix, iy, iz,  0] + self._k[ix, iy, iz,  1]*pz + self._k[ix, iy, iz,  2]*pz2 + self._k[ix, iy, iz,  3]*pz3) + \
+                   py *(self._k[ix, iy, iz,  4] + self._k[ix, iy, iz,  5]*pz + self._k[ix, iy, iz,  6]*pz2 + self._k[ix, iy, iz,  7]*pz3) + \
+                   py2*(self._k[ix, iy, iz,  8] + self._k[ix, iy, iz,  9]*pz + self._k[ix, iy, iz, 10]*pz2 + self._k[ix, iy, iz, 11]*pz3) + \
+                   py3*(self._k[ix, iy, iz, 12] + self._k[ix, iy, iz, 13]*pz + self._k[ix, iy, iz, 14]*pz2 + self._k[ix, iy, iz, 15]*pz3) \
                + px*( \
-                       (self.coeffs_view[ix, iy, iz, 16] + self.coeffs_view[ix, iy, iz, 17]*pz + self.coeffs_view[ix, iy, iz, 18]*pz2 + self.coeffs_view[ix, iy, iz, 19]*pz3) + \
-                   py *(self.coeffs_view[ix, iy, iz, 20] + self.coeffs_view[ix, iy, iz, 21]*pz + self.coeffs_view[ix, iy, iz, 22]*pz2 + self.coeffs_view[ix, iy, iz, 23]*pz3) + \
-                   py2*(self.coeffs_view[ix, iy, iz, 24] + self.coeffs_view[ix, iy, iz, 25]*pz + self.coeffs_view[ix, iy, iz, 26]*pz2 + self.coeffs_view[ix, iy, iz, 27]*pz3) + \
-                   py3*(self.coeffs_view[ix, iy, iz, 28] + self.coeffs_view[ix, iy, iz, 29]*pz + self.coeffs_view[ix, iy, iz, 30]*pz2 + self.coeffs_view[ix, iy, iz, 31]*pz3) \
+                       (self._k[ix, iy, iz, 16] + self._k[ix, iy, iz, 17]*pz + self._k[ix, iy, iz, 18]*pz2 + self._k[ix, iy, iz, 19]*pz3) + \
+                   py *(self._k[ix, iy, iz, 20] + self._k[ix, iy, iz, 21]*pz + self._k[ix, iy, iz, 22]*pz2 + self._k[ix, iy, iz, 23]*pz3) + \
+                   py2*(self._k[ix, iy, iz, 24] + self._k[ix, iy, iz, 25]*pz + self._k[ix, iy, iz, 26]*pz2 + self._k[ix, iy, iz, 27]*pz3) + \
+                   py3*(self._k[ix, iy, iz, 28] + self._k[ix, iy, iz, 29]*pz + self._k[ix, iy, iz, 30]*pz2 + self._k[ix, iy, iz, 31]*pz3) \
                ) \
                + px2*( \
-                       (self.coeffs_view[ix, iy, iz, 32] + self.coeffs_view[ix, iy, iz, 33]*pz + self.coeffs_view[ix, iy, iz, 34]*pz2 + self.coeffs_view[ix, iy, iz, 35]*pz3) + \
-                   py *(self.coeffs_view[ix, iy, iz, 36] + self.coeffs_view[ix, iy, iz, 37]*pz + self.coeffs_view[ix, iy, iz, 38]*pz2 + self.coeffs_view[ix, iy, iz, 39]*pz3) + \
-                   py2*(self.coeffs_view[ix, iy, iz, 40] + self.coeffs_view[ix, iy, iz, 41]*pz + self.coeffs_view[ix, iy, iz, 42]*pz2 + self.coeffs_view[ix, iy, iz, 43]*pz3) + \
-                   py3*(self.coeffs_view[ix, iy, iz, 44] + self.coeffs_view[ix, iy, iz, 45]*pz + self.coeffs_view[ix, iy, iz, 46]*pz2 + self.coeffs_view[ix, iy, iz, 47]*pz3) \
+                       (self._k[ix, iy, iz, 32] + self._k[ix, iy, iz, 33]*pz + self._k[ix, iy, iz, 34]*pz2 + self._k[ix, iy, iz, 35]*pz3) + \
+                   py *(self._k[ix, iy, iz, 36] + self._k[ix, iy, iz, 37]*pz + self._k[ix, iy, iz, 38]*pz2 + self._k[ix, iy, iz, 39]*pz3) + \
+                   py2*(self._k[ix, iy, iz, 40] + self._k[ix, iy, iz, 41]*pz + self._k[ix, iy, iz, 42]*pz2 + self._k[ix, iy, iz, 43]*pz3) + \
+                   py3*(self._k[ix, iy, iz, 44] + self._k[ix, iy, iz, 45]*pz + self._k[ix, iy, iz, 46]*pz2 + self._k[ix, iy, iz, 47]*pz3) \
                ) \
                + px3*( \
-                       (self.coeffs_view[ix, iy, iz, 48] + self.coeffs_view[ix, iy, iz, 49]*pz + self.coeffs_view[ix, iy, iz, 50]*pz2 + self.coeffs_view[ix, iy, iz, 51]*pz3) + \
-                   py *(self.coeffs_view[ix, iy, iz, 52] + self.coeffs_view[ix, iy, iz, 53]*pz + self.coeffs_view[ix, iy, iz, 54]*pz2 + self.coeffs_view[ix, iy, iz, 55]*pz3) + \
-                   py2*(self.coeffs_view[ix, iy, iz, 56] + self.coeffs_view[ix, iy, iz, 57]*pz + self.coeffs_view[ix, iy, iz, 58]*pz2 + self.coeffs_view[ix, iy, iz, 59]*pz3) + \
-                   py3*(self.coeffs_view[ix, iy, iz, 60] + self.coeffs_view[ix, iy, iz, 61]*pz + self.coeffs_view[ix, iy, iz, 62]*pz2 + self.coeffs_view[ix, iy, iz, 63]*pz3) \
+                       (self._k[ix, iy, iz, 48] + self._k[ix, iy, iz, 49]*pz + self._k[ix, iy, iz, 50]*pz2 + self._k[ix, iy, iz, 51]*pz3) + \
+                   py *(self._k[ix, iy, iz, 52] + self._k[ix, iy, iz, 53]*pz + self._k[ix, iy, iz, 54]*pz2 + self._k[ix, iy, iz, 55]*pz3) + \
+                   py2*(self._k[ix, iy, iz, 56] + self._k[ix, iy, iz, 57]*pz + self._k[ix, iy, iz, 58]*pz2 + self._k[ix, iy, iz, 59]*pz3) + \
+                   py3*(self._k[ix, iy, iz, 60] + self._k[ix, iy, iz, 61]*pz + self._k[ix, iy, iz, 62]*pz2 + self._k[ix, iy, iz, 63]*pz3) \
                )
 
-    @cython.boundscheck(False)
-    @cython.wraparound(False)
+
     cdef double _extrapol_linear(self, double px, double py, double pz, int ix, int iy, int iz, double nearest_px, double nearest_py, double nearest_pz) except? -1e999:
         """
         Extrapolate linearly the interpolation function valid on area given by
@@ -767,8 +788,6 @@ cdef class Interpolate3DCubic(_Interpolate3DBase):
 
         return result
 
-    @cython.boundscheck(False)
-    @cython.wraparound(False)
     cdef double _extrapol_quadratic(self, double px, double py, double pz, int ix, int iy, int iz, double nearest_px, double nearest_py, double nearest_pz) except? -1e999:
         """
         Extrapolate quadratically the interpolation function valid on area given by
@@ -817,6 +836,7 @@ cdef class Interpolate3DCubic(_Interpolate3DBase):
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
+    @cython.initializedcheck(False)
     cdef double _evaluate_polynomial_derivative(self, int ix, int iy, int iz, double px, double py, double pz, int der_x, int der_y, int der_z):
         """
         Evaluate the derivatives of the polynomial valid in the area given by
@@ -836,32 +856,33 @@ cdef class Interpolate3DCubic(_Interpolate3DBase):
         z_values = derivatives_array(pz, der_z)
 
         return   x_values[0]*( \
-                   y_values[0]*(z_values[0]*self.coeffs_view[ix, iy, iz,  0] + z_values[1]*self.coeffs_view[ix, iy, iz,  1] + z_values[2]*self.coeffs_view[ix, iy, iz,  2] + z_values[3]*self.coeffs_view[ix, iy, iz,  3]) + \
-                   y_values[1]*(z_values[0]*self.coeffs_view[ix, iy, iz,  4] + z_values[1]*self.coeffs_view[ix, iy, iz,  5] + z_values[2]*self.coeffs_view[ix, iy, iz,  6] + z_values[3]*self.coeffs_view[ix, iy, iz,  7]) + \
-                   y_values[2]*(z_values[0]*self.coeffs_view[ix, iy, iz,  8] + z_values[1]*self.coeffs_view[ix, iy, iz,  9] + z_values[2]*self.coeffs_view[ix, iy, iz, 10] + z_values[3]*self.coeffs_view[ix, iy, iz, 11]) + \
-                   y_values[3]*(z_values[0]*self.coeffs_view[ix, iy, iz, 12] + z_values[1]*self.coeffs_view[ix, iy, iz, 13] + z_values[2]*self.coeffs_view[ix, iy, iz, 14] + z_values[3]*self.coeffs_view[ix, iy, iz, 15]) \
+                   y_values[0]*(z_values[0]*self._k[ix, iy, iz,  0] + z_values[1]*self._k[ix, iy, iz,  1] + z_values[2]*self._k[ix, iy, iz,  2] + z_values[3]*self._k[ix, iy, iz,  3]) + \
+                   y_values[1]*(z_values[0]*self._k[ix, iy, iz,  4] + z_values[1]*self._k[ix, iy, iz,  5] + z_values[2]*self._k[ix, iy, iz,  6] + z_values[3]*self._k[ix, iy, iz,  7]) + \
+                   y_values[2]*(z_values[0]*self._k[ix, iy, iz,  8] + z_values[1]*self._k[ix, iy, iz,  9] + z_values[2]*self._k[ix, iy, iz, 10] + z_values[3]*self._k[ix, iy, iz, 11]) + \
+                   y_values[3]*(z_values[0]*self._k[ix, iy, iz, 12] + z_values[1]*self._k[ix, iy, iz, 13] + z_values[2]*self._k[ix, iy, iz, 14] + z_values[3]*self._k[ix, iy, iz, 15]) \
                ) \
                + x_values[1]*( \
-                   y_values[0]*(z_values[0]*self.coeffs_view[ix, iy, iz, 16] + z_values[1]*self.coeffs_view[ix, iy, iz, 17] + z_values[2]*self.coeffs_view[ix, iy, iz, 18] + z_values[3]*self.coeffs_view[ix, iy, iz, 19]) + \
-                   y_values[1]*(z_values[0]*self.coeffs_view[ix, iy, iz, 20] + z_values[1]*self.coeffs_view[ix, iy, iz, 21] + z_values[2]*self.coeffs_view[ix, iy, iz, 22] + z_values[3]*self.coeffs_view[ix, iy, iz, 23]) + \
-                   y_values[2]*(z_values[0]*self.coeffs_view[ix, iy, iz, 24] + z_values[1]*self.coeffs_view[ix, iy, iz, 25] + z_values[2]*self.coeffs_view[ix, iy, iz, 26] + z_values[3]*self.coeffs_view[ix, iy, iz, 27]) + \
-                   y_values[3]*(z_values[0]*self.coeffs_view[ix, iy, iz, 28] + z_values[1]*self.coeffs_view[ix, iy, iz, 29] + z_values[2]*self.coeffs_view[ix, iy, iz, 30] + z_values[3]*self.coeffs_view[ix, iy, iz, 31]) \
+                   y_values[0]*(z_values[0]*self._k[ix, iy, iz, 16] + z_values[1]*self._k[ix, iy, iz, 17] + z_values[2]*self._k[ix, iy, iz, 18] + z_values[3]*self._k[ix, iy, iz, 19]) + \
+                   y_values[1]*(z_values[0]*self._k[ix, iy, iz, 20] + z_values[1]*self._k[ix, iy, iz, 21] + z_values[2]*self._k[ix, iy, iz, 22] + z_values[3]*self._k[ix, iy, iz, 23]) + \
+                   y_values[2]*(z_values[0]*self._k[ix, iy, iz, 24] + z_values[1]*self._k[ix, iy, iz, 25] + z_values[2]*self._k[ix, iy, iz, 26] + z_values[3]*self._k[ix, iy, iz, 27]) + \
+                   y_values[3]*(z_values[0]*self._k[ix, iy, iz, 28] + z_values[1]*self._k[ix, iy, iz, 29] + z_values[2]*self._k[ix, iy, iz, 30] + z_values[3]*self._k[ix, iy, iz, 31]) \
                ) \
                + x_values[2]*( \
-                   y_values[0]*(z_values[0]*self.coeffs_view[ix, iy, iz, 32] + z_values[1]*self.coeffs_view[ix, iy, iz, 33] + z_values[2]*self.coeffs_view[ix, iy, iz, 34] + z_values[3]*self.coeffs_view[ix, iy, iz, 35]) + \
-                   y_values[1]*(z_values[0]*self.coeffs_view[ix, iy, iz, 36] + z_values[1]*self.coeffs_view[ix, iy, iz, 37] + z_values[2]*self.coeffs_view[ix, iy, iz, 38] + z_values[3]*self.coeffs_view[ix, iy, iz, 39]) + \
-                   y_values[2]*(z_values[0]*self.coeffs_view[ix, iy, iz, 40] + z_values[1]*self.coeffs_view[ix, iy, iz, 41] + z_values[2]*self.coeffs_view[ix, iy, iz, 42] + z_values[3]*self.coeffs_view[ix, iy, iz, 43]) + \
-                   y_values[3]*(z_values[0]*self.coeffs_view[ix, iy, iz, 44] + z_values[1]*self.coeffs_view[ix, iy, iz, 45] + z_values[2]*self.coeffs_view[ix, iy, iz, 46] + z_values[3]*self.coeffs_view[ix, iy, iz, 47]) \
+                   y_values[0]*(z_values[0]*self._k[ix, iy, iz, 32] + z_values[1]*self._k[ix, iy, iz, 33] + z_values[2]*self._k[ix, iy, iz, 34] + z_values[3]*self._k[ix, iy, iz, 35]) + \
+                   y_values[1]*(z_values[0]*self._k[ix, iy, iz, 36] + z_values[1]*self._k[ix, iy, iz, 37] + z_values[2]*self._k[ix, iy, iz, 38] + z_values[3]*self._k[ix, iy, iz, 39]) + \
+                   y_values[2]*(z_values[0]*self._k[ix, iy, iz, 40] + z_values[1]*self._k[ix, iy, iz, 41] + z_values[2]*self._k[ix, iy, iz, 42] + z_values[3]*self._k[ix, iy, iz, 43]) + \
+                   y_values[3]*(z_values[0]*self._k[ix, iy, iz, 44] + z_values[1]*self._k[ix, iy, iz, 45] + z_values[2]*self._k[ix, iy, iz, 46] + z_values[3]*self._k[ix, iy, iz, 47]) \
                ) \
                + x_values[3]*( \
-                   y_values[0]*(z_values[0]*self.coeffs_view[ix, iy, iz, 48] + z_values[1]*self.coeffs_view[ix, iy, iz, 49] + z_values[2]*self.coeffs_view[ix, iy, iz, 50] + z_values[3]*self.coeffs_view[ix, iy, iz, 51]) + \
-                   y_values[1]*(z_values[0]*self.coeffs_view[ix, iy, iz, 52] + z_values[1]*self.coeffs_view[ix, iy, iz, 53] + z_values[2]*self.coeffs_view[ix, iy, iz, 54] + z_values[3]*self.coeffs_view[ix, iy, iz, 55]) + \
-                   y_values[2]*(z_values[0]*self.coeffs_view[ix, iy, iz, 56] + z_values[1]*self.coeffs_view[ix, iy, iz, 57] + z_values[2]*self.coeffs_view[ix, iy, iz, 58] + z_values[3]*self.coeffs_view[ix, iy, iz, 59]) + \
-                   y_values[3]*(z_values[0]*self.coeffs_view[ix, iy, iz, 60] + z_values[1]*self.coeffs_view[ix, iy, iz, 61] + z_values[2]*self.coeffs_view[ix, iy, iz, 62] + z_values[3]*self.coeffs_view[ix, iy, iz, 63]) \
+                   y_values[0]*(z_values[0]*self._k[ix, iy, iz, 48] + z_values[1]*self._k[ix, iy, iz, 49] + z_values[2]*self._k[ix, iy, iz, 50] + z_values[3]*self._k[ix, iy, iz, 51]) + \
+                   y_values[1]*(z_values[0]*self._k[ix, iy, iz, 52] + z_values[1]*self._k[ix, iy, iz, 53] + z_values[2]*self._k[ix, iy, iz, 54] + z_values[3]*self._k[ix, iy, iz, 55]) + \
+                   y_values[2]*(z_values[0]*self._k[ix, iy, iz, 56] + z_values[1]*self._k[ix, iy, iz, 57] + z_values[2]*self._k[ix, iy, iz, 58] + z_values[3]*self._k[ix, iy, iz, 59]) + \
+                   y_values[3]*(z_values[0]*self._k[ix, iy, iz, 60] + z_values[1]*self._k[ix, iy, iz, 61] + z_values[2]*self._k[ix, iy, iz, 62] + z_values[3]*self._k[ix, iy, iz, 63]) \
                )
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
+    @cython.initializedcheck(False)
     cdef double[::1] _constraints3d(self, int u, int v, int w, bint x_der, bint y_der, bint z_der):
         """
         Return the coefficients of a given constraints and at a given point.
@@ -895,35 +916,35 @@ cdef class Interpolate3DCubic(_Interpolate3DBase):
         if x_der:
             x_components[0] = 0.
             x_components[1] = 1.
-            x_components[2] = 2.*self.x_view[u]
-            x_components[3] = 3.*self.x2_view[u]
+            x_components[2] = 2.*self._wx[u]
+            x_components[3] = 3.*self._wx2[u]
         else:
             x_components[0] = 1.
-            x_components[1] = self.x_view[u]
-            x_components[2] = self.x2_view[u]
-            x_components[3] = self.x3_view[u]
+            x_components[1] = self._wx[u]
+            x_components[2] = self._wx2[u]
+            x_components[3] = self._wx3[u]
 
         if y_der:
             y_components[0] = 0.
             y_components[1] = 1.
-            y_components[2] = 2.*self.y_view[v]
-            y_components[3] = 3.*self.y2_view[v]
+            y_components[2] = 2.*self._wy[v]
+            y_components[3] = 3.*self._wy2[v]
         else:
             y_components[0] = 1.
-            y_components[1] = self.y_view[v]
-            y_components[2] = self.y2_view[v]
-            y_components[3] = self.y3_view[v]
+            y_components[1] = self._wy[v]
+            y_components[2] = self._wy2[v]
+            y_components[3] = self._wy3[v]
 
         if z_der:
             z_components[0] = 0.
             z_components[1] = 1.
-            z_components[2] = 2.*self.z_view[w]
-            z_components[3] = 3.*self.z2_view[w]
+            z_components[2] = 2.*self._wz[w]
+            z_components[3] = 3.*self._wz2[w]
         else:
             z_components[0] = 1.
-            z_components[1] = self.z_view[w]
-            z_components[2] = self.z2_view[w]
-            z_components[3] = self.z3_view[w]
+            z_components[1] = self._wz[w]
+            z_components[2] = self._wz2[w]
+            z_components[3] = self._wz3[w]
 
         # create an empty (uninitialised) ndarray via numpy c-api
         result_size = 64
