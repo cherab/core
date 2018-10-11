@@ -18,7 +18,7 @@
 
 cimport cython
 
-cdef int find_index(double[::1] x_view, int size, double v, double padding=*)
+cdef int find_index(double[::1] x_view, double v, double padding=*)
 
 cdef double[::1] derivatives_array(double v, int deriv)
 

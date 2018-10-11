@@ -27,7 +27,7 @@ import_array()
 @cython.cdivision(True)
 @cython.boundscheck(False)
 @cython.wraparound(False)
-cdef int find_index(double[::1] x_view, int size, double v, double padding=0.):
+cdef int find_index(double[::1] x, double v, double padding=0.):
     """
     Locates the lower index or the range that contains the specified value.
 
@@ -56,36 +56,36 @@ cdef int find_index(double[::1] x_view, int size, double v, double padding=0.):
         int top_index
         int bisection_index
 
-    top_index = size - 1
+    top_index = x.shape[0] - 1
 
     # on array ends?
-    if v == x_view[0]:
+    if v == x[0]:
         return 0
 
-    if v == x_view[top_index]:
+    if v == x[top_index]:
         return top_index - 1
 
     # beyond extrapolation range?
-    if v < x_view[0] - padding:
+    if v < x[0] - padding:
 
         # value is lower than the lowest value in the array and outside
         # extrapolation range
         return -2
 
-    if v > x_view[top_index] + padding:
+    if v > x[top_index] + padding:
 
         # value is above the highest value in the array and outside
         # extrapolation range
         return top_index + 1
 
     # inside extrapolation region?
-    if v < x_view[0]:
+    if v < x[0]:
 
         # value is lower than the lowest value in the array but inside
         # extrapolation range
         return -1
 
-    if v > x_view[top_index]:
+    if v > x[top_index]:
 
         # value is above the highest value in the array but inside
         # extrapolation range
@@ -95,7 +95,7 @@ cdef int find_index(double[::1] x_view, int size, double v, double padding=0.):
     bottom_index = 0
     bisection_index = top_index / 2
     while (top_index - bottom_index) != 1:
-        if v >= x_view[bisection_index]:
+        if v >= x[bisection_index]:
             bottom_index = bisection_index
         else:
             top_index = bisection_index

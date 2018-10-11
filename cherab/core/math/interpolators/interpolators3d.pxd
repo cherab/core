@@ -49,9 +49,9 @@ cdef class _Interpolate3DBase(Function3D):
 
 cdef class Interpolate3DLinear(_Interpolate3DBase):
 
-    cdef readonly:
-        double[::1] x_view, y_view, z_view
-        double[:,:,:] data_view
+    cdef:
+        double[::1] _wx, _wy, _wz
+        double[:,:,::1] _wf
 
 
 cdef class Interpolate3DCubic(_Interpolate3DBase):
