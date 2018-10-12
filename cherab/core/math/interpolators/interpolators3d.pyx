@@ -675,22 +675,20 @@ cdef class Interpolate3DCubic(_Interpolate3DBase):
 
                         # derivatives along x, y, z
                         self._constraints3d(cm[l + 1, :], u, v, w, True, False, False)
-                        cv[l + 1] = (self._wf[u+1, v, w] - self._wf[u-1, v, w])/delta_x
-
                         self._constraints3d(cm[l + 2, :], u, v, w, False ,True , False)
-                        cv[l + 2] = (self._wf[u, v+1, w] - self._wf[u, v-1, w])/delta_y
-
                         self._constraints3d(cm[l + 3, :], u, v, w, False, False, True)
+
+                        cv[l + 1] = (self._wf[u+1, v, w] - self._wf[u-1, v, w])/delta_x
+                        cv[l + 2] = (self._wf[u, v+1, w] - self._wf[u, v-1, w])/delta_y
                         cv[l + 3] = (self._wf[u, v, w+1] - self._wf[u, v, w-1])/delta_z
 
                         # cross derivatives xy, xz, yz
                         self._constraints3d(cm[l + 4, :], u, v, w, True, True, False)
-                        cv[l + 4] = (self._wf[u+1, v+1, w] - self._wf[u+1, v-1, w] - self._wf[u-1, v+1, w] + self._wf[u-1, v-1, w])/(delta_x*delta_y)
-
                         self._constraints3d(cm[l + 5, :], u, v, w, True, False, True)
-                        cv[l + 5] = (self._wf[u+1, v, w+1] - self._wf[u+1, v, w-1] - self._wf[u-1, v, w+1] + self._wf[u-1, v, w-1])/(delta_x*delta_z)
-
                         self._constraints3d(cm[l + 6, :], u, v, w, False, True, True)
+
+                        cv[l + 4] = (self._wf[u+1, v+1, w] - self._wf[u+1, v-1, w] - self._wf[u-1, v+1, w] + self._wf[u-1, v-1, w])/(delta_x*delta_y)
+                        cv[l + 5] = (self._wf[u+1, v, w+1] - self._wf[u+1, v, w-1] - self._wf[u-1, v, w+1] + self._wf[u-1, v, w-1])/(delta_x*delta_z)
                         cv[l + 6] = (self._wf[u, v+1, w+1] - self._wf[u, v-1, w+1] - self._wf[u, v+1, w-1] + self._wf[u, v-1, w-1])/(delta_y*delta_z)
 
                         # cross derivative xyz
@@ -722,6 +720,7 @@ cdef class Interpolate3DCubic(_Interpolate3DBase):
         pz2 = pz*pz
         pz3 = pz2*pz
 
+        # todo: for loop!
         return         (self._k[ix, iy, iz,  0] + self._k[ix, iy, iz,  1]*pz + self._k[ix, iy, iz,  2]*pz2 + self._k[ix, iy, iz,  3]*pz3) + \
                    py *(self._k[ix, iy, iz,  4] + self._k[ix, iy, iz,  5]*pz + self._k[ix, iy, iz,  6]*pz2 + self._k[ix, iy, iz,  7]*pz3) + \
                    py2*(self._k[ix, iy, iz,  8] + self._k[ix, iy, iz,  9]*pz + self._k[ix, iy, iz, 10]*pz2 + self._k[ix, iy, iz, 11]*pz3) + \
@@ -770,7 +769,9 @@ cdef class Interpolate3DCubic(_Interpolate3DBase):
         """
 
         cdef:
-            double hx[4], hy[4], hz[4]
+            double hx[4]
+            double hy[4]
+            double hz[4]
             int i, j, k
 
         if dx:
