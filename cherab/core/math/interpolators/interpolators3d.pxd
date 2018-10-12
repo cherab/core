@@ -59,8 +59,10 @@ cdef class Interpolate3DCubic(_Interpolate3DBase):
         double[:,:,:,::1] _k
         int8_t[:,:,::1] _available
 
-    cdef double _evaluate_polynomial_derivative(self, int ix, int iy, int iz, double px, double py, double pz, int der_x, int der_y, int der_z)
+    cdef object _constraints3d(self, double[::1] c, int u, int v, int w, bint dx, bint dy, bint dz)
 
-    cdef double[::1] _constraints3d(self, int u, int v, int w, bint x_der, bint y_der, bint z_der)
+    cdef double _calc_polynomial_derivative(self, int ix, int iy, int iz, double px, double py, double pz, int der_x, int der_y, int der_z)
+
+
 
 
