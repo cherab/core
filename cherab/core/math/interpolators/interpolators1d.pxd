@@ -22,24 +22,23 @@ from cherab.core.math.function cimport Function1D
 
 cdef class _Interpolate1DBase(Function1D):
 
-    cdef readonly:
-        ndarray x, data
-        double[::1] x_mv, data_mv
-        bint extrapolate
-        bint constant
-        int extrapolation_type
-        double extrapolation_range
-        int top_index
+    cdef:
+        double[::1] _x, _f
+        bint _constant
+        int _extrapolation_type
+        double _extrapolation_range
+
+    cdef object _build(self, ndarray x, ndarray f)
 
     cdef double evaluate(self, double px) except? -1e999
 
     cdef double _evaluate(self, double px, int index) except? -1e999
 
-    cdef double _extrapolate(self, double px, int index, double nearest_px) except? -1e999
+    cdef double _extrapolate(self, double px, int index, double rx) except? -1e999
 
-    cdef double _extrapol_linear(self, double px, int index, double nearest_px) except? -1e999
+    cdef double _extrapol_linear(self, double px, int index, double rx) except? -1e999
 
-    cdef double _extrapol_quadratic(self, double px, int index, double nearest_px) except? -1e999
+    cdef double _extrapol_quadratic(self, double px, int index, double rx) except? -1e999
 
 
 cdef class Interpolate1DLinear(_Interpolate1DBase):
@@ -48,11 +47,9 @@ cdef class Interpolate1DLinear(_Interpolate1DBase):
 
 cdef class Interpolate1DCubic(_Interpolate1DBase):
 
-    cdef readonly:
-        double x_min, x_delta_inv, data_min, data_delta
+    cdef:
+        int _continuity_order
+        double _ox, _sx, _of, _sf
+        double[:,::1] _k
 
-    cdef readonly double[:,:] coeffs_view
-
-    cdef object _calc_coefficients(self, int continuity_order)
-
-    cdef double _evaluate_polynomial_derivative(self, int i_x, double px, int der_x)
+    cdef double _calc_polynomial_derivative(self, int i, double p, int order)
