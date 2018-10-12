@@ -50,13 +50,14 @@ cdef class Interpolate2DLinear(_Interpolate2DBase):
 cdef class Interpolate2DCubic(_Interpolate2DBase):
 
     cdef:
-        double x_min, x_delta_inv, y_min, y_delta_inv, data_min, data_delta
-        double[::1] x_view, x2_view, x3_view
-        double[::1] y_view, y2_view, y3_view
-        double[:,:] data_view
-        double[:,:,::1] coeffs_view
-        int8_t[:,::1] calculated_view
+        double _sx, _sy, _sf
+        double _ox, _oy, _of
+        double[::1] _wx, _wx2, _wx3
+        double[::1] _wy, _wy2, _wy3
+        double[:,::1] _wf
+        double[:,:,::1] _k
+        int8_t[:,::1] _available
 
-    cdef int _calculate_polynomial(self, int i_x, int i_y) except -1
+    cdef int _calc_polynomial(self, int i_x, int i_y) except -1
 
-    cdef double _evaluate_polynomial_derivative(self, int i_x, int i_y, double px, double py, int der_x, int der_y)
+    cdef double _calc_polynomial_derivative(self, int i_x, int i_y, double px, double py, int der_x, int der_y)

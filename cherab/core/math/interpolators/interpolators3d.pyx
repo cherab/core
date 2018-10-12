@@ -70,11 +70,11 @@ cdef class _Interpolate3DBase(Function3D):
     def __init__(self, object x, object y, object z, object f, bint extrapolate=False, str extrapolation_type='nearest',
                  double extrapolation_range=INFINITY, bint tolerate_single_value=False):
 
-        # convert data to numpy arrays
-        x = array(x, dtype=float64)
-        y = array(y, dtype=float64)
-        z = array(z, dtype=float64)
-        f = array(f, dtype=float64)
+        # convert data to c-contiguous numpy arrays
+        x = array(x, dtype=float64, order='c')
+        y = array(y, dtype=float64, order='c')
+        z = array(z, dtype=float64, order='c')
+        f = array(f, dtype=float64, order='c')
 
         # check dimensions are 1D
         if x.ndim != 1:
@@ -572,8 +572,8 @@ cdef class Interpolate3DCubic(_Interpolate3DBase):
 
         # normalise coordinate arrays
         self._ox = x.min()
-        self._oz = z.min()
         self._oy = y.min()
+        self._oz = z.min()
 
         self._sx = 1 / (x.max() - x.min())
         self._sy = 1 / (y.max() - y.min())
@@ -714,7 +714,6 @@ cdef class Interpolate3DCubic(_Interpolate3DBase):
         pz2 = pz*pz
         pz3 = pz2*pz
 
-        # todo: for loop!
         return         (self._k[ix, iy, iz,  0] + self._k[ix, iy, iz,  1]*pz + self._k[ix, iy, iz,  2]*pz2 + self._k[ix, iy, iz,  3]*pz3) + \
                    py *(self._k[ix, iy, iz,  4] + self._k[ix, iy, iz,  5]*pz + self._k[ix, iy, iz,  6]*pz2 + self._k[ix, iy, iz,  7]*pz3) + \
                    py2*(self._k[ix, iy, iz,  8] + self._k[ix, iy, iz,  9]*pz + self._k[ix, iy, iz, 10]*pz2 + self._k[ix, iy, iz, 11]*pz3) + \
@@ -894,8 +893,9 @@ cdef class Interpolate3DCubic(_Interpolate3DBase):
         :return: value evaluated from the derivated polynomial
         """
 
-        cdef double[::1] ax, ay, az
-        cdef double[:,:,:,::1] k
+        cdef:
+            double[::1] ax, ay, az
+            double[:,:,:,::1] k
 
         k = self._k
 
