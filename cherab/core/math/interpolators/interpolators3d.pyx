@@ -18,17 +18,13 @@
 # See the Licence for the specific language governing permissions and limitations
 # under the Licence.
 
-from numpy import array, empty, int8, float64, shape, concatenate, arange, diff
+from numpy import array, empty, int8, float64, concatenate, diff
 from numpy.linalg import solve
 
 cimport cython
-from numpy cimport ndarray, PyArray_ZEROS, PyArray_SimpleNew, NPY_FLOAT64, npy_intp, import_array
+from numpy cimport ndarray, npy_intp
 from cherab.core.math.interpolators.utility cimport find_index, lerp, derivatives_array, factorial
 from libc.math cimport INFINITY, NAN
-
-
-# required by numpy c-api
-import_array()
 
 # internal constants used to represent the different extrapolation options
 DEF EXT_NEAREST = 0
@@ -441,10 +437,10 @@ cdef class Interpolate3DLinear(_Interpolate3DBase):
         f = self._wf
 
         # interpolate along y
-        a0 = lerp(y[iy], y[iy+1], f[ix, iy, iz],   f[ix, iy+1, iz], py)
-        a1 = lerp(y[iy], y[iy+1], f[ix, iy, iz+1], f[ix, iy+1, iz+1], py)
+        a0 = lerp(y[iy], y[iy+1], f[ix, iy, iz],     f[ix, iy+1, iz],     py)
+        a1 = lerp(y[iy], y[iy+1], f[ix, iy, iz+1],   f[ix, iy+1, iz+1],   py)
 
-        b0 = lerp(y[iy], y[iy+1], f[ix+1, iy, iz],   f[ix+1, iy+1, iz], py)
+        b0 = lerp(y[iy], y[iy+1], f[ix+1, iy, iz],   f[ix+1, iy+1, iz],   py)
         b1 = lerp(y[iy], y[iy+1], f[ix+1, iy, iz+1], f[ix+1, iy+1, iz+1], py)
 
         # interpolate along z
@@ -644,8 +640,6 @@ cdef class Interpolate3DCubic(_Interpolate3DBase):
         cdef:
             int u, v, w, l, i, j, k
             double delta_x, delta_y, delta_z, px2, py2, pz2, px3, py3, pz3
-            npy_intp cv_size
-            npy_intp cm_size[2]
             double cv_buffer[64]
             double cm_buffer[64][64]
             double[::1] cv, coeffs
