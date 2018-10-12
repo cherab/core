@@ -22,13 +22,12 @@ from numpy cimport ndarray, int8_t
 
 cdef class _Interpolate2DBase(Function2D):
 
-    cdef readonly:
-        ndarray x_np, y_np, data_np
-        double[::1] x_domain_view, y_domain_view
-        bint extrapolate
-        int extrapolation_type
-        double extrapolation_range
-        int top_index_x, top_index_y
+    cdef:
+        double[::1] _x, _y
+        int _extrapolation_type
+        double _extrapolation_range
+
+    cdef object _build(self, ndarray x, ndarray y, ndarray f)
 
     cdef double evaluate(self, double px, double py) except? -1e999
 
@@ -40,21 +39,17 @@ cdef class _Interpolate2DBase(Function2D):
 
     cdef double _extrapol_quadratic(self, double px, double py, int i_x, int i_y, double nearest_px, double nearest_py) except? -1e999
 
-    cdef void _set_constant_x(self)
-
-    cdef void _set_constant_y(self)
-
 
 cdef class Interpolate2DLinear(_Interpolate2DBase):
 
-    cdef readonly:
-        double[::1] x_view, y_view
-        double[:,:] data_view
+    cdef:
+        double[::1] _wx, _wy
+        double[:,::1] _wf
 
 
 cdef class Interpolate2DCubic(_Interpolate2DBase):
 
-    cdef readonly:
+    cdef:
         double x_min, x_delta_inv, y_min, y_delta_inv, data_min, data_delta
         double[::1] x_view, x2_view, x3_view
         double[::1] y_view, y2_view, y3_view

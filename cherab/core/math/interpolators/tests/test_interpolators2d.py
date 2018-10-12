@@ -988,20 +988,6 @@ class TestInterpolators2D(unittest.TestCase):
         self.init_2dlinear(extrapolate=True, extrapolation_range=10, extrapolation_type='linear')
         self.interpolate_2d_extrapolate_assert(2, 2, self.extrap_data_lin[2][2], LIN_DELTA)
 
-    def test_interpolate_2d_linear_coord_not_sorted_x(self):
-        """2D linear interpolation. The coordinates array must be sorted and the values array changed consequently.
-        """
-        self.init_2dlinear([1, 3, 2, 4], [2, 3, 4, 5], np.eye(4))
-        self.assertAlmostEqual(self.interp_func(2, 4), 1., delta=ABS_DELTA)
-        self.assertAlmostEqual(self.interp_func(3, 3), 1., delta=ABS_DELTA)
-
-    def test_interpolate_2d_linear_coord_not_sorted_y(self):
-        """2D linear interpolation. The coordinates array must be sorted and the values array changed consequently.
-        """
-        self.init_2dlinear([1, 2, 3, 4], [2, 3, 5, 4], np.eye(4))
-        self.assertAlmostEqual(self.interp_func(4, 4), 1., delta=ABS_DELTA)
-        self.assertAlmostEqual(self.interp_func(3, 5), 1., delta=ABS_DELTA)
-
     def test_interpolate_2d_linear_type_conversion(self):
         """2D linear interpolation. Whatever the type of input data, the interpolating function must provide float numbers.
         """
