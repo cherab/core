@@ -574,25 +574,25 @@ cdef class Interpolate3DCubic(_Interpolate3DBase):
         self._available = empty((nx - 1, ny - 1, nz - 1), dtype=int8)
         self._available[:,:,:] = False
 
-        # normalise coordinate and data arrays
-        self._sx = 1 / (x.max() - x.min())
-        self._sy = 1 / (y.max() - y.min())
-        self._sz = 1 / (z.max() - z.min())
-        self._sf = f.max() - f.min()
-
+        # normalise coordinate arrays
         self._ox = x.min()
         self._oz = z.min()
         self._oy = y.min()
-        self._of = f.min()
+
+        self._sx = 1 / (x.max() - x.min())
+        self._sy = 1 / (y.max() - y.min())
+        self._sz = 1 / (z.max() - z.min())
 
         x = (x - self._ox) * self._sx
         y = (y - self._oy) * self._sy
         z = (z - self._oz) * self._sz
 
-        # if data has zero range (all values identical), skip normalisation
+        # normalise data array
+        self._of = f.min()
+        self._sf = f.max() - f.min()
         if self._sf == 0:
+            # zero data range, all values the same, disable scaling
             self._sf = 1
-
         f = (f - self._of) * (1 / self._sf)
 
         # widen arrays for automatic handling of boundaries polynomials
@@ -646,21 +646,18 @@ cdef class Interpolate3DCubic(_Interpolate3DBase):
             double delta_x, delta_y, delta_z, px2, py2, pz2, px3, py3, pz3
             npy_intp cv_size
             npy_intp cm_size[2]
-            double[::1] cv_view, coeffs_view
-            double[:, ::1] cm_view
+            double cv_buffer[64]
+            double cm_buffer[64][64]
+            double[::1] cv, coeffs
+            double[:,::1] cm
+            double s
 
         # If the concerned polynomial has not yet been calculated:
         if not self._available[ix, iy, iz]:
 
-            # Create constraint matrix (un-optimised)
-            # cv_view = zeros((64,), dtype=float64)       # constraints vector
-            # cm_view = zeros((64, 64), dtype=float64)    # constraints matrix
-
-            # Create constraint matrix (optimised using numpy c-api)
-            cv_size = 64
-            cv_view = PyArray_ZEROS(1, &cv_size, NPY_FLOAT64, 0)
-            cm_size[:] = [64, 64]
-            cm_view = PyArray_ZEROS(2, cm_size, NPY_FLOAT64, 0)
+            # create memory views to constraint vector and matrix buffers
+            cv = cv_buffer
+            cm = cm_buffer
 
             # Fill the constraints matrix
             l = 0
@@ -668,62 +665,54 @@ cdef class Interpolate3DCubic(_Interpolate3DBase):
                 for v in range(iy+1, iy+3):
                     for w in range(iz+1, iz+3):
 
-                        # knot values
+                        delta_x = self._wx[u+1] - self._wx[u-1]
+                        delta_y = self._wy[v+1] - self._wy[v-1]
+                        delta_z = self._wz[w+1] - self._wz[w-1]
 
-                        cm_view[l, :] = self._constraints3d(u, v, w, False, False, False)
-                        cv_view[l] = self._wf[u, v, w]
-                        l = l+1
+                        # knot values
+                        self._constraints3d(cm[l + 0, :], u, v, w, False, False, False)
+                        cv[l] = self._wf[u, v, w]
 
                         # derivatives along x, y, z
+                        self._constraints3d(cm[l + 1, :], u, v, w, True, False, False)
+                        cv[l + 1] = (self._wf[u+1, v, w] - self._wf[u-1, v, w])/delta_x
 
-                        cm_view[l, :] = self._constraints3d(u, v, w, True, False, False)
-                        delta_x = self._wx[u+1] - self._wx[u-1]
-                        cv_view[l] = (self._wf[u+1, v, w] - self._wf[u-1, v, w])/delta_x
-                        l = l+1
+                        self._constraints3d(cm[l + 2, :], u, v, w, False ,True , False)
+                        cv[l + 2] = (self._wf[u, v+1, w] - self._wf[u, v-1, w])/delta_y
 
-                        cm_view[l, :] = self._constraints3d(u, v, w, False ,True , False)
-                        delta_y = self._wy[v+1] - self._wy[v-1]
-                        cv_view[l] = (self._wf[u, v+1, w] - self._wf[u, v-1, w])/delta_y
-                        l = l+1
-
-                        cm_view[l, :] = self._constraints3d(u, v, w, False, False, True)
-                        delta_z = self._wz[w+1] - self._wz[w-1]
-                        cv_view[l] = (self._wf[u, v, w+1] - self._wf[u, v, w-1])/delta_z
-                        l = l+1
+                        self._constraints3d(cm[l + 3, :], u, v, w, False, False, True)
+                        cv[l + 3] = (self._wf[u, v, w+1] - self._wf[u, v, w-1])/delta_z
 
                         # cross derivatives xy, xz, yz
+                        self._constraints3d(cm[l + 4, :], u, v, w, True, True, False)
+                        cv[l + 4] = (self._wf[u+1, v+1, w] - self._wf[u+1, v-1, w] - self._wf[u-1, v+1, w] + self._wf[u-1, v-1, w])/(delta_x*delta_y)
 
-                        cm_view[l, :] = self._constraints3d(u, v, w, True, True, False)
-                        cv_view[l] = (self._wf[u+1, v+1, w] - self._wf[u+1, v-1, w] - self._wf[u-1, v+1, w] + self._wf[u-1, v-1, w])/(delta_x*delta_y)
-                        l = l+1
+                        self._constraints3d(cm[l + 5, :], u, v, w, True, False, True)
+                        cv[l + 5] = (self._wf[u+1, v, w+1] - self._wf[u+1, v, w-1] - self._wf[u-1, v, w+1] + self._wf[u-1, v, w-1])/(delta_x*delta_z)
 
-                        cm_view[l, :] = self._constraints3d(u, v, w, True, False, True)
-                        cv_view[l] = (self._wf[u+1, v, w+1] - self._wf[u+1, v, w-1] - self._wf[u-1, v, w+1] + self._wf[u-1, v, w-1])/(delta_x*delta_z)
-                        l = l+1
-
-                        cm_view[l, :] = self._constraints3d(u, v, w, False, True, True)
-                        cv_view[l] = (self._wf[u, v+1, w+1] - self._wf[u, v-1, w+1] - self._wf[u, v+1, w-1] + self._wf[u, v-1, w-1])/(delta_y*delta_z)
-                        l = l+1
+                        self._constraints3d(cm[l + 6, :], u, v, w, False, True, True)
+                        cv[l + 6] = (self._wf[u, v+1, w+1] - self._wf[u, v-1, w+1] - self._wf[u, v+1, w-1] + self._wf[u, v-1, w-1])/(delta_y*delta_z)
 
                         # cross derivative xyz
+                        self._constraints3d(cm[l + 7, :], u, v, w, True, True, True)
+                        cv[l + 7] = (self._wf[u+1, v+1, w+1] - self._wf[u+1, v+1, w-1] - self._wf[u+1, v-1, w+1] + self._wf[u+1, v-1, w-1] - self._wf[u-1, v+1, w+1] + self._wf[u-1, v+1, w-1] + self._wf[u-1, v-1, w+1] - self._wf[u-1, v-1, w-1])/(delta_x*delta_y*delta_z)
 
-                        cm_view[l, :] = self._constraints3d(u, v, w, True, True, True)
-                        cv_view[l] = (self._wf[u+1, v+1, w+1] - self._wf[u+1, v+1, w-1] - self._wf[u+1, v-1, w+1] + self._wf[u+1, v-1, w-1] - self._wf[u-1, v+1, w+1] + self._wf[u-1, v+1, w-1] + self._wf[u-1, v-1, w+1] - self._wf[u-1, v-1, w-1])/(delta_x*delta_y*delta_z)
-                        l = l+1
+                        l += 8
 
             # Solve the linear system and fill the caching coefficients array
-            coeffs_view = solve(cm_view, cv_view)
-            self._k[ix, iy, iz, :] = coeffs_view
+            coeffs = solve(cm, cv)
+            self._k[ix, iy, iz, :] = coeffs
 
             # Denormalisation
             for i in range(4):
                 for j in range(4):
                     for k in range(4):
-                        coeffs_view[16 * i + 4 * j + k] = self._sf * self._sx ** i * self._sy ** j * self._sz ** k / (factorial(k) * factorial(j) * factorial(i)) \
-                                                          * self._evaluate_polynomial_derivative(ix, iy, iz, -self._sx * self._ox, -self._sy * self._oy, -self._sz * self._oz, i, j, k)
-            coeffs_view[0] = coeffs_view[0] + self._of
-            self._k[ix, iy, iz, :] = coeffs_view
+                        s = self._sf * self._sx**i * self._sy**j * self._sz**k / (factorial(k) * factorial(j) * factorial(i))
+                        coeffs[16*i + 4*j + k] = s * self._calc_polynomial_derivative(ix, iy, iz, -self._sx * self._ox, -self._sy * self._oy, -self._sz * self._oz, i, j, k)
+            coeffs[0] = coeffs[0] + self._of
 
+            # populate coefficients and set cell as calculated
+            self._k[ix, iy, iz, :] = coeffs
             self._available[ix, iy, iz] = True
 
         px2 = px*px
@@ -756,134 +745,10 @@ cdef class Interpolate3DCubic(_Interpolate3DBase):
                    py3*(self._k[ix, iy, iz, 60] + self._k[ix, iy, iz, 61]*pz + self._k[ix, iy, iz, 62]*pz2 + self._k[ix, iy, iz, 63]*pz3) \
                )
 
-
-    cdef double _extrapol_linear(self, double px, double py, double pz, int ix, int iy, int iz, double nearest_px, double nearest_py, double nearest_pz) except? -1e999:
-        """
-        Extrapolate linearly the interpolation function valid on area given by
-        'ix', 'iy' and 'iz' to position ('px', 'py', 'pz').
-
-        :param double px, double py, double pz: coordinates
-        :param int ix, int iy, int iz: indices of the area of interest
-        :param double nearest_px, nearest_py, nearest_pz: the nearest position from
-        ('px', 'py', 'pz') in the interpolation domain.
-        :return: the extrapolated value
-        """
-
-        cdef double delta_x, delta_y, delta_z, result
-
-        delta_x = px - nearest_px
-        delta_y = py - nearest_py
-        delta_z = pz - nearest_pz
-
-        result = self._evaluate(nearest_px, nearest_py, nearest_pz, ix, iy, iz)
-
-        if delta_x != 0.:
-            result += delta_x * self._evaluate_polynomial_derivative(ix, iy, iz, nearest_px, nearest_py, nearest_pz, 1, 0, 0)
-
-        if delta_y != 0.:
-            result += delta_y * self._evaluate_polynomial_derivative(ix, iy, iz, nearest_px, nearest_py, nearest_pz, 0, 1, 0)
-
-        if delta_z != 0.:
-            result += delta_z * self._evaluate_polynomial_derivative(ix, iy, iz, nearest_px, nearest_py, nearest_pz, 0, 0, 1)
-
-        return result
-
-    cdef double _extrapol_quadratic(self, double px, double py, double pz, int ix, int iy, int iz, double nearest_px, double nearest_py, double nearest_pz) except? -1e999:
-        """
-        Extrapolate quadratically the interpolation function valid on area given by
-        'ix', 'iy' and 'iz' to position ('px', 'py', 'pz').
-
-        :param double px, double py, double pz: coordinates
-        :param int ix, int iy, int iz: indices of the area of interest
-        :param double nearest_px, nearest_py, nearest_pz: the nearest position from
-        ('px', 'py', 'pz') in the interpolation domain.
-        :return: the extrapolated value
-        """
-
-        cdef double delta_x, delta_y, delta_z, result
-
-        delta_x = px - nearest_px
-        delta_y = py - nearest_py
-        delta_z = pz - nearest_pz
-
-        result = self._evaluate(nearest_px, nearest_py, nearest_pz, ix, iy, iz)
-
-        if delta_x != 0.:
-            result += delta_x * self._evaluate_polynomial_derivative(ix, iy, iz, nearest_px, nearest_py, nearest_pz, 1, 0, 0)
-
-            result += delta_x*delta_x*0.5 * self._evaluate_polynomial_derivative(ix, iy, iz, nearest_px, nearest_py, nearest_pz, 2, 0, 0)
-
-            if delta_y != 0.:
-                result += delta_x*delta_y * self._evaluate_polynomial_derivative(ix, iy, iz, nearest_px, nearest_py, nearest_pz, 1, 1, 0)
-
-        if delta_y != 0.:
-            result += delta_y * self._evaluate_polynomial_derivative(ix, iy, iz, nearest_px, nearest_py, nearest_pz, 0, 1, 0)
-
-            result += delta_y*delta_y*0.5 * self._evaluate_polynomial_derivative(ix, iy, iz, nearest_px, nearest_py, nearest_pz, 0, 2, 0)
-
-            if delta_z != 0.:
-                result += delta_y*delta_z * self._evaluate_polynomial_derivative(ix, iy, iz, nearest_px, nearest_py, nearest_pz, 0, 1, 1)
-
-        if delta_z != 0.:
-            result += delta_z * self._evaluate_polynomial_derivative(ix, iy, iz, nearest_px, nearest_py, nearest_pz, 0, 0, 1)
-
-            result += delta_z*delta_z*0.5 * self._evaluate_polynomial_derivative(ix, iy, iz, nearest_px, nearest_py, nearest_pz, 0, 0, 2)
-
-            if delta_x != 0.:
-                result += delta_z*delta_x * self._evaluate_polynomial_derivative(ix, iy, iz, nearest_px, nearest_py, nearest_pz, 1, 0, 1)
-
-        return result
-
     @cython.boundscheck(False)
     @cython.wraparound(False)
     @cython.initializedcheck(False)
-    cdef double _evaluate_polynomial_derivative(self, int ix, int iy, int iz, double px, double py, double pz, int der_x, int der_y, int der_z):
-        """
-        Evaluate the derivatives of the polynomial valid in the area given by
-        'ix', 'iy' and 'iz' at position ('px', 'py', 'pz'). The order of
-        derivative along each axis is given by 'der_x', 'der_y' and 'der_z'.
-
-        :param int ix, int iy, int iz: indices of the area of interest
-        :param double px, double py, double pz: coordinates
-        :param int der_x, int der_y, int der_z: orders of derivative along each axis
-        :return: value evaluated from the derivated polynomial
-        """
-
-        cdef double[::1] x_values, y_values, z_values
-
-        x_values = derivatives_array(px, der_x)
-        y_values = derivatives_array(py, der_y)
-        z_values = derivatives_array(pz, der_z)
-
-        return   x_values[0]*( \
-                   y_values[0]*(z_values[0]*self._k[ix, iy, iz,  0] + z_values[1]*self._k[ix, iy, iz,  1] + z_values[2]*self._k[ix, iy, iz,  2] + z_values[3]*self._k[ix, iy, iz,  3]) + \
-                   y_values[1]*(z_values[0]*self._k[ix, iy, iz,  4] + z_values[1]*self._k[ix, iy, iz,  5] + z_values[2]*self._k[ix, iy, iz,  6] + z_values[3]*self._k[ix, iy, iz,  7]) + \
-                   y_values[2]*(z_values[0]*self._k[ix, iy, iz,  8] + z_values[1]*self._k[ix, iy, iz,  9] + z_values[2]*self._k[ix, iy, iz, 10] + z_values[3]*self._k[ix, iy, iz, 11]) + \
-                   y_values[3]*(z_values[0]*self._k[ix, iy, iz, 12] + z_values[1]*self._k[ix, iy, iz, 13] + z_values[2]*self._k[ix, iy, iz, 14] + z_values[3]*self._k[ix, iy, iz, 15]) \
-               ) \
-               + x_values[1]*( \
-                   y_values[0]*(z_values[0]*self._k[ix, iy, iz, 16] + z_values[1]*self._k[ix, iy, iz, 17] + z_values[2]*self._k[ix, iy, iz, 18] + z_values[3]*self._k[ix, iy, iz, 19]) + \
-                   y_values[1]*(z_values[0]*self._k[ix, iy, iz, 20] + z_values[1]*self._k[ix, iy, iz, 21] + z_values[2]*self._k[ix, iy, iz, 22] + z_values[3]*self._k[ix, iy, iz, 23]) + \
-                   y_values[2]*(z_values[0]*self._k[ix, iy, iz, 24] + z_values[1]*self._k[ix, iy, iz, 25] + z_values[2]*self._k[ix, iy, iz, 26] + z_values[3]*self._k[ix, iy, iz, 27]) + \
-                   y_values[3]*(z_values[0]*self._k[ix, iy, iz, 28] + z_values[1]*self._k[ix, iy, iz, 29] + z_values[2]*self._k[ix, iy, iz, 30] + z_values[3]*self._k[ix, iy, iz, 31]) \
-               ) \
-               + x_values[2]*( \
-                   y_values[0]*(z_values[0]*self._k[ix, iy, iz, 32] + z_values[1]*self._k[ix, iy, iz, 33] + z_values[2]*self._k[ix, iy, iz, 34] + z_values[3]*self._k[ix, iy, iz, 35]) + \
-                   y_values[1]*(z_values[0]*self._k[ix, iy, iz, 36] + z_values[1]*self._k[ix, iy, iz, 37] + z_values[2]*self._k[ix, iy, iz, 38] + z_values[3]*self._k[ix, iy, iz, 39]) + \
-                   y_values[2]*(z_values[0]*self._k[ix, iy, iz, 40] + z_values[1]*self._k[ix, iy, iz, 41] + z_values[2]*self._k[ix, iy, iz, 42] + z_values[3]*self._k[ix, iy, iz, 43]) + \
-                   y_values[3]*(z_values[0]*self._k[ix, iy, iz, 44] + z_values[1]*self._k[ix, iy, iz, 45] + z_values[2]*self._k[ix, iy, iz, 46] + z_values[3]*self._k[ix, iy, iz, 47]) \
-               ) \
-               + x_values[3]*( \
-                   y_values[0]*(z_values[0]*self._k[ix, iy, iz, 48] + z_values[1]*self._k[ix, iy, iz, 49] + z_values[2]*self._k[ix, iy, iz, 50] + z_values[3]*self._k[ix, iy, iz, 51]) + \
-                   y_values[1]*(z_values[0]*self._k[ix, iy, iz, 52] + z_values[1]*self._k[ix, iy, iz, 53] + z_values[2]*self._k[ix, iy, iz, 54] + z_values[3]*self._k[ix, iy, iz, 55]) + \
-                   y_values[2]*(z_values[0]*self._k[ix, iy, iz, 56] + z_values[1]*self._k[ix, iy, iz, 57] + z_values[2]*self._k[ix, iy, iz, 58] + z_values[3]*self._k[ix, iy, iz, 59]) + \
-                   y_values[3]*(z_values[0]*self._k[ix, iy, iz, 60] + z_values[1]*self._k[ix, iy, iz, 61] + z_values[2]*self._k[ix, iy, iz, 62] + z_values[3]*self._k[ix, iy, iz, 63]) \
-               )
-
-    @cython.boundscheck(False)
-    @cython.wraparound(False)
-    @cython.initializedcheck(False)
-    cdef double[::1] _constraints3d(self, int u, int v, int w, bint x_der, bint y_der, bint z_der):
+    cdef object _constraints3d(self, double[::1] c, int u, int v, int w, bint dx, bint dy, bint dz):
         """
         Return the coefficients of a given constraints and at a given point.
 
@@ -892,69 +757,180 @@ cdef class Interpolate3DCubic(_Interpolate3DBase):
         d2P/dxdz and d3P/dxdydz (where P is the concerned polynomial).
 
         :param int u, int v, int w: indices of the point where the constraints apply.
-        :param bint x_der, bint y_der, bint z_der: set to True or False in order to chose
+        :param bint x_der, bint y_der, bint dz: set to True or False in order to chose
         what constraint is returned. For each axis, True means the constraint
         considered a derivative along this axis.
         For example:
-        x_der=False, y_der=True, z_der=False means the constraint returned is
+        dx=False, dy=True, dz=False means the constraint returned is
         on the derivative along y (dP/dy).
-        x_der=True, y_der=True, z_der=False means the constraint returned is
+        dx=True, dy=True, dz=False means the constraint returned is
         on the cross derivative along x and y (d2P/dxdy).
         :return: a memory view of a 1x64 array filled with the coefficients
         corresponding to the requested constraint.
         """
 
         cdef:
-            double x_components[4]
-            double y_components[4]
-            double z_components[4]
-            npy_intp result_size
-            double[::1] result_view
-            double x_component, y_component, z_component
-            int l
+            double hx[4], hy[4], hz[4]
+            int i, j, k
 
-        if x_der:
-            x_components[0] = 0.
-            x_components[1] = 1.
-            x_components[2] = 2.*self._wx[u]
-            x_components[3] = 3.*self._wx2[u]
+        if dx:
+            hx[0] = 0.
+            hx[1] = 1.
+            hx[2] = 2.*self._wx[u]
+            hx[3] = 3.*self._wx2[u]
         else:
-            x_components[0] = 1.
-            x_components[1] = self._wx[u]
-            x_components[2] = self._wx2[u]
-            x_components[3] = self._wx3[u]
+            hx[0] = 1.
+            hx[1] = self._wx[u]
+            hx[2] = self._wx2[u]
+            hx[3] = self._wx3[u]
 
-        if y_der:
-            y_components[0] = 0.
-            y_components[1] = 1.
-            y_components[2] = 2.*self._wy[v]
-            y_components[3] = 3.*self._wy2[v]
+        if dy:
+            hy[0] = 0.
+            hy[1] = 1.
+            hy[2] = 2.*self._wy[v]
+            hy[3] = 3.*self._wy2[v]
         else:
-            y_components[0] = 1.
-            y_components[1] = self._wy[v]
-            y_components[2] = self._wy2[v]
-            y_components[3] = self._wy3[v]
+            hy[0] = 1.
+            hy[1] = self._wy[v]
+            hy[2] = self._wy2[v]
+            hy[3] = self._wy3[v]
 
-        if z_der:
-            z_components[0] = 0.
-            z_components[1] = 1.
-            z_components[2] = 2.*self._wz[w]
-            z_components[3] = 3.*self._wz2[w]
+        if dz:
+            hz[0] = 0.
+            hz[1] = 1.
+            hz[2] = 2.*self._wz[w]
+            hz[3] = 3.*self._wz2[w]
         else:
-            z_components[0] = 1.
-            z_components[1] = self._wz[w]
-            z_components[2] = self._wz2[w]
-            z_components[3] = self._wz3[w]
+            hz[0] = 1.
+            hz[1] = self._wz[w]
+            hz[2] = self._wz2[w]
+            hz[3] = self._wz3[w]
 
-        # create an empty (uninitialised) ndarray via numpy c-api
-        result_size = 64
-        result_view = PyArray_SimpleNew(1, &result_size, NPY_FLOAT64)
+        for i in range(4):
+            for j in range(4):
+                for k in range(4):
+                    c[16*i + 4*j + k] = hx[i] * hy[j] * hz[k]
 
-        l = 0
-        for x_component in x_components:
-            for y_component in y_components:
-                for z_component in z_components:
-                    result_view[l] = x_component * y_component * z_component
-                    l += 1
+    cdef double _extrapol_linear(self, double px, double py, double pz, int ix, int iy, int iz, double rx, double ry, double rz) except? -1e999:
+        """
+        Extrapolate linearly the interpolation function valid on area given by
+        'ix', 'iy' and 'iz' to position ('px', 'py', 'pz').
 
-        return result_view
+        :param double px, double py, double pz: coordinates
+        :param int ix, int iy, int iz: indices of the area of interest
+        :param double rx, ry, rz: the nearest position to ('px', 'py', 'pz') in the interpolation domain.
+        :return: the extrapolated value
+        """
+
+        cdef double ex, ey, ez, result
+
+        # calculate extrapolation distances from end of array
+        ex = px - rx
+        ey = py - ry
+        ez = pz - rz
+
+        result = self._evaluate(rx, ry, rz, ix, iy, iz)
+        if ex != 0.:
+            result += ex * self._calc_polynomial_derivative(ix, iy, iz, rx, ry, rz, 1, 0, 0)
+
+        if ey != 0.:
+            result += ey * self._calc_polynomial_derivative(ix, iy, iz, rx, ry, rz, 0, 1, 0)
+
+        if ez != 0.:
+            result += ez * self._calc_polynomial_derivative(ix, iy, iz, rx, ry, rz, 0, 0, 1)
+
+        return result
+
+    cdef double _extrapol_quadratic(self, double px, double py, double pz, int ix, int iy, int iz, double rx, double ry, double rz) except? -1e999:
+        """
+        Extrapolate quadratically the interpolation function valid on area given by
+        'ix', 'iy' and 'iz' to position ('px', 'py', 'pz').
+
+        :param double px, double py, double pz: coordinates
+        :param int ix, int iy, int iz: indices of the area of interest
+        :param double rx, ry, rz: the nearest position to ('px', 'py', 'pz') in the interpolation domain.
+        :return: the extrapolated value
+        """
+
+        cdef double ex, ey, ez, result
+
+        # calculate extrapolation distances from end of array
+        ex = px - rx
+        ey = py - ry
+        ez = pz - rz
+
+        result = self._evaluate(rx, ry, rz, ix, iy, iz)
+
+        if ex != 0.:
+            result += ex * self._calc_polynomial_derivative(ix, iy, iz, rx, ry, rz, 1, 0, 0)
+            result += ex*ex*0.5 * self._calc_polynomial_derivative(ix, iy, iz, rx, ry, rz, 2, 0, 0)
+
+            if ey != 0.:
+                result += ex*ey * self._calc_polynomial_derivative(ix, iy, iz, rx, ry, rz, 1, 1, 0)
+
+        if ey != 0.:
+            result += ey * self._calc_polynomial_derivative(ix, iy, iz, rx, ry, rz, 0, 1, 0)
+            result += ey*ey*0.5 * self._calc_polynomial_derivative(ix, iy, iz, rx, ry, rz, 0, 2, 0)
+
+            if ez != 0.:
+                result += ey*ez * self._calc_polynomial_derivative(ix, iy, iz, rx, ry, rz, 0, 1, 1)
+
+        if ez != 0.:
+            result += ez * self._calc_polynomial_derivative(ix, iy, iz, rx, ry, rz, 0, 0, 1)
+            result += ez*ez*0.5 * self._calc_polynomial_derivative(ix, iy, iz, rx, ry, rz, 0, 0, 2)
+
+            if ex != 0.:
+                result += ez*ex * self._calc_polynomial_derivative(ix, iy, iz, rx, ry, rz, 1, 0, 1)
+
+        return result
+
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    @cython.initializedcheck(False)
+    cdef double _calc_polynomial_derivative(self, int ix, int iy, int iz, double px, double py, double pz, int order_x, int order_y, int order_z):
+        """
+        Evaluate the derivatives of the polynomial valid in the area given by
+        'ix', 'iy' and 'iz' at position ('px', 'py', 'pz'). The order of
+        derivative along each axis is given by 'der_x', 'der_y' and 'der_z'.
+
+        :param int ix, int iy, int iz: indices of the area of interest
+        :param double px, double py, double pz: coordinates
+        :param int der_x, int der_y, int order_z: orders of derivative along each axis
+        :return: value evaluated from the derivated polynomial
+        """
+
+        cdef double[::1] ax, ay, az
+        cdef double[:,:,:,::1] k
+
+        k = self._k
+
+        ax = derivatives_array(px, order_x)
+        ay = derivatives_array(py, order_y)
+        az = derivatives_array(pz, order_z)
+
+        return   ax[0]*( \
+                   ay[0]*(az[0]*k[ix, iy, iz,  0] + az[1]*k[ix, iy, iz,  1] + az[2]*k[ix, iy, iz,  2] + az[3]*k[ix, iy, iz,  3]) + \
+                   ay[1]*(az[0]*k[ix, iy, iz,  4] + az[1]*k[ix, iy, iz,  5] + az[2]*k[ix, iy, iz,  6] + az[3]*k[ix, iy, iz,  7]) + \
+                   ay[2]*(az[0]*k[ix, iy, iz,  8] + az[1]*k[ix, iy, iz,  9] + az[2]*k[ix, iy, iz, 10] + az[3]*k[ix, iy, iz, 11]) + \
+                   ay[3]*(az[0]*k[ix, iy, iz, 12] + az[1]*k[ix, iy, iz, 13] + az[2]*k[ix, iy, iz, 14] + az[3]*k[ix, iy, iz, 15]) \
+               ) \
+               + ax[1]*( \
+                   ay[0]*(az[0]*k[ix, iy, iz, 16] + az[1]*k[ix, iy, iz, 17] + az[2]*k[ix, iy, iz, 18] + az[3]*k[ix, iy, iz, 19]) + \
+                   ay[1]*(az[0]*k[ix, iy, iz, 20] + az[1]*k[ix, iy, iz, 21] + az[2]*k[ix, iy, iz, 22] + az[3]*k[ix, iy, iz, 23]) + \
+                   ay[2]*(az[0]*k[ix, iy, iz, 24] + az[1]*k[ix, iy, iz, 25] + az[2]*k[ix, iy, iz, 26] + az[3]*k[ix, iy, iz, 27]) + \
+                   ay[3]*(az[0]*k[ix, iy, iz, 28] + az[1]*k[ix, iy, iz, 29] + az[2]*k[ix, iy, iz, 30] + az[3]*k[ix, iy, iz, 31]) \
+               ) \
+               + ax[2]*( \
+                   ay[0]*(az[0]*k[ix, iy, iz, 32] + az[1]*k[ix, iy, iz, 33] + az[2]*k[ix, iy, iz, 34] + az[3]*k[ix, iy, iz, 35]) + \
+                   ay[1]*(az[0]*k[ix, iy, iz, 36] + az[1]*k[ix, iy, iz, 37] + az[2]*k[ix, iy, iz, 38] + az[3]*k[ix, iy, iz, 39]) + \
+                   ay[2]*(az[0]*k[ix, iy, iz, 40] + az[1]*k[ix, iy, iz, 41] + az[2]*k[ix, iy, iz, 42] + az[3]*k[ix, iy, iz, 43]) + \
+                   ay[3]*(az[0]*k[ix, iy, iz, 44] + az[1]*k[ix, iy, iz, 45] + az[2]*k[ix, iy, iz, 46] + az[3]*k[ix, iy, iz, 47]) \
+               ) \
+               + ax[3]*( \
+                   ay[0]*(az[0]*k[ix, iy, iz, 48] + az[1]*k[ix, iy, iz, 49] + az[2]*k[ix, iy, iz, 50] + az[3]*k[ix, iy, iz, 51]) + \
+                   ay[1]*(az[0]*k[ix, iy, iz, 52] + az[1]*k[ix, iy, iz, 53] + az[2]*k[ix, iy, iz, 54] + az[3]*k[ix, iy, iz, 55]) + \
+                   ay[2]*(az[0]*k[ix, iy, iz, 56] + az[1]*k[ix, iy, iz, 57] + az[2]*k[ix, iy, iz, 58] + az[3]*k[ix, iy, iz, 59]) + \
+                   ay[3]*(az[0]*k[ix, iy, iz, 60] + az[1]*k[ix, iy, iz, 61] + az[2]*k[ix, iy, iz, 62] + az[3]*k[ix, iy, iz, 63]) \
+               )
+
+
