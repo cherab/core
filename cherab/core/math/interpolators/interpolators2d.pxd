@@ -31,13 +31,13 @@ cdef class _Interpolate2DBase(Function2D):
 
     cdef double evaluate(self, double px, double py) except? -1e999
 
-    cdef double _evaluate(self, double px, double py, int i_x, int i_y) except? -1e999
+    cdef double _evaluate(self, double px, double py, int ix, int iy) except? -1e999
 
-    cdef double _extrapolate(self, double px, double py, int i_x, int i_y, double nearest_px, double nearest_py) except? -1e999
+    cdef double _extrapolate(self, double px, double py, int ix, int iy, double rx, double ry) except? -1e999
 
-    cdef double _extrapol_linear(self, double px, double py, int i_x, int i_y, double nearest_px, double nearest_py) except? -1e999
+    cdef double _extrapol_linear(self, double px, double py, int ix, int iy, double rx, double ry) except? -1e999
 
-    cdef double _extrapol_quadratic(self, double px, double py, int i_x, int i_y, double nearest_px, double nearest_py) except? -1e999
+    cdef double _extrapol_quadratic(self, double px, double py, int ix, int iy, double rx, double ry) except? -1e999
 
 
 cdef class Interpolate2DLinear(_Interpolate2DBase):
@@ -58,6 +58,6 @@ cdef class Interpolate2DCubic(_Interpolate2DBase):
         double[:,:,::1] _k
         int8_t[:,::1] _available
 
-    cdef int _calc_polynomial(self, int i_x, int i_y) except -1
+    cdef int _calc_polynomial(self, int ix, int iy) except -1
 
-    cdef double _calc_polynomial_derivative(self, int i_x, int i_y, double px, double py, int der_x, int der_y)
+    cdef double _calc_polynomial_derivative(self, int ix, int iy, double px, double py, int order_x, int order_y)

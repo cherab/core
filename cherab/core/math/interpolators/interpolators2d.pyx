@@ -135,7 +135,6 @@ cdef class _Interpolate2DBase(Function2D):
             
         :param x: x array 
         :param y: y array
-        :param z: z array
         :param f: f array 
         """
         pass
@@ -154,7 +153,6 @@ cdef class _Interpolate2DBase(Function2D):
         cdef:
             int ix, iy, nx, ny
             double[::1] x, y
-
 
         x = self._x
         y = self._y
