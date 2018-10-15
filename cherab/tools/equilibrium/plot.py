@@ -61,11 +61,11 @@ def plot_equilibrium(equilibrium, resolution=0.025):
     print("Plotting...")
     plt.figure()
     plt.axes(aspect='equal')
-    plt.pcolormesh(r, z, np.transpose(psi_sampled), cmap='jet', shading='gouraud')
+    plt.pcolormesh(r, z, np.transpose(psi_sampled), shading='gouraud')
     plt.autoscale(tight=True)
     plt.colorbar()
     plt.contour(r, z, np.transpose(psi_sampled), levels=[1.0])
-    plt.title('(Normalised Psi')
+    plt.title('Normalised Psi')
 
     plt.figure()
     plt.axes(aspect='equal')
