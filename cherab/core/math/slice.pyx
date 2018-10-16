@@ -1,0 +1,79 @@
+# cython: language_level=3
+
+# Copyright 2016-2018 Euratom
+# Copyright 2016-2018 United Kingdom Atomic Energy Authority
+# Copyright 2016-2018 Centro de Investigaciones Energéticas, Medioambientales y Tecnológicas
+#
+# Licensed under the EUPL, Version 1.1 or – as soon they will be approved by the
+# European Commission - subsequent versions of the EUPL (the "Licence");
+# You may not use this work except in compliance with the Licence.
+# You may obtain a copy of the Licence at:
+#
+# https://joinup.ec.europa.eu/software/page/eupl5
+#
+# Unless required by applicable law or agreed to in writing, software distributed
+# under the Licence is distributed on an "AS IS" basis, WITHOUT WARRANTIES OR
+# CONDITIONS OF ANY KIND, either express or implied.
+#
+# See the Licence for the specific language governing permissions and limitations
+# under the Licence.
+
+from cherab.core.math.function cimport autowrap_function2d, autowrap_function3d
+
+
+cdef class Slice2D(Function1D):
+
+    def __init__(self, object function, object axis, double value):
+
+        # convert string axis to numerical axis value
+        if isinstance(axis, str):
+            map = {'x': 0, 'y': 1}
+            try:
+                axis = map[axis.lower()]
+            except KeyError:
+                raise ValueError('The axis must be either the string \'x\' or \'y\', or the value 0 or 1.')
+
+        # check numerical value
+        if axis not in [0, 1]:
+            raise ValueError('The axis must be either the string \'x\' or \'y\', or the value 0 or 1.')
+
+        self.axis = axis
+        self.value = value
+        self._function = autowrap_function2d(function)
+
+    cdef double evaluate(self, double x) except? -1e999:
+
+        if self.axis == 0:
+            return self._function.evaluate(self.value, x)
+        else:
+            return self._function.evaluate(x, self.value)
+
+
+cdef class Slice3D(Function2D):
+
+    def __init__(self, object function, object axis, double value):
+
+        # convert string axis to numerical axis value
+        if isinstance(axis, str):
+            map = {'x': 0, 'y': 1, 'z': 2}
+            try:
+                axis = map[axis.lower()]
+            except KeyError:
+                raise ValueError('The axis must be either the string \'x\', \'y\' or \'z\', or the value 0, 1 or 2.')
+
+        # check numerical value
+        if axis not in [0, 1, 2]:
+            raise ValueError('The axis must be either the string \'x\', \'y\' or \'z\', or the value 0, 1 or 2.')
+
+        self.axis = axis
+        self.value = value
+        self._function = autowrap_function3d(function)
+
+    cdef double evaluate(self, double x, double y) except? -1e999:
+
+        if self.axis == 0:
+            return self._function.evaluate(self.value, x, y)
+        if self.axis == 1:
+            return self._function.evaluate(x, self.value, y)
+        else:
+            return self._function.evaluate(x, y, self.value)

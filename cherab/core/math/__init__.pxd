@@ -24,3 +24,4 @@ from cherab.core.math.blend cimport *
 from cherab.core.math.constant cimport *
 from cherab.core.math.mappers cimport *
 from cherab.core.math.mask cimport *
+from cherab.core.math.slice cimport *
