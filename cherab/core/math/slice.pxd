@@ -1,3 +1,5 @@
+# cython: language_level=3
+
 # Copyright 2016-2018 Euratom
 # Copyright 2016-2018 United Kingdom Atomic Energy Authority
 # Copyright 2016-2018 Centro de Investigaciones Energéticas, Medioambientales y Tecnológicas
@@ -16,15 +18,20 @@
 # See the Licence for the specific language governing permissions and limitations
 # under the Licence.
 
-from .samplers import sample1d, sample2d, sample3d, samplevector2d, samplevector3d
-from .function import Function1D, Function2D, Function3D, VectorFunction2D, VectorFunction3D
-from .interpolators import Interpolate1DLinear, Interpolate1DCubic
-from .interpolators import Interpolate2DLinear, Interpolate2DCubic
-from .interpolators import Interpolate3DLinear, Interpolate3DCubic
-from .caching import Caching1D, Caching2D, Caching3D
-from .blend import Blend1D, Blend2D, Blend3D
-from .constant import Constant1D, Constant2D, Constant3D, ConstantVector2D, ConstantVector3D
-from .mappers import IsoMapper2D, IsoMapper3D, Swizzle2D, Swizzle3D, AxisymmetricMapper, VectorAxisymmetricMapper
-from .mask import PolygonMask2D
-from .slice import Slice2D, Slice3D
+from cherab.core.math.function cimport Function1D, Function2D, Function3D
 
+
+cdef class Slice2D(Function1D):
+
+    cdef:
+        readonly int axis
+        readonly double value
+        Function2D _function
+
+
+cdef class Slice3D(Function2D):
+
+    cdef:
+        readonly int axis
+        readonly double value
+        Function3D _function
