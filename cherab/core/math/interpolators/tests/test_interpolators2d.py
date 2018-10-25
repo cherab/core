@@ -804,7 +804,35 @@ class TestInterpolators2D(unittest.TestCase):
         minj, maxj = self.extrapol_ydomains[j_block]
         for iex in range(mini, maxi):
             for jex in range(minj, maxj):
-                self.assertAlmostEqual(self.interp_func(self.xsamples_ex[iex], self.ysamples_ex[jex]), ref_data[iex - mini, jex - minj], delta=delta)
+                x = self.xsamples_ex[iex]
+                y = self.ysamples_ex[jex]
+
+                # test f(x,y)
+                self.assertAlmostEqual(self.interp_func(x, y), ref_data[iex - mini, jex - minj], delta=delta)
+
+                # skip derivatives on boundary as the numerical sampling routine will produce odd results with nearest neighbour extrapolation
+                if x == X_LOWER or x == X_UPPER:
+                    continue
+
+                if y == Y_LOWER or y == Y_UPPER:
+                    continue
+
+                # test derivatives
+                for x_order in range(0, 4):
+                    for y_order in range(0, 4):
+
+                        # skip invalid combination
+                        if x_order == 0 and y_order == 0:
+                            continue
+
+                        # higher order derivatives are zero
+                        if x_order > 1 or y_order > 1:
+                            v = 0
+                        else:
+                            v = self.derivative(self.interp_func, x, y, 1e-3, x_order, y_order)
+                        r = self.interp_func.derivative(x, y, x_order, y_order)
+                        print(x, y, x_order, y_order, v, r)
+                        self.assertAlmostEqual(r, v, delta=1e-5 * abs(v))
 
     def interpolate_2d_xboundaries_assert(self, inf, sup, epsilon, y):
         with self.assertRaises(ValueError):
@@ -1144,7 +1172,6 @@ class TestInterpolators2D(unittest.TestCase):
                         y = self.ysamples[j]
                         v = self.derivative(self.interp_func, x, y, 1e-3, x_order, y_order)
                         r = self.interp_func.derivative(x, y, x_order, y_order)
-                        print(x, y, x_order, y_order, v, r)
                         self.assertAlmostEqual(r, v, delta=1e-5 * abs(v))
 
     def test_interpolate_2d_cubic_bigvalues(self):
