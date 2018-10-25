@@ -632,21 +632,139 @@ cdef class Interpolate2DCubic(_Interpolate2DBase):
         if not self._available[ix, iy]:
             self._calc_polynomial(ix, iy)
 
-        # f(x,y)
-        if x_order == 0 and y_order == 0:
 
-            px2 = px*px
-            px3 = px2*px
+        if x_order == 0:
 
-            py2 = py*py
-            py3 = py2*py
+            # f(x,y)
+            if y_order == 0:
 
-            return     (k[ix, iy,  0] + k[ix, iy,  1]*py + k[ix, iy,  2]*py2 + k[ix, iy,  3]*py3) + \
-                   px *(k[ix, iy,  4] + k[ix, iy,  5]*py + k[ix, iy,  6]*py2 + k[ix, iy,  7]*py3) + \
-                   px2*(k[ix, iy,  8] + k[ix, iy,  9]*py + k[ix, iy, 10]*py2 + k[ix, iy, 11]*py3) + \
-                   px3*(k[ix, iy, 12] + k[ix, iy, 13]*py + k[ix, iy, 14]*py2 + k[ix, iy, 15]*py3)
+                px2 = px*px
+                px3 = px2*px
+                py2 = py*py
+                py3 = py2*py
+                return     (k[ix, iy,  0] + k[ix, iy,  1]*py + k[ix, iy,  2]*py2 + k[ix, iy,  3]*py3) + \
+                       px *(k[ix, iy,  4] + k[ix, iy,  5]*py + k[ix, iy,  6]*py2 + k[ix, iy,  7]*py3) + \
+                       px2*(k[ix, iy,  8] + k[ix, iy,  9]*py + k[ix, iy, 10]*py2 + k[ix, iy, 11]*py3) + \
+                       px3*(k[ix, iy, 12] + k[ix, iy, 13]*py + k[ix, iy, 14]*py2 + k[ix, iy, 15]*py3)
 
-        raise NotImplementedError('Derivative of x order {} and y order {} is not implemented.'.format(x_order, y_order))
+            # df(x,y) / dy
+            if y_order == 1:
+
+                px2 = px*px
+                px3 = px2*px
+                py2 = py*py
+                return     (k[ix, iy,  1] + 2 * k[ix, iy,  2]*py + 3 * k[ix, iy,  3]*py2) + \
+                       px *(k[ix, iy,  5] + 2 * k[ix, iy,  6]*py + 3 * k[ix, iy,  7]*py2) + \
+                       px2*(k[ix, iy,  9] + 2 * k[ix, iy, 10]*py + 3 * k[ix, iy, 11]*py2) + \
+                       px3*(k[ix, iy, 13] + 2 * k[ix, iy, 14]*py + 3 * k[ix, iy, 15]*py2)
+
+            # d2f(x,y) / dy2
+            elif y_order == 2:
+
+                px2 = px*px
+                px3 = px2*px
+                return     (2 * k[ix, iy,  2] + 6 * k[ix, iy,  3]*py) + \
+                       px *(2 * k[ix, iy,  6] + 6 * k[ix, iy,  7]*py) + \
+                       px2*(2 * k[ix, iy, 10] + 6 * k[ix, iy, 11]*py) + \
+                       px3*(2 * k[ix, iy, 14] + 6 * k[ix, iy, 15]*py)
+
+            # d3f(x,y) / dy3
+            elif y_order == 3:
+
+                px2 = px*px
+                px3 = px2*px
+                return     (6 * k[ix, iy,  3]) + \
+                       px *(6 * k[ix, iy,  7]) + \
+                       px2*(6 * k[ix, iy, 11]) + \
+                       px3*(6 * k[ix, iy, 15])
+
+        elif x_order == 1:
+
+            # df(x,y) / dx
+            if y_order == 0:
+
+                px2 = px*px
+                py2 = py*py
+                py3 = py2*py
+                return          (k[ix, iy,  4] + k[ix, iy,  5]*py + k[ix, iy,  6]*py2 + k[ix, iy,  7]*py3) + \
+                       px  * 2 *(k[ix, iy,  8] + k[ix, iy,  9]*py + k[ix, iy, 10]*py2 + k[ix, iy, 11]*py3) + \
+                       px2 * 3 *(k[ix, iy, 12] + k[ix, iy, 13]*py + k[ix, iy, 14]*py2 + k[ix, iy, 15]*py3)
+
+            # d2f(x,y) / dxdy
+            elif y_order == 1:
+
+                px2 = px*px
+                py2 = py*py
+                return          (k[ix, iy,  5] + 2 * k[ix, iy,  6]*py + 3 * k[ix, iy,  7]*py2) + \
+                       px  * 2 *(k[ix, iy,  9] + 2 * k[ix, iy, 10]*py + 3 * k[ix, iy, 11]*py2) + \
+                       px2 * 3 *(k[ix, iy, 13] + 2 * k[ix, iy, 14]*py + 3 * k[ix, iy, 15]*py2)
+
+            # d3f(x,y) / dxdy2
+            elif y_order == 2:
+
+                px2 = px*px
+                return          (2 * k[ix, iy,  6] + 6 * k[ix, iy,  7]*py) + \
+                       px  * 2 *(2 * k[ix, iy, 10] + 6 * k[ix, iy, 11]*py) + \
+                       px2 * 3 *(2 * k[ix, iy, 14] + 6 * k[ix, iy, 15]*py)
+
+            # d4f(x,y) / dxdy3
+            elif y_order == 3:
+
+                px2 = px*px
+                return (6 * k[ix, iy,  7]) + px  * 2 *(6 * k[ix, iy, 11]) + px2 * 3 *(6 * k[ix, iy, 15])
+
+        elif x_order == 2:
+
+            # d2f(x,y) / dx2
+            if y_order == 0:
+
+                py2 = py*py
+                py3 = py2*py
+                return      2 * (k[ix, iy,  8] + k[ix, iy,  9]*py + k[ix, iy, 10]*py2 + k[ix, iy, 11]*py3) + \
+                       px * 6 * (k[ix, iy, 12] + k[ix, iy, 13]*py + k[ix, iy, 14]*py2 + k[ix, iy, 15]*py3)
+
+            # d3f(x,y) / dx2dy
+            elif y_order == 1:
+
+                py2 = py*py
+                return      2 * (k[ix, iy,  9] + 2 * k[ix, iy, 10]*py + 3 * k[ix, iy, 11]*py2) + \
+                       px * 6 * (k[ix, iy, 13] + 2 * k[ix, iy, 14]*py + 3 * k[ix, iy, 15]*py2)
+
+            # d4f(x,y) / dx2dy2
+            elif y_order == 2:
+
+                return      2 * (2 * k[ix, iy, 10] + 6 * k[ix, iy, 11]*py) + \
+                       px * 6 * (2 * k[ix, iy, 14] + 6 * k[ix, iy, 15]*py)
+
+            # d5f(x,y) / dx2dy3
+            elif y_order == 3:
+                return 2 * 6 * k[ix, iy, 11] + px * 6 * 6 * k[ix, iy, 15]
+
+        elif x_order == 3:
+
+            # d3f(x,y) / dx3
+            if y_order == 0:
+
+                py2 = py*py
+                py3 = py2*py
+                return 6 * (k[ix, iy, 12] + k[ix, iy, 13]*py + k[ix, iy, 14]*py2 + k[ix, iy, 15]*py3)
+
+            # d4f(x,y) / dx3dy
+            elif y_order == 1:
+
+                py2 = py*py
+                return 6 * (k[ix, iy, 13] + 2 * k[ix, iy, 14]*py + 3 * k[ix, iy, 15]*py2)
+
+            # d5f(x,y) / dx3dy2
+            elif y_order == 2:
+                return 6 * (2 * k[ix, iy, 14] + 6 * k[ix, iy, 15]*py)
+
+            # d6f(x,y) / dx3dy3
+            elif y_order == 3:
+                return 6 * 6 * k[ix, iy, 15]
+
+        # higher orders
+        return 0.0
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
