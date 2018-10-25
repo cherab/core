@@ -32,13 +32,15 @@ cdef class _Interpolate1DBase(Function1D):
 
     cdef double evaluate(self, double px) except? -1e999
 
-    cdef double _evaluate(self, double px, int index) except? -1e999
+    cpdef double derivative(self, double px, int order) except? -1e999
 
-    cdef double _extrapolate(self, double px, int index, double rx) except? -1e999
+    cdef double _evaluate(self, double px, int order, int index) except? -1e999
 
-    cdef double _extrapol_linear(self, double px, int index, double rx) except? -1e999
+    cdef double _extrapolate(self, double px, int order, int index, double rx) except? -1e999
 
-    cdef double _extrapol_quadratic(self, double px, int index, double rx) except? -1e999
+    cdef double _extrapol_linear(self, double px, int order, int index, double rx) except? -1e999
+
+    cdef double _extrapol_quadratic(self, double px, int order, int index, double rx) except? -1e999
 
 
 cdef class Interpolate1DLinear(_Interpolate1DBase):
