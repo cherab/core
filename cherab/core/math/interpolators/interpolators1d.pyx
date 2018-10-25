@@ -135,7 +135,7 @@ cdef class _Interpolate1DBase(Function1D):
         """
         Evaluate the interpolating function.
 
-        :param double px: x coordinate
+        :param double px: x coordinate.
         :return: the interpolated value
         """
 
@@ -148,13 +148,13 @@ cdef class _Interpolate1DBase(Function1D):
         index = find_index(self._x, px, self._extrapolation_range)
 
         if 0 <= index < nx - 1:
-            return self._evaluate(px, index)
+            return self._evaluate(px, 0, index)
 
         elif index == -1:
-            return self._extrapolate(px, 0, self._x[0])
+            return self._extrapolate(px, 0, 0, self._x[0])
 
         elif index == nx - 1:
-            return self._extrapolate(px, nx - 2, self._x[nx - 1])
+            return self._extrapolate(px, 0, nx - 2, self._x[nx - 1])
 
         # value is outside of permitted limits
         min_range = self._x[0] - self._extrapolation_range
@@ -163,20 +163,59 @@ cdef class _Interpolate1DBase(Function1D):
         raise ValueError("The specified value (x={}) is outside the range of the supplied data and/or extrapolation range: "
                          "x bounds=({}, {})".format(px, min_range, max_range))
 
-    cdef double _evaluate(self, double px, int index) except? -1e999:
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    @cython.initializedcheck(False)
+    cpdef double derivative(self, double px, int order) except? -1e999:
         """
-        Evaluate the interpolating function which is valid in the area given
+        Returns the derivative of the interpolating function to the specified order.
+        
+        :param px: The x coordinate.
+        :param order: The order of the derivative. 
+        :return: The interpolated derivative.
+        """
+
+        if order < 1:
+            raise ValueError('Derivative order must be greater than zero.')
+        cdef int nx, index
+
+        if self._constant:
+            return self._f[0]
+
+        nx = self._x.shape[0]
+        index = find_index(self._x, px, self._extrapolation_range)
+
+        if 0 <= index < nx - 1:
+            return self._evaluate(px, order, index)
+
+        elif index == -1:
+            return self._extrapolate(px, order, 0, self._x[0])
+
+        elif index == nx - 1:
+            return self._extrapolate(px, order, nx - 2, self._x[nx - 1])
+
+        # value is outside of permitted limits
+        min_range = self._x[0] - self._extrapolation_range
+        max_range = self._x[nx - 1] + self._extrapolation_range
+
+        raise ValueError("The specified value (x={}) is outside the range of the supplied data and/or extrapolation range: "
+                         "x bounds=({}, {})".format(px, min_range, max_range))
+
+    cdef double _evaluate(self, double px, int order, int index) except? -1e999:
+        """
+        Evaluate the interpolating function or derivative which is valid in the area given
         by 'index' at any position 'px'.
 
         :param double px: x coordinate
+        :param int order: the derivative order
         :param int index: index of the area of interest
         :return: the interpolated value
         """
         raise NotImplementedError("This abstract method has not been implemented yet.")
 
-    cdef double _extrapolate(self, double px, int index, double rx) except? -1e999:
+    cdef double _extrapolate(self, double px, int order, int index, double rx) except? -1e999:
         """
-        Extrapolate the interpolation function valid on area given by
+        Extrapolate the interpolation function or derivative valid on area given by
         'index' to position 'px'.
 
         :param double px: x coordinate
@@ -186,20 +225,22 @@ cdef class _Interpolate1DBase(Function1D):
         """
 
         if self._extrapolation_type == EXT_NEAREST:
-            return self._evaluate(rx, index)
+            if order == 0:
+                return self._evaluate(rx, order, index)
+            return 0.0
 
         elif self._extrapolation_type == EXT_LINEAR:
-            return self._extrapol_linear(px, index, rx)
+            return self._extrapol_linear(px, order, index, rx)
 
         elif self._extrapolation_type == EXT_QUADRATIC:
-            return self._extrapol_quadratic(px, index, rx)
+            return self._extrapol_quadratic(px, order, index, rx)
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
     @cython.initializedcheck(False)
-    cdef double _extrapol_linear(self, double px, int index, double nearest_px) except? -1e999:
+    cdef double _extrapol_linear(self, double px, int order, int index, double nearest_px) except? -1e999:
         """
-        Extrapolate linearly the interpolation function valid on area given by
+        Extrapolate linearly the interpolation function or derivative valid on area given by
         'index' to position 'px'.
 
         :param double px: x coordinate
@@ -213,9 +254,9 @@ cdef class _Interpolate1DBase(Function1D):
     @cython.boundscheck(False)
     @cython.wraparound(False)
     @cython.initializedcheck(False)
-    cdef double _extrapol_quadratic(self, double px, int index, double nearest_px) except? -1e999:
+    cdef double _extrapol_quadratic(self, double px, int order, int index, double nearest_px) except? -1e999:
         """
-        Extrapolate quadratically the interpolation function valid on area given by
+        Extrapolate quadratically the interpolation function or derivative valid on area given by
         'index' to position 'px'.
 
         :param double px: x coordinate
@@ -267,7 +308,8 @@ cdef class Interpolate1DLinear(_Interpolate1DBase):
     @cython.boundscheck(False)
     @cython.wraparound(False)
     @cython.initializedcheck(False)
-    cdef double _evaluate(self, double px, int index) except? -1e999:
+    @cython.cdivision(True)
+    cdef double _evaluate(self, double px, int order, int index) except? -1e999:
         """
         Evaluate the interpolating function which is valid in the area given
         by 'index' at any position 'px'.
@@ -277,12 +319,17 @@ cdef class Interpolate1DLinear(_Interpolate1DBase):
         :return: the interpolated value
         """
 
-        return lerp(self._x[index], self._x[index + 1], self._f[index], self._f[index + 1], px)
+        if order == 0:
+            return lerp(self._x[index], self._x[index + 1], self._f[index], self._f[index + 1], px)
+        elif order == 1:
+            return (self._f[index + 1] - self._f[index]) / (self._x[index + 1] - self._x[index])
+        return 0
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
     @cython.initializedcheck(False)
-    cdef double _extrapol_linear(self, double px, int index, double nearest_px) except? -1e999:
+    @cython.cdivision(True)
+    cdef double _extrapol_linear(self, double px, int order, int index, double nearest_px) except? -1e999:
         """
         Extrapolate linearly the interpolation function valid on area given by
         'index' to position 'px'.
@@ -294,7 +341,11 @@ cdef class Interpolate1DLinear(_Interpolate1DBase):
         :return: the extrapolated value
         """
 
-        return lerp(self._x[index], self._x[index + 1], self._f[index], self._f[index + 1], px)
+        if order == 0:
+            return lerp(self._x[index], self._x[index + 1], self._f[index], self._f[index + 1], px)
+        elif order == 1:
+            return (self._f[index + 1] - self._f[index]) / (self._x[index + 1] - self._x[index])
+        return 0
 
 
 cdef class Interpolate1DCubic(_Interpolate1DBase):
@@ -494,7 +545,7 @@ cdef class Interpolate1DCubic(_Interpolate1DBase):
     @cython.boundscheck(False)
     @cython.wraparound(False)
     @cython.initializedcheck(False)
-    cdef double _evaluate(self, double px, int index) except? -1e999:
+    cdef double _evaluate(self, double px, int order, int index) except? -1e999:
         """
         Evaluate the interpolating function which is valid in the area given
         by 'index' at any position 'px'.
@@ -506,15 +557,31 @@ cdef class Interpolate1DCubic(_Interpolate1DBase):
 
         cdef double px2, px3
 
-        px2 = px*px
-        px3 = px2*px
+        # f(x)
+        if order == 0:
+            px2 = px*px
+            px3 = px2*px
+            return self._k[index, 0] + self._k[index, 1]*px + self._k[index, 2]*px2 + self._k[index, 3]*px3
 
-        return self._k[index, 0] + self._k[index, 1]*px + self._k[index, 2]*px2 + self._k[index, 3]*px3
+        # df(x)/dx
+        elif order == 1:
+            px2 = px*px
+            return self._k[index, 1] + 2*self._k[index, 2]*px + 3*self._k[index, 3]*px2
+
+        # d2f(x)/dx2
+        elif order == 2:
+            return 2*self._k[index, 2] + 6*self._k[index, 3]*px
+
+        # d3f(x)/dx3
+        elif order == 3:
+            return 6*self._k[index, 3]
+
+        return 0
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
     @cython.initializedcheck(False)
-    cdef double _extrapol_linear(self, double px, int index, double rx) except? -1e999:
+    cdef double _extrapol_linear(self, double px, int order, int index, double rx) except? -1e999:
         """
         Extrapolate linearly the interpolation function valid on area given by
         'index' to position 'px'.
@@ -526,12 +593,21 @@ cdef class Interpolate1DCubic(_Interpolate1DBase):
         :return: the extrapolated value
         """
 
-        return self._evaluate(rx, index) + (px - rx) * (3. * self._k[index, 3] * rx * rx + 2. * self._k[index, 2] * rx + self._k[index, 1])
+        # f(x)
+        if order == 0:
+            return self._evaluate(rx, order, index) + (px - rx) * (3. * self._k[index, 3] * rx * rx + 2. * self._k[index, 2] * rx + self._k[index, 1])
+
+        # df(x)/dx
+        elif order == 1:
+            return 3. * self._k[index, 3] * rx * rx + 2. * self._k[index, 2] * rx + self._k[index, 1]
+
+        return 0
+
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
     @cython.initializedcheck(False)
-    cdef double _extrapol_quadratic(self, double px, int index, double rx) except? -1e999:
+    cdef double _extrapol_quadratic(self, double px, int order, int index, double rx) except? -1e999:
         """
         Extrapolate quadratically the interpolation function valid on area given by
         'index' to position 'px'.
@@ -542,11 +618,28 @@ cdef class Interpolate1DCubic(_Interpolate1DBase):
         :return: the extrapolated value
         """
 
-        cdef double d = px - rx
+        cdef:
+            double a0, a1, a2
+            double d = px - rx
 
-        return self._evaluate(rx, index) \
-               + d * (3. * self._k[index, 3] * rx * rx + 2. * self._k[index, 2] * rx + self._k[index, 1]) \
-               + 0.5*d*d * (6. * self._k[index, 3] * rx + 2. * self._k[index, 2])
+        # f(x)
+        if order == 0:
+            a0 = self._evaluate(rx, order, index)
+            a1 = 3 * self._k[index, 3] * rx * rx + 2 * self._k[index, 2] * rx + self._k[index, 1]
+            a2 = 6 * self._k[index, 3] * rx + 2 * self._k[index, 2]
+            return a0 + d * a1 + 0.5*d*d * a2
+
+        # df(x)/dx
+        elif order == 1:
+            a1 = 3 * self._k[index, 3] * rx * rx + 2 * self._k[index, 2] * rx + self._k[index, 1]
+            a2 = 6 * self._k[index, 3] * rx + 2 * self._k[index, 2]
+            return a1 + d * a2
+
+        # d2f(x)/dx2
+        elif order == 2:
+            return 6 * self._k[index, 3] * rx + 2 * self._k[index, 2]
+
+        return 0
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
