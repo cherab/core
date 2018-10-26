@@ -139,9 +139,6 @@ cdef class _Interpolate2DBase(Function2D):
         """
         pass
 
-    @cython.boundscheck(False)
-    @cython.wraparound(False)
-    @cython.initializedcheck(False)
     cdef double evaluate(self, double px, double py) except? -1e999:
         """
         Evaluate the interpolating function.
@@ -152,9 +149,6 @@ cdef class _Interpolate2DBase(Function2D):
 
         return self._dispatch(px, py, x_order=0, y_order=0)
 
-    @cython.boundscheck(False)
-    @cython.wraparound(False)
-    @cython.initializedcheck(False)
     cpdef double derivative(self, double px, double py, int x_order, int y_order) except? -1e999:
         """
         Evaluate the interpolating function.
@@ -162,10 +156,6 @@ cdef class _Interpolate2DBase(Function2D):
         :param double px, double py: coordinates
         :return: the interpolated value
         """
-
-        cdef:
-            int ix, iy, nx, ny
-            double[::1] x, y
 
         if x_order < 1 and y_order < 1:
             raise ValueError('At least one derivative order must be > 0.')
@@ -178,6 +168,9 @@ cdef class _Interpolate2DBase(Function2D):
 
         return self._dispatch(px, py, x_order, y_order)
 
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    @cython.initializedcheck(False)
     cdef double _dispatch(self, double px, double py, int x_order, int y_order) except? -1e999:
         """
         Identifies the region the sample point lies in and calls the relevant evaluator.
@@ -200,25 +193,25 @@ cdef class _Interpolate2DBase(Function2D):
             if 0 <= iy < ny - 1:
                 return self._evaluate(px, py, x_order, y_order, ix, iy)
             elif iy == -1:
-                return self._extrapolate(px, py, x_order, y_order, ix, 0, px, y[0])
+                return self._extrapolate(px, py, x_order, y_order, ix, 0, px, y[0], True, False)
             elif iy == ny - 1:
-                return self._extrapolate(px, py, x_order, y_order, ix, ny - 2, px, y[ny - 1])
+                return self._extrapolate(px, py, x_order, y_order, ix, ny - 2, px, y[ny - 1], True, False)
 
         elif ix == -1:
             if 0 <= iy < ny - 1:
-                return self._extrapolate(px, py, x_order, y_order, 0, iy, x[0], py)
+                return self._extrapolate(px, py, x_order, y_order, 0, iy, x[0], py, False, True)
             elif iy == -1:
-                return self._extrapolate(px, py, x_order, y_order, 0, 0, x[0], y[0])
+                return self._extrapolate(px, py, x_order, y_order, 0, 0, x[0], y[0], False, False)
             elif iy == ny - 1:
-                return self._extrapolate(px, py, x_order, y_order, 0, ny - 2, x[0], y[ny - 1])
+                return self._extrapolate(px, py, x_order, y_order, 0, ny - 2, x[0], y[ny - 1], False, False)
 
         elif ix == nx - 1:
             if 0 <= iy < ny - 1:
-                return self._extrapolate(px, py, x_order, y_order, nx - 2, iy, x[nx - 1], py)
+                return self._extrapolate(px, py, x_order, y_order, nx - 2, iy, x[nx - 1], py, False, True)
             elif iy == -1:
-                return self._extrapolate(px, py, x_order, y_order, nx - 2, 0, x[nx - 1], y[0])
+                return self._extrapolate(px, py, x_order, y_order, nx - 2, 0, x[nx - 1], y[0], False, False)
             elif iy == ny - 1:
-                return self._extrapolate(px, py, x_order, y_order, nx - 2, ny - 2, x[nx - 1], y[ny - 1])
+                return self._extrapolate(px, py, x_order, y_order, nx - 2, ny - 2, x[nx - 1], y[ny - 1], False, False)
 
         # value is outside of permitted limits
         min_range_x = x[0] - self._extrapolation_range
@@ -241,30 +234,75 @@ cdef class _Interpolate2DBase(Function2D):
         """
         raise NotImplementedError("This abstract method has not been implemented yet.")
 
-    cdef double _extrapolate(self, double px, double py, int x_order, int y_order, int ix, int iy, double nearest_px, double nearest_py) except? -1e999:
+    cdef double _extrapolate(self, double px, double py, int x_order, int y_order, int ix, int iy,
+                             double nearest_px, double nearest_py, bint inside_x, bint inside_y) except? -1e999:
         """
         Extrapolate the interpolation function valid on area given by
         'ix' and 'iy' to position ('px', 'py').
-
-        :param double px, double py: coordinates
-        :param int ix, int iy: indices of the area of interest
-        :param double nearest_px, nearest_py: the nearest position from
-        ('px', 'py') in the interpolation domain.
-        :return: the extrapolated value
+        
+        :param px: Requested x coord.
+        :param py: Requested y coord.
+        :param x_order: Derivative order along x.
+        :param y_order: Derivative order along y.
+        :param ix: Lower x index of closest array bin.
+        :param iy: Lower y index of closest array bin.
+        :param nearest_px: Closest x coordinate inside interpolation domain.
+        :param nearest_py: Closest y coordinate inside interpolation domain. 
+        :param inside_x: If the x coord is inside the interpolation domain.
+        :param inside_y: If the y coord is inside the interpolation domain.
+        :return: The extrapolated value.
         """
 
         if self._extrapolation_type == EXT_NEAREST:
-            if x_order == 0 and y_order == 0:
-                return self._evaluate(nearest_px, nearest_py, 0, 0, ix, iy)
-            else:
-                # todo: implement extrapolation_nearest
-                raise NotImplementedError
+            return self._extrapol_nearest(px, py, x_order, y_order, ix, iy, nearest_px, nearest_py, inside_x, inside_y)
 
         elif self._extrapolation_type == EXT_LINEAR:
             return self._extrapol_linear(px, py, x_order, y_order, ix, iy, nearest_px, nearest_py)
 
         elif self._extrapolation_type == EXT_QUADRATIC:
             return self._extrapol_quadratic(px, py, x_order, y_order, ix, iy, nearest_px, nearest_py)
+
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    @cython.initializedcheck(False)
+    cdef double _extrapol_nearest(self, double px, double py, int x_order, int y_order, int ix, int iy, double nearest_px, double nearest_py, bint inside_x, bint inside_y) except? -1e999:
+        """
+        Extrapolate using the nearest point of the domain.
+        """
+
+        cdef:
+            int nx, ny
+            double[::1] x, y
+
+        x = self._x
+        y = self._y
+
+        nx = x.shape[0]
+        ny = y.shape[0]
+
+        # f(x,y)
+        if x_order == 0 and y_order == 0:
+            return self._evaluate(nearest_px, nearest_py, 0, 0, ix, iy)
+
+        # derivatives
+        # there are 8 separate domains - the 4 corners (that are flat) and the 4
+        # mid sections that mirror the profile of the closest edge of the domain
+        if inside_x:
+
+            if y_order > 0:
+                return 0.0
+            return self._evaluate(nearest_px, nearest_py, x_order, 0, ix, iy)
+
+        elif inside_y:
+
+            if x_order > 0:
+                return 0.0
+            return self._evaluate(nearest_px, nearest_py, 0, y_order, ix, iy)
+
+        else:
+
+            # corner
+            return 0.0
 
     cdef double _extrapol_linear(self, double px, double py, int x_order, int y_order, int ix, int iy, double nearest_px, double nearest_py) except? -1e999:
         """
@@ -594,21 +632,139 @@ cdef class Interpolate2DCubic(_Interpolate2DBase):
         if not self._available[ix, iy]:
             self._calc_polynomial(ix, iy)
 
-        # f(x,y)
-        if x_order == 0 and y_order == 0:
 
-            px2 = px*px
-            px3 = px2*px
+        if x_order == 0:
 
-            py2 = py*py
-            py3 = py2*py
+            # f(x,y)
+            if y_order == 0:
 
-            return     (k[ix, iy,  0] + k[ix, iy,  1]*py + k[ix, iy,  2]*py2 + k[ix, iy,  3]*py3) + \
-                   px *(k[ix, iy,  4] + k[ix, iy,  5]*py + k[ix, iy,  6]*py2 + k[ix, iy,  7]*py3) + \
-                   px2*(k[ix, iy,  8] + k[ix, iy,  9]*py + k[ix, iy, 10]*py2 + k[ix, iy, 11]*py3) + \
-                   px3*(k[ix, iy, 12] + k[ix, iy, 13]*py + k[ix, iy, 14]*py2 + k[ix, iy, 15]*py3)
+                px2 = px*px
+                px3 = px2*px
+                py2 = py*py
+                py3 = py2*py
+                return     (k[ix, iy,  0] + k[ix, iy,  1]*py + k[ix, iy,  2]*py2 + k[ix, iy,  3]*py3) + \
+                       px *(k[ix, iy,  4] + k[ix, iy,  5]*py + k[ix, iy,  6]*py2 + k[ix, iy,  7]*py3) + \
+                       px2*(k[ix, iy,  8] + k[ix, iy,  9]*py + k[ix, iy, 10]*py2 + k[ix, iy, 11]*py3) + \
+                       px3*(k[ix, iy, 12] + k[ix, iy, 13]*py + k[ix, iy, 14]*py2 + k[ix, iy, 15]*py3)
 
-        raise NotImplementedError('Derivative of x order {} and y order {} is not implemented.'.format(x_order, y_order))
+            # df(x,y) / dy
+            if y_order == 1:
+
+                px2 = px*px
+                px3 = px2*px
+                py2 = py*py
+                return     (k[ix, iy,  1] + 2 * k[ix, iy,  2]*py + 3 * k[ix, iy,  3]*py2) + \
+                       px *(k[ix, iy,  5] + 2 * k[ix, iy,  6]*py + 3 * k[ix, iy,  7]*py2) + \
+                       px2*(k[ix, iy,  9] + 2 * k[ix, iy, 10]*py + 3 * k[ix, iy, 11]*py2) + \
+                       px3*(k[ix, iy, 13] + 2 * k[ix, iy, 14]*py + 3 * k[ix, iy, 15]*py2)
+
+            # d2f(x,y) / dy2
+            elif y_order == 2:
+
+                px2 = px*px
+                px3 = px2*px
+                return     (2 * k[ix, iy,  2] + 6 * k[ix, iy,  3]*py) + \
+                       px *(2 * k[ix, iy,  6] + 6 * k[ix, iy,  7]*py) + \
+                       px2*(2 * k[ix, iy, 10] + 6 * k[ix, iy, 11]*py) + \
+                       px3*(2 * k[ix, iy, 14] + 6 * k[ix, iy, 15]*py)
+
+            # d3f(x,y) / dy3
+            elif y_order == 3:
+
+                px2 = px*px
+                px3 = px2*px
+                return     (6 * k[ix, iy,  3]) + \
+                       px *(6 * k[ix, iy,  7]) + \
+                       px2*(6 * k[ix, iy, 11]) + \
+                       px3*(6 * k[ix, iy, 15])
+
+        elif x_order == 1:
+
+            # df(x,y) / dx
+            if y_order == 0:
+
+                px2 = px*px
+                py2 = py*py
+                py3 = py2*py
+                return          (k[ix, iy,  4] + k[ix, iy,  5]*py + k[ix, iy,  6]*py2 + k[ix, iy,  7]*py3) + \
+                       px  * 2 *(k[ix, iy,  8] + k[ix, iy,  9]*py + k[ix, iy, 10]*py2 + k[ix, iy, 11]*py3) + \
+                       px2 * 3 *(k[ix, iy, 12] + k[ix, iy, 13]*py + k[ix, iy, 14]*py2 + k[ix, iy, 15]*py3)
+
+            # d2f(x,y) / dxdy
+            elif y_order == 1:
+
+                px2 = px*px
+                py2 = py*py
+                return          (k[ix, iy,  5] + 2 * k[ix, iy,  6]*py + 3 * k[ix, iy,  7]*py2) + \
+                       px  * 2 *(k[ix, iy,  9] + 2 * k[ix, iy, 10]*py + 3 * k[ix, iy, 11]*py2) + \
+                       px2 * 3 *(k[ix, iy, 13] + 2 * k[ix, iy, 14]*py + 3 * k[ix, iy, 15]*py2)
+
+            # d3f(x,y) / dxdy2
+            elif y_order == 2:
+
+                px2 = px*px
+                return          (2 * k[ix, iy,  6] + 6 * k[ix, iy,  7]*py) + \
+                       px  * 2 *(2 * k[ix, iy, 10] + 6 * k[ix, iy, 11]*py) + \
+                       px2 * 3 *(2 * k[ix, iy, 14] + 6 * k[ix, iy, 15]*py)
+
+            # d4f(x,y) / dxdy3
+            elif y_order == 3:
+
+                px2 = px*px
+                return (6 * k[ix, iy,  7]) + px  * 2 *(6 * k[ix, iy, 11]) + px2 * 3 *(6 * k[ix, iy, 15])
+
+        elif x_order == 2:
+
+            # d2f(x,y) / dx2
+            if y_order == 0:
+
+                py2 = py*py
+                py3 = py2*py
+                return      2 * (k[ix, iy,  8] + k[ix, iy,  9]*py + k[ix, iy, 10]*py2 + k[ix, iy, 11]*py3) + \
+                       px * 6 * (k[ix, iy, 12] + k[ix, iy, 13]*py + k[ix, iy, 14]*py2 + k[ix, iy, 15]*py3)
+
+            # d3f(x,y) / dx2dy
+            elif y_order == 1:
+
+                py2 = py*py
+                return      2 * (k[ix, iy,  9] + 2 * k[ix, iy, 10]*py + 3 * k[ix, iy, 11]*py2) + \
+                       px * 6 * (k[ix, iy, 13] + 2 * k[ix, iy, 14]*py + 3 * k[ix, iy, 15]*py2)
+
+            # d4f(x,y) / dx2dy2
+            elif y_order == 2:
+
+                return      2 * (2 * k[ix, iy, 10] + 6 * k[ix, iy, 11]*py) + \
+                       px * 6 * (2 * k[ix, iy, 14] + 6 * k[ix, iy, 15]*py)
+
+            # d5f(x,y) / dx2dy3
+            elif y_order == 3:
+                return 2 * 6 * k[ix, iy, 11] + px * 6 * 6 * k[ix, iy, 15]
+
+        elif x_order == 3:
+
+            # d3f(x,y) / dx3
+            if y_order == 0:
+
+                py2 = py*py
+                py3 = py2*py
+                return 6 * (k[ix, iy, 12] + k[ix, iy, 13]*py + k[ix, iy, 14]*py2 + k[ix, iy, 15]*py3)
+
+            # d4f(x,y) / dx3dy
+            elif y_order == 1:
+
+                py2 = py*py
+                return 6 * (k[ix, iy, 13] + 2 * k[ix, iy, 14]*py + 3 * k[ix, iy, 15]*py2)
+
+            # d5f(x,y) / dx3dy2
+            elif y_order == 2:
+                return 6 * (2 * k[ix, iy, 14] + 6 * k[ix, iy, 15]*py)
+
+            # d6f(x,y) / dx3dy3
+            elif y_order == 3:
+                return 6 * 6 * k[ix, iy, 15]
+
+        # higher orders
+        return 0.0
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
