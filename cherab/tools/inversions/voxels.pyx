@@ -297,7 +297,7 @@ class ToroidalVoxelGrid(VoxelCollection):
         else:
             raise ValueError("set_active() argument must be an index of type int or the string 'all'")
 
-    def plot(self, title=None, voxel_values=None, ax=None):
+    def plot(self, title=None, voxel_values=None, ax=None, vmax=None):
 
         if voxel_values is not None:
             if not isinstance(voxel_values, (np.ndarray, list, tuple)):
@@ -319,7 +319,8 @@ class ToroidalVoxelGrid(VoxelCollection):
             p.set_facecolor('none')
         else:
             p.set_array(voxel_values)
-
+            if vmax:
+                p.set_clim([0, vmax])
 
         if ax is None:
             fig, ax = plt.subplots()
