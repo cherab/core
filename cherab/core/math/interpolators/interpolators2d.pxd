@@ -31,19 +31,19 @@ cdef class _Interpolate2DBase(Function2D):
 
     cdef double evaluate(self, double px, double py) except? -1e999
 
-    cpdef double derivative(self, double px, double py, int x_order, int y_order) except? -1e999
+    cpdef double derivative(self, double px, double py, int order_x, int order_y) except? -1e999
 
-    cdef double _dispatch(self, double px, double py, int x_order, int y_order) except? -1e999
+    cdef double _dispatch(self, double px, double py, int order_x, int order_y) except? -1e999
 
-    cdef double _evaluate(self, double px, double py, int x_order, int y_order, int ix, int iy) except? -1e999
+    cdef double _evaluate(self, double px, double py, int order_x, int order_y, int ix, int iy) except? -1e999
 
-    cdef double _extrapolate(self, double px, double py, int x_order, int y_order, int ix, int iy, double rx, double ry, bint inside_x, bint inside_y) except? -1e999
+    cdef double _extrapolate(self, double px, double py, int order_x, int order_y, int ix, int iy, double rx, double ry, bint inside_x, bint inside_y) except? -1e999
 
-    cdef double _extrapol_nearest(self, double px, double py, int x_order, int y_order, int ix, int iy, double nearest_px, double nearest_py, bint inside_x, bint inside_y) except? -1e999
+    cdef double _extrapol_nearest(self, double px, double py, int order_x, int order_y, int ix, int iy, double nearest_px, double nearest_py, bint inside_x, bint inside_y) except? -1e999
 
-    cdef double _extrapol_linear(self, double px, double py, int x_order, int y_order, int ix, int iy, double rx, double ry) except? -1e999
+    cdef double _extrapol_linear(self, double px, double py, int order_x, int order_y, int ix, int iy, double rx, double ry, bint inside_x, bint inside_y) except? -1e999
 
-    cdef double _extrapol_quadratic(self, double px, double py, int x_order, int y_order, int ix, int iy, double rx, double ry) except? -1e999
+    cdef double _extrapol_quadratic(self, double px, double py, int order_x, int order_y, int ix, int iy, double rx, double ry, bint inside_x, bint inside_y) except? -1e999
 
 
 cdef class Interpolate2DLinear(_Interpolate2DBase):
