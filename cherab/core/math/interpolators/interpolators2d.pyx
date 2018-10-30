@@ -147,9 +147,9 @@ cdef class _Interpolate2DBase(Function2D):
         :return: the interpolated value
         """
 
-        return self._dispatch(px, py, x_order=0, y_order=0)
+        return self._dispatch(px, py, order_x=0, order_y=0)
 
-    cpdef double derivative(self, double px, double py, int x_order, int y_order) except? -1e999:
+    cpdef double derivative(self, double px, double py, int order_x, int order_y) except? -1e999:
         """
         Evaluate the interpolating function.
 
@@ -157,21 +157,21 @@ cdef class _Interpolate2DBase(Function2D):
         :return: the interpolated value
         """
 
-        if x_order < 1 and y_order < 1:
+        if order_x < 1 and order_y < 1:
             raise ValueError('At least one derivative order must be > 0.')
 
-        if x_order < 0:
+        if order_x < 0:
             raise ValueError('The y derivative order cannot be less than zero.')
 
-        if y_order < 0:
+        if order_y < 0:
             raise ValueError('The y derivative order cannot be less than zero.')
 
-        return self._dispatch(px, py, x_order, y_order)
+        return self._dispatch(px, py, order_x, order_y)
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
     @cython.initializedcheck(False)
-    cdef double _dispatch(self, double px, double py, int x_order, int y_order) except? -1e999:
+    cdef double _dispatch(self, double px, double py, int order_x, int order_y) except? -1e999:
         """
         Identifies the region the sample point lies in and calls the relevant evaluator.
         """
@@ -191,27 +191,27 @@ cdef class _Interpolate2DBase(Function2D):
 
         if 0 <= ix < nx - 1:
             if 0 <= iy < ny - 1:
-                return self._evaluate(px, py, x_order, y_order, ix, iy)
+                return self._evaluate(px, py, order_x, order_y, ix, iy)
             elif iy == -1:
-                return self._extrapolate(px, py, x_order, y_order, ix, 0, px, y[0], True, False)
+                return self._extrapolate(px, py, order_x, order_y, ix, 0, px, y[0], True, False)
             elif iy == ny - 1:
-                return self._extrapolate(px, py, x_order, y_order, ix, ny - 2, px, y[ny - 1], True, False)
+                return self._extrapolate(px, py, order_x, order_y, ix, ny - 2, px, y[ny - 1], True, False)
 
         elif ix == -1:
             if 0 <= iy < ny - 1:
-                return self._extrapolate(px, py, x_order, y_order, 0, iy, x[0], py, False, True)
+                return self._extrapolate(px, py, order_x, order_y, 0, iy, x[0], py, False, True)
             elif iy == -1:
-                return self._extrapolate(px, py, x_order, y_order, 0, 0, x[0], y[0], False, False)
+                return self._extrapolate(px, py, order_x, order_y, 0, 0, x[0], y[0], False, False)
             elif iy == ny - 1:
-                return self._extrapolate(px, py, x_order, y_order, 0, ny - 2, x[0], y[ny - 1], False, False)
+                return self._extrapolate(px, py, order_x, order_y, 0, ny - 2, x[0], y[ny - 1], False, False)
 
         elif ix == nx - 1:
             if 0 <= iy < ny - 1:
-                return self._extrapolate(px, py, x_order, y_order, nx - 2, iy, x[nx - 1], py, False, True)
+                return self._extrapolate(px, py, order_x, order_y, nx - 2, iy, x[nx - 1], py, False, True)
             elif iy == -1:
-                return self._extrapolate(px, py, x_order, y_order, nx - 2, 0, x[nx - 1], y[0], False, False)
+                return self._extrapolate(px, py, order_x, order_y, nx - 2, 0, x[nx - 1], y[0], False, False)
             elif iy == ny - 1:
-                return self._extrapolate(px, py, x_order, y_order, nx - 2, ny - 2, x[nx - 1], y[ny - 1], False, False)
+                return self._extrapolate(px, py, order_x, order_y, nx - 2, ny - 2, x[nx - 1], y[ny - 1], False, False)
 
         # value is outside of permitted limits
         min_range_x = x[0] - self._extrapolation_range
@@ -223,7 +223,7 @@ cdef class _Interpolate2DBase(Function2D):
         raise ValueError("The specified value (x={}, y={}) is outside the range of the supplied data and/or extrapolation range: "
                          "x bounds=({}, {}), y bounds=({}, {})".format(px, py, min_range_x, max_range_x, min_range_y, max_range_y))
 
-    cdef double _evaluate(self, double px, double py, int x_order, int y_order, int ix, int iy) except? -1e999:
+    cdef double _evaluate(self, double px, double py, int order_x, int order_y, int ix, int iy) except? -1e999:
         """
         Evaluate the interpolating function which is valid in the area given
         by 'ix' and 'iy' at any position ('px', 'py').
@@ -234,7 +234,7 @@ cdef class _Interpolate2DBase(Function2D):
         """
         raise NotImplementedError("This abstract method has not been implemented yet.")
 
-    cdef double _extrapolate(self, double px, double py, int x_order, int y_order, int ix, int iy,
+    cdef double _extrapolate(self, double px, double py, int order_x, int order_y, int ix, int iy,
                              double nearest_px, double nearest_py, bint inside_x, bint inside_y) except? -1e999:
         """
         Extrapolate the interpolation function valid on area given by
@@ -242,8 +242,8 @@ cdef class _Interpolate2DBase(Function2D):
         
         :param px: Requested x coord.
         :param py: Requested y coord.
-        :param x_order: Derivative order along x.
-        :param y_order: Derivative order along y.
+        :param order_x: Derivative order along x.
+        :param order_y: Derivative order along y.
         :param ix: Lower x index of closest array bin.
         :param iy: Lower y index of closest array bin.
         :param nearest_px: Closest x coordinate inside interpolation domain.
@@ -254,18 +254,18 @@ cdef class _Interpolate2DBase(Function2D):
         """
 
         if self._extrapolation_type == EXT_NEAREST:
-            return self._extrapol_nearest(px, py, x_order, y_order, ix, iy, nearest_px, nearest_py, inside_x, inside_y)
+            return self._extrapol_nearest(px, py, order_x, order_y, ix, iy, nearest_px, nearest_py, inside_x, inside_y)
 
         elif self._extrapolation_type == EXT_LINEAR:
-            return self._extrapol_linear(px, py, x_order, y_order, ix, iy, nearest_px, nearest_py)
+            return self._extrapol_linear(px, py, order_x, order_y, ix, iy, nearest_px, nearest_py, inside_x, inside_y)
 
         elif self._extrapolation_type == EXT_QUADRATIC:
-            return self._extrapol_quadratic(px, py, x_order, y_order, ix, iy, nearest_px, nearest_py)
+            return self._extrapol_quadratic(px, py, order_x, order_y, ix, iy, nearest_px, nearest_py, inside_x, inside_y)
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
     @cython.initializedcheck(False)
-    cdef double _extrapol_nearest(self, double px, double py, int x_order, int y_order, int ix, int iy, double nearest_px, double nearest_py, bint inside_x, bint inside_y) except? -1e999:
+    cdef double _extrapol_nearest(self, double px, double py, int order_x, int order_y, int ix, int iy, double nearest_px, double nearest_py, bint inside_x, bint inside_y) except? -1e999:
         """
         Extrapolate using the nearest point of the domain.
         """
@@ -281,7 +281,7 @@ cdef class _Interpolate2DBase(Function2D):
         ny = y.shape[0]
 
         # f(x,y)
-        if x_order == 0 and y_order == 0:
+        if order_x == 0 and order_y == 0:
             return self._evaluate(nearest_px, nearest_py, 0, 0, ix, iy)
 
         # derivatives
@@ -289,22 +289,22 @@ cdef class _Interpolate2DBase(Function2D):
         # mid sections that mirror the profile of the closest edge of the domain
         if inside_x:
 
-            if y_order > 0:
+            if order_y > 0:
                 return 0.0
-            return self._evaluate(nearest_px, nearest_py, x_order, 0, ix, iy)
+            return self._evaluate(nearest_px, nearest_py, order_x, 0, ix, iy)
 
         elif inside_y:
 
-            if x_order > 0:
+            if order_x > 0:
                 return 0.0
-            return self._evaluate(nearest_px, nearest_py, 0, y_order, ix, iy)
+            return self._evaluate(nearest_px, nearest_py, 0, order_y, ix, iy)
 
         else:
 
             # corner
             return 0.0
 
-    cdef double _extrapol_linear(self, double px, double py, int x_order, int y_order, int ix, int iy, double nearest_px, double nearest_py) except? -1e999:
+    cdef double _extrapol_linear(self, double px, double py, int order_x, int order_y, int ix, int iy, double nearest_px, double nearest_py, bint inside_x, bint inside_y) except? -1e999:
         """
         Extrapolate linearly the interpolation function valid on area given by
         'ix' and 'iy' to position ('px', 'py').
@@ -317,7 +317,7 @@ cdef class _Interpolate2DBase(Function2D):
         """
         raise NotImplementedError("There is no linear extrapolation available for this interpolation.")
 
-    cdef double _extrapol_quadratic(self, double px, double py, int x_order, int y_order, int ix, int iy, double nearest_px, double nearest_py) except? -1e999:
+    cdef double _extrapol_quadratic(self, double px, double py, int order_x, int order_y, int ix, int iy, double nearest_px, double nearest_py, bint inside_x, bint inside_y) except? -1e999:
         """
         Extrapolate quadratically the interpolation function valid on area given by
         'ix' and 'iy' to position ('px', 'py').
@@ -405,7 +405,7 @@ cdef class Interpolate2DLinear(_Interpolate2DBase):
     @cython.boundscheck(False)
     @cython.wraparound(False)
     @cython.initializedcheck(False)
-    cdef double _evaluate(self, double px, double py, int x_order, int y_order, int ix, int iy) except? -1e999:
+    cdef double _evaluate(self, double px, double py, int order_x, int order_y, int ix, int iy) except? -1e999:
         """
         Evaluate the interpolating function which is valid in the area given
         by 'ix' and 'iy' at any position ('px', 'py').
@@ -423,33 +423,33 @@ cdef class Interpolate2DLinear(_Interpolate2DBase):
         y = self._wy
         f = self._wf
 
-        if x_order == 0:
+        if order_x == 0:
 
             # f(x, y)
-            if y_order == 0:
+            if order_y == 0:
 
                 t0 = lerp(x[ix], x[ix+1], f[ix, iy],   f[ix+1, iy],   px)
                 t1 = lerp(x[ix], x[ix+1], f[ix, iy+1], f[ix+1, iy+1], px)
                 return lerp(y[iy], y[iy+1], t0, t1, py)
 
             # df(x, y) / dy
-            elif y_order == 1:
+            elif order_y == 1:
 
                 t0 = (f[ix, iy+1] - f[ix, iy]) / (y[iy+1] - y[iy])
                 t1 = (f[ix+1, iy+1] - f[ix+1, iy]) / (y[iy+1] - y[iy])
                 return lerp(x[ix], x[ix+1], t0, t1, px)
 
-        elif x_order == 1:
+        elif order_x == 1:
 
             # df(x, y) / dx
-            if y_order == 0:
+            if order_y == 0:
 
                 t0 = (f[ix+1, iy] - f[ix, iy]) / (x[ix+1] - x[ix])
                 t1 = (f[ix+1, iy+1] - f[ix, iy+1]) / (x[ix+1] - x[ix])
                 return lerp(y[iy], y[iy+1], t0, t1, py)
 
             # d2f(x, y) / dxdy
-            elif y_order == 1:
+            elif order_y == 1:
 
                 t0 = self._evaluate(px, y[iy], 1, 0, ix, iy)
                 t1 = self._evaluate(px, y[iy+1], 1, 0, ix, iy)
@@ -458,7 +458,7 @@ cdef class Interpolate2DLinear(_Interpolate2DBase):
         # higher order derivatives
         return 0
 
-    cdef double _extrapol_linear(self, double px, double py, int x_order, int y_order, int ix, int iy, double nearest_px, double nearest_py) except? -1e999:
+    cdef double _extrapol_linear(self, double px, double py, int order_x, int order_y, int ix, int iy, double nearest_px, double nearest_py, bint inside_x, bint inside_y) except? -1e999:
         """
         Extrapolate linearly the interpolation function valid on area given by
         'ix' and 'iy' to position ('px', 'py').
@@ -470,7 +470,7 @@ cdef class Interpolate2DLinear(_Interpolate2DBase):
         :return: the extrapolated value
         """
 
-        return self._evaluate(px, py, x_order, y_order, ix, iy)
+        return self._evaluate(px, py, order_x, order_y, ix, iy)
 
 
 cdef class Interpolate2DCubic(_Interpolate2DBase):
@@ -612,7 +612,7 @@ cdef class Interpolate2DCubic(_Interpolate2DBase):
     @cython.boundscheck(False)
     @cython.wraparound(False)
     @cython.initializedcheck(False)
-    cdef double _evaluate(self, double px, double py, int x_order, int y_order, int ix, int iy) except? -1e999:
+    cdef double _evaluate(self, double px, double py, int order_x, int order_y, int ix, int iy) except? -1e999:
         """
         Evaluate the interpolating function which is valid in the area given
         by 'ix' and 'iy' at any position ('px', 'py').
@@ -633,10 +633,10 @@ cdef class Interpolate2DCubic(_Interpolate2DBase):
             self._calc_polynomial(ix, iy)
 
 
-        if x_order == 0:
+        if order_x == 0:
 
             # f(x,y)
-            if y_order == 0:
+            if order_y == 0:
 
                 px2 = px*px
                 px3 = px2*px
@@ -648,7 +648,7 @@ cdef class Interpolate2DCubic(_Interpolate2DBase):
                        px3*(k[ix, iy, 12] + k[ix, iy, 13]*py + k[ix, iy, 14]*py2 + k[ix, iy, 15]*py3)
 
             # df(x,y) / dy
-            if y_order == 1:
+            if order_y == 1:
 
                 px2 = px*px
                 px3 = px2*px
@@ -659,7 +659,7 @@ cdef class Interpolate2DCubic(_Interpolate2DBase):
                        px3*(k[ix, iy, 13] + 2 * k[ix, iy, 14]*py + 3 * k[ix, iy, 15]*py2)
 
             # d2f(x,y) / dy2
-            elif y_order == 2:
+            elif order_y == 2:
 
                 px2 = px*px
                 px3 = px2*px
@@ -669,7 +669,7 @@ cdef class Interpolate2DCubic(_Interpolate2DBase):
                        px3*(2 * k[ix, iy, 14] + 6 * k[ix, iy, 15]*py)
 
             # d3f(x,y) / dy3
-            elif y_order == 3:
+            elif order_y == 3:
 
                 px2 = px*px
                 px3 = px2*px
@@ -678,10 +678,10 @@ cdef class Interpolate2DCubic(_Interpolate2DBase):
                        px2*(6 * k[ix, iy, 11]) + \
                        px3*(6 * k[ix, iy, 15])
 
-        elif x_order == 1:
+        elif order_x == 1:
 
             # df(x,y) / dx
-            if y_order == 0:
+            if order_y == 0:
 
                 px2 = px*px
                 py2 = py*py
@@ -691,7 +691,7 @@ cdef class Interpolate2DCubic(_Interpolate2DBase):
                        px2 * 3 *(k[ix, iy, 12] + k[ix, iy, 13]*py + k[ix, iy, 14]*py2 + k[ix, iy, 15]*py3)
 
             # d2f(x,y) / dxdy
-            elif y_order == 1:
+            elif order_y == 1:
 
                 px2 = px*px
                 py2 = py*py
@@ -700,7 +700,7 @@ cdef class Interpolate2DCubic(_Interpolate2DBase):
                        px2 * 3 *(k[ix, iy, 13] + 2 * k[ix, iy, 14]*py + 3 * k[ix, iy, 15]*py2)
 
             # d3f(x,y) / dxdy2
-            elif y_order == 2:
+            elif order_y == 2:
 
                 px2 = px*px
                 return          (2 * k[ix, iy,  6] + 6 * k[ix, iy,  7]*py) + \
@@ -708,15 +708,15 @@ cdef class Interpolate2DCubic(_Interpolate2DBase):
                        px2 * 3 *(2 * k[ix, iy, 14] + 6 * k[ix, iy, 15]*py)
 
             # d4f(x,y) / dxdy3
-            elif y_order == 3:
+            elif order_y == 3:
 
                 px2 = px*px
                 return (6 * k[ix, iy,  7]) + px  * 2 *(6 * k[ix, iy, 11]) + px2 * 3 *(6 * k[ix, iy, 15])
 
-        elif x_order == 2:
+        elif order_x == 2:
 
             # d2f(x,y) / dx2
-            if y_order == 0:
+            if order_y == 0:
 
                 py2 = py*py
                 py3 = py2*py
@@ -724,43 +724,43 @@ cdef class Interpolate2DCubic(_Interpolate2DBase):
                        px * 6 * (k[ix, iy, 12] + k[ix, iy, 13]*py + k[ix, iy, 14]*py2 + k[ix, iy, 15]*py3)
 
             # d3f(x,y) / dx2dy
-            elif y_order == 1:
+            elif order_y == 1:
 
                 py2 = py*py
                 return      2 * (k[ix, iy,  9] + 2 * k[ix, iy, 10]*py + 3 * k[ix, iy, 11]*py2) + \
                        px * 6 * (k[ix, iy, 13] + 2 * k[ix, iy, 14]*py + 3 * k[ix, iy, 15]*py2)
 
             # d4f(x,y) / dx2dy2
-            elif y_order == 2:
+            elif order_y == 2:
 
                 return      2 * (2 * k[ix, iy, 10] + 6 * k[ix, iy, 11]*py) + \
                        px * 6 * (2 * k[ix, iy, 14] + 6 * k[ix, iy, 15]*py)
 
             # d5f(x,y) / dx2dy3
-            elif y_order == 3:
+            elif order_y == 3:
                 return 2 * 6 * k[ix, iy, 11] + px * 6 * 6 * k[ix, iy, 15]
 
-        elif x_order == 3:
+        elif order_x == 3:
 
             # d3f(x,y) / dx3
-            if y_order == 0:
+            if order_y == 0:
 
                 py2 = py*py
                 py3 = py2*py
                 return 6 * (k[ix, iy, 12] + k[ix, iy, 13]*py + k[ix, iy, 14]*py2 + k[ix, iy, 15]*py3)
 
             # d4f(x,y) / dx3dy
-            elif y_order == 1:
+            elif order_y == 1:
 
                 py2 = py*py
                 return 6 * (k[ix, iy, 13] + 2 * k[ix, iy, 14]*py + 3 * k[ix, iy, 15]*py2)
 
             # d5f(x,y) / dx3dy2
-            elif y_order == 2:
+            elif order_y == 2:
                 return 6 * (2 * k[ix, iy, 14] + 6 * k[ix, iy, 15]*py)
 
             # d6f(x,y) / dx3dy3
-            elif y_order == 3:
+            elif order_y == 3:
                 return 6 * 6 * k[ix, iy, 15]
 
         # higher orders
@@ -896,7 +896,7 @@ cdef class Interpolate2DCubic(_Interpolate2DBase):
     @cython.boundscheck(False)
     @cython.wraparound(False)
     @cython.initializedcheck(False)
-    cdef double _extrapol_linear(self, double px, double py, int x_order, int y_order, int ix, int iy, double rx, double ry) except? -1e999:
+    cdef double _extrapol_linear(self, double px, double py, int order_x, int order_y, int ix, int iy, double rx, double ry, bint inside_x, bint inside_y) except? -1e999:
         """
         Extrapolate linearly the interpolation function valid on area given by
         'ix' and 'iy' to position ('px', 'py').
@@ -913,41 +913,46 @@ cdef class Interpolate2DCubic(_Interpolate2DBase):
 
         k = self._k
 
-        if x_order == 0 and y_order == 0:
+        # calculate extrapolation distances from end of array
+        # TODO: RAGE!!!! this is not what these are ry = py if within range!!! ie disable extrapolation switch to using the inside_x and inside_y flags
 
-            # calculate extrapolation distances from end of array
-            ex = px - rx
-            ey = py - ry
+        ex = px - rx
+        ey = py - ry
 
-            nx = rx
-            nx2 = nx*nx
-            nx3 = nx2*nx
+        if order_x == 0:
 
-            ny = ry
-            ny2 = ny*ny
-            ny3 = ny2*ny
+            # f(x,y)
+            if order_y == 0:
 
-            result = self._evaluate(nx, ny, 0, 0, ix, iy)
-            if ex != 0.:
-                result += ex * (       (k[ix, iy,  4] + k[ix, iy,  5]*ny + k[ix, iy,  6]*ny2 + k[ix, iy,  7]*ny3) + \
-                                2.*nx *(k[ix, iy,  8] + k[ix, iy,  9]*ny + k[ix, iy, 10]*ny2 + k[ix, iy, 11]*ny3) + \
-                                3.*nx2*(k[ix, iy, 12] + k[ix, iy, 13]*ny + k[ix, iy, 14]*ny2 + k[ix, iy, 15]*ny3))
+                nx = rx
+                nx2 = nx*nx
+                nx3 = nx2*nx
 
-            if ey != 0.:
-                result += ey * (    (k[ix, iy,  1] + 2.*k[ix, iy,  2]*ny + 3.*k[ix, iy,  3]*ny2) + \
-                                nx *(k[ix, iy,  5] + 2.*k[ix, iy,  6]*ny + 3.*k[ix, iy,  7]*ny2) + \
-                                nx2*(k[ix, iy,  9] + 2.*k[ix, iy, 10]*ny + 3.*k[ix, iy, 11]*ny2) + \
-                                nx3*(k[ix, iy, 13] + 2.*k[ix, iy, 14]*ny + 3.*k[ix, iy, 15]*ny2))
+                ny = ry
+                ny2 = ny*ny
+                ny3 = ny2*ny
 
-            return result
+                result = self._evaluate(nx, ny, 0, 0, ix, iy)
+                if ex != 0.:
+                    result += ex * (       (k[ix, iy,  4] + k[ix, iy,  5]*ny + k[ix, iy,  6]*ny2 + k[ix, iy,  7]*ny3) + \
+                                    2 *nx *(k[ix, iy,  8] + k[ix, iy,  9]*ny + k[ix, iy, 10]*ny2 + k[ix, iy, 11]*ny3) + \
+                                    3 *nx2*(k[ix, iy, 12] + k[ix, iy, 13]*ny + k[ix, iy, 14]*ny2 + k[ix, iy, 15]*ny3))
 
-        raise NotImplementedError('Derivative of x order {} and y order {} is not implemented.'.format(x_order, y_order))
+                if ey != 0.:
+                    result += ey * (    (k[ix, iy,  1] + 2.*k[ix, iy,  2]*ny + 3.*k[ix, iy,  3]*ny2) + \
+                                    nx *(k[ix, iy,  5] + 2.*k[ix, iy,  6]*ny + 3.*k[ix, iy,  7]*ny2) + \
+                                    nx2*(k[ix, iy,  9] + 2.*k[ix, iy, 10]*ny + 3.*k[ix, iy, 11]*ny2) + \
+                                    nx3*(k[ix, iy, 13] + 2.*k[ix, iy, 14]*ny + 3.*k[ix, iy, 15]*ny2))
+
+                return result
+
+        raise NotImplementedError('Derivative of x order {} and y order {} is not implemented.'.format(order_x, order_y))
 
     @cython.cdivision(True)
     @cython.boundscheck(False)
     @cython.wraparound(False)
     @cython.initializedcheck(False)
-    cdef double _extrapol_quadratic(self, double px, double py, int x_order, int y_order, int ix, int iy, double rx, double ry) except? -1e999:
+    cdef double _extrapol_quadratic(self, double px, double py, int order_x, int order_y, int ix, int iy, double rx, double ry, bint inside_x, bint inside_y) except? -1e999:
         """
         Extrapolate quadratically the interpolation function valid on area given by
         'ix' and 'iy' to position ('px', 'py').
@@ -964,7 +969,7 @@ cdef class Interpolate2DCubic(_Interpolate2DBase):
 
         k = self._k
 
-        if x_order == 0 and y_order == 0:
+        if order_x == 0 and order_y == 0:
 
             ex = px - rx
             ey = py - ry
@@ -1004,7 +1009,7 @@ cdef class Interpolate2DCubic(_Interpolate2DBase):
 
             return result
 
-        raise NotImplementedError('Derivative of x order {} and y order {} is not implemented.'.format(x_order, y_order))
+        raise NotImplementedError('Derivative of x order {} and y order {} is not implemented.'.format(order_x, order_y))
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
