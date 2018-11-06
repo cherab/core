@@ -405,6 +405,7 @@ cdef class Interpolate2DLinear(_Interpolate2DBase):
     @cython.boundscheck(False)
     @cython.wraparound(False)
     @cython.initializedcheck(False)
+    @cython.cdivision(True)
     cdef double _evaluate(self, double px, double py, int order_x, int order_y, int ix, int iy) except? -1e999:
         """
         Evaluate the interpolating function which is valid in the area given
@@ -768,6 +769,7 @@ cdef class Interpolate2DCubic(_Interpolate2DBase):
     @cython.boundscheck(False)
     @cython.wraparound(False)
     @cython.initializedcheck(False)
+    @cython.cdivision(True)
     cdef int _calc_polynomial(self, int ix, int iy) except -1:
         """
         Calculates and caches the polynomial coefficients for area given by
@@ -977,11 +979,11 @@ cdef class Interpolate2DCubic(_Interpolate2DBase):
                     return self._evaluate(rx, ry, 0, 1, ix, iy) + ex * self._evaluate(rx, ry, 1, 1, ix, iy)
 
                 # d2f(x,y)/dy
-                if order_y == 2:
+                elif order_y == 2:
                     return self._evaluate(rx, ry, 0, 2, ix, iy) + ex * self._evaluate(rx, ry, 1, 2, ix, iy)
 
                 # d3f(x,y)/dy
-                if order_y == 3:
+                elif order_y == 3:
                     return self._evaluate(rx, ry, 0, 3, ix, iy) + ex * self._evaluate(rx, ry, 1, 3, ix, iy)
 
             elif order_x == 1:
