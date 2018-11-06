@@ -456,7 +456,7 @@ cdef class Interpolate2DLinear(_Interpolate2DBase):
                 return (t1 - t0) / (y[iy+1] - y[iy])
 
         # higher order derivatives
-        return 0
+        return 0.0
 
     cdef double _extrapol_linear(self, double px, double py, int order_x, int order_y, int ix, int iy, double nearest_px, double nearest_py, bint inside_x, bint inside_y) except? -1e999:
         """
@@ -631,7 +631,6 @@ cdef class Interpolate2DCubic(_Interpolate2DBase):
         # If the concerned polynomial has not yet been calculated:
         if not self._available[ix, iy]:
             self._calc_polynomial(ix, iy)
-
 
         if order_x == 0:
 
@@ -907,11 +906,7 @@ cdef class Interpolate2DCubic(_Interpolate2DBase):
         :return: the extrapolated value
         """
 
-        cdef:
-            double ex, ey, nx, nx2, nx3, ny, ny2, ny3, result
-            double[:,:,::1] k
-
-        k = self._k
+        cdef double ex, ey, result
 
         # calculate extrapolation distances from end of array
         ex = px - rx
@@ -989,7 +984,7 @@ cdef class Interpolate2DCubic(_Interpolate2DBase):
                 if order_y == 3:
                     return self._evaluate(rx, ry, 0, 3, ix, iy) + ex * self._evaluate(rx, ry, 1, 3, ix, iy)
 
-            if order_x == 1:
+            elif order_x == 1:
 
                 # df(x,y)/dx
                 if order_y == 0:
@@ -1027,7 +1022,6 @@ cdef class Interpolate2DCubic(_Interpolate2DBase):
             # higher orders
             return 0.0
 
-
         raise RuntimeError('Extrapolation routine called for point in the interpolation domain.')
 
     @cython.cdivision(True)
@@ -1045,53 +1039,191 @@ cdef class Interpolate2DCubic(_Interpolate2DBase):
         :return: the extrapolated value
         """
 
-        cdef:
-            double ex, ey, nx, nx2, nx3, ny, ny2, ny3, result
-            double[:,:,::1] k
+        cdef double ex, ey, result
 
-        k = self._k
+        # calculate extrapolation distances from end of array
+        ex = px - rx
+        ey = py - ry
 
+        # f(x,y)
         if order_x == 0 and order_y == 0:
 
-            ex = px - rx
-            ey = py - ry
-
-            nx = rx
-            nx2 = nx*nx
-            nx3 = nx2*nx
-
-            ny = ry
-            ny2 = ny*ny
-            ny3 = ny2*ny
-
-            result = self._evaluate(nx, ny, 0, 0, ix, iy)
+            result = self._evaluate(rx, ry, 0, 0, ix, iy)
             if not inside_x:
-                result += ex * (       (k[ix, iy,  4] + k[ix, iy,  5]*ny + k[ix, iy,  6]*ny2 + k[ix, iy,  7]*ny3) + \
-                                2.*nx *(k[ix, iy,  8] + k[ix, iy,  9]*ny + k[ix, iy, 10]*ny2 + k[ix, iy, 11]*ny3) + \
-                                3.*nx2*(k[ix, iy, 12] + k[ix, iy, 13]*ny + k[ix, iy, 14]*ny2 + k[ix, iy, 15]*ny3))
-
-                result += ex*ex*0.5 * (2.   *(k[ix, iy,  8] + k[ix, iy,  9]*ny + k[ix, iy, 10]*ny2 + k[ix, iy, 11]*ny3) + \
-                                       6.*nx*(k[ix, iy, 12] + k[ix, iy, 13]*ny + k[ix, iy, 14]*ny2 + k[ix, iy, 15]*ny3))
+                result += ex * self._evaluate(rx, ry, 1, 0, ix, iy)
+                result += 0.5 * ex*ex * self._evaluate(rx, ry, 2, 0, ix, iy)
 
             if not inside_y:
-                result += ey * (    (k[ix, iy,  1] + 2.*k[ix, iy,  2]*ny + 3.*k[ix, iy,  3]*ny2) + \
-                                nx *(k[ix, iy,  5] + 2.*k[ix, iy,  6]*ny + 3.*k[ix, iy,  7]*ny2) + \
-                                nx2*(k[ix, iy,  9] + 2.*k[ix, iy, 10]*ny + 3.*k[ix, iy, 11]*ny2) + \
-                                nx3*(k[ix, iy, 13] + 2.*k[ix, iy, 14]*ny + 3.*k[ix, iy, 15]*ny2))
-
-                result += ey*ey*0.5 * (    (2.*k[ix, iy,  2] + 6.*k[ix, iy,  3]*ny) + \
-                                       nx *(2.*k[ix, iy,  6] + 6.*k[ix, iy,  7]*ny) + \
-                                       nx2*(2.*k[ix, iy, 10] + 6.*k[ix, iy, 11]*ny) + \
-                                       nx3*(2.*k[ix, iy, 14] + 6.*k[ix, iy, 15]*ny))
+                result += ey * self._evaluate(rx, ry, 0, 1, ix, iy)
+                result += 0.5 * ey*ey * self._evaluate(rx, ry, 0, 2, ix, iy)
 
             if not inside_x and not inside_y:
-                result += ex*ey * (       (k[ix, iy,  5] + 2.*k[ix, iy,  6]*ny + 3.*k[ix, iy,  7]*ny2) + \
-                                   2.*nx *(k[ix, iy,  9] + 2.*k[ix, iy, 10]*ny + 3.*k[ix, iy, 11]*ny2) + \
-                                   3.*nx2*(k[ix, iy, 13] + 2.*k[ix, iy, 14]*ny + 3.*k[ix, iy, 15]*ny2))
+                result += ex*ey * self._evaluate(rx, ry, 1, 1, ix, iy)
 
             return result
 
-        raise NotImplementedError('Derivative of x order {} and y order {} is not implemented.'.format(order_x, order_y))
+        # handle each domain separately
+        if inside_x and not inside_y:
+
+            if order_x == 0:
+
+                # df(x,y)/dy
+                if order_y == 1:
+                    return self._evaluate(rx, ry, 0, 1, ix, iy) + ey * self._evaluate(rx, ry, 0, 2, ix, iy)
+
+                # d2f(x,y)/dy2
+                elif order_y == 2:
+                    return self._evaluate(rx, ry, 0, 2, ix, iy)
+
+            elif order_x == 1:
+
+                # df(x,y)/dx
+                if order_y == 0:
+                    return self._evaluate(rx, ry, 1, 0, ix, iy) \
+                           + ey * self._evaluate(rx, ry, 1, 1, ix, iy) \
+                           + 0.5 * ey*ey * self._evaluate(rx, ry, 1, 2, ix, iy)
+
+                # d2f(x,y)/dxdy
+                elif order_y == 1:
+                    return self._evaluate(rx, ry, 1, 1, ix, iy) + ey * self._evaluate(rx, ry, 1, 2, ix, iy)
+
+                # d3f(x,y)/dxdy2
+                elif order_y == 2:
+                    return self._evaluate(rx, ry, 1, 2, ix, iy)
+
+            elif order_x == 2:
+
+                # d2f(x,y)/dx2
+                if order_y == 0:
+                    return self._evaluate(rx, ry, 2, 0, ix, iy) \
+                           + ey * self._evaluate(rx, ry, 2, 1, ix, iy) \
+                           + 0.5 * ey*ey * self._evaluate(rx, ry, 2, 2, ix, iy)
+
+                # d3f(x,y)/dx2dy
+                elif order_y == 1:
+                    return self._evaluate(rx, ry, 2, 1, ix, iy) + ey * self._evaluate(rx, ry, 2, 2, ix, iy)
+
+                # d4f(x,y)/dx2dy2
+                elif order_y == 2:
+                    return self._evaluate(rx, ry, 2, 2, ix, iy)
+
+            elif order_x == 3:
+
+                # d3f(x,y)/dx3
+                if order_y == 0:
+                    return self._evaluate(rx, ry, 3, 0, ix, iy) \
+                           + ey * self._evaluate(rx, ry, 3, 1, ix, iy) \
+                           + 0.5 * ey*ey * self._evaluate(rx, ry, 3, 2, ix, iy)
+
+                # d4f(x,y)/dx3dy
+                elif order_y == 1:
+                    return self._evaluate(rx, ry, 3, 1, ix, iy) + ey * self._evaluate(rx, ry, 3, 2, ix, iy)
+
+                # d5f(x,y)/dx3dy2
+                elif order_y == 2:
+                    return self._evaluate(rx, ry, 3, 2, ix, iy)
+
+            # higher orders
+            return 0.0
+
+        elif not inside_x and inside_y:
+
+            if order_x == 0:
+
+                # df(x,y)/dy
+                if order_y == 1:
+                    return self._evaluate(rx, ry, 0, 1, ix, iy) \
+                           + ex * self._evaluate(rx, ry, 1, 1, ix, iy) \
+                           + 0.5 * ex*ex * self._evaluate(rx, ry, 2, 1, ix, iy)
+
+                # d2f(x,y)/dy2
+                elif order_y == 2:
+                    return self._evaluate(rx, ry, 0, 2, ix, iy) \
+                           + ex * self._evaluate(rx, ry, 1, 2, ix, iy) \
+                           + 0.5 * ex*ex * self._evaluate(rx, ry, 2, 2, ix, iy)
+
+
+                # d3f(x,y)/dy3
+                elif order_y == 3:
+                    return self._evaluate(rx, ry, 0, 3, ix, iy) \
+                           + ex * self._evaluate(rx, ry, 1, 3, ix, iy) \
+                           + 0.5 * ex*ex * self._evaluate(rx, ry, 2, 3, ix, iy)
+
+            elif order_x == 1:
+
+                # df(x,y)/dx
+                if order_y == 0:
+                    return self._evaluate(rx, ry, 1, 0, ix, iy) + ex * self._evaluate(rx, ry, 2, 0, ix, iy)
+
+                # d2f(x,y)/dxdy
+                elif order_y == 1:
+                    return self._evaluate(rx, ry, 1, 1, ix, iy) + ex * self._evaluate(rx, ry, 2, 1, ix, iy)
+
+                # d3f(x,y)/dxdy2
+                elif order_y == 2:
+                    return self._evaluate(rx, ry, 1, 2, ix, iy) + ex * self._evaluate(rx, ry, 2, 2, ix, iy)
+
+                # d4f(x,y)/dxdy3
+                elif order_y == 3:
+                    return self._evaluate(rx, ry, 1, 3, ix, iy) + ex * self._evaluate(rx, ry, 2, 3, ix, iy)
+
+            elif order_x == 2:
+
+                # d2f(x,y)/dx2
+                if order_y == 0:
+                    return self._evaluate(rx, ry, 2, 0, ix, iy)
+
+                # d3f(x,y)/dx2dy
+                elif order_y == 1:
+                    return self._evaluate(rx, ry, 2, 1, ix, iy)
+
+                # d4f(x,y)/dx2dy2
+                elif order_y == 2:
+                    return self._evaluate(rx, ry, 2, 2, ix, iy)
+
+                # d5f(x,y)/dx2dy3
+                elif order_y == 3:
+                    return self._evaluate(rx, ry, 2, 3, ix, iy)
+
+            # higher orders
+            return 0.0
+
+        elif not inside_x and not inside_y:
+
+            if order_x == 0:
+
+                # df(x,y)/dy
+                if order_y == 1:
+                    return self._evaluate(rx, ry, 0, 1, ix, iy) \
+                           + ey * self._evaluate(rx, ry, 0, 2, ix, iy) \
+                           + ex * self._evaluate(rx, ry, 1, 1, ix, iy)
+
+                # d2f(x,y)/dy2
+                elif order_y == 2:
+                    return self._evaluate(rx, ry, 0, 2, ix, iy)
+
+            elif order_x == 1:
+
+                # df(x,y)/dx
+                if order_y == 0:
+                    return self._evaluate(rx, ry, 1, 0, ix, iy) \
+                           + ex * self._evaluate(rx, ry, 2, 0, ix, iy) \
+                           + ey * self._evaluate(rx, ry, 1, 1, ix, iy)
+
+                # d2f(x,y)/dxdy
+                elif order_y == 1:
+                    return self._evaluate(rx, ry, 1, 1, ix, iy)
+
+            elif order_x == 2:
+
+                # d2f(x,y)/dx2
+                if order_y == 0:
+                    return self._evaluate(rx, ry, 2, 0, ix, iy)
+
+            # higher orders
+            return 0.0
+
+        raise RuntimeError('Extrapolation routine called for point in the interpolation domain.')
 
     @cython.boundscheck(False)
     @cython.wraparound(False)

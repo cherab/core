@@ -835,13 +835,13 @@ class TestInterpolators2D(unittest.TestCase):
                         print(x, y, x_order, y_order, r, v, abs(r - v))
 
                         # skip small values that suffer from numerical sampling accuracy issues
-                        if abs(v) < 1e-4:
+                        if abs(v) < 1e-6 * 10**max(x_order, y_order):
                             continue
 
                         if abs(r) < 1e-9:
                             r = 0.0
 
-                        self.assertAlmostEqual(r, v, delta=1e-3 * abs(v))
+                        self.assertAlmostEqual(r, v, delta=1e-2 * abs(v))
 
     def interpolate_2d_xboundaries_assert(self, inf, sup, epsilon, y):
         with self.assertRaises(ValueError):
