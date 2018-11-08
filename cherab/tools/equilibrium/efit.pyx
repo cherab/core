@@ -30,7 +30,6 @@ from cherab.core.math cimport IsoMapper2D, AxisymmetricMapper
 from cherab.core.math cimport Blend2D, Constant2D
 
 
-# todo: decide if a load and save routine that stores as json (for now)?
 cdef class EFITEquilibrium:
     """
     An object representing an EFIT equilibrium time-slice.
@@ -47,10 +46,13 @@ cdef class EFITEquilibrium:
     :param float psi_axis: The psi value at the magnetic axis.
     :param float psi_lcfs: The psi value at the LCFS.
     :param Point2D magnetic_axis: The coordinates of the magnetic axis.
+    :param Point2D x_points: The list of x-points.
+    :param Point2D x_points: The list of strike-points.
     :param f_profile: The current flux profile on psin (2xN array).
     :param float b_vacuum_radius: Vacuum B-field reference radius (in meters).
     :param float b_vacuum_magnitude: Vacuum B-Field magnitude at the reference radius.
-    :param lcfs_polygon: An 2xN array of [[x0, ...], [y0, ...]] vertices specifying the LCFS boundary.
+    :param lcfs_polygon: A 2xN array of [[x0, ...], [y0, ...]] vertices specifying the LCFS boundary.
+    :param limiter_polygon: A 2xN array of [[x0, ...], [y0, ...]] vertices specifying the limiter.
     :param float time: The time stamp of the time-slice (in seconds).
     """
 
@@ -59,18 +61,21 @@ cdef class EFITEquilibrium:
         readonly double psi_axis, psi_lcfs
         readonly tuple r_range, z_range
         readonly Point2D magnetic_axis
+        readonly tuple x_points, strike_points
         readonly VectorFunction2D b_field
-        readonly Function2D inside_lcfs
+        readonly Function2D inside_lcfs, inside_limiter
         readonly Function1D psin_to_r
         readonly double time
+        readonly np.ndarray lcfs_polygon, limiter_polygon
         readonly np.ndarray psi_data, r_data, z_data
         double _b_vacuum_magnitude, _b_vacuum_radius
         Function1D _f_profile
         Function2D _dpsidr, _dpsidz
 
     def __init__(self, object r, object z, object psi_grid, double psi_axis, double psi_lcfs,
-                 Point2D magnetic_axis not None, object f_profile, double b_vacuum_radius,
-                 double b_vacuum_magnitude, object lcfs_polygon, double time):
+                 Point2D magnetic_axis not None, object x_points, object strike_points,
+                 object f_profile, double b_vacuum_radius, double b_vacuum_magnitude,
+                 object lcfs_polygon, object limiter_polygon, double time):
 
         self.time = time
 
@@ -94,13 +99,15 @@ cdef class EFITEquilibrium:
         # store equilibrium attributes
         self.r_range = r.min(), r.max()
         self.z_range = z.min(), z.max()
-        self.magnetic_axis = magnetic_axis
         self._b_vacuum_magnitude = b_vacuum_magnitude
         self._b_vacuum_radius = b_vacuum_radius
         self._f_profile = Interpolate1DCubic(f_profile[0, :], f_profile[1, :])
 
-        # EFIT lcfs polygon
-        self.inside_lcfs = EFITLCFSMask(lcfs_polygon, self.psi_normalised)
+        # populate points
+        self._process_points(magnetic_axis, x_points, strike_points)
+
+        # populate polygons and inside/outside functions
+        self._process_polygons(lcfs_polygon, limiter_polygon, self.psi_normalised)
 
         # calculate b-field
         dpsi_dr, dpsi_dz = self._calculate_differentials(r, z, psi_grid)
@@ -108,6 +115,44 @@ cdef class EFITEquilibrium:
 
         # generate interpolator to map from psi normalised to outboard major radius
         self._generate_psin_to_r_mapping()
+
+    cpdef object _process_points(self, Point2D magnetic_axis, object x_points, object strike_points):
+
+        x_points = tuple(x_points)
+        strike_points = tuple(strike_points)
+
+        # validate x points and strike points
+        for point in x_points:
+            if not isinstance(point, Point2D):
+                raise TypeError('The list of x-points must contain only Point2D objects.')
+
+        for point in strike_points:
+            if not isinstance(point, Point2D):
+                raise TypeError('The list of strike-points must contain only Point2D objects.')
+
+        self.magnetic_axis = magnetic_axis
+        self.x_points = x_points
+        self.strike_points = strike_points
+
+    cpdef object _process_polygons(self, object lcfs_polygon, object limiter_polygon, Function2D psi_normalised):
+
+        # lcfs polygon
+        # polygon mask requires an Nx2 array and it must be c contiguous
+        # transposing simply swaps the indexing, so need to re-instance
+        lcfs_polygon = np.ascontiguousarray(lcfs_polygon.transpose())
+        self.lcfs_polygon = lcfs_polygon
+        self.inside_lcfs = EFITLCFSMask(lcfs_polygon, psi_normalised)
+
+        # limiter polygon
+        if limiter_polygon is None:
+            self.limiter_polygon = None
+            self.inside_limiter = None
+        else:
+            # polygon mask requires an Nx2 array and it must be c contiguous
+            # transposing simply swaps the indexing, so need to re-instance
+            limiter_polygon = np.ascontiguousarray(limiter_polygon.transpose())
+            self.limiter_polygon = limiter_polygon
+            self.inside_limiter = PolygonMask2D(limiter_polygon)
 
     cpdef tuple _calculate_differentials(self, np.ndarray r, np.ndarray z, np.ndarray psi_grid):
 
@@ -195,10 +240,7 @@ cdef class EFITLCFSMask(Function2D):
 
     def __init__(self, object lcfs_polygon, object psi_normalised):
 
-        # polygon mask requires an Nx2 array and it must be c contiguous
-        # transposing simply swaps the indexing, so need to re-instance
-        poly = np.ascontiguousarray(lcfs_polygon.transpose())
-        self._lcfs_polygon = PolygonMask2D(poly)
+        self._lcfs_polygon = PolygonMask2D(lcfs_polygon)
         self._psi_normalised = autowrap_function2d(psi_normalised)
 
     cdef double evaluate(self, double r, double z) except? -1e999:
