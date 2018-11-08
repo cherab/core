@@ -97,7 +97,7 @@ def plot_equilibrium(equilibrium, detail=False, resolution=0.025):
     print("Sampling psi...")
     r, z, psi_sampled = sample2d(eq.psi_normalised, (rmin, rmax, nr), (zmin, zmax, nz))
 
-    print("Plotting...")
+    print("Plotting summary...")
     _plot_summary(r, z, psi_sampled, eq.magnetic_axis, eq.limiter_polygon, eq.time)
 
     if detail:
