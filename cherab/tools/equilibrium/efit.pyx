@@ -63,6 +63,7 @@ cdef class EFITEquilibrium:
         readonly Function2D inside_lcfs
         readonly Function1D psin_to_r
         readonly double time
+        readonly np.ndarray psi_data, r_data, z_data
         double _b_vacuum_magnitude, _b_vacuum_radius
         Function1D _f_profile
         Function2D _dpsidr, _dpsidz
@@ -78,6 +79,11 @@ cdef class EFITEquilibrium:
         z = np.array(z, dtype=np.float64)
         psi = np.array(psi_grid, dtype=np.float64)
         f_profile = np.array(f_profile, dtype=np.float64)
+
+        # store raw data
+        self.r_data = r
+        self.z_data = z
+        self.psi_data = psi
 
         # interpolate poloidal flux grid data
         self.psi = Interpolate2DCubic(r, z, psi_grid)
@@ -97,7 +103,6 @@ cdef class EFITEquilibrium:
         self.inside_lcfs = EFITLCFSMask(lcfs_polygon, self.psi_normalised)
 
         # calculate b-field
-        # TODO: remove numerical differentials once interpolators support analytical differentiation
         dpsi_dr, dpsi_dz = self._calculate_differentials(r, z, psi_grid)
         self.b_field = EFITMagneticField(self.psi_normalised, dpsi_dr, dpsi_dz, self._f_profile, b_vacuum_radius, b_vacuum_magnitude, self.inside_lcfs)
 
