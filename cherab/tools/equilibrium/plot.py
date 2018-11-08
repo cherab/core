@@ -127,6 +127,8 @@ def plot_equilibrium(equilibrium, detail=False, resolution=0.025):
         plt.colorbar()
         plt.contour(r, z, np.transpose(psi_sampled), levels=[1.0])
         plt.title('Normalised Psi')
+        plt.xlabel("R (meters)")
+        plt.ylabel("Z (meters)")
 
         plt.figure()
         plt.axes(aspect='equal')
@@ -136,6 +138,8 @@ def plot_equilibrium(equilibrium, detail=False, resolution=0.025):
         plt.contour(r, z, np.transpose(bx), 25)
         plt.contour(r, z, np.transpose(psi_sampled), levels=[1.0])
         plt.title('Magnetic Field: X Component')
+        plt.xlabel("R (meters)")
+        plt.ylabel("Z (meters)")
 
         plt.figure()
         plt.axes(aspect='equal')
@@ -145,6 +149,8 @@ def plot_equilibrium(equilibrium, detail=False, resolution=0.025):
         plt.contour(r, z, np.transpose(by), 25)
         plt.contour(r, z, np.transpose(psi_sampled), levels=[1.0])
         plt.title('Magnetic Field: Y Component')
+        plt.xlabel("R (meters)")
+        plt.ylabel("Z (meters)")
 
         plt.figure()
         plt.axes(aspect='equal')
@@ -154,6 +160,8 @@ def plot_equilibrium(equilibrium, detail=False, resolution=0.025):
         plt.contour(r, z, np.transpose(bz), 25)
         plt.contour(r, z, np.transpose(psi_sampled), levels=[1.0])
         plt.title('Magnetic Field: Z Component')
+        plt.xlabel("R (meters)")
+        plt.ylabel("Z (meters)")
 
         plt.figure()
         plt.axes(aspect='equal')
@@ -163,6 +171,8 @@ def plot_equilibrium(equilibrium, detail=False, resolution=0.025):
         plt.contour(r, z, np.transpose(bmag), 25)
         plt.contour(r, z, np.transpose(psi_sampled), levels=[1.0])
         plt.title('Magnetic Field Magnitude')
+        plt.xlabel("R (meters)")
+        plt.ylabel("Z (meters)")
 
         plt.figure()
         plt.axes(aspect='equal')
@@ -171,6 +181,8 @@ def plot_equilibrium(equilibrium, detail=False, resolution=0.025):
         plt.colorbar()
         plt.contour(r, z, np.transpose(psi_sampled), levels=[1.0])
         plt.title('Inside LCFS')
+        plt.xlabel("R (meters)")
+        plt.ylabel("Z (meters)")
 
         if eq.inside_limiter:
             plt.figure()
@@ -180,6 +192,8 @@ def plot_equilibrium(equilibrium, detail=False, resolution=0.025):
             plt.colorbar()
             plt.contour(r, z, np.transpose(psi_sampled), levels=[1.0])
             plt.title('Inside Limiter')
+            plt.xlabel("R (meters)")
+            plt.ylabel("Z (meters)")
 
         plt.figure()
         plt.axes(aspect='equal')
@@ -187,11 +201,15 @@ def plot_equilibrium(equilibrium, detail=False, resolution=0.025):
         plt.autoscale(tight=True)
         plt.contour(r, z, np.transpose(psi_sampled), levels=[1.0])
         plt.title('Poloidal Magnetic Field')
+        plt.xlabel("R (meters)")
+        plt.ylabel("Z (meters)")
 
         p2r_psin, p2r_r = sample1d(eq.psin_to_r, (0, 1, 1000))
 
         plt.figure()
         plt.plot(p2r_psin, p2r_r)
         plt.title('Psi (Normalised) vs Outboard Major Radius')
+        plt.xlabel("a.u.")
+        plt.ylabel("R (meters)")
 
     plt.show()
