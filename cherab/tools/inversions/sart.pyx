@@ -30,7 +30,7 @@ cpdef invert_sart(geometry_matrix, measurement_vector, object initial_guess=None
         list convergence
         double x_j, x_j_new, relax_over_density, obs_diff, measurement_squared, y_hat_squared, prop_ray_length
         np.ndarray solution, solution_new, y_hat_vector, cell_ray_densities, ray_lengths
-        double[:] obs_vector_mv, solution_mv, solution_new_mv, y_hat_vector_mv, cell_ray_densities_mv, inv_ray_lengths_mv
+        double[:] obs_vector_mv, solution_mv, solution_new_mv, y_hat_vector_mv, cell_ray_densities_mv, ray_lengths_mv, inv_ray_lengths_mv
         double[:,:] geometry_matrix_mv
 
     m_observations, n_sources = geometry_matrix.shape  # (M, N) matrix
@@ -58,6 +58,7 @@ cpdef invert_sart(geometry_matrix, measurement_vector, object initial_guess=None
 
     # A_(i,+)  - the total length of each ray
     ray_lengths = np.sum(geometry_matrix, axis=1)
+    ray_lengths_mv = ray_lengths
     inv_ray_lengths_mv = 1 / ray_lengths
 
     y_hat_vector = np.dot(geometry_matrix, solution)
@@ -78,6 +79,9 @@ cpdef invert_sart(geometry_matrix, measurement_vector, object initial_guess=None
                     relax_over_density = relaxation / cell_ray_densities_mv[jth_cell]
                 obs_diff = 0
                 for ith_obs in range(m_observations):
+                    # Ray path length can be zero
+                    if ray_lengths_mv[ith_obs] == 0:
+                        continue
                     prop_ray_length = geometry_matrix_mv[jth_cell, ith_obs] * inv_ray_lengths_mv[ith_obs]  # fraction of ray length/volume
                     obs_diff += prop_ray_length * (obs_vector_mv[ith_obs] - y_hat_vector_mv[ith_obs])
 
@@ -123,7 +127,7 @@ cpdef invert_constrained_sart(geometry_matrix, laplacian_matrix, measurement_vec
         list convergence
         double x_j, x_j_new, relax_over_density, obs_diff, measurement_squared, y_hat_squared, prop_ray_length
         np.ndarray solution, solution_new, y_hat_vector, cell_ray_densities, ray_lengths
-        double[:] obs_vector_mv, solution_mv, solution_new_mv, y_hat_vector_mv, cell_ray_densities_mv, inv_ray_lengths_mv, grad_penalty_mv
+        double[:] obs_vector_mv, solution_mv, solution_new_mv, y_hat_vector_mv, cell_ray_densities_mv, ray_lengths_mv, inv_ray_lengths_mv, grad_penalty_mv
         double[:,:] geometry_matrix_mv
 
     m_observations, n_sources = geometry_matrix.shape  # (M, N) matrix
@@ -151,6 +155,7 @@ cpdef invert_constrained_sart(geometry_matrix, laplacian_matrix, measurement_vec
 
     # A_(i,+)  - the total length of each ray
     ray_lengths = np.sum(geometry_matrix, axis=1)
+    ray_lengths_mv = ray_lengths
     inv_ray_lengths_mv = 1 / ray_lengths
 
     y_hat_vector = np.dot(geometry_matrix, solution)
@@ -175,6 +180,9 @@ cpdef invert_constrained_sart(geometry_matrix, laplacian_matrix, measurement_vec
 
                 obs_diff = 0
                 for ith_obs in range(m_observations):
+                    # Ray path length can be zero
+                    if ray_lengths_mv[ith_obs] == 0:
+                        continue
                     prop_ray_length = geometry_matrix_mv[jth_cell, ith_obs] * inv_ray_lengths_mv[ith_obs] # fraction of ray length/volume
                     obs_diff += prop_ray_length * (obs_vector_mv[ith_obs] - y_hat_vector_mv[ith_obs])
 
