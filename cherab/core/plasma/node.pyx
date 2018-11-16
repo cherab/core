@@ -95,7 +95,8 @@ cdef class Composition:
         try:
             return self._species[(element, ionisation)]
         except KeyError:
-            raise ValueError('Could not find a species with the specified element and ionisation.')
+            raise ValueError("Could not find a species with the specified element '{}' and ionisation {}."
+                             "".format(element.name, ionisation))
 
     cpdef object clear(self):
 
@@ -156,7 +157,7 @@ cdef class Plasma(Node):
     from the Plasma object.
     """
 
-    def __init__(self, object parent=None, AffineMatrix3D transform=None, str name=None):
+    def __init__(self, object parent=None, AffineMatrix3D transform=None, str name=None, step=0.001):
 
         super().__init__(parent, transform, name)
 
@@ -183,7 +184,7 @@ cdef class Plasma(Node):
         self._models.notifier.add(self._configure_geometry)
 
         # emission model integrator
-        self._integrator = NumericalIntegrator(step=0.001)
+        self._integrator = NumericalIntegrator(step=step)
 
     @property
     def b_field(self):
