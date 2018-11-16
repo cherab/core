@@ -157,7 +157,8 @@ cdef class Plasma(Node):
     from the Plasma object.
     """
 
-    def __init__(self, object parent=None, AffineMatrix3D transform=None, str name=None, step=0.001):
+    def __init__(self, object parent=None, AffineMatrix3D transform=None, str name=None,
+                 integrator=NumericalIntegrator(step=0.001)):
 
         super().__init__(parent, transform, name)
 
@@ -184,7 +185,7 @@ cdef class Plasma(Node):
         self._models.notifier.add(self._configure_geometry)
 
         # emission model integrator
-        self._integrator = NumericalIntegrator(step=step)
+        self._integrator = integrator
 
     @property
     def b_field(self):
