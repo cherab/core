@@ -49,7 +49,7 @@ class AxisymmetricVoxel(Voxel):
 
     # cdef np.ndarray _vertices, _triangles
 
-    def __init__(self, vertices, parent, material=None):
+    def __init__(self, vertices, parent=None, material=None):
 
         super().__init__(parent=parent)
 
@@ -234,7 +234,7 @@ class ToroidalVoxelGrid(VoxelCollection):
     #     double _min_radius, _max_radius
     #     double _min_height, _max_height
 
-    def __init__(self, voxel_coordinates, name='', parent=None, transform=None):
+    def __init__(self, voxel_coordinates, name='', parent=None, transform=None, active="all"):
 
         super().__init__(name=name, parent=parent, transform=transform)
 
@@ -244,9 +244,11 @@ class ToroidalVoxelGrid(VoxelCollection):
         self._max_height = -1E999
 
         self._voxels = []
-        for voxel_vertices in voxel_coordinates:
+        for i, voxel_vertices in enumerate(voxel_coordinates):
 
-            voxel = AxisymmetricVoxel(voxel_vertices, parent=self)
+            voxel = AxisymmetricVoxel(voxel_vertices)
+            if active == "all" or active == i:
+                voxel.parent = parent
             self._voxels.append(voxel)
 
             # Test and set extent values
