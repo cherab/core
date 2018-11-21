@@ -2,27 +2,6 @@
 Atomic Classes
 ==============
 
-Importable elements:
-
-* hydrogen
-* helium
-* lithium
-* beryllium
-* boron
-* carbon
-* nitrogen
-* oxygen
-* fluorine
-* neon
-
-Importable isotopes:
-
-* protium
-* deuterium
-* tritium
-* helium3
-* helium4
-
 
 Elements
 --------
@@ -30,11 +9,23 @@ Elements
 .. autoclass:: cherab.core.atomic.elements.Element
    :members:
 
+
+The importable pre-defined elements are:
+
+    >>> from cherab.core.atomic import hydrogen, helium, lithium, beryllium, boron, \
+    >>>     carbon, nitrogen, oxygen, fluorine, neon, argon, krypton, xenon
+
+
 Isotopes
 --------
 
 .. autoclass:: cherab.core.atomic.elements.Isotope
    :members:
+
+
+The importable pre-defined isotopes are:
+
+    >>> from cherab.core.atomic import protium, deuterium, tritium, helium3, helium4
 
 
 Reading atomic coefficients

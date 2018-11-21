@@ -18,8 +18,8 @@ become stable until we have finished moving the source code to github.
 
    welcome
    licence
-   core
    atomic_classes
+   core
    equilibrium
    plasma_sources
    models/emission_models

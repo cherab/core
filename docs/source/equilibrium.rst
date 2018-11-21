@@ -20,10 +20,3 @@ The workhorse equilibrium class.
 .. autofunction:: cherab.tools.equilibrium.plot.plot_equilibrium
 
 .. autofunction:: cherab.tools.equilibrium.eqdsk.import_eqdsk
-
-
-Other
------
-
-.. autofunction:: cherab.tools.equilibrium.equ.import_equ_psi
-
