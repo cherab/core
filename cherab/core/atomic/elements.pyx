@@ -27,6 +27,16 @@ cdef class Element:
     :param str symbol: Element symbol, e.g. 'H'.
     :param int atomic_number: Number of protons.
     :param float atomic_weight: average atomic weight in amu
+
+    :ivar str name: Element name.
+    :ivar str symbol: Element symbol, e.g. 'H'.
+    :ivar int atomic_number: Number of protons.
+    :ivar float atomic_weight: average atomic weight in amu
+
+    .. code-block:: pycon
+
+       >>> from cherab.core.atomic import Element
+       >>> helium = Element("helium", "He", 2, 4.002602)
     """
 
     def __init__(self, str name, str symbol, int atomic_number, double atomic_weight):
@@ -44,12 +54,27 @@ cdef class Isotope(Element):
     """
     Class representing an atomic isotope.
 
-    :param str name: Element name.
-    :param str symbol: Element symbol, e.g. 'H'.
-    :param int atomic_number: Number of protons.
+    :param str name: Isotope name.
+    :param str symbol: Isotope symbol, e.g. 'T'.
+    :param Element element: The parent element of this isotope,
+      e.g. for Tritium it would be Hydrogen.
     :param int mass_number: Atomic mass number, which is total number of protons
       and neutrons. Allows identification of specific isotopes.
     :param float atomic_weight: atomic weight in amu
+
+    :ivar str name: Isotope name.
+    :ivar str symbol: Isotope symbol, e.g. 'T'.
+    :param Element element: The parent element of this isotope,
+      e.g. for Tritium it would be Hydrogen.
+    :ivar int atomic_number: Number of protons.
+    :ivar int mass_number: Atomic mass number, which is total number of protons
+      and neutrons. Allows identification of specific isotopes.
+    :ivar float atomic_weight: atomic weight in amu
+
+    .. code-block:: pycon
+
+       >>> from cherab.core.atomic import Isotope, hydrogen
+       >>> tritium = Isotope("tritium", "T", hydrogen, 3, 3.0160492777)
     """
 
     def __init__(self, str name, str symbol, Element element, int mass_number, double atomic_weight):
