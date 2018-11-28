@@ -47,7 +47,7 @@ cpdef invert_sart(geometry_matrix, measurement_vector, object initial_guess=None
     solution_new_mv = solution_new
 
     obs_vector_mv = measurement_vector
-    geometry_matrix_mv = geometry_matrix.T # Make second index ith_obs
+    geometry_matrix_mv = geometry_matrix
 
     # Create an array to monitor the convergence
     convergence = []
@@ -82,7 +82,7 @@ cpdef invert_sart(geometry_matrix, measurement_vector, object initial_guess=None
                     # Ray path length can be zero
                     if ray_lengths_mv[ith_obs] == 0:
                         continue
-                    prop_ray_length = geometry_matrix_mv[jth_cell, ith_obs] * inv_ray_lengths_mv[ith_obs]  # fraction of ray length/volume
+                    prop_ray_length = geometry_matrix_mv[ith_obs, jth_cell] * inv_ray_lengths_mv[ith_obs]  # fraction of ray length/volume
                     obs_diff += prop_ray_length * (obs_vector_mv[ith_obs] - y_hat_vector_mv[ith_obs])
 
                 x_j_new = x_j + relax_over_density * obs_diff
@@ -144,7 +144,7 @@ cpdef invert_constrained_sart(geometry_matrix, laplacian_matrix, measurement_vec
     solution_new_mv = solution_new
 
     obs_vector_mv = measurement_vector
-    geometry_matrix_mv = geometry_matrix.T # Make second index ith_obs
+    geometry_matrix_mv = geometry_matrix
 
     # Create an array to monitor the convergence
     convergence = []
@@ -183,7 +183,7 @@ cpdef invert_constrained_sart(geometry_matrix, laplacian_matrix, measurement_vec
                     # Ray path length can be zero
                     if ray_lengths_mv[ith_obs] == 0:
                         continue
-                    prop_ray_length = geometry_matrix_mv[jth_cell, ith_obs] * inv_ray_lengths_mv[ith_obs] # fraction of ray length/volume
+                    prop_ray_length = geometry_matrix_mv[ith_obs, jth_cell] * inv_ray_lengths_mv[ith_obs] # fraction of ray length/volume
                     obs_diff += prop_ray_length * (obs_vector_mv[ith_obs] - y_hat_vector_mv[ith_obs])
 
                 x_j_new = x_j + relax_over_density * obs_diff - grad_penalty_mv[jth_cell]
