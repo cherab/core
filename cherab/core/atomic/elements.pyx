@@ -1,8 +1,8 @@
 # cython: language_level=3
 
-# Copyright 2016-2018 Euratom
-# Copyright 2016-2018 United Kingdom Atomic Energy Authority
-# Copyright 2016-2018 Centro de Investigaciones Energéticas, Medioambientales y Tecnológicas
+# Copyright 2016-2019 Euratom
+# Copyright 2016-2019 United Kingdom Atomic Energy Authority
+# Copyright 2016-2019 Centro de Investigaciones Energéticas, Medioambientales y Tecnológicas
 #
 # Licensed under the EUPL, Version 1.1 or – as soon they will be approved by the
 # European Commission - subsequent versions of the EUPL (the "Licence");
@@ -17,6 +17,12 @@
 #
 # See the Licence for the specific language governing permissions and limitations
 # under the Licence.
+
+import sys
+
+# search indices for elements and isotopes
+_element_index = {}
+_isotope_index = {}
 
 
 cdef class Element:
@@ -87,6 +93,106 @@ cdef class Isotope(Element):
     def __repr__(self):
         return '<Isotope: {}>'.format(self.name)
 
+
+def _build_element_index():
+    """
+    Populates an element search dictionary.
+
+    Populates the element index so users can search for elements by name,
+    symbol or atomic number.
+    """
+
+    module = sys.modules[__name__]
+    for name in dir(module):
+        obj = getattr(module, name)
+        if type(obj) is Element:
+            # lookup by name, symbol or atomic number
+            _element_index[obj.symbol.lower()] = obj
+            _element_index[obj.name.lower()] = obj
+            _element_index[str(obj.atomic_number)] = obj
+
+
+def _build_isotope_index():
+    """
+    Populates an isotope search dictionary.
+
+    Populates the isotope index so users can search for isotopes by name or
+    symbol.
+    """
+
+    module = sys.modules[__name__]
+    for name in dir(module):
+        obj = getattr(module, name)
+        if type(obj) is Isotope:
+            # lookup by name or symbol including variations e.g. D and H2 refer to deuterium)
+            _isotope_index[obj.symbol.lower()] = obj
+            _isotope_index[obj.name.lower()] = obj
+            _isotope_index[obj.element.symbol.lower() + str(obj.mass_number)] = obj
+            _isotope_index[obj.element.name.lower() + str(obj.mass_number)] = obj
+
+
+def lookup_element(v):
+    """
+    Finds an element by name, symbol or atomic number.
+
+    .. code-block:: pycon
+
+       >>> from cherab.core.atomic import lookup_element
+       >>> hydrogen = lookup_element('hydrogen')
+       >>> neon = lookup_element('Ne')
+       >>> argon = lookup_element(18)
+
+    :param v: Search string or integer.
+    :return: Element object.
+    """
+
+    if type(v) is Element:
+        return v
+
+    key = str(v).lower()
+    try:
+        return _element_index[key]
+    except KeyError:
+        raise ValueError('Could not find an element object for the key \'{}\'.'.format(v))
+
+
+def lookup_isotope(v, number=None):
+    """
+    Finds an isotope by name, symbol or number.
+
+    Isotopes are uniquely determined by the element type and mass number. These
+    can be specified as a single string or a combination of element and mass number.
+
+    .. code-block:: pycon
+
+       >>> from cherab.core.atomic import lookup_isotope
+       >>> deuterium = lookup_element('deuterium')
+       >>> tritium = lookup_element(1, number=3)
+       >>> helium3 = lookup_element('he3')
+       >>> helium4 = lookup_element('he', number=4)
+
+    :param v: Search string, integer or element.
+    :param number: Integer mass number
+    :return: Element object.
+    """
+
+    if number:
+        # mass number supplied, so only need the element
+        element = lookup_element(v)
+        key = (element.symbol + str(number)).lower()
+    else:
+        # full information contained in string
+        key = str(v).lower()
+
+    try:
+        return _isotope_index[key]
+    except KeyError:
+        if number:
+            raise ValueError('Could not find an isotope object for the element \'{}\' and number \'{}\'.'.format(v, number))
+        else:
+            raise ValueError('Could not find an isotope object for the key \'{}\'.'.format(v))
+
+
 # Atomic data sourced from www.ciaaw.org and wikipedia.org on 25/1/2015
 
 # elements
@@ -112,3 +218,6 @@ tritium = Isotope("tritium", "T", hydrogen, 3, 3.0160492777)
 helium3 = Isotope("helium3", "He3", helium, 3, 3.0160293191)
 helium4 = Isotope("helium4", "He4", helium, 4, 4.00260325415)
 
+# once objects created build an indices for reverse lookup (string instancing of element)
+_build_element_index()
+_build_isotope_index()
