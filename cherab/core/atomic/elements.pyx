@@ -176,6 +176,9 @@ def lookup_isotope(v, number=None):
     :return: Element object.
     """
 
+    if type(v) is Isotope:
+        return v
+
     if number:
         # mass number supplied, so only need the element
         element = lookup_element(v)
