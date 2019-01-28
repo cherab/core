@@ -299,7 +299,7 @@ class ToroidalVoxelGrid(VoxelCollection):
         else:
             raise ValueError("set_active() argument must be an index of type int or the string 'all'")
 
-    def plot(self, title=None, voxel_values=None, ax=None, vmin=None, vmax=None):
+    def plot(self, title=None, voxel_values=None, ax=None, vmin=None, vmax=None, cmap=None):
 
         if voxel_values is not None:
             if not isinstance(voxel_values, (np.ndarray, list, tuple)):
@@ -314,7 +314,7 @@ class ToroidalVoxelGrid(VoxelCollection):
             polygon = Polygon(self._voxels[i]._vertices, True)
             patches.append(polygon)
 
-        p = PatchCollection(patches)
+        p = PatchCollection(patches, cmap=cmap)
         if voxel_values is None:
             # Plot just the outlines of the grid cells
             p.set_edgecolor('black')
@@ -328,6 +328,8 @@ class ToroidalVoxelGrid(VoxelCollection):
         if ax is None:
             fig, ax = plt.subplots()
         ax.add_collection(p)
+        fig = plt.gcf()
+        fig.colorbar(p, ax=ax)
         ax.set_xlim(self.min_radius, self.max_radius)
         ax.set_ylim(self.min_height, self.max_height)
         ax.axis("equal")
