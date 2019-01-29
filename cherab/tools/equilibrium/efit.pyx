@@ -18,16 +18,17 @@
 
 import numpy as np
 cimport numpy as np
+from libc.math cimport sqrt, INFINITY
 cimport cython
 
 from raysect.optical cimport Vector3D, Point2D, new_vector3d
 from cherab.core.math cimport Function1D, autowrap_function1d
 from cherab.core.math cimport Function2D, autowrap_function2d
-from cherab.core.math cimport VectorFunction2D
+from cherab.core.math cimport VectorFunction2D, autowrap_vectorfunction2d
 from cherab.core.math cimport Interpolate1DCubic, Interpolate2DCubic
 from cherab.core.math cimport PolygonMask2D
-from cherab.core.math cimport IsoMapper2D, AxisymmetricMapper
-from cherab.core.math cimport Blend2D, Constant2D
+from cherab.core.math cimport IsoMapper2D, AxisymmetricMapper, VectorAxisymmetricMapper
+from cherab.core.math cimport Blend2D, Constant2D, ConstantVector2D
 
 
 cdef class EFITEquilibrium:
@@ -62,8 +63,8 @@ cdef class EFITEquilibrium:
         readonly tuple r_range, z_range
         readonly Point2D magnetic_axis
         readonly tuple x_points, strike_points
-        readonly VectorFunction2D b_field
-        readonly Function2D inside_lcfs, inside_limiter
+        readonly VectorFunction2D b_field, toroidal_vector, poloidal_vector, surface_normal
+        readonly Function2D inside_lcfs, inside_limiter, safety_factor
         readonly Function1D psin_to_r
         readonly double time
         readonly np.ndarray lcfs_polygon, limiter_polygon
@@ -111,7 +112,15 @@ cdef class EFITEquilibrium:
 
         # calculate b-field
         dpsi_dr, dpsi_dz = self._calculate_differentials(r, z, psi_grid)
-        self.b_field = EFITMagneticField(self.psi_normalised, dpsi_dr, dpsi_dz, self._f_profile, b_vacuum_radius, b_vacuum_magnitude, self.inside_lcfs)
+        self.b_field = MagneticField(self.psi_normalised, dpsi_dr, dpsi_dz, self._f_profile, b_vacuum_radius, b_vacuum_magnitude, self.inside_lcfs)
+
+        # safety factor
+        self.safety_factor = SafetyFactor(self.b_field)
+
+        # populate flux coordinate attributes
+        self.toroidal_vector = ConstantVector2D(Vector3D(0, 1, 0))
+        self.poloidal_vector = PoloidalFieldVector(self.b_field)
+        self.surface_normal = FluxSurfaceNormal(self.b_field)
 
         # generate interpolator to map from psi normalised to outboard major radius
         self._generate_psin_to_r_mapping()
@@ -222,6 +231,48 @@ cdef class EFITEquilibrium:
 
         return AxisymmetricMapper(self.map2d(profile, value_outside_lcfs))
 
+    def map_vector2d(self, object toroidal, object poloidal, object normal):
+        """
+        :param toroidal: Toroidal vector magnitude,
+        :param poloidal: Poloidal vector magnitude.
+        :param normal: Flux surface normal magnitude.
+        :return: VectorFunction2D object.
+        """
+
+        # convert toroidal data to 1d function if not already a function object
+        if isinstance(toroidal, Function1D) or callable(toroidal):
+            toroidal = autowrap_function1d(toroidal)
+        else:
+            toroidal = np.array(toroidal, np.float64)
+            toroidal = Interpolate1DCubic(toroidal[0, :], toroidal[1, :])
+
+        # convert poloidal data to 1d function if not already a function object
+        if isinstance(poloidal, Function1D) or callable(poloidal):
+            poloidal = autowrap_function1d(poloidal)
+        else:
+            poloidal = np.array(poloidal, np.float64)
+            poloidal = Interpolate1DCubic(poloidal[0, :], poloidal[1, :])
+
+        # convert normal data to 1d function if not already a function object
+        if isinstance(normal, Function1D) or callable(normal):
+            normal = autowrap_function1d(normal)
+        else:
+            normal = np.array(normal, np.float64)
+            normal = Interpolate1DCubic(normal[0, :], normal[1, :])
+
+        return FluxCoordToCartesian(self.b_field, self.psi_normalised, toroidal, poloidal, normal)
+
+    def map_vector3d(self, object toroidal, object poloidal, object normal):
+        """
+
+        :param toroidal: Toroidal vector magnitude,
+        :param poloidal: Poloidal vector magnitude.
+        :param normal: Flux surface normal magnitude.
+        :return: VectorFunction3D object
+        """
+
+        return VectorAxisymmetricMapper(self.map2d(toroidal, poloidal, normal))
+
 
 cdef class EFITLCFSMask(Function2D):
     """
@@ -251,7 +302,7 @@ cdef class EFITLCFSMask(Function2D):
         return self._lcfs_polygon.evaluate(r, z) > 0.0 and self._psi_normalised.evaluate(r, z) <= 1.0
 
 
-cdef class EFITMagneticField(VectorFunction2D):
+cdef class MagneticField(VectorFunction2D):
     """
     A 2D magnetic field vector function derived from EFIT data.
 
@@ -282,6 +333,8 @@ cdef class EFITMagneticField(VectorFunction2D):
     @cython.cdivision(True)
     cdef Vector3D evaluate(self, double r, double z):
 
+        # todo: add caching
+
         cdef double br, bz, bt, psi_n
 
         # calculate poloidal components of magnetic field from poloidal flux
@@ -304,3 +357,112 @@ cdef class EFITMagneticField(VectorFunction2D):
 
         return new_vector3d(br, bt, bz)
 
+
+cdef class SafetyFactor(Function2D):
+    """
+
+    """
+
+    cdef VectorFunction2D _field
+
+    def __init__(self, object field):
+        self._field = autowrap_vectorfunction2d(field)
+
+    cdef double evaluate(self, double r, double z) except? -1e999:
+
+        cdef Vector3D b = self._field.evaluate(r, z)
+
+        # if there is no poloidal field the safety factor is infinite
+        if b.x == 0 and b.z == 0:
+            return INFINITY
+        return b.y / sqrt(b.x*b.x + b.z*b.z)
+
+
+cdef class PoloidalFieldVector(VectorFunction2D):
+    """
+
+    """
+
+    cdef VectorFunction2D _field
+
+    def __init__(self, object field):
+        self._field = autowrap_vectorfunction2d(field)
+
+    cdef Vector3D evaluate(self, double r, double z):
+
+        cdef Vector3D b = self._field.evaluate(r, z)
+
+        # if zero vector is undefined, strictly this should raise an exception
+        # however for practical convenience the vector is set to zero
+        if b.x == 0 and b.z == 0:
+            return new_vector3d(0, 0, 0)
+
+        # only need in plane components of field
+        return new_vector3d(b.x, 0, b.z).normalise()
+
+
+cdef class FluxSurfaceNormal(VectorFunction2D):
+    """
+
+    """
+
+    cdef VectorFunction2D _field
+
+    def __init__(self, object field):
+        self._field = autowrap_vectorfunction2d(field)
+
+    cdef Vector3D evaluate(self, double r, double z):
+
+        cdef Vector3D b = self._field.evaluate(r, z)
+
+        # if zero vector is undefined, strictly this should raise an exception
+        # however for practical convenience the vector is set to zero
+        if b.x == 0 and b.z == 0:
+            return new_vector3d(0, 0, 0)
+
+        # cross product of poloidal and toroidal unit vectors
+        return new_vector3d(-b.z, 0, b.x).normalise()
+
+
+cdef class FluxCoordToCartesian(VectorFunction2D):
+    """
+
+    """
+
+    cdef:
+        VectorFunction2D _field
+        Function1D _toroidal, _poloidal, _normal
+        Function2D _psin
+
+    def __init__(self, object field, object psi_normalised, object toroidal, object poloidal, object normal):
+        
+        self._field = autowrap_vectorfunction2d(field)
+        self._psin = autowrap_function2d(psi_normalised)
+        self._toroidal = autowrap_function1d(toroidal)
+        self._poloidal = autowrap_function1d(poloidal)
+        self._normal = autowrap_function1d(normal)
+
+    cdef Vector3D evaluate(self, double r, double z):
+
+        cdef double psi
+        cdef Vector3D f, toroidal, poloidal, normal
+
+        f = self._field.evaluate(r, z)
+        psi = self._psin(r, z)
+
+        # calculate flux coordinate vectors
+        if f.x == 0 and f.z == 0:
+
+            # if zero vector is undefined, strictly this should raise an exception
+            # however for practical convenience the vector is set to zero
+            toroidal = new_vector3d(0, self._toroidal.evaluate(psi), 0)
+            poloidal = new_vector3d(0, 0, 0)
+            normal = new_vector3d(0, 0, 0)
+
+        else:
+
+            toroidal = new_vector3d(0, self._toroidal.evaluate(psi), 0)
+            poloidal = new_vector3d(f.x, 0, f.z).set_length(self._poloidal.evaluate(psi))
+            normal = new_vector3d(-f.z, 0, f.x).set_length(self._normal.evaluate(psi))
+
+        return new_vector3d(poloidal.x + normal.x, toroidal.y, poloidal.z + normal.z)
