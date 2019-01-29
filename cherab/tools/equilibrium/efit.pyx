@@ -50,6 +50,7 @@ cdef class EFITEquilibrium:
     :param Point2D x_points: The list of x-points.
     :param Point2D x_points: The list of strike-points.
     :param f_profile: The current flux profile on psin (2xN array).
+    :param q_profile: The safety factor (q) profile on psin (2xN array).
     :param float b_vacuum_radius: Vacuum B-field reference radius (in meters).
     :param float b_vacuum_magnitude: Vacuum B-Field magnitude at the reference radius.
     :param lcfs_polygon: A 2xN array of [[x0, ...], [y0, ...]] vertices specifying the LCFS boundary.
@@ -64,18 +65,20 @@ cdef class EFITEquilibrium:
         readonly Point2D magnetic_axis
         readonly tuple x_points, strike_points
         readonly VectorFunction2D b_field, toroidal_vector, poloidal_vector, surface_normal
-        readonly Function2D inside_lcfs, inside_limiter, safety_factor
+        readonly Function2D inside_lcfs, inside_limiter
         readonly Function1D psin_to_r
         readonly double time
         readonly np.ndarray lcfs_polygon, limiter_polygon
         readonly np.ndarray psi_data, r_data, z_data
+        readonly Function1D q
         double _b_vacuum_magnitude, _b_vacuum_radius
         Function1D _f_profile
         Function2D _dpsidr, _dpsidz
 
     def __init__(self, object r, object z, object psi_grid, double psi_axis, double psi_lcfs,
                  Point2D magnetic_axis not None, object x_points, object strike_points,
-                 object f_profile, double b_vacuum_radius, double b_vacuum_magnitude,
+                 object f_profile, object q_profile,
+                 double b_vacuum_radius, double b_vacuum_magnitude,
                  object lcfs_polygon, object limiter_polygon, double time):
 
         self.time = time
@@ -103,6 +106,7 @@ cdef class EFITEquilibrium:
         self._b_vacuum_magnitude = b_vacuum_magnitude
         self._b_vacuum_radius = b_vacuum_radius
         self._f_profile = Interpolate1DCubic(f_profile[0, :], f_profile[1, :])
+        self.q = Interpolate1DCubic(q_profile[0, :], q_profile[1, :])
 
         # populate points
         self._process_points(magnetic_axis, x_points, strike_points)
