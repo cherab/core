@@ -74,7 +74,6 @@ def _plot_summary(r, z, psi, axis, limiter, time):
     fig.axes[0].set_axisbelow(True)
 
 
-
 def plot_equilibrium(equilibrium, detail=False, resolution=0.025):
     """
     Generates some overview plots of a given EFIT equilibrium.
@@ -117,6 +116,9 @@ def plot_equilibrium(equilibrium, detail=False, resolution=0.025):
         by = b[:, :, 1]
         bz = b[:, :, 2]
         bmag = np.sqrt(bx**2 + by**2 + bz**2)
+
+        print("Sampling q...")
+        psin, q = sample1d(eq.q, (0, 1, 100))
 
         print("Plotting details...")
 
@@ -208,8 +210,14 @@ def plot_equilibrium(equilibrium, detail=False, resolution=0.025):
 
         plt.figure()
         plt.plot(p2r_psin, p2r_r)
-        plt.title('Psi (Normalised) vs Outboard Major Radius')
+        plt.title('Psi Normalised vs Outboard Major Radius')
         plt.xlabel("a.u.")
         plt.ylabel("R (meters)")
+
+        plt.figure()
+        plt.plot(psin, q)
+        plt.title('Safety Factor (q) vs Psi Normalised')
+        plt.xlabel("Psi Normalised")
+        plt.ylabel("a.u.")
 
     plt.show()
