@@ -115,7 +115,8 @@ cdef class EFITEquilibrium:
         self.b_field = MagneticField(self.psi_normalised, dpsi_dr, dpsi_dz, self._f_profile, b_vacuum_radius, b_vacuum_magnitude, self.inside_lcfs)
 
         # safety factor
-        self.safety_factor = SafetyFactor(self.b_field)
+        # todo: to be implemented
+        # self.safety_factor = SafetyFactor(self.b_field)
 
         # populate flux coordinate attributes
         self.toroidal_vector = ConstantVector2D(Vector3D(0, 1, 0))
@@ -368,14 +369,13 @@ cdef class SafetyFactor(Function2D):
     def __init__(self, object field):
         self._field = autowrap_vectorfunction2d(field)
 
+    @cython.cdivision(True)
     cdef double evaluate(self, double r, double z) except? -1e999:
 
         cdef Vector3D b = self._field.evaluate(r, z)
 
-        # if there is no poloidal field the safety factor is infinite
-        if b.x == 0 and b.z == 0:
-            return INFINITY
-        return b.y / sqrt(b.x*b.x + b.z*b.z)
+        # todo: implement me
+        return None
 
 
 cdef class PoloidalFieldVector(VectorFunction2D):
