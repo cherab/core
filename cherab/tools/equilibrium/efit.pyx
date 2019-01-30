@@ -272,7 +272,7 @@ cdef class EFITEquilibrium:
         :return: VectorFunction3D object
         """
 
-        return VectorAxisymmetricMapper(self.map2d(toroidal, poloidal, normal))
+        return VectorAxisymmetricMapper(self.map_vector2d(toroidal, poloidal, normal))
 
 
 cdef class EFITLCFSMask(Function2D):
