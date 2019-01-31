@@ -414,14 +414,17 @@ cdef class FluxCoordToCartesian(VectorFunction2D):
         VectorFunction2D _field
         Function1D _toroidal, _poloidal, _normal
         Function2D _psin
+        Vector3D _value_outside_lcfs
 
-    def __init__(self, object field, object psi_normalised, object toroidal, object poloidal, object normal):
+    def __init__(self, object field, object psi_normalised, object toroidal, object poloidal, object normal,
+                 Vector3D value_outside_lcfs=Vector3D(0, 0, 0)):
         
         self._field = autowrap_vectorfunction2d(field)
         self._psin = autowrap_function2d(psi_normalised)
         self._toroidal = autowrap_function1d(toroidal)
         self._poloidal = autowrap_function1d(poloidal)
         self._normal = autowrap_function1d(normal)
+        self._value_outside_lcfs = value_outside_lcfs
 
     cdef Vector3D evaluate(self, double r, double z):
 
@@ -429,7 +432,11 @@ cdef class FluxCoordToCartesian(VectorFunction2D):
         cdef Vector3D f, toroidal, poloidal, normal
 
         f = self._field.evaluate(r, z)
-        psi = self._psin(r, z)
+        psi = max(0, self._psin(r, z))
+
+        # If value outside LCFS return default value
+        if psi > 1:
+            return self._value_outside_lcfs
 
         # calculate flux coordinate vectors
         if f.x == 0 and f.z == 0:
