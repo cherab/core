@@ -19,6 +19,7 @@ become stable until we have finished moving the source code to github.
    welcome
    licence
    installation_and_structure
+   available_modules
    atomic_classes
    core
    equilibrium
