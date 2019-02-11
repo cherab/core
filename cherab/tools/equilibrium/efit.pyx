@@ -220,7 +220,7 @@ cdef class EFITEquilibrium:
         :return: Function3D object.
         """
 
-        return AxisymmetricMapper(self.map2d(profile))
+        return AxisymmetricMapper(self.map2d(profile, value_outside_lcfs))
 
 
 cdef class EFITLCFSMask(Function2D):
