@@ -24,12 +24,13 @@ import matplotlib.pyplot as plt
 from matplotlib.patches import Polygon
 from matplotlib.collections import PatchCollection
 
-from raysect.core cimport Node, Point2D, Point3D, Vector3D, rotate_z, AffineMatrix3D, new_point3d
-from raysect.core.math cimport triangulate2d
+from raysect.core cimport (Node, Point2D, Vector2D, Point3D, Vector3D,
+                           rotate_z, AffineMatrix3D, new_point3d)
+from raysect.core.math cimport triangulate2d, translate, rotate_basis
 from raysect.core.math.function cimport Function3D
 from raysect.core.math.cython.utility cimport winding2d, find_index
 from raysect.core.math.random cimport uniform, point_triangle
-from raysect.primitive import Mesh
+from raysect.primitive import Mesh, Cylinder, Cone, Intersect, Subtract, Union
 from raysect.optical import UnityVolumeEmitter
 from raysect.optical cimport Spectrum, World, Primitive, Ray
 from raysect.optical.material.emitter.homogeneous cimport HomogeneousVolumeEmitter
@@ -49,7 +50,7 @@ class AxisymmetricVoxel(Voxel):
 
     # cdef np.ndarray _vertices, _triangles
 
-    def __init__(self, vertices, parent=None, material=None):
+    def __init__(self, vertices, parent=None, material=None, primitive_type='mesh'):
 
         super().__init__(parent=parent)
 
@@ -69,8 +70,25 @@ class AxisymmetricVoxel(Voxel):
         if not winding2d(self._vertices):
             self._vertices = self._vertices[::-1]
 
+        self._triangles = triangulate2d(self._vertices)
+
         # Generate summary statistics
         self.radius = self._vertices[:, 0].sum()/num_vertices
+
+        if primitive_type == 'mesh':
+            self._build_mesh()
+        elif primitive_type == 'csg':
+            if self._has_rectangular_cross_section():
+                self._build_csg_from_rectangle()
+            else:
+                for triangle in self._triangles:
+                    self._build_csg_from_triangle(self._vertices[triangle])
+        else:
+            raise ValueError("primitive_type should be 'mesh' or 'csg'")
+
+    def _build_mesh(self):
+        """Build the Voxel out of triangular mesh elements."""
+        num_vertices = len(self._vertices)
         radial_width = self._vertices[:, 0].max() - self._vertices[:, 0].min()
 
         number_segments = int(floor(2 * PI * self.radius / radial_width))
@@ -91,8 +109,6 @@ class AxisymmetricVoxel(Voxel):
             vertices.append([p.x, p.y, p.z])
         for p in rotated_points:
             vertices.append([p.x, p.y, p.z])
-
-        self._triangles = triangulate2d(self._vertices)
 
         # assemble mesh triangles
         triangles = []
@@ -117,6 +133,108 @@ class AxisymmetricVoxel(Voxel):
         for i in range(number_segments):
             theta_rotation = theta_adjusted * i
             segment = base_segment.instance(transform=rotate_z(theta_rotation), material=self._material, parent=self)
+
+    def _has_rectangular_cross_section(self):
+        """
+        Test if the voxel has a rectangular cross section, and is aligned with
+        the coordinate axes.
+        """
+        if len(self.vertices) != 4:
+            return False
+        # A rectangle (including a square, which is considered to have a
+        # rectangular cross section too) is defined by having equal length
+        # diagonals.
+        distance_13 = self.vertices[0].distance_to(self.vertices[2])
+        distance_24 = self.vertices[1].distance_to(self.vertices[3])
+        if distance_13 != distance_24:
+            return False
+        # The rectangle should be aligned with the coordinate axes, i.e. the
+        # edge from vertex 1 to 2 should be parallel to either the x or z axes.
+        side_12 = self.vertices[0].vector_to(self.vertices[1])
+        if side_12.dot(Vector2D(1, 0)) != 0 and side_12.dot(Vector2D(0, 1)) != 0:
+            return False
+        return True
+
+    def _build_csg_from_triangle(self, vertices):
+        if vertices.shape != (3, 2):
+            raise ValueError("Vertices must be an array of 3 (x, z) coordinates")
+        # Sort the vertices of the triangle in decreasing x
+        # Vertex 1 is at largest x, vertex 2 is middle x, vertex 3 is smallest x
+        sort_inds = np.argsort(vertices[:, 0])[::-1]
+        vertices = vertices[sort_inds]
+        vertex_rs = vertices[:, 0]
+        vertex_zs = vertices[:, 1]
+        # Create a bounding ring around the vertices, with rectangular cross section
+        box_rmax = max(vertex_rs)
+        box_rmin = min(vertex_rs)
+        box_zmax = max(vertex_zs)
+        box_zmin = min(vertex_zs)
+        cylinder_height = box_zmax - box_zmin
+        outer_cylinder = Cylinder(radius=box_rmax, height=cylinder_height,
+                                  transform=translate(0, 0, box_zmin))
+        inner_cylinder = Cylinder(radius=box_rmin, height=cylinder_height,
+                                  transform=translate(0, 0, box_zmin))
+        bounding_ring = Subtract(outer_cylinder, inner_cylinder)
+
+        def create_cone(rx, zx, ry, zy):
+            if zx == zy:
+                return None
+            if rx == ry:
+                return Cylinder(radius=rx, height=abs(zx - zy),
+                                transform=translate(0, 0, min(zx, zy)))
+            if rx < ry:
+                raise ValueError('rx must be larger than ry')
+            if zx > zy:
+                transform = translate(0, 0, zx) * rotate_basis(Vector3D(0, 0, -1),
+                                                               Vector3D(0, 1, 0))
+            else:
+                transform = translate(0, 0, zx)
+            rcone = rx
+            hcone = abs(zx - zy) * rx / (rx - ry)
+            cone = Cone(radius=rcone, height=hcone, transform=transform)
+            return cone
+
+        r1, r2, r3 = vertex_rs
+        z1, z2, z3 = vertex_zs
+        cone13 = create_cone(r1, z1, r3, z3)
+        cone12 = create_cone(r1, z1, r2, z2)
+        cone23 = create_cone(r2, z2, r3, z3)
+        if z2 <= z1 <= z3 or z3 <= z1 <= z2:
+            voxel_element = Intersect(Subtract(Union(cone12, cone13), cone23), bounding_ring)
+        elif z1 <= z2 <= z3 and r1 != r2 != r3:
+            # Requires slightly different treatment, with a different bounding ring
+            outer_cylinder = Cylinder(radius=r1, height=z2 - z1, transform=translate(0, 0, z1))
+            inner_cylinder = Cylinder(radius=r3, height=z2 - z1, transform=translate(0, 0, z1))
+            bounding_ring = Subtract(outer_cylinder, inner_cylinder)
+            voxel_element = Intersect(Subtract(cone12, cone13), Union(bounding_ring, cone23))
+        elif r1 == r2 and z3 >= z2 and z3 >= z1:
+            if z1 >= z2:
+                voxel_element = Intersect(Subtract(Union(cone12, cone13), cone23), bounding_ring)
+            else:
+                voxel_element = Intersect(Subtract(Union(cone12, cone23), cone13), bounding_ring)
+        else:
+            if abs(z1 - z2) >= abs(z1 - z3):
+                voxel_element = Intersect(Subtract(Subtract(cone12, cone13), cone23), bounding_ring)
+            else:
+                voxel_element = Intersect(Subtract(Subtract(cone13, cone12), cone23), bounding_ring)
+
+        voxel_element.parent = self
+        voxel_element.material = self._material
+
+    def _build_csg_from_rectangle(self):
+        rmax = max(self._vertices[:, 0])
+        rmin = min(self._vertices[:, 0])
+        zmax = max(self._vertices[:, 1])
+        zmin = min(self._vertices[:, 1])
+        cylinder_height = zmax - zmin
+        cylinder_transform = translate(0, 0, zmin)
+        outer_cylinder = Cylinder(radius=rmax, height=cylinder_height,
+                                  transform=cylinder_transform)
+        inner_cylinder = Cylinder(radius=rmin, height=cylinder_height,
+                                  transform=cylinder_transform)
+        voxel = Subtract(outer_cylinder, inner_cylinder)
+        voxel.parent = self
+        voxel.material = self._material
 
     @property
     def material(self):
@@ -234,7 +352,9 @@ class ToroidalVoxelGrid(VoxelCollection):
     #     double _min_radius, _max_radius
     #     double _min_height, _max_height
 
-    def __init__(self, voxel_coordinates, name='', parent=None, transform=None, active="all"):
+
+    def __init__(self, voxel_coordinates, name='', parent=None, transform=None,
+                 active="all", primitive_type='mesh'):
 
         super().__init__(name=name, parent=parent, transform=transform)
 
@@ -246,7 +366,7 @@ class ToroidalVoxelGrid(VoxelCollection):
         self._voxels = []
         for i, voxel_vertices in enumerate(voxel_coordinates):
 
-            voxel = AxisymmetricVoxel(voxel_vertices)
+            voxel = AxisymmetricVoxel(voxel_vertices, primitive_type=primitive_type)
             if active == "all" or active == i:
                 voxel.parent = parent
             self._voxels.append(voxel)
@@ -299,7 +419,7 @@ class ToroidalVoxelGrid(VoxelCollection):
         else:
             raise ValueError("set_active() argument must be an index of type int or the string 'all'")
 
-    def plot(self, title=None, voxel_values=None, ax=None, vmin=None, vmax=None):
+    def plot(self, title=None, voxel_values=None, ax=None, vmin=None, vmax=None, cmap=None):
 
         if voxel_values is not None:
             if not isinstance(voxel_values, (np.ndarray, list, tuple)):
@@ -314,7 +434,7 @@ class ToroidalVoxelGrid(VoxelCollection):
             polygon = Polygon(self._voxels[i]._vertices, True)
             patches.append(polygon)
 
-        p = PatchCollection(patches)
+        p = PatchCollection(patches, cmap=cmap)
         if voxel_values is None:
             # Plot just the outlines of the grid cells
             p.set_edgecolor('black')
@@ -328,6 +448,8 @@ class ToroidalVoxelGrid(VoxelCollection):
         if ax is None:
             fig, ax = plt.subplots()
         ax.add_collection(p)
+        fig = plt.gcf()
+        fig.colorbar(p, ax=ax)
         ax.set_xlim(self.min_radius, self.max_radius)
         ax.set_ylim(self.min_height, self.max_height)
         ax.axis("equal")
