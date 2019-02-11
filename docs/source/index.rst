@@ -18,6 +18,7 @@ become stable until we have finished moving the source code to github.
 
    welcome
    licence
+   installation_and_structure
    atomic_classes
    core
    equilibrium
