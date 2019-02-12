@@ -20,7 +20,7 @@ become stable until we have finished moving the source code to github.
    licence
    installation_and_structure
    available_modules
-   atomic_classes
+   atomic/atomic_data
    core
    equilibrium
    plasma_sources
