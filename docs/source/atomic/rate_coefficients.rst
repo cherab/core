@@ -208,22 +208,22 @@ method.
    :math:`H^0` in metastable state :math:`m_{i}`. Equivalent to
    :math:`q^{eff}_{n\rightarrow n'}` in `adf12 <http://open.adas.ac.uk/adf12>`_.
 
-.. function:: __call__(energy, temperature, density, z_effective, b_field)
+   .. function:: __call__(energy, temperature, density, z_effective, b_field)
 
-   Returns the associated beam CX rate at the specified plasma conditions.
+      Returns the associated beam CX rate at the specified plasma conditions.
 
-   This function just wraps the cython evaluate() method.
+      This function just wraps the cython evaluate() method.
 
-.. function:: evaluate(energy, temperature, density, z_effective, b_field)
+   .. function:: evaluate(energy, temperature, density, z_effective, b_field)
 
-   Returns the beam CX rate for the supplied parameters.
+      Returns the beam CX rate for the supplied parameters.
 
-   :param float energy: Interaction energy in eV/amu.
-   :param float temperature: Receiver ion temperature in eV.
-   :param float density: Receiver ion density in m^-3
-   :param float z_effective: Plasma Z-effective.
-   :param float b_field: Magnetic field magnitude in Tesla.
-   :return: The effective rate
+      :param float energy: Interaction energy in eV/amu.
+      :param float temperature: Receiver ion temperature in eV.
+      :param float density: Receiver ion density in m^-3
+      :param float z_effective: Plasma Z-effective.
+      :param float b_field: Magnetic field magnitude in Tesla.
+      :return: The effective rate
 
 Some example code for requesting beam CX rate object and sampling it with the __call__() method.
 
@@ -260,3 +260,104 @@ Some example code for requesting beam CX rate object and sampling it with the __
 .. figure:: effective_cx_rates.png
    :align: center
    :width: 450px
+
+
+Abundances
+^^^^^^^^^^
+
+.. class:: cherab.core.atomic.rates.FractionalAbundance
+
+   Rate provider for fractional abundances in thermodynamic equilibrium.
+
+   .. function:: __call__(electron_density, electron_temperature)
+
+      Evaluate the fractional abundance of this ionisation stage at the given plasma conditions.
+
+      This function just wraps the cython evaluate() method.
+
+      :param float electron_density: electron density in m^-3
+      :param float electron_temperature: electron temperature in eV
+
+.. code-block:: pycon
+
+   >>> from cherab.core.atomic import neon
+   >>> from cherab.adas import ADAS
+   >>>
+   >>> atomic_data = ADAS()
+   >>>
+   >>> ne0_frac = atomic_data.fractional_abundance(neon, 0)
+   >>> ne0_frac(1E19, 1.0)
+   0.999899505093943
+
+
+Radiated Power
+^^^^^^^^^^^^^^
+
+.. class:: cherab.core.atomic.rates.RadiatedPower
+
+   Total radiated power for a given species and radiation type.
+
+   Radiation type can be:
+   - 'total' (line + recombination + bremsstrahlung + charge exchange)
+   - 'line' radiation
+   - 'continuum' (recombination + bremsstrahlung)
+   - 'cx' charge exchange
+
+   .. function:: __call__(electron_density, electron_temperature)
+
+      Evaluate the total radiated power of this species at the given plasma conditions.
+
+      This function just wraps the cython evaluate() method.
+
+      :param float electron_density: electron density in m^-3
+      :param float electron_temperature: electron temperature in eV
+
+
+.. code-block:: pycon
+
+   >>> from cherab.core.atomic import neon
+   >>> from cherab.adas import ADAS
+   >>>
+   >>> atomic_data = ADAS()
+   >>>
+   >>> ne_total_rad = atomic_data.radiated_power_rate(neon, 'total')
+   >>> ne_total_rad(1E19, 10) * 1E19
+   9.2261136594e-08
+   >>>
+   >>> ne_continuum_rad = atomic_data.radiated_power_rate(neon, 'continuum')
+   >>> ne_continuum_rad(1E19, 10) * 1E19
+   3.4387672228e-10
+
+
+.. class:: cherab.core.atomic.rates.StageResolvedLineRadiation
+
+   Total ionisation state resolved line radiated power rate.
+
+   :param Element element: the radiating element
+   :param int ionisation: the integer charge state for this ionisation stage
+   :param str name: optional label identifying this rate
+
+   .. function:: __call__(electron_density, electron_temperature)
+
+      Evaluate the total radiated power of this species at the given plasma conditions.
+
+      This function just wraps the cython evaluate() method.
+
+      :param float electron_density: electron density in m^-3
+      :param float electron_temperature: electron temperature in eV
+
+.. code-block:: pycon
+
+   >>> from cherab.core.atomic import neon
+   >>> from cherab.adas import ADAS
+   >>>
+   >>> atomic_data = ADAS()
+   >>>
+   >>> ne0_line_rad = atomic_data.stage_resolved_line_radiation_rate(neon, 0)
+   >>> ne0_line_rad(1E19, 10) * 1E19
+   6.1448254527e-16
+   >>>
+   >>> ne1_line_rad = atomic_data.stage_resolved_line_radiation_rate(neon, 1)
+   >>> ne1_line_rad(1E19, 10) * 1E19
+   1.7723122151e-11
+
