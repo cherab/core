@@ -1,4 +1,36 @@
 
+Atomic Data
+===========
+
+.. list-table::
+   :widths: 28 50 22
+   :header-rows: 1
+
+   * - Name
+     - Description
+     - Preview
+   * - :ref:`Photon Emissivity Coefficients <photon_emissivity_coefficients>`
+     - Sampling and plotting PEC rates provided by OPEN-ADAS.
+     - .. image:: ./atomic_data/D_alpha_PECs.png
+          :height: 150px
+          :width: 150px
+   * - :ref:`Beam-Plasma Interaction Rates <beam_plasma_interaction_rates>`
+     - Sampling and plotting various beam-plasma interaction rates provided by OPEN-ADAS.
+     - .. image:: ./atomic_data/effective_cx_rates.png
+          :height: 150px
+          :width: 150px
+   * - :ref:`Fractional Abundances <fractional_abundances>`
+     - Sampling and plotting Neon fractional abundances with the ADAS subscription package.
+     - .. image:: ./atomic_data/fractional_abundance.png
+          :height: 150px
+          :width: 150px
+   * - :ref:`Radiated Powers <radiated_powers>`
+     - Sampling and plotting total and stage resolved radiated powers with the ADAS
+       subscription package.
+     - .. image:: ./atomic_data/stage_resolved_radiation.png
+          :height: 150px
+          :width: 150px
+
 
 Code examples gallery
 =====================
