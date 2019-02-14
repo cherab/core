@@ -2,16 +2,20 @@
 Core Plasma Classes
 ===================
 
+Main Plasma Object
+------------------
+
+.. autoclass:: cherab.core.Plasma
+   :members:
+
 Plasma Species
 --------------
 
 .. autoclass:: cherab.core.Species
    :members:
 
-Main Plasma Object
-------------------
-
-.. autoclass:: cherab.core.Plasma
+.. autoclass:: cherab.core.plasma.node.Composition
+   :special-members: __iter__, __getitem__
    :members:
 
 Distribution functions
@@ -24,11 +28,4 @@ Distribution functions
 .. autoclass:: cherab.core.distribution.Maxwellian
    :members:
    :special-members: __call__
-
-
-Neutral Heating Beam
---------------------
-
-..  autoclass:: cherab.core.Beam
-   :members:
 

@@ -21,9 +21,7 @@ become stable until we have finished moving the source code to github.
    installation_and_structure
    available_modules
    atomic/atomic_data
-   core
-   equilibrium
-   plasma_sources
+   plasmas/plasmas
    models/emission_models
    math
    utility
