@@ -23,6 +23,7 @@ import numpy as np
 from raysect.optical import Point2D
 from .efit import EFITEquilibrium
 
+# todo: needs updating to support q_profile
 
 def _eqdsk_file_numbers(fp):
     """Generator to get numbers from a text file"""
