@@ -28,4 +28,5 @@ Distribution functions
 .. autoclass:: cherab.core.distribution.Maxwellian
    :members:
    :special-members: __call__
+   :show-inheritance:
 
