@@ -80,7 +80,12 @@ def plot_equilibrium(equilibrium, detail=False, resolution=0.025):
 
     :param equilibrium: The input EFIT equilibrium object.
     :param detail: If true, prints additional information about the equilibrium.
-    :param float resolution: Spatial resolution for sampling.
+    :param float resolution: Spatial resolution for sampling (default=0.025).
+
+    .. code-block:: pycon
+
+       >>> from cherab.tools.equilibrium import plot_equilibrium
+       >>> plot_equilibrium(equilibrium, detail=False, resolution=0.001)
     """
 
     eq = equilibrium

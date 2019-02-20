@@ -35,11 +35,21 @@ cdef class EFITEquilibrium:
     """
     An object representing an EFIT equilibrium time-slice.
 
+    EFIT is a code commonly used throughout the Fusion research community
+    for calculating the plasma magnetic equilibrium from a range of magnetics
+    measurements (L. Lao et. al. Nucl. Fusion **25** 1985). This equilibrium object
+    allows the calculation of the tokamak magnetic field from a number of EFIT
+    code outputs. To use this class properly users should be familiar with
+    the output data of EFIT.
+
     The EFIT data is interpolated to produced continuous functions of the
     equilibrium attributes, such as the magnetic flux (psi) and magnetic
     field.
 
     Note: psin_to_r mapping only exists if the psi axis is monotonic.
+
+    For examples of how to instantiate this class, see the examples in the
+    machine specific packages.
 
     :param r: EFIT grid radius axis values (array).
     :param z: EFIT grid height axis values (array).
@@ -56,6 +66,21 @@ cdef class EFITEquilibrium:
     :param lcfs_polygon: A 2xN array of [[x0, ...], [y0, ...]] vertices specifying the LCFS boundary.
     :param limiter_polygon: A 2xN array of [[x0, ...], [y0, ...]] vertices specifying the limiter.
     :param float time: The time stamp of the time-slice (in seconds).
+
+    :ivar Function2D psi: The poloidal flux in the r-z plane, :math:`\psi(r,z)`.
+    :ivar Function2D psi_normalised: The normalised poloidal flux in the r-z plane, :math:`\psi_n(r,z)`.
+    :ivar Function1D q: The safety factor :math:`q` at the specified normalised poloidal flux, :math:`q(\psi_n)`.
+    :ivar VectorFunction2D b_field: A 2D function that returns the magnetic field vector at the specified
+      point in the r-z plane, :math:`B(r, z)`.
+    :ivar VectorFunction2D toroidal_vector: The toroidal flux coordinate basis vector, :math:`\hat{\phi}(r, z)`.
+    :ivar VectorFunction2D poloidal_vector: The poloidal flux coordinate basis vector, :math:`\hat{ \theta }(r, z)`.
+    :ivar VectorFunction2D surface_normal: The surface normal flux coordinate basis vector, :math:`\hat{\psi}(r, z)`.
+    :ivar Function2D inside_lcfs: A 2D function that identifies if a given (r, z) coordinate lies inside or outside
+      the plasma Last Closed Flux Surface (LCFS). This mask function returns a value of 1 if the requested point
+      lies inside the LCFS. A value of 0.0 is returned outside the LCFS.
+    :ivar Function2D inside_limiter: A 2D function that identifies if a given (r, z) coordinate lies inside or
+      outside the first wall limiter polygon. This mask function returns a value of 1 if the requested point
+      lies inside the limit polygon. A value of 0.0 is returned outside the polygon.
     """
 
     cdef:
@@ -203,9 +228,23 @@ cdef class EFITEquilibrium:
         """
         Maps a 1D profile onto the equilibrium to give a 2D profile.
 
+        Useful for mapping flux surface quantities in the r-z plane.
+
         :param profile: A 1D function or 2xN array.
         :param value_outside_lcfs: Value returned if point requested outside the LCFS (default=0.0).
         :return: Function2D object.
+
+        .. code-block:: pycon
+
+           >>> # Hypothesise a 1D electron temperature profile as a function of psi_n.
+           >>> te_data = np.zeros((2, 6))
+           >>> te_data[0, :] = [0, 0.1, 0.2, 0.4, 0.7, 1.0]
+           >>> te_data[1, :] = [0, 100, 400, 500, 550, 600]
+           >>> te = equilibrium.map2d(te_data)
+           >>>
+           >>> # evaluate temperature mapped on flux surfaces in (r, z)
+           >>> te(3.1, 0.2)
+           487.924780234
         """
 
         # convert data to a 1d function if not already a function object
@@ -225,19 +264,62 @@ cdef class EFITEquilibrium:
         """
         Maps a 1D profile onto the equilibrium to give a 3D profile.
 
+        Useful for mapping flux surface quantities in 3D space.
+
         :param profile: A 1D function or Nx2 array.
         :param value_outside_lcfs: Value returned if point requested outside the LCFS (default=0.0).
         :return: Function3D object.
+
+        .. code-block:: pycon
+
+           >>> # Hypothesise a 1D electron temperature profile as a function of psi_n.
+           >>> te_data = np.zeros((2, 6))
+           >>> te_data[0, :] = [0, 0.1, 0.2, 0.4, 0.7, 1.0]
+           >>> te_data[1, :] = [0, 100, 400, 500, 550, 600]
+           >>> te = equilibrium.map3d(te_data)
+           >>>
+           >>> # evaluate temperature mapped on flux surfaces in (r, z)
+           >>> te(3.1, -2.9, 0.2)
+           357.8793240
         """
 
         return AxisymmetricMapper(self.map2d(profile, value_outside_lcfs))
 
     def map_vector2d(self, object toroidal, object poloidal, object normal):
         """
-        :param toroidal: Toroidal vector magnitude,
-        :param poloidal: Poloidal vector magnitude.
-        :param normal: Flux surface normal magnitude.
-        :return: VectorFunction2D object.
+        Maps velocity components in flux coordinates onto flux surfaces in the r-z plane.
+
+        It is often convenient to express the plasma velocity components in flux coordinates,
+        assuming the velocities are flux functions. This function allows the user to
+        specify velocity components as 1D functions of :math:`\psi_n`. The three velocity
+        components are combined to yield a velocity vector at the requested r-z coordinate.
+
+        :param toroidal: Toroidal velocity :math:`v_{\phi} (\psi_n)`, specified as a 1D function
+          or Nx2 array.
+        :param poloidal: Poloidal vector :math:`v_{\theta} (\psi_n)`, specified as a 1D function
+          or Nx2 array.
+        :param normal: Velocity along the flux surface normal :math:`v_{\psi} (\psi_n)`, specified
+          as a 1D function or Nx2 array.
+        :return: VectorFunction2D object that returns the velocity vector at a given r,z coordinate,
+          :math:`v(r,z)`.
+
+        .. code-block:: pycon
+
+           >>> # Hypothesise 1D profiles for the toroidal and poloidal velocities on psi_n.
+           >>> v_toroidal = np.zeros((2, 6))
+           >>> v_toroidal[0, :] = [0, 0.1, 0.2, 0.4, 0.7, 1.0]
+           >>> v_toroidal[1, :] = [0, 1e4, 3e4, 5e4, 5.5e4, 6e4]
+           >>> v_poloidal = np.zeros((2, 6))
+           >>> v_poloidal[0, :] = [0, 0.1, 0.2, 0.4, 0.7, 1.0]
+           >>> v_poloidal[1, :] = [4e4, 1e4, 3e3, 1e3, 0, 0]
+           >>> # Assume zero velocity normal to flux surface
+           >>> from cherab.core.math import Constant1D
+           >>> v_normal = Constant1D(0.0)
+           >>>
+           >>> # generate VectorFunction2D and sample
+           >>> v = equilibrium.map_vector2d(v_toroidal, v_poloidal, v_normal)
+           >>> v(3.1, 0.2)
+           Vector3D(134.523, 543.6347, 25342.16)
         """
 
         # convert toroidal data to 1d function if not already a function object
@@ -265,11 +347,39 @@ cdef class EFITEquilibrium:
 
     def map_vector3d(self, object toroidal, object poloidal, object normal):
         """
+        Maps velocity components in flux coordinates onto flux surfaces in 3D space.
 
-        :param toroidal: Toroidal vector magnitude,
-        :param poloidal: Poloidal vector magnitude.
-        :param normal: Flux surface normal magnitude.
-        :return: VectorFunction3D object
+        It is often convenient to express the plasma velocity components in flux coordinates,
+        assuming the velocities are flux functions. This function allows the user to
+        specify velocity components as 1D functions of :math:`\psi_n`. The three velocity
+        components are combined to yield a velocity vector at the requested 3D coordinate.
+
+        :param toroidal: Toroidal velocity :math:`v_{\phi} (\psi_n)`, specified as a 1D function
+          or Nx2 array.
+        :param poloidal: Poloidal vector :math:`v_{\theta} (\psi_n)`, specified as a 1D function
+          or Nx2 array.
+        :param normal: Velocity along the flux surface normal :math:`v_{\psi} (\psi_n)`, specified
+          as a 1D function or Nx2 array.
+        :return: VectorFunction2D object that returns the velocity vector at a given r,z coordinate,
+          :math:`v(r,z)`.
+
+        .. code-block:: pycon
+
+           >>> # Hypothesise 1D profiles for the toroidal and poloidal velocities on psi_n.
+           >>> v_toroidal = np.zeros((2, 6))
+           >>> v_toroidal[0, :] = [0, 0.1, 0.2, 0.4, 0.7, 1.0]
+           >>> v_toroidal[1, :] = [0, 1e4, 3e4, 5e4, 5.5e4, 6e4]
+           >>> v_poloidal = np.zeros((2, 6))
+           >>> v_poloidal[0, :] = [0, 0.1, 0.2, 0.4, 0.7, 1.0]
+           >>> v_poloidal[1, :] = [4e4, 1e4, 3e3, 1e3, 0, 0]
+           >>> # Assume zero velocity normal to flux surface
+           >>> from cherab.core.math import Constant1D
+           >>> v_normal = Constant1D(0.0)
+           >>>
+           >>> # generate VectorFunction2D and sample
+           >>> v = equilibrium.map_vector3d(v_toroidal, v_poloidal, v_normal)
+           >>> v(3.1, -0.1, 0.2)
+           Vector3D(134.523, 543.6347, 25342.16)
         """
 
         return VectorAxisymmetricMapper(self.map_vector2d(toroidal, poloidal, normal))
