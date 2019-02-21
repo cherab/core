@@ -73,12 +73,103 @@ cdef class ModelManager:
 # todo: beam sigma defines the width, is this really a good way to specify the width? beam.width = fwhm?
 cdef class Beam(Node):
     """
-    Represents a mono-energetic beam of particles with a Gaussian profile.
+    A scene-graph object representing a Gaussian mono-energetic beam.
 
-    :param parent:
-    :param transform:
-    :param name:
-    :return:
+    The CHERAB beam object holds all the properties and state of a mono-energetic
+    particle beam to which beam attenuation and emission models may be attached.
+    The Beam object is defined in terms of its power, energy, geometric properties
+    and the plasma it interacts with.
+
+    The Beam object is a Raysect scene-graph node and lives in it's own
+    coordinate space. This coordinate space is defined relative to it's parent
+    scene-graph object by an AffineTransform. The beam parameters are defined
+    in the Beam object coordinate space. Models using the beam object must
+    convert any spatial coordinates into beam space before requesting values
+    from the Beam object. The Beam axis is defined to lie along the positive
+    z-axis with its origin at the origin of the local coordinate system.
+
+    While a Beam object can be used to simply hold and sample beam properties,
+    it can also be used as an emitter in Raysect scenes by attaching
+    emission models. The Beam's bounding geometry is automatically defined from
+    the Beam's initial width and divergence. The length of the Beam geometry
+    needs to be set by the user.
+
+    Beam emission models may be attached to the beam
+    object by either setting the full list of models or adding to the list of
+    models. See the Beam's ModelManager for more information. The beam emission models
+    must be derived from the BeamModel base class.
+
+    Any change to the beam object properties and models
+    will result in a automatic notification being sent to objects that register
+    with the Beam objects' Notifier. All CHERAB models and associated scene-graph
+    objects automatically handle the notifications internally to clear
+    cached data. If you need to keep track of beam changes in your own classes,
+    a callback can be registered with the beam Notifier which will be called in
+    the event of a change to the Beam object. See the Notifier documentation.
+
+    .. warning::
+       In the current implementation of the Beam class, the Beam can only be associated
+       with a single plasma instance. If your scene has overlapping plasmas the
+       beam attenuation will only be calculated for the plasma instance to which
+       this beam is attached.
+
+    :param Node parent: The parent node in the Raysect scene-graph.
+      See the Raysect documentation for more guidance.
+    :param AffineMatrix3D transform: The transform defining the spatial position
+      and orientation of this beam. See the Raysect documentation if you need
+      guidance on how to use AffineMatrix3D transforms.
+    :param str name: The name for this beam object.
+
+    :ivar AtomicData atomic_data: The atomic data provider class for this beam.
+      All beam emission and attenuation rates will be calculated from the same provider.
+    :ivar BeamAttenuator attenuator: The method used for calculating the attenuation
+      of this beam into the plasma. Defaults to a SingleRayAttenuator().
+    :ivar float divergence_x: The beam profile divergence in the x dimension in beam
+      coordinates (degrees).
+    :ivar float divergence_y: The beam profile divergence in the y dimension in beam
+      coordinates (degrees).
+    :ivar Element element: The element of which this beam is composed.
+    :ivar float energy: The beam energy in eV/amu.
+    :ivar VolumeIntegrator integrator: The configurable method for doing
+      volumetric integration through the beam along a Ray's path. Defaults to
+      a numerical integrator with 1mm step size, NumericalIntegrator(step=0.001).
+    :ivar float length: The approximate length of this beam from source to extinction
+      in the plasma. This is used for setting the bounding geometry over which calculations
+      will occur. Units of m.
+    :ivar ModelManager models: The manager class that sets and provides access to the
+      emission models for this beam.
+    :ivar Plasma plasma: The plasma instance with which this beam interacts.
+    :ivar float power: The total beam power in W.
+    :ivar float sigma: The guassian beam width at the origin in m.
+    :ivar float temperature: The broadening of the beam (eV).
+
+    .. code-block:: pycon
+
+       >>> # This example shows how to initialise and populate a basic beam
+       >>>
+       >>> from raysect.core.math import Vector3D, translate, rotate
+       >>> from raysect.optical import World
+       >>>
+       >>> from cherab.core.atomic import carbon, deuterium, Line
+       >>> from cherab.core.model import BeamCXLine
+       >>> from cherab.openadas import OpenADAS
+       >>>
+       >>>
+       >>> world = World()
+       >>>
+       >>> beam = Beam(parent=world, transform=translate(1.0, 0.0, 0) * rotate(90, 0, 0))
+       >>> beam.plasma = plasma  # put your plasma object here
+       >>> beam.atomic_data = OpenADAS()
+       >>> beam.energy = 60000
+       >>> beam.power = 1e4
+       >>> beam.element = deuterium
+       >>> beam.sigma = 0.025
+       >>> beam.divergence_x = 0.5
+       >>> beam.divergence_y = 0.5
+       >>> beam.length = 3.0
+       >>> beam.models = [BeamCXLine(Line(carbon, 5, (8, 7)))]
+       >>> beam.integrator.step = 0.001
+       >>> beam.integrator.min_samples = 5
     """
 
     def __init__(self, object parent=None, AffineMatrix3D transform=None, str name=None):
