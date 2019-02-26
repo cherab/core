@@ -54,6 +54,17 @@ cdef class ImpactExcitationRate(_PECRate):
     pass
 
 
+cdef class NullImpactExcitationRate(ImpactExcitationRate):
+    """
+    A PEC rate that always returns zero.
+
+    Needed for use cases where the required atomic data is missing.
+    """
+
+    cpdef double evaluate(self, double density, double temperature) except? -1e999:
+        return 0.0
+
+
 cdef class RecombinationRate(_PECRate):
     """
     Recombination rate coefficient.
@@ -61,11 +72,33 @@ cdef class RecombinationRate(_PECRate):
     pass
 
 
+cdef class NullRecombinationRate(RecombinationRate):
+    """
+    A PEC rate that always returns zero.
+
+    Needed for use cases where the required atomic data is missing.
+    """
+
+    cpdef double evaluate(self, double density, double temperature) except? -1e999:
+        return 0.0
+
+
 cdef class ThermalCXRate(_PECRate):
     """
     Thermal charge exchange rate coefficient.
     """
     pass
+
+
+cdef class NullThermalCXRate(ThermalCXRate):
+    """
+    A PEC rate that always returns zero.
+
+    Needed for use cases where the required atomic data is missing.
+    """
+
+    cpdef double evaluate(self, double density, double temperature) except? -1e999:
+        return 0.0
 
 
 cdef class BeamCXRate:
@@ -88,6 +121,17 @@ cdef class BeamCXRate:
 
     def __call__(self, double energy, double temperature, double density, double z_effective, double b_field):
         return self.evaluate(energy, temperature, density, z_effective, b_field)
+
+
+cdef class NullBeamCXRate(BeamCXRate):
+    """
+    A beam CX rate that always returns zero.
+
+    Needed for use cases where the required atomic data is missing.
+    """
+
+    cpdef double evaluate(self, double energy, double temperature, double density, double z_effective, double b_field) except? -1e999:
+        return 0.0
 
 
 cdef class _BeamRate:
@@ -117,6 +161,17 @@ cdef class BeamStoppingRate(_BeamRate):
     pass
 
 
+cdef class NullBeamStoppingRate(BeamStoppingRate):
+    """
+    A beam rate that always returns zero.
+
+    Needed for use cases where the required atomic data is missing.
+    """
+
+    cpdef double evaluate(self, double energy, double density, double temperature) except? -1e999:
+        return 0.0
+
+
 cdef class BeamPopulationRate(_BeamRate):
     """
     Beam population coefficient.
@@ -124,11 +179,33 @@ cdef class BeamPopulationRate(_BeamRate):
     pass
 
 
+cdef class NullBeamPopulationRate(BeamPopulationRate):
+    """
+    A beam rate that always returns zero.
+
+    Needed for use cases where the required atomic data is missing.
+    """
+
+    cpdef double evaluate(self, double energy, double density, double temperature) except? -1e999:
+        return 0.0
+
+
 cdef class BeamEmissionRate(_BeamRate):
     """
     Beam emission coefficient.
     """
     pass
+
+
+cdef class NullBeamEmissionRate(BeamEmissionRate):
+    """
+    A beam rate that always returns zero.
+
+    Needed for use cases where the required atomic data is missing.
+    """
+
+    cpdef double evaluate(self, double energy, double density, double temperature) except? -1e999:
+        return 0.0
 
 
 cdef class RadiatedPower:
@@ -180,6 +257,17 @@ cdef class RadiatedPower:
         plt.loglog(temp, radiation, '.-', label='{} - {}'.format(self.element.symbol, self.radiation_type))
 
 
+cdef class NullRadiatedPower(RadiatedPower):
+    """
+    A radiated power rate that always returns zero.
+
+    Needed for use cases where the required atomic data is missing.
+    """
+
+    cdef double evaluate(self, double electron_density, double electron_temperature) except? -1e999:
+        return 0.0
+
+
 cdef class StageResolvedLineRadiation:
     """
     Total ionisation state resolved line radiated power rate.
@@ -223,6 +311,17 @@ cdef class StageResolvedLineRadiation:
         plt.loglog(temp, radiation, '.-', label='{}{}'.format(self.element.symbol, self.ionisation))
 
 
+cdef class NullStageResolvedLineRadiation(StageResolvedLineRadiation):
+    """
+    A stage resolved line radiation rate that always returns zero.
+
+    Needed for use cases where the required atomic data is missing.
+    """
+
+    cdef double evaluate(self, double electron_density, double electron_temperature) except? -1e999:
+        return 0.0
+
+
 cdef class FractionalAbundance:
     """
     Rate provider for fractional abundances in thermodynamic equilibrium.
@@ -264,3 +363,14 @@ cdef class FractionalAbundance:
         temp = [10**x for x in np.linspace(np.log10(temp_low), np.log10(temp_high), num=num_points)]
         abundances = [self.evaluate(dens, te) for te in temp]
         plt.semilogx(temp, abundances, '.-', label='{}{}'.format(self.element.symbol, self.ionisation))
+
+
+cdef class NullFractionalAbundance(FractionalAbundance):
+    """
+    A fractional abundance rate that always returns zero.
+
+    Needed for use cases where the required atomic data is missing.
+    """
+
+    cdef double evaluate(self, double electron_density, double electron_temperature) except? -1e999:
+        return 0.0

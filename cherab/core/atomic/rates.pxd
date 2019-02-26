@@ -27,7 +27,15 @@ cdef class ImpactExcitationRate(_PECRate):
     pass
 
 
+cdef class NullImpactExcitationRate(ImpactExcitationRate):
+    pass
+
+
 cdef class RecombinationRate(_PECRate):
+    pass
+
+
+cdef class NullRecombinationRate(RecombinationRate):
     pass
 
 
@@ -35,8 +43,16 @@ cdef class ThermalCXRate(_PECRate):
     pass
 
 
+cdef class NullThermalCXRate(ThermalCXRate):
+    pass
+
+
 cdef class BeamCXRate:
     cpdef double evaluate(self, double energy, double temperature, double density, double z_effective, double b_field) except? -1e999
+
+
+cdef class NullBeamCXRate(BeamCXRate):
+    pass
 
 
 cdef class _BeamRate:
@@ -47,11 +63,22 @@ cdef class BeamStoppingRate(_BeamRate):
     pass
 
 
+cdef class NullBeamStoppingRate(BeamStoppingRate):
+    pass
+
+
 cdef class BeamPopulationRate(_BeamRate):
     pass
 
 
+cdef class NullBeamPopulationRate(BeamPopulationRate):
+    pass
+
+
 cdef class BeamEmissionRate(_BeamRate):
+    pass
+
+cdef class NullBeamEmissionRate(BeamEmissionRate):
     pass
 
 
@@ -65,6 +92,10 @@ cdef class RadiatedPower:
     cdef double evaluate(self, double electron_density, double electron_temperature) except? -1e999
 
 
+cdef class NullRadiatedPower(RadiatedPower):
+    pass
+
+
 cdef class StageResolvedLineRadiation:
 
     cdef:
@@ -75,6 +106,10 @@ cdef class StageResolvedLineRadiation:
     cdef double evaluate(self, double electron_density, double electron_temperature) except? -1e999
 
 
+cdef class NullStageResolvedLineRadiation(StageResolvedLineRadiation):
+    pass
+
+
 cdef class FractionalAbundance:
 
     cdef:
@@ -83,3 +118,7 @@ cdef class FractionalAbundance:
         public str name
 
     cdef double evaluate(self, double electron_density, double electron_temperature) except? -1e999
+
+
+cdef class NullFractionalAbundance(FractionalAbundance):
+    pass
