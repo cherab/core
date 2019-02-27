@@ -30,6 +30,6 @@ cdef class ExcitationLine(PlasmaModel):
         Species _target_species
         ImpactExcitationRate _rates
         LineShapeModel _lineshape
-        object _lineshape_class
+        object _lineshape_class, _lineshape_args
 
     cdef int _populate_cache(self) except -1
