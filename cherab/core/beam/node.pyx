@@ -209,7 +209,9 @@ cdef class Beam(Node):
 
     cpdef double density(self, double x, double y, double z) except? -1e999:
         """
-        Returns the bean density at the specified coordinates.
+        Returns the bean density at the specified position in beam coordinates.
+        
+        Note: this function is only defined over the domain 0 < z < beam_length.
         
         :param x: x coordinate in meters.
         :param y: y coordinate in meters.
