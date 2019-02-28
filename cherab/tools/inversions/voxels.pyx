@@ -40,6 +40,14 @@ PI = 3.141592653589793
 
 
 class Voxel(Node):
+    """
+    A Voxel base class.
+
+    Each Voxel is a Node in the scenegraph. Each Voxel type that
+    inherits from this class defines its own geometry.
+
+    :ivar float volume: The geometric volume of this voxel.
+    """
 
     @property
     def volume(self):
@@ -47,8 +55,33 @@ class Voxel(Node):
 
 
 class AxisymmetricVoxel(Voxel):
+    """
+    An axis-symmetric Voxel.
 
-    # cdef np.ndarray _vertices, _triangles
+    This Voxel is symmetric about the vertical z-axis. The cross section
+    of the voxel can be arbitrarily defined by a polygon in the r-z plane.
+    The type of geometric primitive used to define the geometric extent of
+    this Voxel can be selected by the user and either of type Mesh or CSG.
+    The two representations should approximately the same geometry but have
+    different performance goals. The CSG representation uses lower memory and
+    is a better choice when large numbers of Voxels will be present in a single
+    scene. The Mesh representation is split into smaller components and better
+    for cases where multiple importance sampling is important, such as weight
+    matrices including reflection effects.
+
+
+    :param vertices: A list/tuple of Point2D objects specifying the voxel's
+      polygon outline in the r-z plane.
+    :param Node parent: The scenegraph to which this Voxel is attached.
+    :param Material material: The emission material of this Voxel, defaults
+      to a UnityVolumeEmitter() for weight matrix calculations.
+    :param str primitive_type: Specifies the primitive type, can be either
+      'mesh' or 'csg'. Defaults to the mesh representation.
+
+    :ivar float volume: The geometric volume of this voxel.
+    :ivar float cross_sectional_area: The cross sectional area of the voxel in
+      the r-z plane.
+    """
 
     def __init__(self, vertices, parent=None, material=None, primitive_type='mesh'):
 
@@ -65,6 +98,9 @@ class AxisymmetricVoxel(Voxel):
             if not isinstance(vertex, Point2D):
                 raise TypeError('The AxisSymmetricVoxel can only be specified with a list/tuple of Point2D objects.')
             self._vertices[i, :] = vertex.x, vertex.y
+
+        if any(self._vertices[:, 0] < 0):
+            raise ValueError('The polygon vertices must be in the r-z plane.')
 
         # Check the polygon is clockwise, if not => reverse it.
         if not winding2d(self._vertices):
@@ -281,9 +317,19 @@ class AxisymmetricVoxel(Voxel):
 
 
 class VoxelCollection(Node):
+    """
+    The base class for collections of voxels.
 
-    # cdef:
-    #     list _voxels
+    Used for managing a collection of voxels when calculating a weight
+    matrix for example.
+
+    .. warning:
+       No checks are performed by the base class to ensure that the voxel
+       volumes don't overlap. This is the responsibility of the user.
+
+    :ivar float count: The number of voxels in this collection.
+    :ivar float total_volume: The total volume of all voxels.
+    """
 
     def __len__(self):
         return len(self._voxels)
@@ -317,14 +363,23 @@ class VoxelCollection(Node):
         return total_volume
 
     def set_active(self, item):
+        """
+        Set the ith voxel as an active emitter.
+
+        :param item: If item is an int, the ith voxel will be configured as an active emitter,
+          all the others will be turned off. If item is the string 'all', all voxels will be
+          active emitters.
+        """
         raise NotImplementedError()
 
     def parent_all_voxels(self):
+        """Add all voxels in this collection to the scenegraph."""
 
         for voxel in self._voxels:
             voxel.parent = self
 
     def unparent_all_voxels(self):
+        """Remove all voxels in this collection from the scenegraph."""
 
         for voxel in self._voxels:
             voxel.parent = None
@@ -347,11 +402,27 @@ class VoxelCollection(Node):
 
 
 class ToroidalVoxelGrid(VoxelCollection):
+    """
+    A collection of axis-symmetric toroidal voxels.
 
-    # cdef:
-    #     double _min_radius, _max_radius
-    #     double _min_height, _max_height
+    This object manages a collection of voxels, where each voxel in the collection
+    is an AxisymmetricVoxel object.
 
+    :param voxel_coordinates: An array/list of voxels, where each voxel element
+      is defined by a list of 2D points.
+    :param str name: The name of this voxel collection.
+    :param Node parent: The parent scenegraph to which these voxels belong.
+    :param AffineMatrix3D transform: The coordinate transformation of this local
+      coordinate system relative to the scenegraph parent, defaults to the identity
+      transform.
+    :param active: Selects which voxels are active emitters in the initialised state.
+      If active is an int, the ith voxel will be configured as an active emitter, all
+      the others will be turned off. If active is the string 'all', all voxels will be
+      active emitters.
+    :param str primitive_type: The geometry type to use for the AxisymmetricVoxel
+      instances, can be ['mesh', 'csg']. See their documentation for more information.
+      Defaults to `primitive_type='mesh'`.
+    """
 
     def __init__(self, voxel_coordinates, name='', parent=None, transform=None,
                  active="all", primitive_type='mesh'):
