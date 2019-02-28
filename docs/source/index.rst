@@ -24,7 +24,7 @@ become stable until we have finished moving the source code to github.
    plasmas/plasmas
    models/emission_models
    math
-   utility
+   tools/tools
 
 
 .. toctree::
