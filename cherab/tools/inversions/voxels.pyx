@@ -449,7 +449,8 @@ class ToroidalVoxelGrid(VoxelCollection):
             fig, ax = plt.subplots()
         ax.add_collection(p)
         fig = plt.gcf()
-        fig.colorbar(p, ax=ax)
+        if voxel_values:
+            fig.colorbar(p, ax=ax)
         ax.set_xlim(self.min_radius, self.max_radius)
         ax.set_ylim(self.min_height, self.max_height)
         ax.axis("equal")
