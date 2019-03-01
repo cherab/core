@@ -207,7 +207,6 @@ cdef class MultipletLineShape(LineShapeModel):
 
         multiplet = np.array(multiplet)
 
-        print(multiplet)
         if not (len(multiplet.shape) == 2 and multiplet.shape[0] == 2):
             raise ValueError("The multiplet specification must be an array of shape (Nx2).")
 
