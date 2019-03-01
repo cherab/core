@@ -30,7 +30,7 @@ cdef class RecombinationLine(PlasmaModel):
         Species _target_species
         RecombinationRate _rates
         LineShapeModel _lineshape
-        object _lineshape_class
+        object _lineshape_class, _lineshape_args, _lineshape_kwargs
 
     # cpdef double radiance_at(self, Point3D point, Vector3D direction)
 

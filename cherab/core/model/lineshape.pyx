@@ -16,6 +16,7 @@
 # See the Licence for the specific language governing permissions and limitations
 # under the Licence.
 
+import numpy as np
 from libc.math cimport sqrt, erf, M_SQRT2, floor, ceil, fabs
 from cherab.core.utility.constants cimport ATOMIC_MASS, ELEMENTARY_CHARGE, SPEED_OF_LIGHT
 from raysect.optical.spectrum cimport new_spectrum
@@ -162,6 +163,84 @@ cdef class GaussianLine(LineShapeModel):
         sigma = thermal_broadening(self.wavelength, te, self.line.element.atomic_weight)
 
         return add_gaussian_line(radiance, shifted_wavelength, sigma, spectrum)
+
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
+@cython.initializedcheck(False)
+@cython.cdivision(True)
+cdef class MultipletLineShape(LineShapeModel):
+    """
+    Produces Multiplet line shapes.
+
+    The lineshape radiance is calculated from a base PEC rate that is unresolved. This
+    radiance is then divided over a number of components as specified in the multiplet
+    argument. The multiplet components are specified with an Nx2 array where N is the
+    number of components in the multiplet. The first axis of the array contains the
+    wavelengths of each component, the second contains the line ratio for each component.
+    The component line ratios must sum to one. For example:
+
+    :param Line line: The emission line object for the base rate radiance calculation.
+    :param float wavelength: The rest wavelength of the base emission line.
+    :param Species target_species: The target plasma species that is emitting.
+    :param Plasma plasma: The emitting plasma object.
+    :param multiplet: An Nx2 array that specifies the multiplet wavelengths and line ratios.
+
+    .. code-block:: pycon
+
+       >>> from cherab.core.atomic import Line, deuterium
+       >>> from cherab.core.model import ExcitationLine, MultipletLineShape
+       >>>
+       >>> # multiplet specification in Nx2 array
+       >>> multiplet = [[403.5, 404.1, 404.3], [0.2, 0.5, 0.3]]
+       >>>
+       >>> # Adding the multiplet to the plasma model.
+       >>> d_alpha = Line(deuterium, 0, (3, 2))
+       >>> excit = ExcitationLine(d_alpha, lineshape=MultipletLineShape, lineshape_args=[multiplet])
+       >>> plasma.models.add(excit)
+    """
+
+    def __init__(self, Line line, double wavelength, Species target_species, Plasma plasma,
+                 object multiplet):
+
+        super().__init__(line, wavelength, target_species, plasma)
+
+        multiplet = np.array(multiplet)
+
+        if not (len(multiplet.shape) == 2 and multiplet.shape[0] == 2):
+            raise ValueError("The multiplet specification must be an array of shape (Nx2).")
+
+        if not multiplet[1,:].sum() == 1.0:
+            raise ValueError("The multiplet line ratios should sum to one.")
+
+        self.number_of_lines = multiplet.shape[1]
+        self.multiplet = multiplet
+
+    cpdef Spectrum add_line(self, double radiance, Point3D point, Vector3D direction, Spectrum spectrum):
+
+        cdef double te, sigma, shifted_wavelength, component_wavelength, component_radiance
+        cdef Vector3D ion_velocity
+
+        te = self.plasma.get_electron_distribution().effective_temperature(point.x, point.y, point.z)
+        if te <= 0.0:
+            return spectrum
+
+        ion_velocity = self.target_species.distribution.bulk_velocity(point.x, point.y, point.z)
+
+        # calculate the line width
+        sigma = thermal_broadening(self.wavelength, te, self.line.element.atomic_weight)
+
+        for i in range(self.number_of_lines):
+
+            component_wavelength = self.multiplet[0, i]
+            component_radiance = radiance * self.multiplet[1, i]
+
+            # calculate emission line central wavelength, doppler shifted along observation direction
+            shifted_wavelength = doppler_shift(component_wavelength, direction, ion_velocity)
+
+            spectrum = add_gaussian_line(component_radiance, shifted_wavelength, sigma, spectrum)
+
+        return spectrum
 
 
 @cython.boundscheck(False)
