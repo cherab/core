@@ -24,7 +24,8 @@ from cherab.core.utility.constants cimport RECIP_4_PI
 
 cdef class RecombinationLine(PlasmaModel):
 
-    def __init__(self, Line line, Plasma plasma=None, AtomicData atomic_data=None, object lineshape=None):
+    def __init__(self, Line line, Plasma plasma=None, AtomicData atomic_data=None, object lineshape=None,
+                 object lineshape_args=None, object lineshape_kwargs=None):
 
         super().__init__(plasma, atomic_data)
 
@@ -33,6 +34,15 @@ cdef class RecombinationLine(PlasmaModel):
         self._lineshape_class = lineshape or GaussianLine
         if not issubclass(self._lineshape_class, LineShapeModel):
             raise TypeError("The attribute lineshape must be a subclass of LineShapeModel.")
+
+        if lineshape_args:
+            self._lineshape_args = lineshape_args
+        else:
+            self._lineshape_args = []
+        if lineshape_kwargs:
+            self._lineshape_kwargs = lineshape_kwargs
+        else:
+            self._lineshape_kwargs = {}
 
         # ensure that cache is initialised
         self._change()
@@ -90,7 +100,8 @@ cdef class RecombinationLine(PlasmaModel):
         self._wavelength = self._atomic_data.wavelength(self._line.element, self._line.ionisation, self._line.transition)
 
         # instance line shape renderer
-        self._lineshape = self._lineshape_class(self._line, self._wavelength, self._target_species, self._plasma)
+        self._lineshape = self._lineshape_class(self._line, self._wavelength, self._target_species, self._plasma,
+                                                *self._lineshape_args, **self._lineshape_kwargs)
 
     def _change(self):
 
