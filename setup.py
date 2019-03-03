@@ -21,12 +21,12 @@ if "--profile" in sys.argv:
     profile = True
     del sys.argv[sys.argv.index("--profile")]
 
+source_paths = ['cherab', 'demos']
 compilation_includes = [".", numpy.get_include()]
 compilation_args = []
 cython_directives = {
     'language_level': 3
 }
-
 setup_path = path.dirname(path.abspath(__file__))
 
 if use_cython:
@@ -35,12 +35,13 @@ if use_cython:
 
     # build .pyx extension list
     extensions = []
-    for root, dirs, files in os.walk(setup_path):
-        for file in files:
-            if path.splitext(file)[1] == ".pyx":
-                pyx_file = path.relpath(path.join(root, file), setup_path)
-                module = path.splitext(pyx_file)[0].replace("/", ".")
-                extensions.append(Extension(module, [pyx_file], include_dirs=compilation_includes, extra_compile_args=compilation_args),)
+    for package in source_paths:
+        for root, dirs, files in os.walk(path.join(setup_path, package)):
+            for file in files:
+                if path.splitext(file)[1] == ".pyx":
+                    pyx_file = path.relpath(path.join(root, file), setup_path)
+                    module = path.splitext(pyx_file)[0].replace("/", ".")
+                    extensions.append(Extension(module, [pyx_file], include_dirs=compilation_includes, extra_compile_args=compilation_args),)
 
     if profile:
         cython_directives["profile"] = True
@@ -52,12 +53,13 @@ else:
 
     # build .c extension list
     extensions = []
-    for root, dirs, files in os.walk(setup_path):
-        for file in files:
-            if path.splitext(file)[1] == ".c":
-                c_file = path.relpath(path.join(root, file), setup_path)
-                module = path.splitext(c_file)[0].replace("/", ".")
-                extensions.append(Extension(module, [c_file], include_dirs=compilation_includes, extra_compile_args=compilation_args),)
+    for package in source_paths:
+        for root, dirs, files in os.walk(path.join(setup_path, package)):
+            for file in files:
+                if path.splitext(file)[1] == ".c":
+                    c_file = path.relpath(path.join(root, file), setup_path)
+                    module = path.splitext(c_file)[0].replace("/", ".")
+                    extensions.append(Extension(module, [c_file], include_dirs=compilation_includes, extra_compile_args=compilation_args),)
 
 # parse the package version number
 with open(path.join(path.dirname(__file__), 'cherab/core/VERSION')) as version_file:
