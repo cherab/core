@@ -1,19 +1,17 @@
 from setuptools import setup, find_packages, Extension
-from Cython.Build import cythonize
 import sys
 import numpy
 import os
 import os.path as path
 import multiprocessing
 
-threads = multiprocessing.cpu_count()
-use_cython = False
+use_cython = True
 force = False
 profile = False
 
-if "--use-cython" in sys.argv:
-    use_cython = True
-    del sys.argv[sys.argv.index("--use-cython")]
+if "--skip-cython" in sys.argv:
+    use_cython = False
+    del sys.argv[sys.argv.index("--skip-cython")]
 
 if "--force" in sys.argv:
     force = True
@@ -82,7 +80,7 @@ setup(
         "Programming Language :: Python :: 3",
         "Topic :: Scientific/Engineering :: Physics"
     ],
-    install_requires=['numpy', 'scipy', 'raysect', 'matplotlib'],
+    install_requires=['numpy', 'scipy', 'raysect', 'matplotlib', 'cython>=0.28'],
     packages=find_packages(),
     include_package_data=True,
     zip_safe= False,
