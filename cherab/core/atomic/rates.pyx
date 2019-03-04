@@ -24,19 +24,22 @@ cdef class _PECRate:
     """
     Photon emissivity coefficient base class.
     """
-    
-    cpdef double evaluate(self, double density, double temperature) except? -1e999:
+
+    def __call__(self, double density, double temperature):
+        """Returns a photon emissivity coefficient at the specified plasma conditions.
+
+        This function just wraps the cython evaluate() method.
         """
-        Returns a rate at given conditions.
+        return self.evaluate(density, temperature)
+
+    cpdef double evaluate(self, double density, double temperature) except? -1e999:
+        """Returns a photon emissivity coefficient at given conditions.
 
         :param temperature: Receiver ion temperature in eV.
         :param density: Receiver ion density in m^-3
         :return: The effective PEC rate in W/m^3.
         """
         raise NotImplementedError("The evaluate() virtual method must be implemented.")
-
-    def __call__(self, double density, double temperature):
-        return self.evaluate(density, temperature)
 
     def plot_temperature(self, temp_low=1, temp_high=1000, num_points=100, dens=1E19):
 
@@ -69,25 +72,32 @@ cdef class ThermalCXRate(_PECRate):
 
 
 cdef class BeamCXRate:
+    """:math:`q^{eff}_{n\rightarrow n'}` [:math:`W.m^{3}.s^{-1}.str^{-1}`]
+
+    Effective emission coefficient (or rate) for a charge-exchange line corresponding to a
+    transition :math:`n\rightarrow n'` of ion :math:`Z^{(\alpha+1)+}` with electron donor
+    :math:`H^0` in metastable state :math:`m_{i}`. Equivalent to
+    :math:`q^{eff}_{n\rightarrow n'}` in `adf12 <http://open.adas.ac.uk/adf12>_`.
     """
-    Rate provider base class.
-    """
+
+    def __call__(self, double energy, double temperature, double density, double z_effective, double b_field):
+        """Evaluates the Beam CX rate at the given plasma conditions.
+
+        This function just wraps the cython evaluate() method.
+        """
+        return self.evaluate(energy, temperature, density, z_effective, b_field)
 
     cpdef double evaluate(self, double energy, double temperature, double density, double z_effective, double b_field) except? -1e999:
-        """
-        Returns a rate at given conditions.
+        """Evaluates the Beam CX rate at the given plasma conditions.
 
-        :param energy: Interaction energy in eV/amu.
-        :param temperature: Receiver ion temperature in eV.
-        :param density: Receiver ion density in m^-3
-        :param z_effective: Plasma Z-effective.
-        :param b_field: Magnetic field magnitude in Tesla.
+        :param float energy: Interaction energy in eV/amu.
+        :param float temperature: Receiver ion temperature in eV.
+        :param float density: Receiver ion density in m^-3
+        :param float z_effective: Plasma Z-effective.
+        :param float b_field: Magnetic field magnitude in Tesla.
         :return: The effective rate
         """
         raise NotImplementedError("The evaluate() virtual method must be implemented.")
-
-    def __call__(self, double energy, double temperature, double density, double z_effective, double b_field):
-        return self.evaluate(energy, temperature, density, z_effective, b_field)
 
 
 cdef class _BeamRate:
@@ -111,22 +121,35 @@ cdef class _BeamRate:
 
 
 cdef class BeamStoppingRate(_BeamRate):
-    """
-    Beam stopping coefficient.
+    """:math:`S^{e, i}_{CR}` [:math:`m^3.s^{-1}`]
+
+    The effective collisional radiative stopping coefficient :math:`S^{e, i}_{CR}`
+    [:math:`m^3.s^{-1}`] for neutral atom :math:`X^0` in a mono-energetic beam by
+    fully stripped ions :math:`Y^i` and their electrons.
+
+    Equivalent to :math:`S^{e, i}_{CR}` as defined in ADAS `adf21 <http://open.adas.ac.uk/adf21>`_.
     """
     pass
 
 
 cdef class BeamPopulationRate(_BeamRate):
-    """
-    Beam population coefficient.
+    """:math:`bmp(X^0(m_i))` [dimensionless]
+
+    Relative beam population of excited state :math:`m_i` over ground state for atom :math:`X^0`, :math:`bmp(X^0(m_i))`.
+
+    The rate :math:`bmp(X^0(m_i))` is equivalent to the :math:`BMP` rate as defined in
+    `adf22 <http://open.adas.ac.uk/adf22>`_ and is dimensionless.
     """
     pass
 
 
 cdef class BeamEmissionRate(_BeamRate):
-    """
-    Beam emission coefficient.
+    """:math:`bme(X^0(m_i))` [dimensionless]
+
+    Relative beam population of excited state :math:`m_i` over ground state for atom :math:`X^0`, :math:`bme(X^0(m_i))`.
+
+    The rate :math:`bme(X^0(m_i))` is equivalent to the :math:`BME` rate as defined in
+    `adf22 <http://open.adas.ac.uk/adf22>`_ and is dimensionless.
     """
     pass
 

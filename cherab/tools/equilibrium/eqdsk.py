@@ -69,6 +69,11 @@ def import_eqdsk(file_path):
 
     :param str file_path: Path to the EFIT eqdsk file.
     :rtype: EFITEquilibrium
+
+    .. code-block:: pycon
+
+       >>> from cherab.tools.equilibrium import import_eqdsk
+       >>> equilibrium = import_eqdsk("equilibrium.eqdsk")
     """
 
     fh = open(file_path, 'r')

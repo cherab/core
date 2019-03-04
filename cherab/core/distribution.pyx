@@ -30,70 +30,116 @@ from cherab.core.utility.constants cimport ELEMENTARY_CHARGE
 
 # must be immutable, once created cannot be modified as changes are not tracked.
 cdef class DistributionFunction:
+    """
+    The distribution function base class.
+
+    All plasma Species objects are defined through distribution functions. This base
+    class defines the core interface which is used by the rest of the framework.
+    This base class cannot be used on its own, it raises a NotImplementedError() on all
+    method calls. Users should either use a simpler distribution instance
+    (such as the Maxwellian distribution) or implement their own.
+    """
 
     def __init__(self):
         self.notifier = Notifier()
 
-    cdef double evaluate(self, double x, double y, double z, double vx, double vy, double vz) except? -1e999:
+    def __call__(self, double x, double y, double z, double vx, double vy, double vz):
         """
+        Evaluates the phase space density at the specified point in 6D phase space.
 
-        :param x: position in meters
-        :param y: position in meters
-        :param z: position in meters
-        :param vx: velocity in meters per second
-        :param vy: velocity in meters per second
-        :param vz: velocity in meters per second
+        Wraps the cython evaluate() function for fast evaluation.
+
+        :param float x: position in meters
+        :param float y: position in meters
+        :param float z: position in meters
+        :param float vx: velocity in meters per second
+        :param float vy: velocity in meters per second
+        :param float vz: velocity in meters per second
         :return: phase space density in s^3/m^6
         """
-
-        raise NotImplementedError()
-
-    def __call__(self, double x, double y, double z, double vx, double vy, double vz):
         return self.evaluate(x, y, z, vx, vy, vz)
+
+    cdef double evaluate(self, double x, double y, double z, double vx, double vy, double vz) except? -1e999:
+        """
+        Evaluates the phase space density at the specified point in 6D phase space.
+        
+        :param float x: position in meters
+        :param float y: position in meters
+        :param float z: position in meters
+        :param float vx: velocity in meters per second
+        :param float vy: velocity in meters per second
+        :param float vz: velocity in meters per second
+        :return: phase space density in s^3/m^6
+        """
+        raise NotImplementedError()
 
     cpdef Vector3D bulk_velocity(self, double x, double y, double z):
         """
+        Evaluates the species' bulk velocity at the specified 3D coordinate.
 
-        :param x: position in meters
-        :param y: position in meters
-        :param z: position in meters
+        :param float x: position in meters
+        :param float y: position in meters
+        :param float z: position in meters
         :return: velocity vector in m/s
+        :rtype: Vector3D
         """
-
         raise NotImplementedError()
 
     cpdef double effective_temperature(self, double x, double y, double z) except? -1e999:
         """
+        Evaluates the species' effective temperature at the specified 3D coordinate.
 
-        :param x: position in meters
-        :param y: position in meters
-        :param z: position in meters
+        :param float x: position in meters
+        :param float y: position in meters
+        :param float z: position in meters
         :return: temperature in eV
+        :rtype: float
         """
-
         raise NotImplementedError()
 
     cpdef double density(self, double x, double y, double z) except? -1e999:
         """
+        Evaluates the species' density at the specified 3D coordinate.
 
-        :param x: position in meters
-        :param y: position in meters
-        :param z: position in meters
+        :param float x: position in meters
+        :param float y: position in meters
+        :param float z: position in meters
         :return: density in m^-3
+        :rtype: float
         """
-
         raise NotImplementedError()
 
 
 cdef class Maxwellian(DistributionFunction):
+    """
+    A Maxwellian distribution function.
+
+    This class implements a Maxwell-Boltzmann distribution, the statistical distribution
+    describing a system of particles that have reached thermodynamic equilibrium. The
+    user supplies 3D functions that provide the mean density, temperature and velocity
+    respectively.
+
+    :param Function3D density: 3D function defining the density in cubic meters.
+    :param Function3D temperature: 3D function defining the temperature in eV.
+    :param VectorFunction3D velocity: 3D vector function defining the bulk velocity in meters per second.
+    :param double atomic_mass: Atomic mass of the species in kg.
+
+    .. code-block:: pycon
+
+       >>> from scipy.constants import atomic_mass
+       >>> from raysect.core.math import Vector3D
+       >>> from cherab.core import Maxwellian
+       >>> from cherab.core.math import Constant3D, ConstantVector3D
+       >>> from cherab.core.atomic import deuterium
+       >>>
+       >>> # Setup distribution for a slab of plasma in thermodynamic equilibrium
+       >>> d0_density = Constant3D(1E17)
+       >>> d0_temperature = Constant3D(1)
+       >>> bulk_velocity = ConstantVector3D(Vector3D(0, 0, 0))
+       >>> d0_distribution = Maxwellian(d0_density, d0_temperature, bulk_velocity, deuterium.atomic_weight * atomic_mass)
+    """
 
     def __init__(self, object density, object temperature, object velocity, double atomic_mass):
-        """
-        :param Function3D density: 3D function defining the density in cubic meters.
-        :param Function3D temperature: 3D function defining the temperature in eV.
-        :param VectorFunction3D velocity: 3D vector function defining the bulk velocity in meters per second.
-        :param double atomic_mass: Atomic mass of the species in kg.
-        """
 
         super().__init__()
         self._density = autowrap_function3d(density)
@@ -104,6 +150,7 @@ cdef class Maxwellian(DistributionFunction):
     @cython.cdivision(True)
     cdef double evaluate(self, double x, double y, double z, double vx, double vy, double vz) except? -1e999:
         """
+        Evaluates the phase space density at the specified point in 6D phase space.
 
         :param x: position in meters
         :param y: position in meters
@@ -130,11 +177,17 @@ cdef class Maxwellian(DistributionFunction):
 
     cpdef Vector3D bulk_velocity(self, double x, double y, double z):
         """
+        Evaluates the species' bulk velocity at the specified 3D coordinate.
 
         :param x: position in meters
         :param y: position in meters
         :param z: position in meters
         :return: velocity vector in m/s
+        
+        .. code-block:: pycon
+
+           >>> d0_distribution.bulk_velocity(1, 0, 0)
+           Vector3D(0.0, 0.0, 0.0)
         """
 
         return self._velocity.evaluate(x, y, z)
@@ -146,6 +199,11 @@ cdef class Maxwellian(DistributionFunction):
         :param y: position in meters
         :param z: position in meters
         :return: temperature in eV
+        
+        .. code-block:: pycon
+        
+           >>> d0_distribution.effective_temperature(1, 0, 0)
+           1.0
         """
 
         return self._temperature.evaluate(x, y, z)
@@ -157,6 +215,11 @@ cdef class Maxwellian(DistributionFunction):
         :param y: position in meters
         :param z: position in meters
         :return: density in m^-3
+
+        .. code-block:: pycon
+
+           >>> d0_distribution.density(1, 0, 0)
+           1e+17
         """
 
         return self._density.evaluate(x, y, z)

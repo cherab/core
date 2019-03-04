@@ -20,6 +20,7 @@ Contributors
 * Nick Hawkes (Physics)
 * Jack Lovell (Code)
 * Andy Meigs (Physics)
+* Matej Tomes (Code)
 
 
 Project History

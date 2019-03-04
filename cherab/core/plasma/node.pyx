@@ -31,6 +31,14 @@ cimport cython
 
 
 cdef class Composition:
+    """
+    The plasma composition manager.
+
+    Used to control the adding and removing of Species objects from the Plasma object.
+    This is because there can only ever be one Species object instance for each plasma
+    species of a given element and ionisation stage. Users never instantiate this class
+    directly. Its always used indirectly through an instantiated Plasma object.
+    """
 
     def __init__(self):
 
@@ -38,9 +46,27 @@ cdef class Composition:
         self.notifier = Notifier()
 
     def __iter__(self):
+        """
+        Used to iterate over all the Species objects in the parent plasma.
+
+        .. code-block:: pycon
+
+           >>> [species for species in plasma.composition]
+           [<Species: element=deuterium, ionisation=0>,
+            <Species: element=deuterium, ionisation=1>]
+        """
+
         return iter(self._species.values())
 
     def __getitem__(self, tuple item):
+        """
+        Species objects can be indexed with a tuple specifying their element and ionisation.
+
+        .. code-block:: pycon
+
+           >>> plasma.composition[(deuterium, 0)]
+           <Species: element=deuterium, ionisation=0>
+        """
 
         try:
             element, ionisation = item
@@ -56,7 +82,16 @@ cdef class Composition:
         the list, only the last species with that specification will be added
         to the composition.
 
-        :param species: A list containing the new species.
+        :param Species species: A list containing the new species.
+        
+        .. code-block:: pycon
+        
+           >>> d0_species = Species(deuterium, 0, d0_distribution)
+           >>> d1_species = Species(deuterium, 1, d1_distribution)
+           >>> plasma.composition.set([d0_species, d1_species])
+           >>> [species for species in plasma.composition]
+           [<Species: element=deuterium, ionisation=0>,
+            <Species: element=deuterium, ionisation=1>]
         """
 
         # must be an iterable
@@ -81,7 +116,12 @@ cdef class Composition:
         Replaces any existing species with the same element and ionisation
         state already in the composition.
         
-        :param species: A Species object.
+        :param Species species: A Species object.
+        
+        .. code-block:: pycon
+        
+           >>> d1_species = Species(deuterium, 1, d1_distribution)
+           >>> plasma.composition.add(d1_species)
         """
 
         if not species:
@@ -91,6 +131,20 @@ cdef class Composition:
         self.notifier.notify()
 
     cpdef Species get(self, Element element, int ionisation):
+        """
+        Get a specified plasma species.
+        
+        Raises a ValueError if the specified species is not found in the composition.
+        
+        :param Element element: The element object of the requested species.
+        :param int ionisation: The ionisation state of the requested species.
+        :return: The requested Species object.
+        
+        .. code-block:: pycon
+
+           >>> plasma.composition.get(deuterium, 1)
+           <Species: element=deuterium, ionisation=1>
+        """
 
         try:
             return self._species[(element, ionisation)]
@@ -99,6 +153,7 @@ cdef class Composition:
                              "".format(element.name, ionisation))
 
     cpdef object clear(self):
+        """Removes all Species object instances from the parent plasma."""
 
         self._species = {}
         self.notifier.notify()
@@ -141,20 +196,119 @@ cdef class ModelManager:
 
 cdef class Plasma(Node):
     """
-    The Plasma class.
+    A scene-graph object representing a plasma.
 
-    This class holds the plasma profiles and properties used by the various
-    emission models. Each plasma attribute must be a reference to a Function3D
-    or VectorFunction3D object that returns the value of the relevant plasma
-    parameter at a given (x, y, z) coordinate in the plasma's coordinate
-    system.
+    The CHERAB Plasma object holds all the properties and state of a plasma
+    and can optionally have emission models attached to it.
 
-    The Plasma object is a scene-graph node and therefore lives in it's own
+    To define a Plasma object you need to define the plasma composition,
+    magnetic field and electron distribution. The Plasma composition consists
+    of a collection of Species objects that define the individual distribution
+    functions of specific neutral atoms or ions in the plasma. Each individual
+    species can only appear once in the composition. For more information see
+    the related objects, Species, Composition, and DistributionFunction. To
+    define the magnetic field you must provide a function that returns a
+    magnetic field vector at the requested coordinate in the local plasma
+    coordinate system.
+
+    The Plasma object is a Raysect scene-graph Node and lives in it's own
     coordinate space. This coordinate space is defined relative to it's parent
     scene-graph object by an AffineTransform. The plasma parameters are defined
     in the Plasma object coordinate space. Models using the plasma object must
     convert any spatial coordinates into plasma space before requesting values
     from the Plasma object.
+
+    While a Plasma object can be used to simply hold and sample plasma properties,
+    it can also be used as an emitter in Raysect scenes by attaching geometry
+    and emission models. To add emission models you first need to define a
+    bounding geometry for the plasma. The geometry is described by a Raysect
+    Primitive. The Primitive may be positioned relative to the plasma coordinate
+    system by setting the geometry_transform attribute. If no geometry transform
+    is set, the Primitive will share the same coordinate system as the
+    plasma.
+
+    Once geometry is defined, plasma emission models may be attached to the plasma
+    object by either setting the full list of models or adding to the list of
+    models. See the ModelManager for more information. The plasma emission models
+    must be derived from the PlasmaModel base class.
+
+    Any change to the plasma object including adding/removing of species or models
+    will result in a automatic notification being sent to objects that register
+    with the Plasma objects' Notifier. All CHERAB models and associated scene-graph
+    objects such as Beams automatically handle the notifications internally to clear
+    cached data. If you need to keep track of plasma changes in your own classes,
+    a callback can be registered with the plasma Notifier which will be called in
+    the event of a change to the plasma object. See the Notifier documentation.
+
+    :param Node parent: The parent node in the Raysect scene-graph.
+      See the Raysect documentation for more guidance.
+    :param AffineMatrix3D transform: The transform defining the spatial position
+      and orientation of this plasma. See the Raysect documentation if you need
+      guidance on how to use AffineMatrix3D transforms.
+    :param str name: The name for this plasma.
+    :param VolumeIntegrator integrator: The configurable method for doing
+      volumetric integration through the plasma along a Ray's path. Defaults to
+      a numerical integrator with 1mm step size, NumericalIntegrator(step=0.001).
+
+    :ivar AtomicData atomic_data: The atomic data provider class for this plasma.
+      All plasma emission from this plasma will be calculated with the same provider.
+    :ivar VectorFunction3D b_field: A vector function in 3D space that returns the
+      magnetic field vector at any requested point.
+    :ivar Composition composition: The composition object manages all the atomic plasma
+      species and provides access to their distribution functions.
+    :ivar DistributionFunction electron_distribution: A distribution function object
+      describing the electron species properties.
+    :ivar Primitive geometry: The Raysect primitive that defines the geometric extent
+      of this plasma.
+    :ivar AffineMatrix3D geometry_transform: The relative difference between the plasmas'
+      local coordinate system and the bounding geometries' local coordinate system. Defaults
+      to a Null transform.
+    :ivar ModelManager models: The manager class that sets and provides access to the
+      emission models for this plasma.
+
+
+    .. code-block:: pycon
+
+       >>> # This example shows how to initialise and populate a basic plasma
+       >>>
+       >>> from scipy.constants import atomic_mass, electron_mass
+       >>> from raysect.core.math import Vector3D
+       >>> from raysect.primitive import Sphere
+       >>> from raysect.optical import World
+       >>>
+       >>> from cherab.core import Plasma, Species, Maxwellian
+       >>> from cherab.core.math import Constant3D, ConstantVector3D
+       >>> from cherab.core.atomic import deuterium
+       >>> from cherab.openadas import OpenADAS
+       >>>
+       >>>
+       >>> world = World()
+       >>>
+       >>> # create atomic data source
+       >>> adas = OpenADAS(permit_extrapolation=True)
+       >>>
+       >>>
+       >>> # Setup basic distribution functions for the species
+       >>> d0_density = Constant3D(1E17)
+       >>> d0_temperature = Constant3D(1)
+       >>> bulk_velocity = ConstantVector3D(Vector3D(0, 0, 0))
+       >>> d0_distribution = Maxwellian(d0_density, d0_temperature, bulk_velocity, deuterium.atomic_weight * atomic_mass)
+       >>> d0_species = Species(deuterium, 0, d0_distribution)
+       >>>
+       >>> d1_density = Constant3D(1E18)
+       >>> d1_temperature = Constant3D(10)
+       >>> d1_distribution = Maxwellian(d1_density, d1_temperature, bulk_velocity, deuterium.atomic_weight * atomic_mass)
+       >>> d1_species = Species(deuterium, 1, d1_distribution)
+       >>>
+       >>> e_distribution = Maxwellian(1E18, 9.0, bulk_velocity, electron_mass)
+       >>>
+       >>> # Initialise Plasma object and populate with species specifications
+       >>> plasma = Plasma(parent=world)
+       >>> plasma.atomic_data = adas
+       >>> plasma.geometry = Sphere(2.0)
+       >>> plasma.b_field = ConstantVector3D(Vector3D(1.0, 1.0, 1.0))
+       >>> plasma.composition = [d0_species, d1_species]
+       >>> plasma.electron_distribution = e_distribution
     """
 
     def __init__(self, object parent=None, AffineMatrix3D transform=None, str name=None,
@@ -240,6 +394,12 @@ cdef class Plasma(Node):
         :param z: z coordinate in meters.
         :return: Calculated Z effective.
         :raises ValueError: If plasma does not contain any ionised species.
+        
+        .. code-block:: pycon
+           
+           >>> # With an already initialised plasma object...
+           >>> plasma.z_effective(1, 1, 1)
+           1.0
         """
 
         cdef:
@@ -272,6 +432,12 @@ cdef class Plasma(Node):
         :param y: y coordinate in meters.
         :param z: z coordinate in meters.
         :return: Total ion density in m^-3.
+        
+        .. code-block:: pycon
+           
+           >>> # With an already initialised plasma object...
+           >>> plasma.ion_density(1, 1, 1)
+           1.1e+18
         """
 
         cdef:
