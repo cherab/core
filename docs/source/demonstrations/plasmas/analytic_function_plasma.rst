@@ -5,8 +5,7 @@ Analytic Function Plasma
 ========================
 
 This demonstration shows how to define a set of plasma distributions using analytic functions.
-Each function must by implemented as a python callable. The functions are wrapped with
-PythonFunction3D allowing their use in the 3D function framework. The rest of the code
+Each function must by implemented as a python callable. The rest of the code
 shows how to use these functions in a plasma and visualises the results.
 
 Note that while it is possible to use pure python functions for development, they are typically

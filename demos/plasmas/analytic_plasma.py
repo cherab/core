@@ -22,7 +22,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.constants import electron_mass, atomic_mass
 
-from raysect.core.math.function.function3d import PythonFunction3D
 from raysect.primitive import Cylinder
 from raysect.optical import World, translate, Point3D, Vector3D, rotate_basis, Spectrum
 from raysect.optical.observer import PinholeCamera, PowerPipeline2D
@@ -115,22 +114,22 @@ plasma.geometry_transform = translate(0, 0, -1.1)
 zero_velocity = ConstantVector3D(Vector3D(0, 0, 0))
 
 # define neutral species distribution
-d0_density = PythonFunction3D(NeutralFunction(peak_density, 0.1, magnetic_axis))
+d0_density = NeutralFunction(peak_density, 0.1, magnetic_axis)
 d0_temperature = Constant3D(0.5)  # constant 0.5eV temperature for all neutrals
 d0_distribution = Maxwellian(d0_density, d0_temperature, zero_velocity,
                              deuterium.atomic_weight * atomic_mass)
 d0_species = Species(deuterium, 0, d0_distribution)
 
 # define deuterium ion species distribution
-d1_density = PythonFunction3D(IonFunction(peak_density, 0, magnetic_axis))
-d1_temperature = PythonFunction3D(IonFunction(peak_temperature, 0, magnetic_axis))
+d1_density = IonFunction(peak_density, 0, magnetic_axis)
+d1_temperature = IonFunction(peak_temperature, 0, magnetic_axis)
 d1_distribution = Maxwellian(d1_density, d1_temperature, zero_velocity,
                              deuterium.atomic_weight * atomic_mass)
 d1_species = Species(deuterium, 1, d1_distribution)
 
 # define the electron distribution
-e_density = PythonFunction3D(IonFunction(peak_density, 0, magnetic_axis))
-e_temperature = PythonFunction3D(IonFunction(peak_temperature, 0, magnetic_axis))
+e_density = IonFunction(peak_density, 0, magnetic_axis)
+e_temperature = IonFunction(peak_temperature, 0, magnetic_axis)
 e_distribution = Maxwellian(e_density, e_temperature, zero_velocity, electron_mass)
 
 # define species
