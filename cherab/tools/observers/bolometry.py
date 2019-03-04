@@ -37,14 +37,36 @@ R_2_PI = 1 / (2 * np.pi)
 
 class BolometerCamera(Node):
     """
-    A group of bolometer sight-lines under a single scene-graph node.
+    A group of bolometer sight-lines under a single scenegraph node.
 
-    A scene-graph object regrouping a series of 'BolometerFoil'
-    observers as a scene-graph parent. Allows combined observation and display
-    control simultaneously.
+    A scenegraph object that manages a collection of `BolometerFoil()`
+    objects. Allows combined observation and display control simultaneously.
+
+    :param Primitive camera_geometry: An optional Raysect primitive to supply
+      as the box/aperture geometry. If not supplied, a CSG aperture will be
+      constructed from the slit parameters.
+    :param Node parent: The parent node of this camera in the scenegraph, often
+      an optical World object.
+    :param AffineMatrix3D transform: The relative coordinate transform of this
+      bolometer camera relative to the parent.
+    :param str name: The name for this bolometer camera.
+
+    :ivar list foil_detectors: A list of the foil detector objects that belong
+      to this camera.
+    :ivar list slits: A list of the bolometer slit objects that belong to
+      this camera.
+
+    .. code-block:: pycon
+
+       >>> from raysect.optical import World
+       >>> from cherab.tools.observers import BolometerCamera
+       >>>
+       >>> world = World()
+       >>> camera = BolometerCamera(name="MyBolometer", parent=world)
     """
 
     def __init__(self, camera_geometry=None, parent=None, transform=None, name=''):
+
         super().__init__(parent=parent, transform=transform, name=name)
 
         self._foil_detectors = []
@@ -57,13 +79,30 @@ class BolometerCamera(Node):
         self._camera_geometry = camera_geometry
 
     def __len__(self):
+        """Yields the number of detectors in this bolometer camera."""
+
         return len(self._foil_detectors)
 
     def __iter__(self):
+        """
+        Iterates over the foil detectors in this camera.
+
+        .. code-block:: pycon
+
+           >>> detector_a, detector_b, detector_c = bolometer_camera
+        """
         for detector in self._foil_detectors:
             yield detector
 
     def __getitem__(self, item):
+        """
+        Returns the detectors by integer index or the detector name.
+
+        .. code-block:: pycon
+
+           >>> detector_2 = bolometer_camera[1]
+           >>> detector_a = bolometer_camera["detector_a"]
+        """
 
         if isinstance(item, int):
             try:
@@ -81,11 +120,11 @@ class BolometerCamera(Node):
 
     @property
     def slits(self):
-        return self._slits
+        return self._slits.copy()
 
     @property
     def foil_detectors(self):
-        return self._foil_detectors
+        return self._foil_detectors.copy()
 
     @foil_detectors.setter
     def foil_detectors(self, value):
@@ -106,6 +145,15 @@ class BolometerCamera(Node):
         self._foil_detectors = value
 
     def add_foil_detector(self, foil_detector):
+        """
+        Add the given detector to this camera.
+
+        :param BolometerFoil foil_detector: An instanced bolometer foil detector.
+
+        .. code-block:: pycon
+
+           >>> bolometer_camera.add_foil_detector(foil_detector)
+        """
 
         if not isinstance(foil_detector, BolometerFoil):
             raise TypeError("The foil_detector argument must be of type BolometerFoil.")
@@ -117,6 +165,11 @@ class BolometerCamera(Node):
         self._foil_detectors.append(foil_detector)
 
     def observe(self):
+        """
+        Take an observation with this camera.
+
+        Calls observe() on each foil detector and returns their power measurements.
+        """
 
         observations = []
         for foil_detector in self._foil_detectors:
@@ -127,6 +180,54 @@ class BolometerCamera(Node):
 
 
 class BolometerSlit(Node):
+    """
+    A rectangular bolometer slit.
+
+    A single slit can be shared by multiple detectors in the parent camera. The slit
+    geometry is specified in terms of its centre_point, basis vectors in the plane
+    of the slit and their respective lengths.
+
+    If an external mesh model has been loaded for ray occlusion evaluation then this
+    object is only used for targeting rays on the slit. If no mesh has been supplied,
+    this object can construct an effective slit primitive from CSG operations.
+
+    :param str slit_id: The name for this slit.
+    :param Point3D centre_point: The centre point of the slit.
+    :param Vector3D basis_x: The x basis vector for the slit.
+    :param float dx: The width of the slit along the x basis vector.
+    :param Vector3D basis_y: The y basis vector for the slit.
+    :param float dy: The height of the slit along the y basis vector.
+    :param float dz: The thickness of the slit along the z basis vector.
+    :param Node parent: The parent scenegraph node to which this slit belongs.
+      Typically a BolometerCamera() or an optical World() object.
+    :param bool csg_aperture: Toggles whether an occluding surface should be
+      constructed for this slit using CSG operations.
+    :param float curvature_radius: Slits in real bolometer cameras typically
+      have curved corners due to machining limitations. This parameter species
+      the corner radius.
+
+    :ivar Vector3D normal_vector: The normal vector of the slit constructed from
+      the cross product of the x and y basis vectors.
+
+    .. code-block:: pycon
+
+       >>> from raysect.core import Point3D, Vector3D
+       >>> from raysect.optical import World
+       >>> from cherab.tools.observers import BolometerSlit
+       >>>
+       >>> world = World()
+       >>>
+       >>> # construct basis vectors
+       >>> basis_x = Vector3D(1, 0, 0)
+       >>> basis_y = Vector3D(0, 1, 0)
+       >>> basis_z = Vector3D(0, 0, 1)
+       >>>
+       >>> # specify the slit
+       >>> dx = 0.0025
+       >>> dy = 0.005
+       >>> centre_point = Point3D(0, 0, 0)
+       >>> slit = BolometerSlit("slit", centre_point, basis_x, dx, basis_y, dy, parent=camera)
+    """
 
     def __init__(self, slit_id, centre_point, basis_x, dx, basis_y, dy, dz=0.001,
                  parent=None, csg_aperture=False, curvature_radius=0):
@@ -229,7 +330,48 @@ class BolometerFoil(TargettedPixel):
     A rectangular bolometer detector.
 
     Can be configured to sample a single ray or fan of rays oriented along the
-    observer's z axis in world space.
+    observer's z axis.
+
+    :param str detector_id: The name for this detector.
+    :param Point3D centre_point: The centre point of the detector.
+    :param Vector3D basis_x: The x basis vector for the detector.
+    :param float dx: The width of the detector along the x basis vector.
+    :param Vector3D basis_y: The y basis vector for the detector.
+    :param float dy: The height of the detector along the y basis vector.
+    :param Node parent: The parent scenegraph node to which this detector belongs.
+      Typically a BolometerCamera() or an optical World() object.
+    :param bool units: The units in which to perform observations, can
+      be ['Power', 'Radiance'], defaults to 'Power'.
+    :param bool accumulate: Whether this observer should accumulate samples
+      with multiple calls to observe. Defaults to False.
+    :param float curvature_radius: Detectors in real bolometer cameras typically
+      have curved corners due to machining limitations. This parameter species
+      the corner radius.
+
+    :ivar Vector3D normal_vector: The normal vector of the detector constructed from
+      the cross product of the x and y basis vectors.
+    :ivar Vector3D sightline_vector: The vector that points from the centre of the foil
+      detector to the centre of the slit. Defines the effective sightline vector of the
+      detector.
+
+    .. code-block:: pycon
+
+       >>> from raysect.core import Point3D, Vector3D
+       >>> from raysect.optical import World
+       >>> from cherab.tools.observers import BolometerFoil
+       >>>
+       >>> world = World()
+       >>>
+       >>> # construct basis vectors
+       >>> basis_x = Vector3D(1, 0, 0)
+       >>> basis_y = Vector3D(0, 1, 0)
+       >>> basis_z = Vector3D(0, 0, 1)
+       >>>
+       >>> # specify a detector, you need already created slit and camera objects
+       >>> dx = 0.0025
+       >>> dy = 0.005
+       >>> centre_point = Point3D(0, 0, -0.08)
+       >>> detector = BolometerFoil("ch#1", centre_point, basis_x, dx, basis_y, dy, slit, parent=camera)
     """
 
     def __init__(self, detector_id, centre_point, basis_x, dx, basis_y, dy, slit,
@@ -327,6 +469,11 @@ class BolometerFoil(TargettedPixel):
         return self._curvature_radius
 
     def as_sightline(self):
+        """
+        Constructs a SightLine observer for this bolometer.
+
+        :rtype: SightLine
+        """
 
         if self.units == "Power":
             pipeline = PowerPipeline0D(accumulate=False)
@@ -345,6 +492,14 @@ class BolometerFoil(TargettedPixel):
         return los_observer
 
     def trace_sightline(self):
+        """
+        Traces the central sightline through the detector to see where the sightline terminates.
+
+        Raises a RuntimeError exception if no intersection was found.
+
+        :return: Returns a tuple containing the origin point, hit point and terminating surface
+          primitive.
+        """
 
         if not isinstance(self.root, World):
             raise ValueError("This BolometerFoil is not connected to a valid World scenegraph object.")
@@ -370,6 +525,19 @@ class BolometerFoil(TargettedPixel):
                 return self.centre_point, hit_point, intersection.primitive
 
     def calculate_sensitivity(self, voxel_collection, ray_count=10000):
+        """
+        Calculates a sensitivity vector for this detector on the specified voxel collection.
+
+        This function is used for calculating sensitivity matrices which can be combined for
+        multiple detectors into a sensitivity matrix :math:`\mathbf{W}`.
+
+        :param VoxelCollection voxel_collection: The voxel collection on which to calculate
+          the sensitivities.
+        :param int ray_count: The number of rays to use in the calculation. This should be
+          at least >= 10000 for decent statistics.
+        :return: A 1D array of sensitivities with length equal to the number of voxels
+          in the collection.
+        """
 
         if not isinstance(voxel_collection, VoxelCollection):
             raise TypeError("voxel_collection must be of type VoxelCollection")
@@ -406,6 +574,18 @@ class BolometerFoil(TargettedPixel):
         return pipeline.samples.mean
 
     def calculate_etendue(self, ray_count=10000, batches=10):
+        """
+        Calculates the etendue of this detector.
+
+        This function calculates the detectors etendue by evaluating the ratio of rays that
+        pass un-impeded through the detector's aperture. For this method to work, the detector
+        and its aperture structures should be the only primitives present in the scene. If any
+        other primitives are present, the results may be misleading.
+
+        :param int ray_count: The number of rays used per batch.
+        :param int batches: The number of batches used to estimate the error on the etendue
+          calculation.
+        """
 
         if batches < 5:
             raise ValueError("We enforce a minimum batch size of 5 to ensure reasonable statistics.")

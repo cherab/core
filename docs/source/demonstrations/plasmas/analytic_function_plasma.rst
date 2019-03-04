@@ -15,7 +15,7 @@ we recommend moving these functions to cython classes. For an example of a cytho
 see the `Gaussian <https://github.com/cherab/core/blob/master/demos/gaussian_volume.pyx>`_
 cython class in the demos folder.
 
-.. literalinclude:: ../../../../demos/analytic_plasma.py
+.. literalinclude:: ../../../../demos/plasmas/analytic_plasma.py
 
 .. figure:: analytic_plasma_slices.png
    :align: center

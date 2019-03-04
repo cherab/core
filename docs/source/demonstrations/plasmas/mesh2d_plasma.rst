@@ -27,7 +27,7 @@ analytic functions describing a cylindrically symmetric plasma column at the mes
 vertices. However, in real use cases you would use the mesh description
 supplied by the plasma simulation code.
 
-.. literalinclude:: ../../../../demos/mesh_plasma.py
+.. literalinclude:: ../../../../demos/plasmas/mesh_plasma.py
 
 .. figure:: mesh_plasma_slices.png
    :align: center

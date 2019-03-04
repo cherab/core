@@ -491,6 +491,21 @@ class ToroidalVoxelGrid(VoxelCollection):
             raise ValueError("set_active() argument must be an index of type int or the string 'all'")
 
     def plot(self, title=None, voxel_values=None, ax=None, vmin=None, vmax=None, cmap=None):
+        """
+        Plots a voxel grid.
+
+        If no voxel data values are provided, the plot is an outline of the grid in the r-z plane. If
+        voxel values are provided, this method plots the voxel grid coloured by the voxel intensities.
+
+        :param str title: The title of the plot.
+        :param np.ndarray voxel_values: A 1D numpy array with length equal to the number of voxels
+          in the collection.
+        :param ax: The matplotlib Axes object on which the plot will be made. If None, this function
+          generates a new plot.
+        :param float vmin: The minimum value for the colour map.
+        :param float vmax: The maximum value for the colour map.
+        :param cmap: The matplotlib colour map to use for colouring the voxel intensities.
+        """
 
         if voxel_values is not None:
             if not isinstance(voxel_values, (np.ndarray, list, tuple)):

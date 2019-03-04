@@ -14,7 +14,7 @@ We then define a beam composed of three different energy components. The rest of
 visualises the results.
 
 
-.. literalinclude:: ../../../../demos/beam_into_slab.py
+.. literalinclude:: ../../../../demos/plasmas/beam_into_slab.py
 
 .. figure:: beam_ion_temp.png
    :align: center
