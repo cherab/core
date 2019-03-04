@@ -23,8 +23,8 @@ import scipy
 
 def invert_regularised_nnls(w_matrix, b_vector, alpha=0.01, tikhonov_matrix=None):
     """
-    Solve w_matrix · x = b_vector for the vector x, using Tikhonov
-    regulariastion.
+    Solves :math:`\mathbf{b} = \mathbf{W} \mathbf{x}` for the vector :math:`\mathbf{x}`,
+    using Tikhonov regulariastion.
 
     This is a thin wrapper around scipy.optimize.nnls, which modifies
     the arguments to include the supplied Tikhonov regularisation matrix.
@@ -32,10 +32,20 @@ def invert_regularised_nnls(w_matrix, b_vector, alpha=0.01, tikhonov_matrix=None
     If tikhonov_matrix is None, the matrix used is alpha times the
     identity matrix.
 
-    Returns (x, norm), the solution vector and the residual norm.
-    """
+    :param np.ndarray w_matrix: The sensitivity matrix describing the coupling between the
+      detectors and the voxels. Must be an array with shape :math:`(N_d, N_s)`.
+    :param np.ndarray b_vector: The measured power/radiance vector with shape :math:`(N_d)`.
+    :param float alpha: The regularisation hyperparameter :math:`\alpha` which determines
+      the regularisation strength of the tikhonov matrix.
+    :param np.ndarray tikhonov_matrix: The tikhonov regularisation matrix operator, an array
+      with shape :math:`(N_s, N_s)`.
+    :return: (x, norm), the solution vector and the residual norm.
 
-    # print('w_matrix shape', w_matrix.shape)
+    .. code-block:: pycon
+
+       >>> from cherab.tools.inversions import invert_regularised_nnls
+       >>> x, norm = invert_regularised_nnls(w_matrix, b_vector, tikhonov_matrix=tikhonov_matrix)
+    """
 
     m, n = w_matrix.shape
 
@@ -52,7 +62,5 @@ def invert_regularised_nnls(w_matrix, b_vector, alpha=0.01, tikhonov_matrix=None
     d_vector[0:m] = b_vector[:]
 
     x_vector, rnorm = scipy.optimize.nnls(c_matrix, d_vector)
-
-    # print('x_vector shape', x_vector.shape)
 
     return x_vector, rnorm

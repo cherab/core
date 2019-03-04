@@ -1,4 +1,67 @@
 
+Atomic Data
+===========
+
+.. list-table::
+   :widths: 28 50 22
+   :header-rows: 1
+
+   * - Name
+     - Description
+     - Preview
+   * - :ref:`Photon Emissivity Coefficients <photon_emissivity_coefficients>`
+     - Sampling and plotting PEC rates provided by OPEN-ADAS.
+     - .. image:: ./atomic_data/D_alpha_PECs.png
+          :height: 150px
+          :width: 150px
+   * - :ref:`Beam-Plasma Interaction Rates <beam_plasma_interaction_rates>`
+     - Sampling and plotting various beam-plasma interaction rates provided by OPEN-ADAS.
+     - .. image:: ./atomic_data/effective_cx_rates.png
+          :height: 150px
+          :width: 150px
+   * - :ref:`Fractional Abundances <fractional_abundances>`
+     - Sampling and plotting Neon fractional abundances with the ADAS subscription package.
+     - .. image:: ./atomic_data/fractional_abundance.png
+          :height: 150px
+          :width: 150px
+   * - :ref:`Radiated Powers <radiated_powers>`
+     - Sampling and plotting total and stage resolved radiated powers with the ADAS
+       subscription package.
+     - .. image:: ./atomic_data/stage_resolved_radiation.png
+          :height: 150px
+          :width: 150px
+
+
+Creating Plasmas
+================
+
+.. list-table::
+   :widths: 28 50 22
+   :header-rows: 1
+
+   * - Name
+     - Description
+     - Preview
+   * - :ref:`Analytic Functions <analytic_function_plasma>`
+     - Specifying plasma distributions with analytic functions.
+     - .. image:: ./plasmas/analytic_plasma.png
+          :height: 150px
+          :width: 150px
+   * - :ref:`Flux Function Plasmas <flux_function_plasmas>`
+     - Specifying a plasma distribution in terms of 1D flux functions.
+     - .. image:: ./plasmas/equilibrium_mapped_te_xz.png
+          :height: 150px
+          :width: 150px
+   * - :ref:`2D Mesh Plasmas <mesh2d_plasma>`
+     - Specifying a plasma distribution with a 2D r-z triangular mesh.
+     - .. image:: ./plasmas/mesh_plasma_column.png
+          :height: 150px
+          :width: 150px
+   * - :ref:`Beams into Plasmas <beams_into_plasmas>`
+     - Specifying a mono-energetic neutral beam that interacts with a plasma.
+     - .. image:: ./plasmas/beam_into_plasma.png
+          :height: 150px
+          :width: 150px
 
 Code examples gallery
 =====================

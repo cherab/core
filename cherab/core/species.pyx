@@ -25,11 +25,44 @@ from cherab.core.distribution cimport DistributionFunction
 # immutable, so the plasma doesn't have to track changes
 cdef class Species:
     """
-    Plasma species.
+    A class representing a given plasma species.
 
-    :param element: An element object.
-    :param ionisation: The ionisation state of the species.
-    :param distribution: A distribution function for the species.
+    A plasma in CHERAB will be composed of 1 or more Species objects. A species
+    can be uniquely identified through its element and ionisation stage.
+
+    When instantiating a Species object a 6D distribution function (3 space, 3 velocity)
+    must be defined. The DistributionFunction object provides the base interface for
+    defining a distribution function, it could be a reduced analytic representation
+    (such as a Maxwellian for example) or a fully numerically interpolated 6D function.
+
+    :param Element element: The element object of this species.
+    :param int ionisation: The ionisation state of the species.
+    :param DistributionFunction distribution: A distribution function for this species.
+
+    .. code-block:: pycon
+
+       >>> # In this example we define a single plasma species with spatially homogeneous properties
+       >>>
+       >>> from scipy.constants import atomic_mass
+       >>> from raysect.core.math import Vector3D
+       >>> from cherab.core import Species, Maxwellian
+       >>> from cherab.core.math import Constant3D, ConstantVector3D
+       >>> from cherab.core.atomic import deuterium
+       >>>
+       >>> # Setup a distribution function for the species
+       >>> density = Constant3D(1E18)
+       >>> temperature = Constant3D(10)
+       >>> bulk_velocity = ConstantVector3D(Vector3D(-1e6, 0, 0))
+       >>> d1_distribution = Maxwellian(density, temperature, bulk_velocity, deuterium.atomic_weight * atomic_mass)
+       >>>
+       >>> # create the plasma Species object
+       >>> d1_species = Species(deuterium, 1, d1_distribution)
+       >>>
+       >>> # Request some properties from the species' distribution function.
+       >>> print(d1_species)
+       <Species: element=deuterium, ionisation=1>
+       >>> d1_species.distribution.density(1, -2.5, 7)
+       1e+18
     """
 
     def __init__(self, Element element, int ionisation, DistributionFunction distribution):

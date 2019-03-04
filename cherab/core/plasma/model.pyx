@@ -17,6 +17,28 @@
 # under the Licence.
 
 cdef class PlasmaModel:
+    """
+    A plasma emission model.
+
+    When attached to a plasma, a plasma emission model samples the plasma properties
+    and atomic data it needs to calculate its emission. The emission is calculated
+    for a particular point and viewing orientation in plasma space.
+
+    A new emission model is implemented by inheriting from this class and specifying
+    the emission() function.
+
+    If it is necessary to cache data to speed up the emission
+    calculation and there is a risk the cached data may be made stale by changes to the
+    plasma, the _change() method must be implemented to reset the cache. The _change()
+    function is automatically called when changes occur on the Plasma object.
+
+    The plasma and atomic data provider attributes will be automatically populated
+    when the PlasmaModel is attached to the Plasma object. In general these should
+    not be set by the user directly.
+
+    :ivar Plasma plasma: The plasma to which this emission model is attached.
+    :ivar AtomicData atomic_data: The atomic data provider for this model.
+    """
 
     def __init__(self, Plasma plasma=None, AtomicData atomic_data=None):
 

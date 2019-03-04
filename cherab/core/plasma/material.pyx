@@ -23,6 +23,7 @@ from cherab.core.plasma.model cimport PlasmaModel
 
 
 cdef class PlasmaMaterial(InhomogeneousVolumeEmitter):
+    """Raysect Material that handles the integration of the plasma model emission."""
 
     def __init__(self, Plasma plasma not None, AtomicData atomic_data not None, list models not None, VolumeIntegrator integrator not None, AffineMatrix3D local_to_plasma):
 
