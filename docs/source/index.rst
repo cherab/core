@@ -18,13 +18,13 @@ become stable until we have finished moving the source code to github.
 
    welcome
    licence
-   core
-   atomic_classes
-   equilibrium
-   plasma_sources
+   installation_and_structure
+   available_modules
+   atomic/atomic_data
+   plasmas/plasmas
    models/emission_models
    math
-   utility
+   tools/tools
 
 
 .. toctree::

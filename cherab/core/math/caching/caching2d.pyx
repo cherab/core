@@ -141,8 +141,8 @@ cdef class Caching2D(Function2D):
 
         cdef int i_x, i_y
 
-        i_x = find_index(self.x_domain_view, self.top_index_x+1, px)
-        i_y = find_index(self.y_domain_view, self.top_index_y+1, py)
+        i_x = find_index(self.x_domain_view, px)
+        i_y = find_index(self.y_domain_view, py)
 
         if 1 <= i_x <= self.top_index_x-2:
             if 1 <= i_y <= self.top_index_y-2:

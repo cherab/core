@@ -125,7 +125,7 @@ cdef class Caching1D(Function1D):
 
         cdef int i_x
 
-        i_x = find_index(self.x_domain_view, self.top_index_x+1, px)
+        i_x = find_index(self.x_domain_view, px)
 
         if 1 <= i_x <= self.top_index_x - 2:
             return self._evaluate(px, i_x)

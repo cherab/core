@@ -26,3 +26,5 @@ from .blend import Blend1D, Blend2D, Blend3D
 from .constant import Constant1D, Constant2D, Constant3D, ConstantVector2D, ConstantVector3D
 from .mappers import IsoMapper2D, IsoMapper3D, Swizzle2D, Swizzle3D, AxisymmetricMapper, VectorAxisymmetricMapper
 from .mask import PolygonMask2D
+from .slice import Slice2D, Slice3D
+

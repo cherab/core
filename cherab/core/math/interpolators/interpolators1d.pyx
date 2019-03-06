@@ -18,12 +18,14 @@
 # See the Licence for the specific language governing permissions and limitations
 # under the Licence.
 
-from numpy import array, zeros, ones, float64, shape, arange, argsort
+import numpy as np
 from numpy.linalg import solve
 
 cimport cython
-from numpy cimport ndarray
+cimport numpy as np
+from libc.math cimport INFINITY
 from cherab.core.math.interpolators.utility cimport find_index, lerp, derivatives_array, factorial
+
 
 # internal constants used to represent the different extrapolation options
 DEF EXT_NEAREST = 0
@@ -37,14 +39,15 @@ _EXTRAPOLATION_TYPES = {
     'quadratic': EXT_QUADRATIC
 }
 
+
 cdef class _Interpolate1DBase(Function1D):
     """
     Base class for 1D interpolators. Coordinate and data arrays are here
     sorted and transformed into numpy arrays.
 
-    :param object x_data: A 1D array-like object of real values.
-    :param object f_data: A 1D array-like object of real values. The length
-     of `data` must be equal to the length of `x`.
+    :param object x: A 1D array-like object of real values.
+    :param object f: A 1D array-like object of real values. The length
+     of `f` must be equal to the length of `x`.
     :param bint extrapolate: optional
     If True, the extrapolation of data is enabled outside the range of the
     data set. The default is False. A ValueError is raised if extrapolation
@@ -64,113 +67,180 @@ cdef class _Interpolate1DBase(Function1D):
     in a ValueError being raised.
     """
 
-    def __init__(self, object x, object data, bint extrapolate=False, str extrapolation_type='nearest',
-                 double extrapolation_range=float('inf'), bint tolerate_single_value=False):
+    def __init__(self, object x, object f, bint extrapolate=False, str extrapolation_type='nearest',
+                 double extrapolation_range=INFINITY, bint tolerate_single_value=False):
 
-        cdef ndarray mask
+        # convert data to numpy arrays
+        x = np.array(x, dtype=np.float64)
+        f = np.array(f, dtype=np.float64)
+
+        # check data dimensions are 1D
+        if x.ndim != 1:
+            raise ValueError("The x array must be 1D.")
+
+        if f.ndim != 1:
+            raise ValueError("The f array must be 1D.")
 
         # check the shapes of data and coordinates are consistent
-        if shape(data) != shape(x):
-            raise ValueError("Data and coordinates must have the same shapes.")
+        if x.shape != f.shape:
+            raise ValueError("The x and data arrays must have the same shape (x={}, f={}).".format(x.shape, f.shape))
+
+        # check the x array is monotonically increasing
+        if (np.diff(x) <= 0).any():
+            raise ValueError("The x array must be monotonically increasing.")
 
         # extrapolation is controlled internally by setting a positive extrapolation_range
-        self.extrapolate = extrapolate
         if extrapolate:
-            self.extrapolation_range = max(0, extrapolation_range)
+            self._extrapolation_range = max(0, extrapolation_range)
         else:
-            self.extrapolation_range = 0
+            self._extrapolation_range = 0
 
         # map extrapolation type name to internal constant
         if extrapolation_type in _EXTRAPOLATION_TYPES:
-            self.extrapolation_type = _EXTRAPOLATION_TYPES[extrapolation_type]
+            self._extrapolation_type = _EXTRAPOLATION_TYPES[extrapolation_type]
         else:
             raise ValueError("Extrapolation type {} does not exist.".format(extrapolation_type))
 
-        # copies the arguments converted into double arrays and sorts x and y
-        mask = argsort(x)
-        self.x_np = array(x, dtype=float64)[mask]
-        self.data_np = array(data, dtype=float64)[mask]
-
-        self.x_domain_view = self.x_np
-        self.top_index = len(x) - 1
+        # populate internal arrays and memory views
+        self._x = x
+        self._f = f
 
         # Check for single value in x input
-        if len(self.x_np) == 1:
+        if len(x) == 1:
             if tolerate_single_value:
-                # single value tolerated, set constant
-                self._set_constant()
+                self._constant = True
             else:
                 raise ValueError("There is only a single value in the input arrays. "
                     "Consider turning on the 'tolerate_single_value' argument.")
-
-        # if x is not a single value, check for duplicate values
         else:
-            if (self.x_np == self.x_np[arange(len(self.x_np))-1]).any():
-                raise ValueError("The coordinates array has a duplicate value.")
+            # build internal state of interpolator
+            self._build(x, f)
+
+    cdef object _build(self, ndarray x, ndarray f):
+        """
+        Build additional internal state.
+        
+        Implement in sub-classes that require additional state to be build
+        from the source arrays.        
+            
+        :param x: x array 
+        :param f: f array 
+        """
+        pass
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
+    @cython.initializedcheck(False)
     cdef double evaluate(self, double px) except? -1e999:
         """
         Evaluate the interpolating function.
 
-        :param double px: x coordinate
+        :param double px: x coordinate.
         :return: the interpolated value
         """
 
-        cdef int index
+        cdef int nx, index
 
-        index = find_index(self.x_domain_view, self.top_index+1, px, self.extrapolation_range)
+        if self._constant:
+            return self._f[0]
 
-        if 0 <= index <= self.top_index-1:
-            return self._evaluate(px, index)
+        nx = self._x.shape[0]
+        index = find_index(self._x, px, self._extrapolation_range)
+
+        if 0 <= index < nx - 1:
+            return self._evaluate(px, 0, index)
+
         elif index == -1:
-            return self._extrapolate(px, 0, self.x_domain_view[0])
-        elif index == self.top_index:
-            return self._extrapolate(px, self.top_index-1, self.x_domain_view[self.top_index])
+            return self._extrapolate(px, 0, 0, self._x[0])
+
+        elif index == nx - 1:
+            return self._extrapolate(px, 0, nx - 2, self._x[nx - 1])
 
         # value is outside of permitted limits
-        min_range = self.x_domain_view[0] - self.extrapolation_range
-        max_range = self.x_domain_view[self.top_index] + self.extrapolation_range
+        min_range = self._x[0] - self._extrapolation_range
+        max_range = self._x[nx - 1] + self._extrapolation_range
 
         raise ValueError("The specified value (x={}) is outside the range of the supplied data and/or extrapolation range: "
                          "x bounds=({}, {})".format(px, min_range, max_range))
 
-    cdef double _evaluate(self, double px, int index) except? -1e999:
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    @cython.initializedcheck(False)
+    cpdef double derivative(self, double px, int order) except? -1e999:
         """
-        Evaluate the interpolating function which is valid in the area given
+        Returns the derivative of the interpolating function to the specified order.
+        
+        :param px: The x coordinate.
+        :param order: The order of the derivative. 
+        :return: The interpolated derivative.
+        """
+
+        if order < 1:
+            raise ValueError('Derivative order must be greater than zero.')
+        cdef int nx, index
+
+        if self._constant:
+            return self._f[0]
+
+        nx = self._x.shape[0]
+        index = find_index(self._x, px, self._extrapolation_range)
+
+        if 0 <= index < nx - 1:
+            return self._evaluate(px, order, index)
+
+        elif index == -1:
+            return self._extrapolate(px, order, 0, self._x[0])
+
+        elif index == nx - 1:
+            return self._extrapolate(px, order, nx - 2, self._x[nx - 1])
+
+        # value is outside of permitted limits
+        min_range = self._x[0] - self._extrapolation_range
+        max_range = self._x[nx - 1] + self._extrapolation_range
+
+        raise ValueError("The specified value (x={}) is outside the range of the supplied data and/or extrapolation range: "
+                         "x bounds=({}, {})".format(px, min_range, max_range))
+
+    cdef double _evaluate(self, double px, int order, int index) except? -1e999:
+        """
+        Evaluate the interpolating function or derivative which is valid in the area given
         by 'index' at any position 'px'.
 
         :param double px: x coordinate
+        :param int order: the derivative order
         :param int index: index of the area of interest
         :return: the interpolated value
         """
         raise NotImplementedError("This abstract method has not been implemented yet.")
 
-    cdef double _extrapolate(self, double px, int index, double nearest_px) except? -1e999:
+    cdef double _extrapolate(self, double px, int order, int index, double rx) except? -1e999:
         """
-        Extrapolate the interpolation function valid on area given by
+        Extrapolate the interpolation function or derivative valid on area given by
         'index' to position 'px'.
 
         :param double px: x coordinate
         :param int index: index of the area of interest
-        :param double nearest_px: the nearest position from 'px' in the
-        interpolation domain.
+        :param double rx: the nearest position from 'px' in the interpolation domain.
         :return: the extrapolated value
         """
 
-        if self.extrapolation_type == EXT_NEAREST:
-            return self._evaluate(nearest_px, index)
-        elif self.extrapolation_type == EXT_LINEAR:
-            return self._extrapol_linear(px, index, nearest_px)
-        elif self.extrapolation_type == EXT_QUADRATIC:
-            return self._extrapol_quadratic(px, index, nearest_px)
+        if self._extrapolation_type == EXT_NEAREST:
+            if order == 0:
+                return self._evaluate(rx, order, index)
+            return 0.0
+
+        elif self._extrapolation_type == EXT_LINEAR:
+            return self._extrapol_linear(px, order, index, rx)
+
+        elif self._extrapolation_type == EXT_QUADRATIC:
+            return self._extrapol_quadratic(px, order, index, rx)
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    cdef double _extrapol_linear(self, double px, int index, double nearest_px) except? -1e999:
+    @cython.initializedcheck(False)
+    cdef double _extrapol_linear(self, double px, int order, int index, double nearest_px) except? -1e999:
         """
-        Extrapolate linearly the interpolation function valid on area given by
+        Extrapolate linearly the interpolation function or derivative valid on area given by
         'index' to position 'px'.
 
         :param double px: x coordinate
@@ -183,9 +253,10 @@ cdef class _Interpolate1DBase(Function1D):
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    cdef double _extrapol_quadratic(self, double px, int index, double nearest_px) except? -1e999:
+    @cython.initializedcheck(False)
+    cdef double _extrapol_quadratic(self, double px, int order, int index, double nearest_px) except? -1e999:
         """
-        Extrapolate quadratically the interpolation function valid on area given by
+        Extrapolate quadratically the interpolation function or derivative valid on area given by
         'index' to position 'px'.
 
         :param double px: x coordinate
@@ -196,27 +267,13 @@ cdef class _Interpolate1DBase(Function1D):
         """
         raise NotImplementedError("There is no quadratic extrapolation available for this interpolation.")
 
-    cdef void _set_constant(self):
-        """
-        Set the interpolation function constant on the x axis, and extend the
-        domain to all the Real numbers.
-        """
-
-        cdef ndarray data
-
-        self.x_domain_view = array([-float('Inf'), +float('Inf')], dtype=float64)
-        self.top_index = 1
-
-        self.x_np = array([-1., +1.], dtype=float64)
-        self.data_np = self.data_np[0] * ones((2,), dtype=float64)
-
 
 cdef class Interpolate1DLinear(_Interpolate1DBase):
     """
     Interpolates 1D data using linear interpolation.
 
-    :param object x_data: A 1D array-like object of real values.
-    :param object f_data: A 1D array-like object of real values. The length
+    :param object x: A 1D array-like object of real values.
+    :param object f: A 1D array-like object of real values. The length
      of `f_data` must be equal to the length of `x_data`.
     :param bint extrapolate: optional
     If True, the extrapolation of data is enabled outside the range of the
@@ -237,8 +294,8 @@ cdef class Interpolate1DLinear(_Interpolate1DBase):
     in a ValueError being raised.
     """
 
-    def __init__(self, object x_data, object f_data, bint extrapolate=False, str extrapolation_type='nearest',
-                 double extrapolation_range=float('inf'), bint tolerate_single_value=False):
+    def __init__(self, object x, object f, bint extrapolate=False, str extrapolation_type='nearest',
+                 double extrapolation_range=INFINITY, bint tolerate_single_value=False):
 
         supported_extrapolations = ['nearest', 'linear']
 
@@ -246,15 +303,13 @@ cdef class Interpolate1DLinear(_Interpolate1DBase):
         if extrapolation_type not in supported_extrapolations:
             raise ValueError("Unsupported extrapolation type: {}".format(extrapolation_type))
 
-        super().__init__(x_data, f_data, extrapolate, extrapolation_type, extrapolation_range, tolerate_single_value)
-
-        # obtain memory views
-        self.x_view = self.x_np
-        self.data_view = self.data_np
+        super().__init__(x, f, extrapolate, extrapolation_type, extrapolation_range, tolerate_single_value)
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    cdef double _evaluate(self, double px, int index) except? -1e999:
+    @cython.initializedcheck(False)
+    @cython.cdivision(True)
+    cdef double _evaluate(self, double px, int order, int index) except? -1e999:
         """
         Evaluate the interpolating function which is valid in the area given
         by 'index' at any position 'px'.
@@ -264,11 +319,17 @@ cdef class Interpolate1DLinear(_Interpolate1DBase):
         :return: the interpolated value
         """
 
-        return lerp(self.x_view[index], self.x_view[index + 1], self.data_view[index], self.data_view[index + 1], px)
+        if order == 0:
+            return lerp(self._x[index], self._x[index + 1], self._f[index], self._f[index + 1], px)
+        elif order == 1:
+            return (self._f[index + 1] - self._f[index]) / (self._x[index + 1] - self._x[index])
+        return 0
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    cdef double _extrapol_linear(self, double px, int index, double nearest_px) except? -1e999:
+    @cython.initializedcheck(False)
+    @cython.cdivision(True)
+    cdef double _extrapol_linear(self, double px, int order, int index, double nearest_px) except? -1e999:
         """
         Extrapolate linearly the interpolation function valid on area given by
         'index' to position 'px'.
@@ -280,7 +341,11 @@ cdef class Interpolate1DLinear(_Interpolate1DBase):
         :return: the extrapolated value
         """
 
-        return lerp(self.x_view[index], self.x_view[index + 1], self.data_view[index], self.data_view[index + 1], px)
+        if order == 0:
+            return lerp(self._x[index], self._x[index + 1], self._f[index], self._f[index + 1], px)
+        elif order == 1:
+            return (self._f[index + 1] - self._f[index]) / (self._x[index + 1] - self._x[index])
+        return 0
 
 
 cdef class Interpolate1DCubic(_Interpolate1DBase):
@@ -292,8 +357,8 @@ cdef class Interpolate1DCubic(_Interpolate1DBase):
     Spline coefficients are cached so they have to be calculated at
     initialisation only.
 
-    :param object x_data: A 1D array-like object of real values.
-    :param object f_data: A 1D array-like object of real values. The length
+    :param object x: A 1D array-like object of real values.
+    :param object f: A 1D array-like object of real values. The length
      of `f_data` must be equal to the length of `x_data`.
     :param int continuity_order: optional
     Sets the continuity of the cubic spline.
@@ -322,16 +387,9 @@ cdef class Interpolate1DCubic(_Interpolate1DBase):
     in a ValueError being raised.
     """
 
-    def __init__(self, object x_data, object f_data, int continuity_order=2,
-                 bint extrapolate=False, double extrapolation_range=float('inf'),
+    def __init__(self, object x, object f, int continuity_order=2,
+                 bint extrapolate=False, double extrapolation_range=INFINITY,
                  str extrapolation_type='nearest', bint tolerate_single_value=False):
-
-        cdef:
-            int k, n, l, i_x, i
-            double[::1] x_view, x2_view, x3_view, data_view
-            double[::1] cv_view
-            double [:, ::1] cm_view, coeffs_view
-            double d
 
         supported_extrapolations = ['nearest', 'linear', 'quadratic']
 
@@ -339,91 +397,109 @@ cdef class Interpolate1DCubic(_Interpolate1DBase):
         if extrapolation_type not in supported_extrapolations:
             raise ValueError("Unsupported extrapolation type: {}".format(extrapolation_type))
 
-        super().__init__(x_data, f_data, extrapolate, extrapolation_type, extrapolation_range, tolerate_single_value)
+        self._continuity_order = continuity_order
+
+        super().__init__(x, f, extrapolate, extrapolation_type, extrapolation_range, tolerate_single_value)
+
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    @cython.initializedcheck(False)
+    cdef object _build(self, ndarray x, ndarray f):
+        """
+        Calculate the spline coefficients.
+        
+        :param continuity_order: Order of spline continuity (1 or 2). 
+        """
+
+        cdef:
+            int n, k, l, i
+            double[::1] xv, x2v, x3v, fv
+            double[::1] cv
+            double [:, ::1] cm, coeffs
+            double d
+
+        n = len(x) - 1
 
         # Normalise coordinates and data arrays
-        self.x_delta_inv = 1 / (self.x_np.max() - self.x_np.min())
-        self.x_min = self.x_np.min()
-        self.x_np = (self.x_np - self.x_min) * self.x_delta_inv
-        self.data_delta = self.data_np.max() - self.data_np.min()
-        self.data_min = self.data_np.min()
-        # If data contains only one value (not filtered before) cancel the
-        # normalisation scaling by setting data_delta to 1:
-        if self.data_delta == 0:
-            self.data_delta = 1
-        self.data_np = (self.data_np - self.data_min) * (1 / self.data_delta)
+        self._sx = 1 / (x.max() - x.min())
+        self._ox = x.min()
+        x = (x - self._ox) * self._sx
 
-        x_view = self.x_np
-        x2_view = self.x_np * self.x_np
-        x3_view = self.x_np * self.x_np * self.x_np
-        data_view = self.data_np
+        # normalise data array
+        self._of = f.min()
+        self._sf = f.max() - f.min()
+        if self._sf == 0:
+            # zero data range, all values the same, disable scaling
+            self._sf = 1
+        f = (f - self._of) * (1 / self._sf)
 
-        n = len(self.x_np) - 1
-        l = 0
+        # obtain memory views
+        xv = x
+        x2v = x*x
+        x3v = x*x*x
+        fv = f
 
         # Fill the constraints matrix and vector
-        cv_view = zeros((4*n,), dtype=float64)  # constraints_vector
-        cm_view = zeros((4*n, 4*n), dtype=float64)  # constraints_matrix
+        cv = np.zeros((4*n,), dtype=np.float64)      # constraints_vector
+        cm = np.zeros((4*n, 4*n), dtype=np.float64)  # constraints_matrix
 
         # Knots values constraints:
+        l = 0
         for k in range(n):
 
-            cm_view[l, 4*k] = 1.
-            cm_view[l, 4*k+1] = x_view[k]
-            cm_view[l, 4*k+2] = x2_view[k]
-            cm_view[l, 4*k+3] = x3_view[k]
-            cv_view[l] = data_view[k]
+            cm[l, 4*k] = 1.
+            cm[l, 4*k+1] = xv[k]
+            cm[l, 4*k+2] = x2v[k]
+            cm[l, 4*k+3] = x3v[k]
+            cv[l] = fv[k]
             l += 1
 
-            cm_view[l, 4*k] = 1.
-            cm_view[l, 4*k+1] = x_view[k+1]
-            cm_view[l, 4*k+2] = x2_view[k+1]
-            cm_view[l, 4*k+3] = x3_view[k+1]
-            cv_view[l] = data_view[k+1]
+            cm[l, 4*k] = 1.
+            cm[l, 4*k+1] = xv[k+1]
+            cm[l, 4*k+2] = x2v[k+1]
+            cm[l, 4*k+3] = x3v[k+1]
+            cv[l] = fv[k+1]
             l += 1
-
 
         # first and/or second derivatives constraints:
-        if continuity_order == 1:
+        if self._continuity_order == 1:
 
             for k in range(n-1):
 
-                d = (data_view[k+2] - data_view[k]) / (x_view[k+2] - x_view[k])
-                cm_view[l, 4*k+1] = 1.
-                cm_view[l, 4*k+2] = 2*x_view[k+1]
-                cm_view[l, 4*k+3] = 3*x2_view[k+1]
-                cv_view[l] = d
+                d = (fv[k+2] - fv[k]) / (xv[k+2] - xv[k])
+                cm[l, 4*k+1] = 1.
+                cm[l, 4*k+2] = 2*xv[k+1]
+                cm[l, 4*k+3] = 3*x2v[k+1]
+                cv[l] = d
                 l += 1
 
-                cm_view[l, 4*k+5] = 1.
-                cm_view[l, 4*k+6] = 2*x_view[k+1]
-                cm_view[l, 4*k+7] = 3*x2_view[k+1]
-                cv_view[l] = d
+                cm[l, 4*k+5] = 1.
+                cm[l, 4*k+6] = 2*xv[k+1]
+                cm[l, 4*k+7] = 3*x2v[k+1]
+                cv[l] = d
                 l += 1
 
-
-        elif continuity_order == 2:
+        elif self._continuity_order == 2:
 
             for k in range(n-1):
 
                 # first derivative
-                cm_view[l, 4*k+1] = -1.
-                cm_view[l, 4*k+2] = -2*x_view[k+1]
-                cm_view[l, 4*k+3] = -3*x2_view[k+1]
-                cm_view[l, 4*k+5] = 1.
-                cm_view[l, 4*k+6] = 2*x_view[k+1]
-                cm_view[l, 4*k+7] = 3*x2_view[k+1]
+                cm[l, 4*k+1] = -1.
+                cm[l, 4*k+2] = -2*xv[k+1]
+                cm[l, 4*k+3] = -3*x2v[k+1]
+                cm[l, 4*k+5] = 1.
+                cm[l, 4*k+6] = 2*xv[k+1]
+                cm[l, 4*k+7] = 3*x2v[k+1]
                 l += 1
 
                 # second derivative
-                cm_view[l, 4*k+2] = -2.
-                cm_view[l, 4*k+3] = -6*x_view[k+1]
-                cm_view[l, 4*k+6] = 2.
-                cm_view[l, 4*k+7] = 6*x_view[k+1]
+                cm[l, 4*k+2] = -2.
+                cm[l, 4*k+3] = -6*xv[k+1]
+                cm[l, 4*k+6] = 2.
+                cm[l, 4*k+7] = 6*xv[k+1]
                 l += 1
 
         else:
-
             raise NotImplementedError("'continuity_order' must be 1 or 2.")
 
         # two last constraints: the choice is here to set the third derivative
@@ -432,43 +508,44 @@ cdef class Interpolate1DCubic(_Interpolate1DBase):
         # derivatives. (comment/uncomment to change the constraints)
 
         # Third derivative
-        cm_view[l, 3] = 6.
+        cm[l, 3] = 6.
         l += 1
-        cm_view[l, 4*n -1] = 6.
+        cm[l, 4*n -1] = 6.
         l += 1
 
         # Second derivative
         # cm_view[l, 2] = 2.
-        # cm_view[l, 3] = 6*x_view[0]
+        # cm_view[l, 3] = 6*xv[0]
         # l = l + 1
         # cm_view[l, 4*n -2] = 2.
-        # cm_view[l, 4*n -1] = 6*x_view[n]
+        # cm_view[l, 4*n -1] = 6*xv[n]
         # l = l + 1
 
         # First derivative
         # cm_view[l, 1] = 1.
-        # cm_view[l, 2] = 2*x_view[0]
-        # cm_view[l, 3] = 3*x2_view[0]
+        # cm_view[l, 2] = 2*xv[0]
+        # cm_view[l, 3] = 3*x2v[0]
         # l = l + 1
         # cm_view[l, 4*n -3] = 1.
-        # cm_view[l, 4*n -2] = 2*x_view[n]
-        # cm_view[l, 4*n -1] = 3*x2_view[n]
+        # cm_view[l, 4*n -2] = 2*xv[n]
+        # cm_view[l, 4*n -1] = 3*x2v[n]
         # l = l + 1
 
         # Solve the linear system
-        coeffs_view = solve(cm_view, cv_view).reshape((n, 4))
-        self.coeffs_view = coeffs_view
+        coeffs = solve(cm, cv).reshape((n, 4))
+        self._k = coeffs
 
         # Denormalisation
-        for i_x in range(n):
-            for i in range(4):
-                coeffs_view[i_x, i] = self.data_delta * (self.x_delta_inv ** i / factorial(i) * self._evaluate_polynomial_derivative(i_x, -self.x_delta_inv * self.x_min, i))
-            coeffs_view[i_x, 0] = coeffs_view[i_x, 0] + self.data_min
-        self.coeffs_view = coeffs_view
+        for i in range(n):
+            for k in range(4):
+                coeffs[i, k] = self._sf * self._sx ** k / factorial(k) * self._calc_polynomial_derivative(i, -self._sx * self._ox, k)
+            coeffs[i, 0] = coeffs[i, 0] + self._of
+        self._k = coeffs
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    cdef double _evaluate(self, double px, int index) except? -1e999:
+    @cython.initializedcheck(False)
+    cdef double _evaluate(self, double px, int order, int index) except? -1e999:
         """
         Evaluate the interpolating function which is valid in the area given
         by 'index' at any position 'px'.
@@ -480,75 +557,103 @@ cdef class Interpolate1DCubic(_Interpolate1DBase):
 
         cdef double px2, px3
 
-        px2 = px*px
-        px3 = px2*px
+        # f(x)
+        if order == 0:
+            px2 = px*px
+            px3 = px2*px
+            return self._k[index, 0] + self._k[index, 1]*px + self._k[index, 2]*px2 + self._k[index, 3]*px3
 
-        return self.coeffs_view[index, 0] + self.coeffs_view[index, 1]*px + self.coeffs_view[index, 2]*px2 + self.coeffs_view[index, 3]*px3
+        # df(x)/dx
+        elif order == 1:
+            px2 = px*px
+            return self._k[index, 1] + 2*self._k[index, 2]*px + 3*self._k[index, 3]*px2
+
+        # d2f(x)/dx2
+        elif order == 2:
+            return 2*self._k[index, 2] + 6*self._k[index, 3]*px
+
+        # d3f(x)/dx3
+        elif order == 3:
+            return 6*self._k[index, 3]
+
+        return 0
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    cdef double _extrapol_linear(self, double px, int index, double nearest_px) except? -1e999:
+    @cython.initializedcheck(False)
+    cdef double _extrapol_linear(self, double px, int order, int index, double rx) except? -1e999:
         """
         Extrapolate linearly the interpolation function valid on area given by
         'index' to position 'px'.
 
         :param double px: x coordinate
         :param int index: index of the area of interest
-        :param double nearest_px: the nearest position from 'px' in the
+        :param double rx: the nearest position from 'px' in the
         interpolation domain.
         :return: the extrapolated value
         """
 
-        return self._evaluate(nearest_px, index) \
-               + (px - nearest_px) * (3.*self.coeffs_view[index, 3]*nearest_px*nearest_px + 2.*self.coeffs_view[index, 2]*nearest_px + self.coeffs_view[index, 1])
+        # f(x)
+        if order == 0:
+            return self._evaluate(rx, order, index) + (px - rx) * (3. * self._k[index, 3] * rx * rx + 2. * self._k[index, 2] * rx + self._k[index, 1])
+
+        # df(x)/dx
+        elif order == 1:
+            return 3. * self._k[index, 3] * rx * rx + 2. * self._k[index, 2] * rx + self._k[index, 1]
+
+        return 0
+
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    cdef double _extrapol_quadratic(self, double px, int index, double nearest_px) except? -1e999:
+    @cython.initializedcheck(False)
+    cdef double _extrapol_quadratic(self, double px, int order, int index, double rx) except? -1e999:
         """
         Extrapolate quadratically the interpolation function valid on area given by
         'index' to position 'px'.
 
         :param double px: x coordinate
         :param int index: index of the area of interest
-        :param double nearest_px: the nearest position from 'px' in the
-        interpolation domain.
+        :param double rx: the nearest position from 'px' in the interpolation domain.
         :return: the extrapolated value
         """
 
-        cdef double delta = px - nearest_px
+        cdef:
+            double a0, a1, a2
+            double d = px - rx
 
-        return self._evaluate(nearest_px, index) \
-               + delta * (3.*self.coeffs_view[index, 3]*nearest_px*nearest_px + 2.*self.coeffs_view[index, 2]*nearest_px + self.coeffs_view[index, 1]) \
-               + delta*delta*0.5 * (6.*self.coeffs_view[index, 3]*nearest_px + 2.*self.coeffs_view[index, 2])
+        # f(x)
+        if order == 0:
+            a0 = self._evaluate(rx, order, index)
+            a1 = 3 * self._k[index, 3] * rx * rx + 2 * self._k[index, 2] * rx + self._k[index, 1]
+            a2 = 6 * self._k[index, 3] * rx + 2 * self._k[index, 2]
+            return a0 + d * a1 + 0.5*d*d * a2
 
-    cdef void _set_constant(self):
-        """
-        Set the interpolation function constant equal to the first value from
-        'data' attribute, and extend the domain to all the reals.
-        """
+        # df(x)/dx
+        elif order == 1:
+            a1 = 3 * self._k[index, 3] * rx * rx + 2 * self._k[index, 2] * rx + self._k[index, 1]
+            a2 = 6 * self._k[index, 3] * rx + 2 * self._k[index, 2]
+            return a1 + d * a2
 
-        self.x_domain_view = array([-float('Inf'), +float('Inf')], dtype=float64)
-        self.top_index = 1
+        # d2f(x)/dx2
+        elif order == 2:
+            return 6 * self._k[index, 3] * rx + 2 * self._k[index, 2]
 
-        self.x_np = array([-1., 0, +1.], dtype=float64)
-        self.data_np = self.data_np[0] * ones((3,), dtype=float64)
+        return 0
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    cdef double _evaluate_polynomial_derivative(self, int i_x, double px, int der_x):
+    @cython.initializedcheck(False)
+    cdef double _calc_polynomial_derivative(self, int ix, double px, int order_x):
         """
         Evaluate the derivatives of the polynomial valid in the area given by
-        'i_x' at position 'px'. The order of derivative is given by 'der_x'.
+        'ix' at position 'px'. The order of derivative is given by 'der_x'.
 
-        :param int i_x: index of the area of interest
+        :param int ix: index of the area of interest
         :param double px: x coordinate
         :param int der_x: order of derivative
         :return: value evaluated from the derivated polynomial
         """
 
-        cdef double[::1] x_values
-
-        x_values = derivatives_array(px, der_x)
-
-        return x_values[0]*self.coeffs_view[i_x, 0] + x_values[1]*self.coeffs_view[i_x, 1] + x_values[2]*self.coeffs_view[i_x, 2] + x_values[3]*self.coeffs_view[i_x, 3]
+        cdef double[::1] a = derivatives_array(px, order_x)
+        return a[0]*self._k[ix, 0] + a[1]*self._k[ix, 1] + a[2]*self._k[ix, 2] + a[3]*self._k[ix, 3]

@@ -18,24 +18,38 @@
 
 import numpy as np
 cimport numpy as np
+from libc.math cimport sqrt, INFINITY
 cimport cython
 
 from raysect.optical cimport Vector3D, Point2D, new_vector3d
 from cherab.core.math cimport Function1D, autowrap_function1d
 from cherab.core.math cimport Function2D, autowrap_function2d
-from cherab.core.math cimport VectorFunction2D
+from cherab.core.math cimport VectorFunction2D, autowrap_vectorfunction2d
 from cherab.core.math cimport Interpolate1DCubic, Interpolate2DCubic
 from cherab.core.math cimport PolygonMask2D
+from cherab.core.math cimport IsoMapper2D, AxisymmetricMapper, VectorAxisymmetricMapper
+from cherab.core.math cimport Blend2D, Constant2D, ConstantVector2D
 
 
 cdef class EFITEquilibrium:
-
     """
     An object representing an EFIT equilibrium time-slice.
+
+    EFIT is a code commonly used throughout the Fusion research community
+    for calculating the plasma magnetic equilibrium from a range of magnetics
+    measurements (L. Lao et. al. Nucl. Fusion **25** 1985). This equilibrium object
+    allows the calculation of the tokamak magnetic field from a number of EFIT
+    code outputs. To use this class properly users should be familiar with
+    the output data of EFIT.
 
     The EFIT data is interpolated to produced continuous functions of the
     equilibrium attributes, such as the magnetic flux (psi) and magnetic
     field.
+
+    Note: psin_to_r mapping only exists if the psi axis is monotonic.
+
+    For examples of how to instantiate this class, see the examples in the
+    machine specific packages.
 
     :param r: EFIT grid radius axis values (array).
     :param z: EFIT grid height axis values (array).
@@ -43,12 +57,30 @@ cdef class EFITEquilibrium:
     :param float psi_axis: The psi value at the magnetic axis.
     :param float psi_lcfs: The psi value at the LCFS.
     :param Point2D magnetic_axis: The coordinates of the magnetic axis.
-    :param f_profile_psin: The normalised psi axis values for the current flux profile (array).
-    :param f_profile_magnitude: The magnitudes of the current flux profile (array).
+    :param Point2D x_points: The list of x-points.
+    :param Point2D x_points: The list of strike-points.
+    :param f_profile: The current flux profile on psin (2xN array).
+    :param q_profile: The safety factor (q) profile on psin (2xN array).
     :param float b_vacuum_radius: Vacuum B-field reference radius (in meters).
     :param float b_vacuum_magnitude: Vacuum B-Field magnitude at the reference radius.
-    :param lcfs_polygon: An Nx2 array of (x, y) vertices specifying the LCFS boundary.
+    :param lcfs_polygon: A 2xN array of [[x0, ...], [y0, ...]] vertices specifying the LCFS boundary.
+    :param limiter_polygon: A 2xN array of [[x0, ...], [y0, ...]] vertices specifying the limiter.
     :param float time: The time stamp of the time-slice (in seconds).
+
+    :ivar Function2D psi: The poloidal flux in the r-z plane, :math:`\psi(r,z)`.
+    :ivar Function2D psi_normalised: The normalised poloidal flux in the r-z plane, :math:`\psi_n(r,z)`.
+    :ivar Function1D q: The safety factor :math:`q` at the specified normalised poloidal flux, :math:`q(\psi_n)`.
+    :ivar VectorFunction2D b_field: A 2D function that returns the magnetic field vector at the specified
+      point in the r-z plane, :math:`B(r, z)`.
+    :ivar VectorFunction2D toroidal_vector: The toroidal flux coordinate basis vector, :math:`\hat{\phi}(r, z)`.
+    :ivar VectorFunction2D poloidal_vector: The poloidal flux coordinate basis vector, :math:`\hat{ \theta }(r, z)`.
+    :ivar VectorFunction2D surface_normal: The surface normal flux coordinate basis vector, :math:`\hat{\psi}(r, z)`.
+    :ivar Function2D inside_lcfs: A 2D function that identifies if a given (r, z) coordinate lies inside or outside
+      the plasma Last Closed Flux Surface (LCFS). This mask function returns a value of 1 if the requested point
+      lies inside the LCFS. A value of 0.0 is returned outside the LCFS.
+    :ivar Function2D inside_limiter: A 2D function that identifies if a given (r, z) coordinate lies inside or
+      outside the first wall limiter polygon. This mask function returns a value of 1 if the requested point
+      lies inside the limit polygon. A value of 0.0 is returned outside the polygon.
     """
 
     cdef:
@@ -56,17 +88,23 @@ cdef class EFITEquilibrium:
         readonly double psi_axis, psi_lcfs
         readonly tuple r_range, z_range
         readonly Point2D magnetic_axis
-        readonly VectorFunction2D b_field
-        readonly Function2D inside_lcfs
+        readonly tuple x_points, strike_points
+        readonly VectorFunction2D b_field, toroidal_vector, poloidal_vector, surface_normal
+        readonly Function2D inside_lcfs, inside_limiter
         readonly Function1D psin_to_r
         readonly double time
+        readonly np.ndarray lcfs_polygon, limiter_polygon
+        readonly np.ndarray psi_data, r_data, z_data
+        readonly Function1D q
         double _b_vacuum_magnitude, _b_vacuum_radius
         Function1D _f_profile
         Function2D _dpsidr, _dpsidz
 
     def __init__(self, object r, object z, object psi_grid, double psi_axis, double psi_lcfs,
-                 Point2D magnetic_axis not None, object f_profile_psin, object f_profile_magnitude,
-                 double b_vacuum_radius, double b_vacuum_magnitude, object lcfs_polygon, double time):
+                 Point2D magnetic_axis not None, object x_points, object strike_points,
+                 object f_profile, object q_profile,
+                 double b_vacuum_radius, double b_vacuum_magnitude,
+                 object lcfs_polygon, object limiter_polygon, double time):
 
         self.time = time
 
@@ -74,8 +112,12 @@ cdef class EFITEquilibrium:
         r = np.array(r, dtype=np.float64)
         z = np.array(z, dtype=np.float64)
         psi = np.array(psi_grid, dtype=np.float64)
-        f_profile_psin = np.array(f_profile_psin, dtype=np.float64)
-        f_profile_magnitude = np.array(f_profile_magnitude, dtype=np.float64)
+        f_profile = np.array(f_profile, dtype=np.float64)
+
+        # store raw data
+        self.r_data = r
+        self.z_data = z
+        self.psi_data = psi
 
         # interpolate poloidal flux grid data
         self.psi = Interpolate2DCubic(r, z, psi_grid)
@@ -86,28 +128,73 @@ cdef class EFITEquilibrium:
         # store equilibrium attributes
         self.r_range = r.min(), r.max()
         self.z_range = z.min(), z.max()
-        self.magnetic_axis = magnetic_axis
         self._b_vacuum_magnitude = b_vacuum_magnitude
         self._b_vacuum_radius = b_vacuum_radius
-        self._f_profile = Interpolate1DCubic(f_profile_psin, f_profile_magnitude)
+        self._f_profile = Interpolate1DCubic(f_profile[0, :], f_profile[1, :])
+        self.q = Interpolate1DCubic(q_profile[0, :], q_profile[1, :])
 
-        # EFIT lcfs polygon
-        self.inside_lcfs = EFITLCFSMask(lcfs_polygon, self.psi_normalised)
+        # populate points
+        self._process_points(magnetic_axis, x_points, strike_points)
+
+        # populate polygons and inside/outside functions
+        self._process_polygons(lcfs_polygon, limiter_polygon, self.psi_normalised)
 
         # calculate b-field
-        # TODO: remove numerical differentials once interpolators support analytical differentiation
         dpsi_dr, dpsi_dz = self._calculate_differentials(r, z, psi_grid)
-        self.b_field = EFITMagneticField(self.psi_normalised, dpsi_dr, dpsi_dz, self._f_profile, b_vacuum_radius, b_vacuum_magnitude, self.inside_lcfs)
+        self.b_field = MagneticField(self.psi_normalised, dpsi_dr, dpsi_dz, self._f_profile, b_vacuum_radius, b_vacuum_magnitude, self.inside_lcfs)
+
+        # populate flux coordinate attributes
+        self.toroidal_vector = ConstantVector2D(Vector3D(0, 1, 0))
+        self.poloidal_vector = PoloidalFieldVector(self.b_field)
+        self.surface_normal = FluxSurfaceNormal(self.b_field)
 
         # generate interpolator to map from psi normalised to outboard major radius
         self._generate_psin_to_r_mapping()
 
+    cpdef object _process_points(self, Point2D magnetic_axis, object x_points, object strike_points):
+
+        x_points = tuple(x_points)
+        strike_points = tuple(strike_points)
+
+        # validate x points and strike points
+        for point in x_points:
+            if not isinstance(point, Point2D):
+                raise TypeError('The list of x-points must contain only Point2D objects.')
+
+        for point in strike_points:
+            if not isinstance(point, Point2D):
+                raise TypeError('The list of strike-points must contain only Point2D objects.')
+
+        self.magnetic_axis = magnetic_axis
+        self.x_points = x_points
+        self.strike_points = strike_points
+
+    cpdef object _process_polygons(self, object lcfs_polygon, object limiter_polygon, Function2D psi_normalised):
+
+        # lcfs polygon
+        # polygon mask requires an Nx2 array and it must be c contiguous
+        # transposing simply swaps the indexing, so need to re-instance
+        lcfs_polygon = np.ascontiguousarray(lcfs_polygon.transpose())
+        self.lcfs_polygon = lcfs_polygon
+        self.inside_lcfs = EFITLCFSMask(lcfs_polygon, psi_normalised)
+
+        # limiter polygon
+        if limiter_polygon is None:
+            self.limiter_polygon = None
+            self.inside_limiter = None
+        else:
+            # polygon mask requires an Nx2 array and it must be c contiguous
+            # transposing simply swaps the indexing, so need to re-instance
+            limiter_polygon = np.ascontiguousarray(limiter_polygon.transpose())
+            self.limiter_polygon = limiter_polygon
+            self.inside_limiter = PolygonMask2D(limiter_polygon)
+
     cpdef tuple _calculate_differentials(self, np.ndarray r, np.ndarray z, np.ndarray psi_grid):
 
         # calculate differentials
-        dpsi_dix, dpsi_diy = np.gradient(psi_grid)
-        dix_dr = 1.0 / np.gradient(r)
-        diy_dz = 1.0 / np.gradient(z)
+        dpsi_dix, dpsi_diy = np.gradient(psi_grid, edge_order=2)
+        dix_dr = 1.0 / np.gradient(r, edge_order=2)
+        diy_dz = 1.0 / np.gradient(z, edge_order=2)
 
         dpsi_dr = Interpolate2DCubic(r, z, dpsi_dix * dix_dr[:, np.newaxis])
         dpsi_dz = Interpolate2DCubic(r, z, dpsi_diy * diy_dz[np.newaxis, :])
@@ -129,15 +216,173 @@ cdef class EFITEquilibrium:
         for i, ri in enumerate(r):
             psin[i] = self.psi_normalised(ri, z)
 
-        # filter out all points that lie outside the LCFS
-        # todo: this needs to be more intelligent as in cuts samples that straddle the LCFS
-        # todo: this should really keep going until monotonicity ends (if that occurs inside psin=1.0 then mapping is impossible)
-        # i = psin <= 1.0
-        # psin = psin[i]
-        # r = r[i]
+        # check for monotonicity
+        if (psin[0] < psin[1] and (np.diff(psin) <= 0).any()) or (psin[0] >= psin[1] and (np.diff(psin) >= 0).any()):
+            self.psin_to_r = None
+            return
 
         # interpolate sampled data, allowing a small bit of extrapolation to cope with numerical sampling accuracy
         self.psin_to_r = Interpolate1DCubic(psin, r, extrapolate=True, extrapolation_range=SAMPLE_RESOLUTION, extrapolation_type='quadratic')
+
+    def map2d(self, object profile, double value_outside_lcfs=0.0):
+        """
+        Maps a 1D profile onto the equilibrium to give a 2D profile.
+
+        Useful for mapping flux surface quantities in the r-z plane.
+
+        :param profile: A 1D function or 2xN array.
+        :param value_outside_lcfs: Value returned if point requested outside the LCFS (default=0.0).
+        :return: Function2D object.
+
+        .. code-block:: pycon
+
+           >>> # Hypothesise a 1D electron temperature profile as a function of psi_n.
+           >>> te_data = np.zeros((2, 6))
+           >>> te_data[0, :] = [0, 0.1, 0.2, 0.4, 0.7, 1.0]
+           >>> te_data[1, :] = [0, 100, 400, 500, 550, 600]
+           >>> te = equilibrium.map2d(te_data)
+           >>>
+           >>> # evaluate temperature mapped on flux surfaces in (r, z)
+           >>> te(3.1, 0.2)
+           487.924780234
+        """
+
+        # convert data to a 1d function if not already a function object
+        if isinstance(profile, Function1D) or callable(profile):
+            profile = autowrap_function1d(profile)
+        else:
+            profile = np.array(profile, np.float64)
+            profile = Interpolate1DCubic(profile[0, :], profile[1, :])
+
+        # map around equilibrium
+        f = IsoMapper2D(self.psi_normalised, profile)
+
+        # mask off values outside the lcfs
+        return Blend2D(Constant2D(value_outside_lcfs), f, self.inside_lcfs)
+
+    def map3d(self, object profile, double value_outside_lcfs=0.0):
+        """
+        Maps a 1D profile onto the equilibrium to give a 3D profile.
+
+        Useful for mapping flux surface quantities in 3D space.
+
+        :param profile: A 1D function or Nx2 array.
+        :param value_outside_lcfs: Value returned if point requested outside the LCFS (default=0.0).
+        :return: Function3D object.
+
+        .. code-block:: pycon
+
+           >>> # Hypothesise a 1D electron temperature profile as a function of psi_n.
+           >>> te_data = np.zeros((2, 6))
+           >>> te_data[0, :] = [0, 0.1, 0.2, 0.4, 0.7, 1.0]
+           >>> te_data[1, :] = [0, 100, 400, 500, 550, 600]
+           >>> te = equilibrium.map3d(te_data)
+           >>>
+           >>> # evaluate temperature mapped on flux surfaces in (r, z)
+           >>> te(3.1, -2.9, 0.2)
+           357.8793240
+        """
+
+        return AxisymmetricMapper(self.map2d(profile, value_outside_lcfs))
+
+    def map_vector2d(self, object toroidal, object poloidal, object normal):
+        """
+        Maps velocity components in flux coordinates onto flux surfaces in the r-z plane.
+
+        It is often convenient to express the plasma velocity components in flux coordinates,
+        assuming the velocities are flux functions. This function allows the user to
+        specify velocity components as 1D functions of :math:`\psi_n`. The three velocity
+        components are combined to yield a velocity vector at the requested r-z coordinate.
+
+        :param toroidal: Toroidal velocity :math:`v_{\phi} (\psi_n)`, specified as a 1D function
+          or Nx2 array.
+        :param poloidal: Poloidal vector :math:`v_{\theta} (\psi_n)`, specified as a 1D function
+          or Nx2 array.
+        :param normal: Velocity along the flux surface normal :math:`v_{\psi} (\psi_n)`, specified
+          as a 1D function or Nx2 array.
+        :return: VectorFunction2D object that returns the velocity vector at a given r,z coordinate,
+          :math:`v(r,z)`.
+
+        .. code-block:: pycon
+
+           >>> # Hypothesise 1D profiles for the toroidal and poloidal velocities on psi_n.
+           >>> v_toroidal = np.zeros((2, 6))
+           >>> v_toroidal[0, :] = [0, 0.1, 0.2, 0.4, 0.7, 1.0]
+           >>> v_toroidal[1, :] = [0, 1e4, 3e4, 5e4, 5.5e4, 6e4]
+           >>> v_poloidal = np.zeros((2, 6))
+           >>> v_poloidal[0, :] = [0, 0.1, 0.2, 0.4, 0.7, 1.0]
+           >>> v_poloidal[1, :] = [4e4, 1e4, 3e3, 1e3, 0, 0]
+           >>> # Assume zero velocity normal to flux surface
+           >>> from cherab.core.math import Constant1D
+           >>> v_normal = Constant1D(0.0)
+           >>>
+           >>> # generate VectorFunction2D and sample
+           >>> v = equilibrium.map_vector2d(v_toroidal, v_poloidal, v_normal)
+           >>> v(3.1, 0.2)
+           Vector3D(134.523, 543.6347, 25342.16)
+        """
+
+        # convert toroidal data to 1d function if not already a function object
+        if isinstance(toroidal, Function1D) or callable(toroidal):
+            toroidal = autowrap_function1d(toroidal)
+        else:
+            toroidal = np.array(toroidal, np.float64)
+            toroidal = Interpolate1DCubic(toroidal[0, :], toroidal[1, :])
+
+        # convert poloidal data to 1d function if not already a function object
+        if isinstance(poloidal, Function1D) or callable(poloidal):
+            poloidal = autowrap_function1d(poloidal)
+        else:
+            poloidal = np.array(poloidal, np.float64)
+            poloidal = Interpolate1DCubic(poloidal[0, :], poloidal[1, :])
+
+        # convert normal data to 1d function if not already a function object
+        if isinstance(normal, Function1D) or callable(normal):
+            normal = autowrap_function1d(normal)
+        else:
+            normal = np.array(normal, np.float64)
+            normal = Interpolate1DCubic(normal[0, :], normal[1, :])
+
+        return FluxCoordToCartesian(self.b_field, self.psi_normalised, toroidal, poloidal, normal)
+
+    def map_vector3d(self, object toroidal, object poloidal, object normal):
+        """
+        Maps velocity components in flux coordinates onto flux surfaces in 3D space.
+
+        It is often convenient to express the plasma velocity components in flux coordinates,
+        assuming the velocities are flux functions. This function allows the user to
+        specify velocity components as 1D functions of :math:`\psi_n`. The three velocity
+        components are combined to yield a velocity vector at the requested 3D coordinate.
+
+        :param toroidal: Toroidal velocity :math:`v_{\phi} (\psi_n)`, specified as a 1D function
+          or Nx2 array.
+        :param poloidal: Poloidal vector :math:`v_{\theta} (\psi_n)`, specified as a 1D function
+          or Nx2 array.
+        :param normal: Velocity along the flux surface normal :math:`v_{\psi} (\psi_n)`, specified
+          as a 1D function or Nx2 array.
+        :return: VectorFunction2D object that returns the velocity vector at a given r,z coordinate,
+          :math:`v(r,z)`.
+
+        .. code-block:: pycon
+
+           >>> # Hypothesise 1D profiles for the toroidal and poloidal velocities on psi_n.
+           >>> v_toroidal = np.zeros((2, 6))
+           >>> v_toroidal[0, :] = [0, 0.1, 0.2, 0.4, 0.7, 1.0]
+           >>> v_toroidal[1, :] = [0, 1e4, 3e4, 5e4, 5.5e4, 6e4]
+           >>> v_poloidal = np.zeros((2, 6))
+           >>> v_poloidal[0, :] = [0, 0.1, 0.2, 0.4, 0.7, 1.0]
+           >>> v_poloidal[1, :] = [4e4, 1e4, 3e3, 1e3, 0, 0]
+           >>> # Assume zero velocity normal to flux surface
+           >>> from cherab.core.math import Constant1D
+           >>> v_normal = Constant1D(0.0)
+           >>>
+           >>> # generate VectorFunction2D and sample
+           >>> v = equilibrium.map_vector3d(v_toroidal, v_poloidal, v_normal)
+           >>> v(3.1, -0.1, 0.2)
+           Vector3D(134.523, 543.6347, 25342.16)
+        """
+
+        return VectorAxisymmetricMapper(self.map_vector2d(toroidal, poloidal, normal))
 
 
 cdef class EFITLCFSMask(Function2D):
@@ -168,7 +413,7 @@ cdef class EFITLCFSMask(Function2D):
         return self._lcfs_polygon.evaluate(r, z) > 0.0 and self._psi_normalised.evaluate(r, z) <= 1.0
 
 
-cdef class EFITMagneticField(VectorFunction2D):
+cdef class MagneticField(VectorFunction2D):
     """
     A 2D magnetic field vector function derived from EFIT data.
 
@@ -199,6 +444,8 @@ cdef class EFITMagneticField(VectorFunction2D):
     @cython.cdivision(True)
     cdef Vector3D evaluate(self, double r, double z):
 
+        # todo: add caching
+
         cdef double br, bz, bt, psi_n
 
         # calculate poloidal components of magnetic field from poloidal flux
@@ -215,9 +462,105 @@ cdef class EFITMagneticField(VectorFunction2D):
 
         else:
 
-            # note: this is an approximation used my EFIT
+            # note: this is an approximation used by EFIT
             # todo: replace with a more accurate vacuum field calculation (if data available)
             bt = self._b_vacuum_magnitude * self._b_vacuum_radius / r
 
         return new_vector3d(br, bt, bz)
 
+
+cdef class PoloidalFieldVector(VectorFunction2D):
+    """
+
+    """
+
+    cdef VectorFunction2D _field
+
+    def __init__(self, object field):
+        self._field = autowrap_vectorfunction2d(field)
+
+    cdef Vector3D evaluate(self, double r, double z):
+
+        cdef Vector3D b = self._field.evaluate(r, z)
+
+        # if zero vector is undefined, strictly this should raise an exception
+        # however for practical convenience the vector is set to zero
+        if b.x == 0 and b.z == 0:
+            return new_vector3d(0, 0, 0)
+
+        # only need in plane components of field
+        return new_vector3d(b.x, 0, b.z).normalise()
+
+
+cdef class FluxSurfaceNormal(VectorFunction2D):
+    """
+
+    """
+
+    cdef VectorFunction2D _field
+
+    def __init__(self, object field):
+        self._field = autowrap_vectorfunction2d(field)
+
+    cdef Vector3D evaluate(self, double r, double z):
+
+        cdef Vector3D b = self._field.evaluate(r, z)
+
+        # if zero vector is undefined, strictly this should raise an exception
+        # however for practical convenience the vector is set to zero
+        if b.x == 0 and b.z == 0:
+            return new_vector3d(0, 0, 0)
+
+        # cross product of poloidal and toroidal unit vectors
+        return new_vector3d(-b.z, 0, b.x).normalise()
+
+
+cdef class FluxCoordToCartesian(VectorFunction2D):
+    """
+
+    """
+
+    cdef:
+        VectorFunction2D _field
+        Function1D _toroidal, _poloidal, _normal
+        Function2D _psin
+        Vector3D _value_outside_lcfs
+
+    def __init__(self, object field, object psi_normalised, object toroidal, object poloidal, object normal,
+                 Vector3D value_outside_lcfs=Vector3D(0, 0, 0)):
+        
+        self._field = autowrap_vectorfunction2d(field)
+        self._psin = autowrap_function2d(psi_normalised)
+        self._toroidal = autowrap_function1d(toroidal)
+        self._poloidal = autowrap_function1d(poloidal)
+        self._normal = autowrap_function1d(normal)
+        self._value_outside_lcfs = value_outside_lcfs
+
+    cdef Vector3D evaluate(self, double r, double z):
+
+        cdef double psi
+        cdef Vector3D f, toroidal, poloidal, normal
+
+        f = self._field.evaluate(r, z)
+        psi = max(0, self._psin(r, z))
+
+        # If value outside LCFS return default value
+        if psi > 1:
+            return self._value_outside_lcfs
+
+        # calculate flux coordinate vectors
+        if f.x == 0 and f.z == 0:
+
+            # if zero vector is undefined, strictly this should raise an exception
+            # however for practical convenience the vector is set to zero
+            toroidal = new_vector3d(0, self._toroidal.evaluate(psi), 0)
+            poloidal = new_vector3d(0, 0, 0)
+            normal = new_vector3d(0, 0, 0)
+
+        else:
+
+            toroidal = new_vector3d(0, self._toroidal.evaluate(psi), 0)
+            poloidal = new_vector3d(f.x, 0, f.z).set_length(self._poloidal.evaluate(psi))
+            normal = new_vector3d(-f.z, 0, f.x).set_length(self._normal.evaluate(psi))
+
+        return new_vector3d(poloidal.x + normal.x, toroidal.y, poloidal.z + normal.z)

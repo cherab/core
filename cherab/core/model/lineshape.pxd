@@ -16,6 +16,9 @@
 # See the Licence for the specific language governing permissions and limitations
 # under the Licence.
 
+import numpy as np
+cimport numpy as np
+
 from raysect.optical cimport Spectrum, Point3D, Vector3D
 from cherab.core.atomic.line cimport Line
 from cherab.core.species cimport Species
@@ -41,6 +44,13 @@ cdef class LineShapeModel:
 
 cdef class GaussianLine(LineShapeModel):
     pass
+
+
+cdef class MultipletLineShape(LineShapeModel):
+
+    cdef:
+        int number_of_lines
+        np.ndarray multiplet
 
 
 cdef class StarkBroadenedLine(LineShapeModel):

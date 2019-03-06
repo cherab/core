@@ -34,6 +34,10 @@ ABS_DELTA = 1e-8  # delta for values which must be rigorously equal
 LIN_DELTA = 1e-8  # delta for values form linear interpolation
 CUB_DELTA = 1e-8  # delta for values from cubic interpolation
 
+# todo: replace numerical derivative (as it is noisy for higher orders) and re-enable higher order derivative tests
+# highest derivative order to test (high orders can face numerical issues so test not always reliable for high orders at present)
+MAX_DERIVATIVE_ORDER = 1
+
 
 class TestInterpolators2D(unittest.TestCase):
     """
@@ -756,12 +760,88 @@ class TestInterpolators2D(unittest.TestCase):
                                                               extrapolation_type=extrapolation_type,
                                                               tolerate_single_value=tolerate_single_value)
 
+    def derivative(self, f, x, y, h, x_order, y_order):
+        """
+        Calculates a numerical derivative at point x, y.
+
+        Obtains samples with spacing h and computes the central difference to
+        obtain the first derivative. Method calls itself recursively to
+         calculate higher deriviative orders.
+
+        :param f: 1D function object.
+        :param x: Sample point x.
+        :param y: Sample point y.
+        :param h: Sample distance.
+        :param x_order: Derivative order along x.
+        :param y_order: Derivative order along y.
+        :return: Derivative value.
+        """
+
+        if x_order < 1 and y_order < 1:
+            raise ValueError('At least one derivative order must be > 0.')
+
+        if x_order < 0:
+            raise ValueError('The y derivative order cannot be less than zero.')
+
+        if y_order < 0:
+            raise ValueError('The y derivative order cannot be less than zero.')
+
+        d = 0.5 * h
+        if x_order == 1 and y_order == 0:
+            return (f(x+d, y) - f(x-d, y)) / h
+
+        if x_order == 0 and y_order == 1:
+            return (f(x, y+d) - f(x, y-d)) / h
+
+        if y_order > 0:
+            f0 = self.derivative(f, x, y-d, h, x_order, y_order - 1)
+            f1 = self.derivative(f, x, y+d, h, x_order, y_order - 1)
+            return (f1 - f0) / h
+
+        if x_order > 0:
+            f0 = self.derivative(f, x-d, y, h, x_order - 1, 0)
+            f1 = self.derivative(f, x+d, y, h, x_order - 1, 0)
+            return (f1 - f0) / h
+
     def interpolate_2d_extrapolate_assert(self, i_block, j_block, ref_data, delta):
         mini, maxi = self.extrapol_xdomains[i_block]
         minj, maxj = self.extrapol_ydomains[j_block]
         for iex in range(mini, maxi):
             for jex in range(minj, maxj):
-                self.assertAlmostEqual(self.interp_func(self.xsamples_ex[iex], self.ysamples_ex[jex]), ref_data[iex - mini, jex - minj], delta=delta)
+                x = self.xsamples_ex[iex]
+                y = self.ysamples_ex[jex]
+
+                # test f(x,y)
+                self.assertAlmostEqual(self.interp_func(x, y), ref_data[iex - mini, jex - minj], delta=delta)
+
+                # skip derivatives on boundary as the numerical sampling routine will produce odd results with nearest neighbour extrapolation
+                if x == X_LOWER or x == X_UPPER:
+                    continue
+
+                if y == Y_LOWER or y == Y_UPPER:
+                    continue
+
+                # test derivatives
+                for x_order in range(0, MAX_DERIVATIVE_ORDER + 1):
+                    for y_order in range(0, MAX_DERIVATIVE_ORDER + 1):
+
+                        # skip invalid combination
+                        if x_order == 0 and y_order == 0:
+                            continue
+
+                        v = self.derivative(self.interp_func, x, y, 1e-3, x_order, y_order)
+                        r = self.interp_func.derivative(x, y, x_order, y_order)
+
+                        print(x, y, x_order, y_order, r, v, abs(r - v))
+
+                        # skip small values that suffer from numerical sampling accuracy issues
+                        if abs(v) < 1e-6 * 10**max(x_order, y_order):
+                            continue
+
+                        if abs(r) < 1e-9:
+                            r = 0.0
+
+                        self.assertAlmostEqual(r, v, delta=1e-2 * abs(v))
 
     def interpolate_2d_xboundaries_assert(self, inf, sup, epsilon, y):
         with self.assertRaises(ValueError):
@@ -835,6 +915,27 @@ class TestInterpolators2D(unittest.TestCase):
             for j in range(len(self.ysamples)):
                 self.assertAlmostEqual(self.interp_func(self.xsamples[i], self.ysamples[j]), self.interp_data[i, j], delta=LIN_DELTA)
 
+        # avoid end points for derivatives
+        for i in range(1, len(self.xsamples) - 1):
+            for j in range(1, len(self.ysamples) - 1):
+                for x_order in range(MAX_DERIVATIVE_ORDER + 1):
+                    for y_order in range(MAX_DERIVATIVE_ORDER + 1):
+
+                        if x_order == 0 and y_order == 0:
+                            continue
+
+                        x = self.xsamples[i]
+                        y = self.ysamples[j]
+
+                        # higher order derivatives are zero
+                        if x_order > 1 or y_order > 1:
+                            v = 0
+                        else:
+                            v = self.derivative(self.interp_func, x, y, 1e-3, x_order, y_order)
+                        r = self.interp_func.derivative(x, y, x_order, y_order)
+
+                        self.assertAlmostEqual(r, v, delta=1e-5 * abs(v))
+
     def test_interpolate_2d_linear_bigvalues(self):
         """2D linear interpolation. Test with big values (1e20) inside the boundaries"""
         factor = 1.e20
@@ -843,6 +944,27 @@ class TestInterpolators2D(unittest.TestCase):
             for j in range(len(self.ysamples)):
                 self.assertAlmostEqual(self.interp_func(self.xsamples[i], self.ysamples[j]), factor * self.interp_data[i, j], delta=factor * LIN_DELTA)
 
+        # avoid end points for derivatives
+        for i in range(1, len(self.xsamples) - 1):
+            for j in range(1, len(self.ysamples) - 1):
+                for x_order in range(MAX_DERIVATIVE_ORDER + 1):
+                    for y_order in range(MAX_DERIVATIVE_ORDER + 1):
+
+                        if x_order == 0 and y_order == 0:
+                            continue
+
+                        x = self.xsamples[i]
+                        y = self.ysamples[j]
+
+                        # higher order derivatives are zero
+                        if x_order > 1 or y_order > 1:
+                            v = 0
+                        else:
+                            v = self.derivative(self.interp_func, x, y, 1e-3, x_order, y_order)
+                        r = self.interp_func.derivative(x, y, x_order, y_order)
+
+                        self.assertAlmostEqual(r, v, delta=1e-5 * abs(v))
+
     def test_interpolate_2d_linear_lowvalues(self):
         """2D linear interpolation. Test with low values (1e-20) inside the boundaries"""
         factor = 1.e-20
@@ -850,6 +972,27 @@ class TestInterpolators2D(unittest.TestCase):
         for i in range(len(self.xsamples)):
             for j in range(len(self.ysamples)):
                 self.assertAlmostEqual(self.interp_func(self.xsamples[i], self.ysamples[j]), factor * self.interp_data[i, j], delta=factor * LIN_DELTA)
+
+        # avoid end points for derivatives
+        for i in range(1, len(self.xsamples) - 1):
+            for j in range(1, len(self.ysamples) - 1):
+                for x_order in range(MAX_DERIVATIVE_ORDER + 1):
+                    for y_order in range(MAX_DERIVATIVE_ORDER + 1):
+
+                        if x_order == 0 and y_order == 0:
+                            continue
+
+                        x = self.xsamples[i]
+                        y = self.ysamples[j]
+
+                        # higher order derivatives are zero
+                        if x_order > 1 or y_order > 1:
+                            v = 0
+                        else:
+                            v = self.derivative(self.interp_func, x, y, 1e-3, x_order, y_order)
+                        r = self.interp_func.derivative(x, y, x_order, y_order)
+
+                        self.assertAlmostEqual(r, v, delta=1e-5 * abs(v))
 
     def test_interpolate_2d_linear_edge(self):
         """2D linear interpolation. Test edges values"""
@@ -988,20 +1131,6 @@ class TestInterpolators2D(unittest.TestCase):
         self.init_2dlinear(extrapolate=True, extrapolation_range=10, extrapolation_type='linear')
         self.interpolate_2d_extrapolate_assert(2, 2, self.extrap_data_lin[2][2], LIN_DELTA)
 
-    def test_interpolate_2d_linear_coord_not_sorted_x(self):
-        """2D linear interpolation. The coordinates array must be sorted and the values array changed consequently.
-        """
-        self.init_2dlinear([1, 3, 2, 4], [2, 3, 4, 5], np.eye(4))
-        self.assertAlmostEqual(self.interp_func(2, 4), 1., delta=ABS_DELTA)
-        self.assertAlmostEqual(self.interp_func(3, 3), 1., delta=ABS_DELTA)
-
-    def test_interpolate_2d_linear_coord_not_sorted_y(self):
-        """2D linear interpolation. The coordinates array must be sorted and the values array changed consequently.
-        """
-        self.init_2dlinear([1, 2, 3, 4], [2, 3, 5, 4], np.eye(4))
-        self.assertAlmostEqual(self.interp_func(4, 4), 1., delta=ABS_DELTA)
-        self.assertAlmostEqual(self.interp_func(3, 5), 1., delta=ABS_DELTA)
-
     def test_interpolate_2d_linear_type_conversion(self):
         """2D linear interpolation. Whatever the type of input data, the interpolating function must provide float numbers.
         """
@@ -1040,6 +1169,27 @@ class TestInterpolators2D(unittest.TestCase):
         for i in range(len(self.xsamples)):
             for j in range(len(self.ysamples)):
                 self.assertAlmostEqual(self.interp_func(self.xsamples[i], self.ysamples[j]), self.interp_data[i, j], delta=CUB_DELTA)
+
+        # avoid end points for derivatives
+        for i in range(1, len(self.xsamples) - 1):
+            for j in range(1, len(self.ysamples) - 1):
+
+                # only test up to d2f/dxdy as numerical differentiation starts to fail
+                for x_order in range(MAX_DERIVATIVE_ORDER + 1):
+                    for y_order in range(MAX_DERIVATIVE_ORDER + 1):
+                        if x_order == 0 and y_order == 0:
+                            continue
+                        x = self.xsamples[i]
+                        y = self.ysamples[j]
+                        v = self.derivative(self.interp_func, x, y, 1e-3, x_order, y_order)
+
+                        # skip small values that suffer from numerical sampling accuracy issues
+                        if v < 1e-2:
+                            continue
+
+                        r = self.interp_func.derivative(x, y, x_order, y_order)
+
+                        self.assertAlmostEqual(r, v, delta=1e-3 * abs(v))
 
     def test_interpolate_2d_cubic_bigvalues(self):
         """2D cubic interpolation. Test with big values (1e20) inside the boundaries"""
@@ -1247,20 +1397,6 @@ class TestInterpolators2D(unittest.TestCase):
         """
         self.init_2dcubic(extrapolate=True, extrapolation_range=10, extrapolation_type='quadratic')
         self.interpolate_2d_extrapolate_assert(2, 2, self.extrap_data_qua[2][2], CUB_DELTA)
-
-    def test_interpolate_2d_cubic_coord_not_sorted_x(self):
-        """2D cubic interpolation. The coordinates array must be sorted and the values array changed consequently.
-        """
-        self.init_2dcubic([1, 3, 2, 4], [2, 3, 4, 5], np.eye(4))
-        self.assertAlmostEqual(self.interp_func(2, 4), 1., delta=ABS_DELTA)
-        self.assertAlmostEqual(self.interp_func(3, 3), 1., delta=ABS_DELTA)
-
-    def test_interpolate_2d_cubic_coord_not_sorted_y(self):
-        """2D cubic interpolation. The coordinates array must be sorted and the values array changed consequently.
-        """
-        self.init_2dcubic([1, 2, 3, 4], [2, 3, 5, 4], np.eye(4))
-        self.assertAlmostEqual(self.interp_func(4, 4), 1., delta=ABS_DELTA)
-        self.assertAlmostEqual(self.interp_func(3, 5), 1., delta=ABS_DELTA)
 
     def test_interpolate_2d_cubic_type_conversion(self):
         """2D cubic interpolation. Whatever the type of input data, the interpolating function must provide float numbers.

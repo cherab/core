@@ -221,17 +221,31 @@ class TestInterpolators1D(unittest.TestCase):
             self.interp_func(sup + epsilon)
         self.assertIsInstance(self.interp_func(sup - epsilon), float)
 
+    def derivative(self, f, x, h, order):
+        """
+        Calculates a numerical derivative at point x.
+
+        Obtains samples f(x - h/2) and (x + h/2) and computes the central
+        difference to obtain the first derivative. Method calls itself
+        recursively to calculate higher deriviative orders.
+
+        :param f: 1D function object.
+        :param x: Sample point.
+        :param h: Sample distance.
+        :param order: Derivative order.
+        :return: Derivative value.
+        """
+
+        if order < 1:
+            raise ValueError('Derivative order must be > 0.')
+
+        d = 0.5 * h
+        if order == 1:
+            return (f(x+d) - f(x-d)) / h
+        else:
+            return (self.derivative(f, x+d, h, order - 1) - self.derivative(f, x-d, h, order - 1)) / h
+
     # General behaviour
-
-    def test_interpolate_1d_invalid_coordinates(self):
-        """1D interpolation. An error must be raises if coordinates are not an array-like object.
-        """
-        self.assertRaises(ValueError, interpolators1d._Interpolate1DBase, "blah", [1, 2, 3, 4])
-
-    def test_interpolate_1d_invalid_data(self):
-        """1D interpolation. An error must be raises if data is not an array-like object.
-        """
-        self.assertRaises(ValueError, interpolators1d._Interpolate1DBase, [1, 2, 3, 4], "blah")
 
     def test_interpolate_1d_invalid_data_length(self):
         """1D interpolation. An error must be raises if data has not the same length as coordinates.
@@ -257,23 +271,32 @@ class TestInterpolators1D(unittest.TestCase):
 
     def test_interpolate_1d_linear(self):
         """1D linear interpolation. Test values inside the boundaries"""
-        self.init_1dlinear()
+        self.init_1dlinear(extrapolate=True, extrapolation_type='linear', extrapolation_range=1.)
         for i in range(len(self.xsamples)):
-            self.assertAlmostEqual(self.interp_func(self.xsamples[i]), self.interp_data[i], delta=1e-8)
+            x = self.xsamples[i]
+            self.assertAlmostEqual(self.interp_func(x), self.interp_data[i], delta=1e-8)
+            for order in range(1, 4):
+                self.assertAlmostEqual(self.interp_func.derivative(x, order), self.derivative(self.interp_func, x, 1e-3, order), delta=1e-6)
 
     def test_interpolate_1d_linear_bigvalues(self):
         """1D linear interpolation. Test with big values (1e20) inside the boundaries"""
         factor = 1.e20
-        self.init_1dlinear(data=factor * self.data)
+        self.init_1dlinear(data=factor * self.data, extrapolate=True, extrapolation_type='linear', extrapolation_range=1.)
         for i in range(len(self.xsamples)):
-            self.assertAlmostEqual(self.interp_func(self.xsamples[i]), factor * self.interp_data[i], delta=factor * 1e-8)
+            x = self.xsamples[i]
+            self.assertAlmostEqual(self.interp_func(x), factor * self.interp_data[i], delta=factor * 1e-8)
+            for order in range(1, 4):
+                self.assertAlmostEqual(self.interp_func.derivative(x, order), self.derivative(self.interp_func, x, 1e-3, order), delta=factor * 1e-6)
 
     def test_interpolate_1d_linear_lowvalues(self):
         """1D linear interpolation. Test with low values (1e-20) inside the boundaries"""
         factor = 1.e-20
-        self.init_1dlinear(data=factor * self.data)
+        self.init_1dlinear(data=factor * self.data, extrapolate=True, extrapolation_type='linear', extrapolation_range=1.)
         for i in range(len(self.xsamples)):
-            self.assertAlmostEqual(self.interp_func(self.xsamples[i]), factor * self.interp_data[i], delta=factor * 1e-8)
+            x = self.xsamples[i]
+            self.assertAlmostEqual(self.interp_func(x), factor * self.interp_data[i], delta=factor * 1e-8)
+            for order in range(1, 4):
+                self.assertAlmostEqual(self.interp_func.derivative(x, order), self.derivative(self.interp_func, x, 1e-3, order), delta=factor * 1e-6)
 
     def test_interpolate_1d_linear_edges(self):
         """1D linear interpolation. Test edges values"""
@@ -303,7 +326,10 @@ class TestInterpolators1D(unittest.TestCase):
         """1D linear interpolation. Test values in the extrapolation areas"""
         self.init_1dlinear(extrapolate=True, extrapolation_type='nearest')
         for i in range(len(self.xsamples_extrapol)):
-            self.assertAlmostEqual(self.interp_func(self.xsamples_extrapol[i]), self.extrap_data_nea[i], delta=1e-8)
+            x = self.xsamples_extrapol[i]
+            self.assertAlmostEqual(self.interp_func(x), self.extrap_data_nea[i], delta=1e-8)
+            for order in range(1, 4):
+                self.assertAlmostEqual(self.interp_func.derivative(x, order), self.derivative(self.interp_func, x, 1e-3, order), delta=1e-6)
 
     def test_interpolate_1d_linear_extrapolate_linear_range(self):
         """1D linear interpolation. Tests the size of the extrapolation range."""
@@ -314,14 +340,10 @@ class TestInterpolators1D(unittest.TestCase):
         """1D linear interpolation. Test values in the extrapolation areas"""
         self.init_1dlinear(extrapolate=True, extrapolation_type='linear')
         for i in range(len(self.xsamples_extrapol)):
-            self.assertAlmostEqual(self.interp_func(self.xsamples_extrapol[i]), self.extrap_data_lin[i], delta=1e-8)
-
-    def test_interpolate_1d_linear_coord_not_sorted(self):
-        """1D linear interpolation. The coordinates array must be sorted and the values array changed consequently.
-        """
-        self.init_1dlinear([1, 3, 2, 4], [10, 12, 42, 0])
-        self.assertAlmostEqual(self.interp_func(2.), 42., delta=1e-8)
-        self.assertAlmostEqual(self.interp_func(3.), 12., delta=1e-8)
+            x = self.xsamples_extrapol[i]
+            self.assertAlmostEqual(self.interp_func(x), self.extrap_data_lin[i], delta=1e-8)
+            for order in range(1, 4):
+                self.assertAlmostEqual(self.interp_func.derivative(x, order), self.derivative(self.interp_func, x, 1e-3, order), delta=1e-6)
 
     def test_interpolate_1d_linear_type_conversion(self):
         """1D linear interpolation. Whatever the type of input data, the interpolating function must provide float numbers.
@@ -341,23 +363,38 @@ class TestInterpolators1D(unittest.TestCase):
 
     def test_interpolate_1d_cubic_c2(self):
         """1D cubic interpolation. Test values inside the boundaries"""
-        self.init_1dcubic_c2()
+        self.init_1dcubic_c2(extrapolate=True, extrapolation_type='quadratic')
         for i in range(len(self.xsamples)):
-            self.assertAlmostEqual(self.interp_func(self.xsamples[i]), self.interp_data[i], delta=1e-8)
+            x = self.xsamples[i]
+            self.assertAlmostEqual(self.interp_func(x), self.interp_data[i], delta=1e-8)
+            for order in range(1, 3):
+                r = self.interp_func.derivative(x, order)
+                v = self.derivative(self.interp_func, x, 1e-4, order)
+                self.assertAlmostEqual(r, v, delta=1e-5 * abs(v))
 
     def test_interpolate_1d_cubic_c2_bigvalues(self):
         """1D cubic interpolation. Test with big values (1e20) inside the boundaries"""
         factor = 1.e20
-        self.init_1dcubic_c2(data=factor * self.data)
+        self.init_1dcubic_c2(data=factor * self.data, extrapolate=True, extrapolation_type='quadratic')
         for i in range(len(self.xsamples)):
-            self.assertAlmostEqual(self.interp_func(self.xsamples[i]), factor * self.interp_data[i], delta=factor * 1e-8)
+            x = self.xsamples[i]
+            self.assertAlmostEqual(self.interp_func(x), factor * self.interp_data[i], delta=factor*1e-8)
+            for order in range(1, 3):
+                r = self.interp_func.derivative(x, order)
+                v = self.derivative(self.interp_func, x, 1e-4, order)
+                self.assertAlmostEqual(r, v, delta=1e-5 * abs(v))
 
     def test_interpolate_1d_cubic_c2_lowvalues(self):
         """1D cubic interpolation. Test with low values (1e-20) inside the boundaries"""
         factor = 1.e-20
-        self.init_1dcubic_c2(data=factor * self.data)
+        self.init_1dcubic_c2(data=factor * self.data, extrapolate=True, extrapolation_type='quadratic')
         for i in range(len(self.xsamples)):
-            self.assertAlmostEqual(self.interp_func(self.xsamples[i]), factor * self.interp_data[i], delta=factor * 1e-8)
+            x = self.xsamples[i]
+            self.assertAlmostEqual(self.interp_func(x), factor * self.interp_data[i], delta=factor*1e-8)
+            for order in range(1, 3):
+                r = self.interp_func.derivative(x, order)
+                v = self.derivative(self.interp_func, x, 1e-4, order)
+                self.assertAlmostEqual(r, v, delta=1e-5 * abs(v))
 
     def test_interpolate_1d_cubic_c2_edge(self):
         """1D cubic interpolation. Test edges values"""
@@ -387,7 +424,10 @@ class TestInterpolators1D(unittest.TestCase):
         """1D cubic interpolation. Test values in the extrapolation area"""
         self.init_1dcubic_c2(extrapolate=True, extrapolation_type='nearest')
         for i in range(len(self.xsamples_extrapol)):
-            self.assertAlmostEqual(self.interp_func(self.xsamples_extrapol[i]), self.extrap_data_nea[i], delta=1e-8)
+            x = self.xsamples_extrapol[i]
+            self.assertAlmostEqual(self.interp_func(x), self.extrap_data_nea[i], delta=1e-8)
+            for order in range(1, 4):
+                self.assertAlmostEqual(self.interp_func.derivative(x, order), self.derivative(self.interp_func, x, 1e-3, order), delta=1e-6)
 
     def test_interpolate_1d_cubic_c2_extrapolate_linear_range(self):
         """1D cubic interpolation. Tests the size of the extrapolation range."""
@@ -398,7 +438,10 @@ class TestInterpolators1D(unittest.TestCase):
         """1D cubic interpolation. Test values in the extrapolation area"""
         self.init_1dcubic_c2(extrapolate=True, extrapolation_type='linear')
         for i in range(len(self.xsamples_extrapol)):
-            self.assertAlmostEqual(self.interp_func(self.xsamples_extrapol[i]), self.extrap_data_lin[i], delta=1e-8)
+            x = self.xsamples_extrapol[i]
+            self.assertAlmostEqual(self.interp_func(x), self.extrap_data_lin[i], delta=1e-8)
+            for order in range(1, 4):
+                self.assertAlmostEqual(self.interp_func.derivative(x, order), self.derivative(self.interp_func, x, 1e-3, order), delta=1e-6)
 
     def test_interpolate_1d_cubic_c2_extrapolate_quadratic_range(self):
         """1D cubic interpolation. Tests the size of the extrapolation range."""
@@ -409,14 +452,10 @@ class TestInterpolators1D(unittest.TestCase):
         """1D cubic interpolation. Test values in the extrapolation area"""
         self.init_1dcubic_c2(extrapolate=True, extrapolation_type='quadratic')
         for i in range(len(self.xsamples_extrapol)):
-            self.assertAlmostEqual(self.interp_func(self.xsamples_extrapol[i]), self.extrap_data_qua[i], delta=1e-8)
-
-    def test_interpolate_1d_cubic_c2_coord_not_sorted(self):
-        """1D cubic interpolation. The coordinates array must be sorted and the values array changed consequently.
-        """
-        self.init_1dcubic_c2([1, 3, 2, 4], [10, 12, 42, 0])
-        self.assertAlmostEqual(self.interp_func(2.), 42., delta=1e-8)
-        self.assertAlmostEqual(self.interp_func(3.), 12., delta=1e-8)
+            x = self.xsamples_extrapol[i]
+            self.assertAlmostEqual(self.interp_func(x), self.extrap_data_qua[i], delta=1e-8)
+            for order in range(1, 4):
+                self.assertAlmostEqual(self.interp_func.derivative(x, order), self.derivative(self.interp_func, x, 1e-3, order), delta=1e-6)
 
     def test_interpolate_1d_cubic_c2_type_conversion(self):
         """1D cubic interpolation. Whatever the type of input data, the interpolating function must provide float numbers.
@@ -436,23 +475,38 @@ class TestInterpolators1D(unittest.TestCase):
 
     def test_interpolate_1d_cubic_c1(self):
         """1D cubic interpolation. Test values inside the boundaries"""
-        self.init_1dcubic_c1()
+        self.init_1dcubic_c1(extrapolate=True, extrapolation_type='quadratic')
         for i in range(len(self.xsamples)):
-            self.assertAlmostEqual(self.interp_func(self.xsamples[i]), self.interp_data[i], delta=1e-8)
+            x = self.xsamples[i]
+            self.assertAlmostEqual(self.interp_func(x), self.interp_data[i], delta=1e-8)
+            for order in range(1, 3):
+                r = self.interp_func.derivative(x, order)
+                v = self.derivative(self.interp_func, x, 1e-4, order)
+                self.assertAlmostEqual(r, v, delta=1e-5 * abs(v))
 
     def test_interpolate_1d_cubic_c1_bigvalues(self):
         """1D cubic interpolation. Test with big values (1e20) inside the boundaries"""
         factor = 1.e20
-        self.init_1dcubic_c1(data=factor * self.data)
+        self.init_1dcubic_c1(data=factor * self.data, extrapolate=True, extrapolation_type='quadratic')
         for i in range(len(self.xsamples)):
-            self.assertAlmostEqual(self.interp_func(self.xsamples[i]), factor * self.interp_data[i], delta=factor * 1e-8)
+            x = self.xsamples[i]
+            self.assertAlmostEqual(self.interp_func(x), factor * self.interp_data[i], delta=factor * 1e-8)
+            for order in range(1, 3):
+                r = self.interp_func.derivative(x, order)
+                v = self.derivative(self.interp_func, x, 1e-4, order)
+                self.assertAlmostEqual(r, v, delta=1e-5 * abs(v))
 
     def test_interpolate_1d_cubic_c1_lowvalues(self):
         """1D cubic interpolation. Test with low values (1e-20) inside the boundaries"""
         factor = 1.e-20
-        self.init_1dcubic_c1(data=factor * self.data)
+        self.init_1dcubic_c1(data=factor * self.data, extrapolate=True, extrapolation_type='quadratic')
         for i in range(len(self.xsamples)):
-            self.assertAlmostEqual(self.interp_func(self.xsamples[i]), factor * self.interp_data[i], delta=factor * 1e-8)
+            x = self.xsamples[i]
+            self.assertAlmostEqual(self.interp_func(x), factor * self.interp_data[i], delta=factor * 1e-8)
+            for order in range(1, 3):
+                r = self.interp_func.derivative(x, order)
+                v = self.derivative(self.interp_func, x, 1e-4, order)
+                self.assertAlmostEqual(r, v, delta=1e-5 * abs(v))
 
     def test_interpolate_1d_cubic_c1_edge(self):
         """1D cubic interpolation. Test edges values"""
@@ -482,7 +536,10 @@ class TestInterpolators1D(unittest.TestCase):
         """1D cubic interpolation. Test values in the extrapolation area"""
         self.init_1dcubic_c1(extrapolate=True, extrapolation_type='nearest')
         for i in range(len(self.xsamples_extrapol)):
-            self.assertAlmostEqual(self.interp_func(self.xsamples_extrapol[i]), self.extrap_data_nea[i], delta=1e-8)
+            x = self.xsamples_extrapol[i]
+            self.assertAlmostEqual(self.interp_func(x), self.extrap_data_nea[i], delta=1e-8)
+            for order in range(1, 4):
+                self.assertAlmostEqual(self.interp_func.derivative(x, order), self.derivative(self.interp_func, x, 1e-3, order), delta=1e-6)
 
     def test_interpolate_1d_cubic_c1_extrapolate_linear_range(self):
         """1D cubic interpolation. Tests the size of the extrapolation range."""
@@ -493,7 +550,10 @@ class TestInterpolators1D(unittest.TestCase):
         """1D cubic interpolation. Test values in the extrapolation area"""
         self.init_1dcubic_c1(extrapolate=True, extrapolation_type='linear')
         for i in range(len(self.xsamples_extrapol)):
-            self.assertAlmostEqual(self.interp_func(self.xsamples_extrapol[i]), self.extrap_data_lin[i], delta=1e-8)
+            x = self.xsamples_extrapol[i]
+            self.assertAlmostEqual(self.interp_func(x), self.extrap_data_lin[i], delta=1e-8)
+            for order in range(1, 4):
+                self.assertAlmostEqual(self.interp_func.derivative(x, order), self.derivative(self.interp_func, x, 1e-3, order), delta=1e-6)
 
     def test_interpolate_1d_cubic_c1_extrapolate_quadratic_range(self):
         """1D cubic interpolation. Tests the size of the extrapolation range."""
@@ -504,14 +564,10 @@ class TestInterpolators1D(unittest.TestCase):
         """1D cubic interpolation. Test values in the extrapolation area"""
         self.init_1dcubic_c1(extrapolate=True, extrapolation_type='quadratic')
         for i in range(len(self.xsamples_extrapol)):
-            self.assertAlmostEqual(self.interp_func(self.xsamples_extrapol[i]), self.extrap_data_qua[i], delta=1e-8)
-
-    def test_interpolate_1d_cubic_c1_coord_not_sorted(self):
-        """1D cubic interpolation. The coordinates array must be sorted and the values array changed consequently.
-        """
-        self.init_1dcubic_c1([1, 3, 2, 4], [10, 12, 42, 0])
-        self.assertAlmostEqual(self.interp_func(2.), 42., delta=1e-8)
-        self.assertAlmostEqual(self.interp_func(3.), 12., delta=1e-8)
+            x = self.xsamples_extrapol[i]
+            self.assertAlmostEqual(self.interp_func(x), self.extrap_data_qua[i], delta=1e-8)
+            for order in range(1, 4):
+                self.assertAlmostEqual(self.interp_func.derivative(x, order), self.derivative(self.interp_func, x, 1e-3, order), delta=1e-6)
 
     def test_interpolate_1d_cubic_c1_type_conversion(self):
         """1D cubic interpolation. Whatever the type of input data, the interpolating function must provide float numbers.

@@ -17,11 +17,12 @@
 # See the Licence for the specific language governing permissions and limitations
 # under the Licence.
 
+import functools
 import numpy as np
 
 from raysect.core import Node, translate, rotate_basis, Point3D, Vector3D, Ray as CoreRay, Primitive, World
 from raysect.core.math.sampler import TargettedHemisphereSampler, RectangleSampler3D
-from raysect.primitive import Box, Cylinder, Subtract
+from raysect.primitive import Box, Cylinder, Subtract, Intersect, Union
 from raysect.optical import ConstantSF
 from raysect.optical.observer import PowerPipeline0D, RadiancePipeline0D, \
     SpectralPowerPipeline0D, SpectralRadiancePipeline0D, SightLine, TargettedPixel
@@ -36,14 +37,36 @@ R_2_PI = 1 / (2 * np.pi)
 
 class BolometerCamera(Node):
     """
-    A group of bolometer sight-lines under a single scene-graph node.
+    A group of bolometer sight-lines under a single scenegraph node.
 
-    A scene-graph object regrouping a series of 'BolometerFoil'
-    observers as a scene-graph parent. Allows combined observation and display
-    control simultaneously.
+    A scenegraph object that manages a collection of `BolometerFoil()`
+    objects. Allows combined observation and display control simultaneously.
+
+    :param Primitive camera_geometry: An optional Raysect primitive to supply
+      as the box/aperture geometry. If not supplied, a CSG aperture will be
+      constructed from the slit parameters.
+    :param Node parent: The parent node of this camera in the scenegraph, often
+      an optical World object.
+    :param AffineMatrix3D transform: The relative coordinate transform of this
+      bolometer camera relative to the parent.
+    :param str name: The name for this bolometer camera.
+
+    :ivar list foil_detectors: A list of the foil detector objects that belong
+      to this camera.
+    :ivar list slits: A list of the bolometer slit objects that belong to
+      this camera.
+
+    .. code-block:: pycon
+
+       >>> from raysect.optical import World
+       >>> from cherab.tools.observers import BolometerCamera
+       >>>
+       >>> world = World()
+       >>> camera = BolometerCamera(name="MyBolometer", parent=world)
     """
 
     def __init__(self, camera_geometry=None, parent=None, transform=None, name=''):
+
         super().__init__(parent=parent, transform=transform, name=name)
 
         self._foil_detectors = []
@@ -56,13 +79,30 @@ class BolometerCamera(Node):
         self._camera_geometry = camera_geometry
 
     def __len__(self):
+        """Yields the number of detectors in this bolometer camera."""
+
         return len(self._foil_detectors)
 
     def __iter__(self):
+        """
+        Iterates over the foil detectors in this camera.
+
+        .. code-block:: pycon
+
+           >>> detector_a, detector_b, detector_c = bolometer_camera
+        """
         for detector in self._foil_detectors:
             yield detector
 
     def __getitem__(self, item):
+        """
+        Returns the detectors by integer index or the detector name.
+
+        .. code-block:: pycon
+
+           >>> detector_2 = bolometer_camera[1]
+           >>> detector_a = bolometer_camera["detector_a"]
+        """
 
         if isinstance(item, int):
             try:
@@ -80,11 +120,11 @@ class BolometerCamera(Node):
 
     @property
     def slits(self):
-        return self._slits
+        return self._slits.copy()
 
     @property
     def foil_detectors(self):
-        return self._foil_detectors
+        return self._foil_detectors.copy()
 
     @foil_detectors.setter
     def foil_detectors(self, value):
@@ -105,6 +145,15 @@ class BolometerCamera(Node):
         self._foil_detectors = value
 
     def add_foil_detector(self, foil_detector):
+        """
+        Add the given detector to this camera.
+
+        :param BolometerFoil foil_detector: An instanced bolometer foil detector.
+
+        .. code-block:: pycon
+
+           >>> bolometer_camera.add_foil_detector(foil_detector)
+        """
 
         if not isinstance(foil_detector, BolometerFoil):
             raise TypeError("The foil_detector argument must be of type BolometerFoil.")
@@ -116,6 +165,11 @@ class BolometerCamera(Node):
         self._foil_detectors.append(foil_detector)
 
     def observe(self):
+        """
+        Take an observation with this camera.
+
+        Calls observe() on each foil detector and returns their power measurements.
+        """
 
         observations = []
         for foil_detector in self._foil_detectors:
@@ -126,8 +180,84 @@ class BolometerCamera(Node):
 
 
 class BolometerSlit(Node):
+    """
+    A rectangular bolometer slit.
 
-    def __init__(self, slit_id, centre_point, basis_x, dx, basis_y, dy, dz=0.001, parent=None, csg_aperture=False):
+    A single slit can be shared by multiple detectors in the parent camera. The slit
+    geometry is specified in terms of its centre_point, basis vectors in the plane
+    of the slit and their respective lengths.
+
+    If an external mesh model has been loaded for ray occlusion evaluation then this
+    object is only used for targeting rays on the slit. If no mesh has been supplied,
+    this object can construct an effective slit primitive from CSG operations.
+
+    :param str slit_id: The name for this slit.
+    :param Point3D centre_point: The centre point of the slit.
+    :param Vector3D basis_x: The x basis vector for the slit.
+    :param float dx: The width of the slit along the x basis vector.
+    :param Vector3D basis_y: The y basis vector for the slit.
+    :param float dy: The height of the slit along the y basis vector.
+    :param float dz: The thickness of the slit along the z basis vector.
+    :param Node parent: The parent scenegraph node to which this slit belongs.
+      Typically a BolometerCamera() or an optical World() object.
+    :param bool csg_aperture: Toggles whether an occluding surface should be
+      constructed for this slit using CSG operations.
+    :param float curvature_radius: Slits in real bolometer cameras typically
+      have curved corners due to machining limitations. This parameter species
+      the corner radius.
+
+    :ivar Vector3D normal_vector: The normal vector of the slit constructed from
+      the cross product of the x and y basis vectors.
+
+    .. code-block:: pycon
+
+       >>> from raysect.core import Point3D, Vector3D
+       >>> from raysect.optical import World
+       >>> from cherab.tools.observers import BolometerSlit
+       >>>
+       >>> world = World()
+       >>>
+       >>> # construct basis vectors
+       >>> basis_x = Vector3D(1, 0, 0)
+       >>> basis_y = Vector3D(0, 1, 0)
+       >>> basis_z = Vector3D(0, 0, 1)
+       >>>
+       >>> # specify the slit
+       >>> dx = 0.0025
+       >>> dy = 0.005
+       >>> centre_point = Point3D(0, 0, 0)
+       >>> slit = BolometerSlit("slit", centre_point, basis_x, dx, basis_y, dy, parent=camera)
+    """
+
+    def __init__(self, slit_id, centre_point, basis_x, dx, basis_y, dy, dz=0.001,
+                 parent=None, csg_aperture=False, curvature_radius=0):
+
+        # perform validation of input parameters
+
+        if not isinstance(dx, (float, int)):
+            raise TypeError("dx argument for BolometerSlit must be of type float/int.")
+        if not dx > 0:
+            raise ValueError("dx argument for BolometerSlit must be greater than zero.")
+
+        if not isinstance(dy, (float, int)):
+            raise TypeError("dy argument for BolometerSlit must be of type float/int.")
+        if not dy > 0:
+            raise ValueError("dy argument for BolometerSlit must be greater than zero.")
+
+        if not isinstance(centre_point, Point3D):
+            raise TypeError("centre_point argument for BolometerSlit must be of type Point3D.")
+
+        if not isinstance(curvature_radius, (float, int)):
+            raise TypeError("curvature_radius argument for BolometerSlit "
+                            "must be of type float/int.")
+        if curvature_radius < 0:
+            raise ValueError("curvature_radius argument for BolometerSlit "
+                             "must not be negative.")
+
+        if not isinstance(basis_x, Vector3D):
+            raise TypeError("The basis vectors of BolometerSlit must be of type Vector3D.")
+        if not isinstance(basis_y, Vector3D):
+            raise TypeError("The basis vectors of BolometerSlit must be of type Vector3D.")
 
         self._centre_point = centre_point
         self._basis_x = basis_x.normalise()
@@ -135,6 +265,7 @@ class BolometerSlit(Node):
         self._basis_y = basis_y.normalise()
         self.dy = dy
         self.dz = dz
+        self._curvature_radius = curvature_radius
 
         # NOTE - target primitive and aperture surface cannot be co-incident otherwise numerics will cause Raysect
         # to be blind to one of the two surfaces.
@@ -148,6 +279,10 @@ class BolometerSlit(Node):
 
         self._csg_aperture = None
         self.csg_aperture = csg_aperture
+
+        # round off the detector corners, if applicable
+        if self._curvature_radius > 0:
+            mask_corners(self)
 
     @property
     def centre_point(self):
@@ -185,17 +320,62 @@ class BolometerSlit(Node):
                 self._csg_aperture.parent = None
             self._csg_aperture = None
 
+    @property
+    def curvature_radius(self):
+        return self._curvature_radius
+
 
 class BolometerFoil(TargettedPixel):
     """
     A rectangular bolometer detector.
 
     Can be configured to sample a single ray or fan of rays oriented along the
-    observer's z axis in world space.
+    observer's z axis.
+
+    :param str detector_id: The name for this detector.
+    :param Point3D centre_point: The centre point of the detector.
+    :param Vector3D basis_x: The x basis vector for the detector.
+    :param float dx: The width of the detector along the x basis vector.
+    :param Vector3D basis_y: The y basis vector for the detector.
+    :param float dy: The height of the detector along the y basis vector.
+    :param Node parent: The parent scenegraph node to which this detector belongs.
+      Typically a BolometerCamera() or an optical World() object.
+    :param bool units: The units in which to perform observations, can
+      be ['Power', 'Radiance'], defaults to 'Power'.
+    :param bool accumulate: Whether this observer should accumulate samples
+      with multiple calls to observe. Defaults to False.
+    :param float curvature_radius: Detectors in real bolometer cameras typically
+      have curved corners due to machining limitations. This parameter species
+      the corner radius.
+
+    :ivar Vector3D normal_vector: The normal vector of the detector constructed from
+      the cross product of the x and y basis vectors.
+    :ivar Vector3D sightline_vector: The vector that points from the centre of the foil
+      detector to the centre of the slit. Defines the effective sightline vector of the
+      detector.
+
+    .. code-block:: pycon
+
+       >>> from raysect.core import Point3D, Vector3D
+       >>> from raysect.optical import World
+       >>> from cherab.tools.observers import BolometerFoil
+       >>>
+       >>> world = World()
+       >>>
+       >>> # construct basis vectors
+       >>> basis_x = Vector3D(1, 0, 0)
+       >>> basis_y = Vector3D(0, 1, 0)
+       >>> basis_z = Vector3D(0, 0, 1)
+       >>>
+       >>> # specify a detector, you need already created slit and camera objects
+       >>> dx = 0.0025
+       >>> dy = 0.005
+       >>> centre_point = Point3D(0, 0, -0.08)
+       >>> detector = BolometerFoil("ch#1", centre_point, basis_x, dx, basis_y, dy, slit, parent=camera)
     """
 
     def __init__(self, detector_id, centre_point, basis_x, dx, basis_y, dy, slit,
-                 parent=None, units="Power", accumulate=False):
+                 parent=None, units="Power", accumulate=False, curvature_radius=0):
 
         # perform validation of input parameters
 
@@ -211,22 +391,29 @@ class BolometerFoil(TargettedPixel):
 
         if not isinstance(slit, BolometerSlit):
             raise TypeError("slit argument for BolometerFoil must be of type BolometerSlit.")
-        self._slit = slit
 
         if not isinstance(centre_point, Point3D):
             raise TypeError("centre_point argument for BolometerFoil must be of type Point3D.")
-        self._centre_point = centre_point
+
+        if not isinstance(curvature_radius, (float, int)):
+            raise TypeError("curvature_radius argument for BolometerFoil "
+                            "must be of type float/int.")
+        if curvature_radius < 0:
+            raise ValueError("curvature_radius argument for BolometerFoil "
+                             "must not be negative.")
 
         if not isinstance(basis_x, Vector3D):
             raise TypeError("The basis vectors of BolometerFoil must be of type Vector3D.")
         if not isinstance(basis_y, Vector3D):
             raise TypeError("The basis vectors of BolometerFoil must be of type Vector3D.")
 
-        # set basis vectors
+        self._centre_point = centre_point
         self._basis_x = basis_x.normalise()
         self._basis_y = basis_y.normalise()
         self._normal_vec = self._basis_x.cross(self._basis_y)
+        self._slit = slit
         self._foil_to_slit_vec = self._centre_point.vector_to(self._slit.centre_point).normalise()
+        self._curvature_radius = curvature_radius
         self.units = units
 
         # setup root bolometer foil transform
@@ -244,6 +431,10 @@ class BolometerFoil(TargettedPixel):
                          pipelines=[pipeline],
                          pixel_samples=1000, x_width=dx, y_width=dy, spectral_bins=1, quiet=True,
                          parent=parent, transform=translation * rotation, name=detector_id)
+
+        # round off the detector corners, if applicable
+        if self._curvature_radius > 0:
+            mask_corners(self)
 
     def __repr__(self):
         """Returns a string representation of this BolometerFoil object."""
@@ -273,7 +464,16 @@ class BolometerFoil(TargettedPixel):
     def slit(self):
         return self._slit
 
+    @property
+    def curvature_radius(self):
+        return self._curvature_radius
+
     def as_sightline(self):
+        """
+        Constructs a SightLine observer for this bolometer.
+
+        :rtype: SightLine
+        """
 
         if self.units == "Power":
             pipeline = PowerPipeline0D(accumulate=False)
@@ -292,6 +492,14 @@ class BolometerFoil(TargettedPixel):
         return los_observer
 
     def trace_sightline(self):
+        """
+        Traces the central sightline through the detector to see where the sightline terminates.
+
+        Raises a RuntimeError exception if no intersection was found.
+
+        :return: Returns a tuple containing the origin point, hit point and terminating surface
+          primitive.
+        """
 
         if not isinstance(self.root, World):
             raise ValueError("This BolometerFoil is not connected to a valid World scenegraph object.")
@@ -317,6 +525,19 @@ class BolometerFoil(TargettedPixel):
                 return self.centre_point, hit_point, intersection.primitive
 
     def calculate_sensitivity(self, voxel_collection, ray_count=10000):
+        """
+        Calculates a sensitivity vector for this detector on the specified voxel collection.
+
+        This function is used for calculating sensitivity matrices which can be combined for
+        multiple detectors into a sensitivity matrix :math:`\mathbf{W}`.
+
+        :param VoxelCollection voxel_collection: The voxel collection on which to calculate
+          the sensitivities.
+        :param int ray_count: The number of rays to use in the calculation. This should be
+          at least >= 10000 for decent statistics.
+        :return: A 1D array of sensitivities with length equal to the number of voxels
+          in the collection.
+        """
 
         if not isinstance(voxel_collection, VoxelCollection):
             raise TypeError("voxel_collection must be of type VoxelCollection")
@@ -353,6 +574,18 @@ class BolometerFoil(TargettedPixel):
         return pipeline.samples.mean
 
     def calculate_etendue(self, ray_count=10000, batches=10):
+        """
+        Calculates the etendue of this detector.
+
+        This function calculates the detectors etendue by evaluating the ratio of rays that
+        pass un-impeded through the detector's aperture. For this method to work, the detector
+        and its aperture structures should be the only primitives present in the scene. If any
+        other primitives are present, the results may be misleading.
+
+        :param int ray_count: The number of rays used per batch.
+        :param int batches: The number of batches used to estimate the error on the etendue
+          calculation.
+        """
 
         if batches < 5:
             raise ValueError("We enforce a minimum batch size of 5 to ensure reasonable statistics.")
@@ -412,3 +645,79 @@ class BolometerFoil(TargettedPixel):
         etendue_error = np.std(etendues)
 
         return etendue, etendue_error
+
+
+def mask_corners(element):
+    """
+    Support detectors with rounded corners, by producing a mask to cover
+    the corners.
+
+    The mask is produced by placing thin rectangles of side
+    element.curvature_radius at each corner, and then cylinders of
+    radius element.curvature_radius centred on the inner vertex of
+    those rectangles. Then each corner of the mask is the part of the
+    rectangle not covered by the cylinder.
+
+    The curvature radius should be given in units of metres.
+    """
+    # Make the mask very (but not infinitely) thin, so that raysect
+    # can actually detect that it's there. We'll work in the local
+    # coordinate system of the element, with dx=width, dy=height,
+    # dz=depth.
+    dz = 1e-6
+    rc = element.curvature_radius  # Shorthand
+    try:
+        dx = element.x_width
+        dy = element.y_width
+    except AttributeError:
+        dx = element.dx
+        dy = element.dy
+
+    # Create a box and a cylinder of the appropriate size.
+    # Then position copies of these at each corner.
+    box_template = Box(Point3D(0, 0, 0), Point3D(rc, rc, dz))
+    cylinder_template = Cylinder(rc, dz)
+
+    top_left_box = box_template.instance(
+        transform=translate(-dx / 2, dy / 2 - rc, 0),
+    )
+    top_left_cylinder = cylinder_template.instance(
+        transform=translate(-dx / 2 + rc, dy / 2 - rc, 0),
+    )
+    top_left_mask = Subtract(top_left_box,
+                             Intersect(top_left_box, top_left_cylinder))
+
+    top_right_box = box_template.instance(
+        transform=translate(dx / 2 - rc, dy / 2 - rc, 0),
+    )
+    top_right_cylinder = cylinder_template.instance(
+        transform=translate(dx / 2 - rc, dy / 2 - rc, 0),
+    )
+    top_right_mask = Subtract(top_right_box,
+                              Intersect(top_right_box, top_right_cylinder))
+
+    bottom_right_box = box_template.instance(
+        transform=translate(dx / 2 - rc, -dy / 2, 0),
+    )
+    bottom_right_cylinder = cylinder_template.instance(
+        transform=translate(dx / 2 - rc, -dy / 2 + rc, 0),
+    )
+    bottom_right_mask = Subtract(bottom_right_box,
+                                 Intersect(bottom_right_box, bottom_right_cylinder))
+
+    bottom_left_box = box_template.instance(
+        transform=translate(-dx / 2, -dy / 2, 0),
+    )
+    bottom_left_cylinder = cylinder_template.instance(
+        transform=translate(-dx / 2 + rc, -dy / 2 + rc, 0),
+    )
+    bottom_left_mask = Subtract(bottom_left_box,
+                                Intersect(bottom_left_box, bottom_left_cylinder))
+
+    # The foil mask is the sum of all 4 of these corner shapes
+    mask = functools.reduce(Union, (top_left_mask, top_right_mask,
+                                    bottom_right_mask, bottom_left_mask))
+    mask.material = AbsorbingSurface()
+    mask.transform = translate(0, 0, dz)
+    mask.name = element.name + ' - rounded edges mask'
+    mask.parent = element

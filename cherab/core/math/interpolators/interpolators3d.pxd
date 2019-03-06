@@ -22,52 +22,47 @@ from numpy cimport ndarray, int8_t
 
 cdef class _Interpolate3DBase(Function3D):
 
-    cdef readonly:
-        ndarray x_np, y_np, z_np, data_np
-        double[::1] x_domain_view, y_domain_view, z_domain_view
-        bint extrapolate
-        int extrapolation_type
-        double extrapolation_range
-        int top_index_x, top_index_y, top_index_z
+    cdef:
+        double[::1] _x, _y, _z
+        int _extrapolation_type
+        double _extrapolation_range
+
+    cdef object _build(self, ndarray x, ndarray y, ndarray z, ndarray f)
 
     cdef double evaluate(self, double px, double py, double pz) except? -1e999
 
-    cdef double _evaluate(self, double px, double py, double pz, int i_x, int i_y, int i_z) except? -1e999
+    cdef double _evaluate(self, double px, double py, double pz, int ix, int iy, int iz) except? -1e999
 
-    cdef double _extrapolate(self, double px, double py, double pz, int i_x, int i_y, int i_z, double nearest_px, double nearest_py, double nearest_pz) except? -1e999
+    cdef double _extrapolate(self, double px, double py, double pz, int ix, int iy, int iz, double nearest_px, double nearest_py, double nearest_pz) except? -1e999
 
-    cdef double _extrapol_linear(self, double px, double py, double pz, int i_x, int i_y, int i_z, double nearest_px, double nearest_py, double nearest_pz) except? -1e999
+    cdef double _extrapol_linear(self, double px, double py, double pz, int ix, int iy, int iz, double nearest_px, double nearest_py, double nearest_pz) except? -1e999
 
-    cdef double _extrapol_quadratic(self, double px, double py, double pz, int i_x, int i_y, int i_z, double nearest_px, double nearest_py, double nearest_pz) except? -1e999
-
-    cdef void _set_constant_x(self)
-
-    cdef void _set_constant_y(self)
-
-    cdef void _set_constant_z(self)
+    cdef double _extrapol_quadratic(self, double px, double py, double pz, int ix, int iy, int iz, double nearest_px, double nearest_py, double nearest_pz) except? -1e999
 
 
 cdef class Interpolate3DLinear(_Interpolate3DBase):
 
-    cdef readonly:
-        double[::1] x_view, y_view, z_view
-        double[:,:,:] data_view
+    cdef:
+        double[::1] _wx, _wy, _wz
+        double[:,:,::1] _wf
 
 
 cdef class Interpolate3DCubic(_Interpolate3DBase):
 
-    cdef readonly:
-        double x_min, x_delta_inv, y_min, y_delta_inv, z_min, z_delta_inv
-        double data_min, data_delta
-        double[::1] x_view, x2_view, x3_view
-        double[::1] y_view, y2_view, y3_view
-        double[::1] z_view, z2_view, z3_view
-        double[:,:,:] data_view
-        double[:,:,:,::1] coeffs_view
-        int8_t[:,:,::1] calculated_view
+    cdef:
+        double _sx, _sy, _sz, _sf
+        double _ox, _oy, _oz, _of
+        double[::1] _wx, _wx2, _wx3
+        double[::1] _wy, _wy2, _wy3
+        double[::1] _wz, _wz2, _wz3
+        double[:,:,::1] _wf
+        double[:,:,:,::1] _k
+        int8_t[:,:,::1] _available
 
-    cdef double _evaluate_polynomial_derivative(self, int i_x, int i_y, int i_z, double px, double py, double pz, int der_x, int der_y, int der_z)
+    cdef object _constraints3d(self, double[::1] c, int u, int v, int w, bint dx, bint dy, bint dz)
 
-    cdef double[::1] _constraints3d(self, int u, int v, int w, bint x_der, bint y_der, bint z_der)
+    cdef double _calc_polynomial_derivative(self, int ix, int iy, int iz, double px, double py, double pz, int der_x, int der_y, int der_z)
+
+
 
 

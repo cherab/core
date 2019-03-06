@@ -23,6 +23,7 @@ import numpy as np
 from raysect.optical import Point2D
 from .efit import EFITEquilibrium
 
+# todo: needs updating to support q_profile
 
 def _eqdsk_file_numbers(fp):
     """Generator to get numbers from a text file"""
@@ -53,9 +54,9 @@ def _process_eqdsk_lcfs_polygon(poly_r, poly_z):
     poly_z = poly_z[unique]
 
     # generate single array containing coordinates
-    polygon = np.empty((poly_r.shape[0], 2))
-    polygon[:, 0] = poly_r
-    polygon[:, 1] = poly_z
+    polygon = np.empty((2, poly_r.shape[0]))
+    polygon[0, :] = poly_r
+    polygon[1, :] = poly_z
     return polygon
 
 
@@ -68,6 +69,11 @@ def import_eqdsk(file_path):
 
     :param str file_path: Path to the EFIT eqdsk file.
     :rtype: EFITEquilibrium
+
+    .. code-block:: pycon
+
+       >>> from cherab.tools.equilibrium import import_eqdsk
+       >>> equilibrium = import_eqdsk("equilibrium.eqdsk")
     """
 
     fh = open(file_path, 'r')
@@ -135,9 +141,6 @@ def import_eqdsk(file_path):
     psi_grid = read_2d(nx, ny, "psi")             # Poloidal flux in Weber / rad on the rectangular grid points
     qpsi = read_array(nx, "qpsi")                 # q values on uniform flux grid from axis to boundary
 
-    print('ffprim: ', ffprim)
-    print('ffprim: ', f_profile_magnitude)
-
     # Read boundary and limiters, if present
     nbdry = int(next(token))  # Number of boundary points
     nlim = int(next(token))   # Number of limiter points
@@ -161,6 +164,9 @@ def import_eqdsk(file_path):
 
     # generate uniform flux grid
     f_profile_psin = np.linspace(0, 1, len(f_profile_magnitude))
+    f_profile = np.zeros(2, (len(f_profile_magnitude)))
+    f_profile[0, :] = f_profile_psin
+    f_profile[1, :] = f_profile_magnitude
 
     poly_r = r_z_bdry[0, :]
     poly_z = r_z_bdry[1, :]
@@ -168,8 +174,7 @@ def import_eqdsk(file_path):
 
     time = 0
 
-    return EFITEquilibrium(r, z, psi_grid, psi_axis, psi_lcfs, magnetic_axis, f_profile_psin,
-                           f_profile_magnitude, b_vacuum_radius, b_vacuum_magnitude,
-                           lcfs_polygon, time)
+    return EFITEquilibrium(r, z, psi_grid, psi_axis, psi_lcfs, magnetic_axis, f_profile,
+                           b_vacuum_radius, b_vacuum_magnitude, lcfs_polygon, time)
 
 
