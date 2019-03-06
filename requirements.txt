@@ -1,5 +1,5 @@
 numpy
 scipy
 matplotlib
-raysect>=0.5.4
+raysect>=0.5.5
 cython>=0.28
