@@ -91,7 +91,7 @@ cdef class ExcitationLine(PlasmaModel):
                                "(element={}, ionisation={}).".format(self._line.element.symbol, self._line.ionisation))
 
         # obtain rate function
-        self._rates = self._atomic_data.impact_excitation_rate(self._line.element, self._line.ionisation, self._line.transition)
+        self._rates = self._atomic_data.impact_excitation_pec(self._line.element, self._line.ionisation, self._line.transition)
 
         # identify wavelength
         self._wavelength = self._atomic_data.wavelength(self._line.element, self._line.ionisation, self._line.transition)

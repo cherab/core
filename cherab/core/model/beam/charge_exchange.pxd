@@ -19,7 +19,7 @@
 from numpy cimport ndarray
 from raysect.optical cimport Node, World, Primitive, Ray, Spectrum, SpectralFunction, Point3D, Vector3D, AffineMatrix3D
 
-from cherab.core cimport Species, Plasma, Beam, Line, AtomicData, BeamCXRate
+from cherab.core cimport Species, Plasma, Beam, Line, AtomicData, BeamCXPEC
 from cherab.core.beam cimport BeamModel
 
 
@@ -29,7 +29,7 @@ cdef class BeamCXLine(BeamModel):
         Line _line
         Species _target_species
         double _wavelength
-        BeamCXRate _ground_beam_rate
+        BeamCXPEC _ground_beam_rate
         list _excited_beam_data
 
     cdef double _composite_cx_rate(self, double x, double y, double z, double interaction_energy,

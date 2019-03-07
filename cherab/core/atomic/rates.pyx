@@ -20,6 +20,50 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
+cdef class IonisationRate:
+    """
+    Effective ionisation rate for a given ion.
+    """
+
+    def __call__(self, double density, double temperature):
+        """Returns an effective ionisation rate coefficient at the specified plasma conditions.
+
+        This function just wraps the cython evaluate() method.
+        """
+        return self.evaluate(density, temperature)
+
+    cpdef double evaluate(self, double density, double temperature) except? -1e999:
+        """Returns an effective ionisation rate coefficient at the specified plasma conditions.
+
+        :param temperature: Electron temperature in eV.
+        :param density: Electron density in m^-3
+        :return: The effective ionisation rate in m^-3.
+        """
+        raise NotImplementedError("The evaluate() virtual method must be implemented.")
+
+
+cdef class RecombinationRate:
+    """
+    Effective recombination rate for a given ion.
+    """
+
+    def __call__(self, double density, double temperature):
+        """Returns an effective recombination rate coefficient at the specified plasma conditions.
+
+        This function just wraps the cython evaluate() method.
+        """
+        return self.evaluate(density, temperature)
+
+    cpdef double evaluate(self, double density, double temperature) except? -1e999:
+        """Returns an effective recombination rate coefficient at the specified plasma conditions.
+
+        :param temperature: Electron temperature in eV.
+        :param density: Electron density in m^-3
+        :return: The effective ionisation rate in m^-3.
+        """
+        raise NotImplementedError("The evaluate() virtual method must be implemented.")
+
+
 cdef class _PECRate:
     """
     Photon emissivity coefficient base class.
@@ -50,28 +94,28 @@ cdef class _PECRate:
         plt.ylabel("PEC")
 
 
-cdef class ImpactExcitationRate(_PECRate):
+cdef class ImpactExcitationPEC(_PECRate):
     """
     Impact excitation rate coefficient.
     """
     pass
 
 
-cdef class RecombinationRate(_PECRate):
+cdef class RecombinationPEC(_PECRate):
     """
     Recombination rate coefficient.
     """
     pass
 
 
-cdef class ThermalCXRate(_PECRate):
+cdef class ThermalCXPEC(_PECRate):
     """
     Thermal charge exchange rate coefficient.
     """
     pass
 
 
-cdef class BeamCXRate:
+cdef class BeamCXPEC:
     """:math:`q^{eff}_{n\rightarrow n'}` [:math:`W.m^{3}.s^{-1}.str^{-1}`]
 
     Effective emission coefficient (or rate) for a charge-exchange line corresponding to a
@@ -143,7 +187,7 @@ cdef class BeamPopulationRate(_BeamRate):
     pass
 
 
-cdef class BeamEmissionRate(_BeamRate):
+cdef class BeamEmissionPEC(_BeamRate):
     """:math:`bme(X^0(m_i))` [dimensionless]
 
     Relative beam population of excited state :math:`m_i` over ground state for atom :math:`X^0`, :math:`bme(X^0(m_i))`.
