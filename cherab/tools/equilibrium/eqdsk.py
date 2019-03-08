@@ -18,12 +18,12 @@
 
 
 import re
+import warnings
 import numpy as np
 
 from raysect.optical import Point2D
 from .efit import EFITEquilibrium
 
-# todo: needs updating to support q_profile
 
 def _eqdsk_file_numbers(fp):
     """Generator to get numbers from a text file"""
@@ -32,20 +32,20 @@ def _eqdsk_file_numbers(fp):
         line = fp.readline()
         if not line: break
         # Match numbers in the line using regular expression
-        pattern = r'[+-]?\d*[\.]?\d+(?:[Ee][+-]?\d+)?'
+        pattern = r'[+-]?\d*[\.]?\d+(?:[Ee][+-]?\d+)?|\w*NaN'
         toklist = re.findall(pattern, line)
         for tok in toklist:
             yield tok
 
 
-def _process_eqdsk_lcfs_polygon(poly_r, poly_z):
+def _process_eqdsk_polygon(poly_r, poly_z):
 
     if poly_r.shape != poly_z.shape:
-        raise ValueError("EFIT LCFS polygon coordinate arrays are inconsistent in length.")
+        raise ValueError("EFIT polygon coordinate arrays are inconsistent in length.")
 
     n = poly_r.shape[0]
     if n < 2:
-        raise ValueError("EFIT LCFS polygon coordinate contain less than 2 points.")
+        raise ValueError("EFIT polygon coordinates contain less than 2 points.")
 
     # boundary polygon contains redundant points that must be removed
     unique = (poly_r != poly_r[0]) | (poly_z != poly_z[0])
@@ -60,14 +60,17 @@ def _process_eqdsk_lcfs_polygon(poly_r, poly_z):
     return polygon
 
 
-def import_eqdsk(file_path):
+def import_eqdsk(file_path, drop_nan=False):
     """
     Imports equilibrium data from an EFIT G EQDSK file.
+
+    The file format is described at https://w3.pppl.gov/ntcc/TORAY/G_EQDSK.pdf.
 
     .. WARNING::
        The G EQDSK file format is unstable and unreliable. Use with caution.
 
     :param str file_path: Path to the EFIT eqdsk file.
+    :param bool drop_nan: Drop NaN values in the f and q profiles.
     :rtype: EFITEquilibrium
 
     .. code-block:: pycon
@@ -164,17 +167,53 @@ def import_eqdsk(file_path):
 
     # generate uniform flux grid
     f_profile_psin = np.linspace(0, 1, len(f_profile_magnitude))
-    f_profile = np.zeros(2, (len(f_profile_magnitude)))
+    f_profile = np.zeros((2, len(f_profile_magnitude)))
     f_profile[0, :] = f_profile_psin
     f_profile[1, :] = f_profile_magnitude
 
+    q_profile_psin = np.linspace(0, 1, len(qpsi))
+    q_profile = np.zeros((2, len(qpsi)))
+    q_profile[0, :] = q_profile_psin
+    q_profile[1, :] = qpsi
+
+    # NaN values mess up the interpolation in 1D profiles
+    warning_template = (
+        "The {} profile contains NaN values, which will cause interpolation to"
+        "fail. Use drop_nan=True to remove these."
+    )
+    if np.isnan(f_profile).any():
+        if not drop_nan:
+            warnings.warn(warning_template.format("f"))
+        else:
+            f_profile = f_profile[:, ~np.isnan(f_profile[1, :])]
+
+    if np.isnan(q_profile).any():
+        if not drop_nan:
+            warnings.warn(warning_template.format("q"))
+        else:
+            q_profile = q_profile[:, ~np.isnan(q_profile[1, :])]
+
     poly_r = r_z_bdry[0, :]
     poly_z = r_z_bdry[1, :]
-    lcfs_polygon = _process_eqdsk_lcfs_polygon(poly_r, poly_z)
+    try:
+        lcfs_polygon = _process_eqdsk_polygon(poly_r, poly_z)
+    except ValueError:  # No LCFS in GEQDSK
+        lcfs_polygon = None
+
+    lim_r = r_z_lim[0, :]
+    lim_z = r_z_lim[1, :]
+    try:
+        limiter_polygon = _process_eqdsk_polygon(lim_r, lim_z)
+    except ValueError:  # No limiter in GEQDSK
+        limiter_polygon = None
+
+    # No x point or strike point data in GEQDSK
+    x_points = []
+    strike_points = []
 
     time = 0
 
-    return EFITEquilibrium(r, z, psi_grid, psi_axis, psi_lcfs, magnetic_axis, f_profile,
-                           b_vacuum_radius, b_vacuum_magnitude, lcfs_polygon, time)
-
-
+    return EFITEquilibrium(r, z, psi_grid, psi_axis, psi_lcfs, magnetic_axis,
+                           x_points, strike_points, f_profile, q_profile,
+                           b_vacuum_radius, b_vacuum_magnitude, lcfs_polygon,
+                           limiter_polygon, time)
