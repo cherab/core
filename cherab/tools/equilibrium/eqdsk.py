@@ -18,6 +18,7 @@
 
 
 import re
+import warnings
 import numpy as np
 
 from raysect.optical import Point2D
@@ -59,7 +60,7 @@ def _process_eqdsk_polygon(poly_r, poly_z):
     return polygon
 
 
-def import_eqdsk(file_path):
+def import_eqdsk(file_path, drop_nan=False):
     """
     Imports equilibrium data from an EFIT G EQDSK file.
 
@@ -69,6 +70,7 @@ def import_eqdsk(file_path):
        The G EQDSK file format is unstable and unreliable. Use with caution.
 
     :param str file_path: Path to the EFIT eqdsk file.
+    :param bool drop_nan: Drop NaN values in the f and q profiles.
     :rtype: EFITEquilibrium
 
     .. code-block:: pycon
@@ -168,14 +170,28 @@ def import_eqdsk(file_path):
     f_profile = np.zeros((2, len(f_profile_magnitude)))
     f_profile[0, :] = f_profile_psin
     f_profile[1, :] = f_profile_magnitude
-    # Drop NaN values, as they mess up the interpolation
-    f_profile = f_profile[:, ~np.isnan(f_profile[1, :])]
 
     q_profile_psin = np.linspace(0, 1, len(qpsi))
     q_profile = np.zeros((2, len(qpsi)))
     q_profile[0, :] = q_profile_psin
     q_profile[1, :] = qpsi
-    q_profile = q_profile[:, ~np.isnan(q_profile[1, :])]
+
+    # NaN values mess up the interpolation in 1D profiles
+    warning_template = (
+        "The {} profile contains NaN values, which will cause interpolation to"
+        "fail. Use drop_nan=True to remove these."
+    )
+    if np.isnan(f_profile).any():
+        if not drop_nan:
+            warnings.warn(warning_template.format("f"))
+        else:
+            f_profile = f_profile[:, ~np.isnan(f_profile[1, :])]
+
+    if np.isnan(q_profile).any():
+        if not drop_nan:
+            warnings.warn(warning_template.format("q"))
+        else:
+            q_profile = q_profile[:, ~np.isnan(q_profile[1, :])]
 
     poly_r = r_z_bdry[0, :]
     poly_z = r_z_bdry[1, :]
