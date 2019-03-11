@@ -19,23 +19,33 @@
 from cherab.core.atomic.elements cimport Element
 
 
+cdef class IonisationRate:
+
+    cpdef double evaluate(self, double density, double temperature) except? -1e999
+
+
+cdef class RecombinationRate:
+
+    cpdef double evaluate(self, double density, double temperature) except? -1e999
+
+
 cdef class _PECRate:
     cpdef double evaluate(self, double density, double temperature) except? -1e999
 
 
-cdef class ImpactExcitationRate(_PECRate):
+cdef class ImpactExcitationPEC(_PECRate):
     pass
 
 
-cdef class RecombinationRate(_PECRate):
+cdef class RecombinationPEC(_PECRate):
     pass
 
 
-cdef class ThermalCXRate(_PECRate):
+cdef class ThermalCXPEC(_PECRate):
     pass
 
 
-cdef class BeamCXRate:
+cdef class BeamCXPEC:
     cpdef double evaluate(self, double energy, double temperature, double density, double z_effective, double b_field) except? -1e999
 
 
@@ -51,7 +61,7 @@ cdef class BeamPopulationRate(_BeamRate):
     pass
 
 
-cdef class BeamEmissionRate(_BeamRate):
+cdef class BeamEmissionPEC(_BeamRate):
     pass
 
 

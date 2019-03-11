@@ -32,7 +32,13 @@ cdef class AtomicData:
 
         raise NotImplementedError("The wavelength() virtual method is not implemented for this atomic data source.")
 
-    cpdef list beam_cx_rate(self, Element donor_ion, Element receiver_ion, int receiver_ionisation, tuple transition):
+    cpdef IonisationRate ionisation_rate(self, Element ion, int ionisation):
+        raise NotImplementedError("The ionisation_rate() virtual method is not implemented for this atomic data source.")
+
+    cpdef RecombinationRate recombination_rate(self, Element ion, int ionisation):
+        raise NotImplementedError("The recombination_rate() virtual method is not implemented for this atomic data source.")
+
+    cpdef list beam_cx_pec(self, Element donor_ion, Element receiver_ion, int receiver_ionisation, tuple transition):
         """
         Returns a list of applicable charge exchange emission rates in W.m^3.
         """
@@ -41,29 +47,29 @@ cdef class AtomicData:
 
     cpdef BeamStoppingRate beam_stopping_rate(self, Element beam_ion, Element plasma_ion, int ionisation):
         """
-        Returns a list of applicable beam stopping/emission coefficients in m^3/s.
+        Returns a list of applicable beam stopping coefficients in m^3/s.
         """
 
         raise NotImplementedError("The beam_stopping() virtual method is not implemented for this atomic data source.")
 
     cpdef BeamPopulationRate beam_population_rate(self, Element beam_ion, int metastable, Element plasma_ion, int ionisation):
         """
-        Returns a list of applicable beam stopping/emission coefficients in m^3/s.
+        Returns a list of applicable beam population coefficients in m^3/s.
         """
 
         raise NotImplementedError("The beam_population() virtual method is not implemented for this atomic data source.")
 
-    cpdef BeamEmissionRate beam_emission_rate(self, Element beam_ion, Element plasma_ion, int ionisation, tuple transition):
+    cpdef BeamEmissionPEC beam_emission_pec(self, Element beam_ion, Element plasma_ion, int ionisation, tuple transition):
         """
-        Returns a list of applicable beam stopping/emission coefficients in m^3/s.
+        Returns a list of applicable beam emission coefficients in W.m^3.
         """
 
         raise NotImplementedError("The beam_emission() virtual method is not implemented for this atomic data source.")
 
-    cpdef ImpactExcitationRate impact_excitation_rate(self, Element ion, int ionisation, tuple transition):
+    cpdef ImpactExcitationPEC impact_excitation_pec(self, Element ion, int ionisation, tuple transition):
         raise NotImplementedError("The impact_excitation() virtual method is not implemented for this atomic data source.")
 
-    cpdef RecombinationRate recombination_rate(self, Element ion, int ionisation, tuple transition):
+    cpdef RecombinationPEC recombination_pec(self, Element ion, int ionisation, tuple transition):
         raise NotImplementedError("The recombination() virtual method is not implemented for this atomic data source.")
 
     # cpdef RadiatedPower radiated_power_rate(self, Element element, str radiation_type):
