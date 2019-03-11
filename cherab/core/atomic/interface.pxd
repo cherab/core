@@ -24,17 +24,21 @@ cdef class AtomicData:
 
     cpdef double wavelength(self, Element ion, int ionisation, tuple transition)
 
-    cpdef list beam_cx_rate(self, Element donor_ion, Element receiver_ion, int receiver_ionisation, tuple transition)
+    cpdef IonisationRate ionisation_rate(self, Element ion, int ionisation)
+
+    cpdef RecombinationRate recombination_rate(self, Element ion, int ionisation)
+
+    cpdef list beam_cx_pec(self, Element donor_ion, Element receiver_ion, int receiver_ionisation, tuple transition)
 
     cpdef BeamStoppingRate beam_stopping_rate(self, Element beam_ion, Element plasma_ion, int ionisation)
 
     cpdef BeamPopulationRate beam_population_rate(self, Element beam_ion, int metastable, Element plasma_ion, int ionisation)
 
-    cpdef BeamEmissionRate beam_emission_rate(self, Element beam_ion, Element plasma_ion, int ionisation, tuple transition)
+    cpdef BeamEmissionPEC beam_emission_pec(self, Element beam_ion, Element plasma_ion, int ionisation, tuple transition)
 
-    cpdef ImpactExcitationRate impact_excitation_rate(self, Element ion, int ionisation, tuple transition)
+    cpdef ImpactExcitationPEC impact_excitation_pec(self, Element ion, int ionisation, tuple transition)
 
-    cpdef RecombinationRate recombination_rate(self, Element ion, int ionisation, tuple transition)
+    cpdef RecombinationPEC recombination_pec(self, Element ion, int ionisation, tuple transition)
 
     # cpdef RadiatedPower radiated_power_rate(self, Element element, str radiation_type)
 

@@ -211,13 +211,14 @@ def plot_equilibrium(equilibrium, detail=False, resolution=0.025):
         plt.xlabel("R (meters)")
         plt.ylabel("Z (meters)")
 
-        p2r_psin, p2r_r = sample1d(eq.psin_to_r, (0, 1, 1000))
+        if eq.psin_to_r is not None:  # Only if psin is monotonic
+            p2r_psin, p2r_r = sample1d(eq.psin_to_r, (0, 1, 1000))
 
-        plt.figure()
-        plt.plot(p2r_psin, p2r_r)
-        plt.title('Psi Normalised vs Outboard Major Radius')
-        plt.xlabel("a.u.")
-        plt.ylabel("R (meters)")
+            plt.figure()
+            plt.plot(p2r_psin, p2r_r)
+            plt.title('Psi Normalised vs Outboard Major Radius')
+            plt.xlabel("a.u.")
+            plt.ylabel("R (meters)")
 
         plt.figure()
         plt.plot(psin, q)

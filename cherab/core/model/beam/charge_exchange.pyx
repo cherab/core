@@ -181,7 +181,7 @@ cdef class BeamCXLine(BeamModel):
 
         cdef:
             double z_effective, b_field, rate, total_population, population, effective_rate
-            BeamCXRate cx_rate
+            BeamCXPEC cx_rate
             list population_data
 
         # calculate z_effective and the B-field magnitude
@@ -282,7 +282,7 @@ cdef class BeamCXLine(BeamModel):
             tuple transition
             Species species
             list rates, population_data
-            BeamCXRate rate
+            BeamCXPEC rate
             BeamPopulationRate coeff
 
         # sanity checks
@@ -308,7 +308,7 @@ cdef class BeamCXLine(BeamModel):
         self._wavelength = self._atomic_data.wavelength(receiver_element, receiver_ionisation - 1, transition)
 
         # obtain cx rates
-        rates = self._atomic_data.beam_cx_rate(donor_element, receiver_element, receiver_ionisation, transition)
+        rates = self._atomic_data.beam_cx_pec(donor_element, receiver_element, receiver_ionisation, transition)
 
         # obtain beam population coefficients for each rate and assemble data
         # the data is assembled to make access efficient by linking the relevant rates and coefficients together:
