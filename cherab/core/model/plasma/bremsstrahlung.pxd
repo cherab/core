@@ -16,7 +16,7 @@
 # See the Licence for the specific language governing permissions and limitations
 # under the Licence.
 
-from cherab.core.atomic cimport Line, ImpactExcitationRate
+from cherab.core.atomic cimport Line
 from cherab.core.plasma cimport PlasmaModel
 from cherab.core.species cimport Species
 
@@ -27,6 +27,5 @@ cdef class Bremsstrahlung(PlasmaModel):
         Line _line
         double _wavelength
         Species _target_species
-        ImpactExcitationRate _rates
 
     cdef double _bremsstrahlung(self, double wvl, double te, double ne, double zeff)

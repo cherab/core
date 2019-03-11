@@ -94,7 +94,7 @@ cdef class RecombinationLine(PlasmaModel):
                                "(element={}, ionisation={}).".format(self._line.element.symbol, receiver_ionisation))
 
         # obtain rate function
-        self._rates = self._atomic_data.recombination_rate(self._line.element, self._line.ionisation, self._line.transition)
+        self._rates = self._atomic_data.recombination_pec(self._line.element, self._line.ionisation, self._line.transition)
 
         # identify wavelength
         self._wavelength = self._atomic_data.wavelength(self._line.element, self._line.ionisation, self._line.transition)
