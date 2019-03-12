@@ -40,8 +40,12 @@ cdef class AtomicData:
 
     cpdef RecombinationPEC recombination_pec(self, Element ion, int ionisation, tuple transition)
 
-    # cpdef RadiatedPower radiated_power_rate(self, Element element, str radiation_type)
+    cpdef TotalRadiatedPower total_radiated_power(self, Element element)
 
-    # cpdef StageResolvedLineRadiation stage_resolved_line_radiation_rate(self, Element ion, int ionisation)
+    cpdef LineRadiationPower line_radiated_power_rate(self, Element element, int ionisation)
+
+    cpdef ContinuumPower continuum_radiated_power_rate(self, Element element, int ionisation)
+
+    cpdef CXRadiationPower cx_radiated_power_rate(self, Element element, int ionisation)
 
     cpdef FractionalAbundance fractional_abundance(self, Element ion, int ionisation)

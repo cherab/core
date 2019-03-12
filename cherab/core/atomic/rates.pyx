@@ -201,9 +201,9 @@ cdef class BeamEmissionPEC(_BeamRate):
 cdef class _RadiatedPower:
     """Base class for radiated powers."""
 
-    def __init__(self, Element species, int ionisation):
+    def __init__(self, Element element, int ionisation):
 
-        self.species = species
+        self.element = element
         self.ionisation = ionisation
 
     def __call__(self, double electron_density, double electron_temperature):
