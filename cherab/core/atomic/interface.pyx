@@ -72,11 +72,17 @@ cdef class AtomicData:
     cpdef RecombinationPEC recombination_pec(self, Element ion, int ionisation, tuple transition):
         raise NotImplementedError("The recombination() virtual method is not implemented for this atomic data source.")
 
-    # cpdef RadiatedPower radiated_power_rate(self, Element element, str radiation_type):
-    #     raise NotImplementedError("The radiated_power() virtual method is not implemented for this atomic data source.")
-    #
-    # cpdef StageResolvedLineRadiation stage_resolved_line_radiation_rate(self, Element ion, int ionisation):
-    #     raise NotImplementedError("The stage_resolved_line_radiation() virtual method is not implemented for this atomic data source.")
+    cpdef TotalRadiatedPower total_radiated_power(self, Element element):
+        raise NotImplementedError("The total_radiated_power() virtual method is not implemented for this atomic data source.")
+
+    cpdef LineRadiationPower line_radiated_power_rate(self, Element element, int ionisation):
+        raise NotImplementedError("The line_radiated_power_rate() virtual method is not implemented for this atomic data source.")
+
+    cpdef ContinuumPower continuum_radiated_power_rate(self, Element element, int ionisation):
+        raise NotImplementedError("The continuum_radiated_power_rate() virtual method is not implemented for this atomic data source.")
+
+    cpdef CXRadiationPower cx_radiated_power_rate(self, Element element, int ionisation):
+        raise NotImplementedError("The cx_radiated_power_rate() virtual method is not implemented for this atomic data source.")
 
     cpdef FractionalAbundance fractional_abundance(self, Element ion, int ionisation):
         raise NotImplementedError("The fractional_abundance() virtual method is not implemented for this atomic data source.")
