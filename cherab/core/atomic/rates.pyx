@@ -198,96 +198,65 @@ cdef class BeamEmissionPEC(_BeamRate):
     pass
 
 
-cdef class RadiatedPower:
-    """
-    Total radiated power for a given species and radiation type.
+cdef class _RadiatedPower:
+    """Base class for radiated powers."""
 
-    Radiation type can be:
-    - 'total' (line + recombination + bremsstrahlung + charge exchange)
-    - 'line' radiation
-    - 'continuum' (recombination + bremsstrahlung)
-    - 'cx' charge exchange
+    def __init__(self, Element element, int ionisation):
 
-    :param Element element: the radiating element
-    :param str radiation_type: selects the type of radiation to be included in the total rate.
-    :param str name: optional label identifying this rate
-    """
-
-    def __init__(self, element, radiation_type, name=''):
-
-        self.name = name
         self.element = element
-
-        if radiation_type not in ['total', 'line', 'continuum', 'cx']:
-            raise ValueError("RadiatedPower() radiation type must be one of ['total', 'line', 'continuum', 'cx'].")
-        self.radiation_type = radiation_type
-
-    cdef double evaluate(self, double electron_density, double electron_temperature) except? -1e999:
-        """
-        Evaluate the total radiated power at given plasma conditions.
-
-        :param float electron_density: electron density in m^-3
-        :param float electron_temperature: electron temperature in eV
-        """
-        raise NotImplementedError("The evaluate() virtual method must be implemented.")
-
-    def __call__(self, double electron_density, double electron_temperature):
-        """
-        Evaluate the total radiated power of this species at the given plasma conditions.
-
-        :param float electron_density: electron density in m^-3
-        :param float electron_temperature: electron temperature in eV
-        """
-        return self.evaluate(electron_density, electron_temperature)
-
-    def plot_temperature(self, temp_low=1, temp_high=1000, num_points=100, dens=1E19, species_dens=1E19):
-
-        temp = [10**x for x in np.linspace(np.log10(temp_low), np.log10(temp_high), num=num_points)]
-        radiation = [self.evaluate(dens, te) * species_dens for te in temp]
-        plt.loglog(temp, radiation, '.-', label='{} - {}'.format(self.element.symbol, self.radiation_type))
-
-
-cdef class StageResolvedLineRadiation:
-    """
-    Total ionisation state resolved line radiated power rate.
-
-    :param Element element: the radiating element
-    :param int ionisation: the integer charge state for this ionisation stage
-    :param str name: optional label identifying this rate
-    """
-
-    def __init__(self, element, ionisation, name=''):
-
-        if ionisation < 0:
-            raise ValueError("Charge state must be neutral or positive.")
         self.ionisation = ionisation
 
-        self.name = name
-        self.element = element
-
-    cdef double evaluate(self, double electron_density, double electron_temperature) except? -1e999:
-        """
-        Evaluate the total radiated power at given plasma conditions.
-
-        :param float electron_density: electron density in m^-3
-        :param float electron_temperature: electron temperature in eV
-        """
-        raise NotImplementedError("The evaluate() virtual method must be implemented.")
-
     def __call__(self, double electron_density, double electron_temperature):
         """
-        Evaluate the total radiated power of this species at the given plasma conditions.
+        Evaluate the radiated power rate at the given plasma conditions.
+
+        Calls the cython evaluate() method under the hood.
 
         :param float electron_density: electron density in m^-3
         :param float electron_temperature: electron temperature in eV
         """
         return self.evaluate(electron_density, electron_temperature)
 
-    def plot_temperature(self, temp_low=1, temp_high=1000, num_points=100, dens=1E19, species_dens=1E19):
+    cdef double evaluate(self, double electron_density, double electron_temperature) except? -1e999:
+        """
+        Evaluate the radiated power at the given plasma conditions.
 
-        temp = [10**x for x in np.linspace(np.log10(temp_low), np.log10(temp_high), num=num_points)]
-        radiation = [self.evaluate(dens, te) * species_dens for te in temp]
-        plt.loglog(temp, radiation, '.-', label='{}{}'.format(self.element.symbol, self.ionisation))
+        :param float electron_density: electron density in m^-3
+        :param float electron_temperature: electron temperature in eV
+        """
+        raise NotImplementedError("The evaluate() virtual method must be implemented.")
+
+
+cdef class TotalRadiatedPower(_RadiatedPower):
+    """The total radiated power in equilibrium conditions."""
+    pass
+
+
+cdef class LineRadiationPower(_RadiatedPower):
+    """
+    The total line radiation power driven by excitation.
+
+    Equivalent to the `ADF11 PLT <http://open.adas.ac.uk/adf11>`_ coefficient.
+    """
+    pass
+
+
+cdef class ContinuumPower(_RadiatedPower):
+    """
+    The power radiated from continuum, line power driven by recombination and Bremsstrahlung.
+
+    Equivalent to the `ADF11 PRB <http://open.adas.ac.uk/adf11>`_ coefficient.
+    """
+    pass
+
+
+cdef class CXRadiationPower(_RadiatedPower):
+    """
+    Total line power radiated due to charge transfer from thermal neutral hydrogen.
+
+    Equivalent to the `ADF11 PRC <http://open.adas.ac.uk/adf11>`_ coefficient.
+    """
+    pass
 
 
 cdef class FractionalAbundance:

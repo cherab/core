@@ -65,24 +65,29 @@ cdef class BeamEmissionPEC(_BeamRate):
     pass
 
 
-cdef class RadiatedPower:
+cdef class _RadiatedPower:
 
     cdef:
         readonly Element element
-        public str name
-        readonly str radiation_type
-
-    cdef double evaluate(self, double electron_density, double electron_temperature) except? -1e999
-
-
-cdef class StageResolvedLineRadiation:
-
-    cdef:
         readonly int ionisation
-        readonly Element element
-        public str name
 
     cdef double evaluate(self, double electron_density, double electron_temperature) except? -1e999
+
+
+cdef class TotalRadiatedPower(_RadiatedPower):
+    pass
+
+
+cdef class LineRadiationPower(_RadiatedPower):
+    pass
+
+
+cdef class ContinuumPower(_RadiatedPower):
+    pass
+
+
+cdef class CXRadiationPower(_RadiatedPower):
+    pass
 
 
 cdef class FractionalAbundance:
