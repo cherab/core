@@ -278,7 +278,7 @@ cdef class BeamCXLine(BeamModel):
 
         cdef:
             Element receiver_element, donor_element
-            int receiver_ionisation
+            int receiver_charge
             tuple transition
             Species species
             list rates, population_data
@@ -293,22 +293,22 @@ cdef class BeamCXLine(BeamModel):
             raise RuntimeError("The emission line has not been set.")
 
         receiver_element = self._line.element
-        receiver_ionisation = self._line.ionisation + 1
+        receiver_charge = self._line.charge + 1
         donor_element = self._beam.element
         transition = self._line.transition
 
         # locate target species
         try:
-            self._target_species = self._plasma.composition.get(receiver_element, receiver_ionisation)
+            self._target_species = self._plasma.composition.get(receiver_element, receiver_charge)
         except ValueError:
             raise RuntimeError("The plasma object does not contain the ion species for the specified cx line "
-                               "(element={}, ionisation={}).".format(receiver_element.symbol, receiver_ionisation))
+                               "(element={}, ionisation={}).".format(receiver_element.symbol, receiver_charge))
 
         # obtain wavelength for specified line
-        self._wavelength = self._atomic_data.wavelength(receiver_element, receiver_ionisation - 1, transition)
+        self._wavelength = self._atomic_data.wavelength(receiver_element, receiver_charge - 1, transition)
 
         # obtain cx rates
-        rates = self._atomic_data.beam_cx_pec(donor_element, receiver_element, receiver_ionisation, transition)
+        rates = self._atomic_data.beam_cx_pec(donor_element, receiver_element, receiver_charge, transition)
 
         # obtain beam population coefficients for each rate and assemble data
         # the data is assembled to make access efficient by linking the relevant rates and coefficients together:
@@ -335,7 +335,7 @@ cdef class BeamCXLine(BeamModel):
 
                     # bundle coefficient with its species
                     coeff = self._atomic_data.beam_population_rate(donor_element, rate.donor_metastable,
-                                                                   species.element, species.ionisation)
+                                                                   species.element, species.charge)
                     population_data.append((species, coeff))
 
                 # link each rate with its population data

@@ -28,7 +28,7 @@ cdef class Species:
     A class representing a given plasma species.
 
     A plasma in CHERAB will be composed of 1 or more Species objects. A species
-    can be uniquely identified through its element and ionisation stage.
+    can be uniquely identified through its element and charge state.
 
     When instantiating a Species object a 6D distribution function (3 space, 3 velocity)
     must be defined. The DistributionFunction object provides the base interface for
@@ -36,7 +36,7 @@ cdef class Species:
     (such as a Maxwellian for example) or a fully numerically interpolated 6D function.
 
     :param Element element: The element object of this species.
-    :param int ionisation: The ionisation state of the species.
+    :param int charge: The charge state of the species.
     :param DistributionFunction distribution: A distribution function for this species.
 
     .. code-block:: pycon
@@ -60,25 +60,25 @@ cdef class Species:
        >>>
        >>> # Request some properties from the species' distribution function.
        >>> print(d1_species)
-       <Species: element=deuterium, ionisation=1>
+       <Species: element=deuterium, charge=1>
        >>> d1_species.distribution.density(1, -2.5, 7)
        1e+18
     """
 
-    def __init__(self, Element element, int ionisation, DistributionFunction distribution):
+    def __init__(self, Element element, int charge, DistributionFunction distribution):
 
-        if ionisation > element.atomic_number:
-            raise ValueError("Ionisation level cannot be larger than the atomic number.")
+        if charge > element.atomic_number:
+            raise ValueError("Charge state cannot be larger than the atomic number.")
 
-        if ionisation < 0:
-            raise ValueError("Ionisation level cannot be less than zero.")
+        if charge < 0:
+            raise ValueError("Charge state cannot be less than zero.")
 
         self.element = element
-        self.ionisation = ionisation
+        self.charge = charge
         self.distribution = distribution
 
     def __repr__(self):
-        return '<Species: element={}, ionisation={}>'.format(self.element.name, self.ionisation)
+        return '<Species: element={}, charge={}>'.format(self.element.name, self.charge)
 
 
 # todo: move to a common exception module

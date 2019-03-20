@@ -36,7 +36,7 @@ cdef class Composition:
 
     Used to control the adding and removing of Species objects from the Plasma object.
     This is because there can only ever be one Species object instance for each plasma
-    species of a given element and ionisation stage. Users never instantiate this class
+    species of a given element and charge state. Users never instantiate this class
     directly. Its always used indirectly through an instantiated Plasma object.
     """
 
@@ -52,33 +52,34 @@ cdef class Composition:
         .. code-block:: pycon
 
            >>> [species for species in plasma.composition]
-           [<Species: element=deuterium, ionisation=0>,
-            <Species: element=deuterium, ionisation=1>]
+           [<Species: element=deuterium, charge=0>,
+            <Species: element=deuterium, charge=1>]
         """
 
         return iter(self._species.values())
 
     def __getitem__(self, tuple item):
         """
-        Species objects can be indexed with a tuple specifying their element and ionisation.
+        Species objects can be indexed with a tuple specifying their element and charge state.
 
         .. code-block:: pycon
 
            >>> plasma.composition[(deuterium, 0)]
-           <Species: element=deuterium, ionisation=0>
+           <Species: element=deuterium, charge=0>
         """
 
         try:
-            element, ionisation = item
+            element, charge = item
         except ValueError:
-            raise ValueError('An (element, ionisation) tuple is required containing the element and ionisation of the species.')
-        return self.get(element, ionisation)
+            raise ValueError('An (element, charge) tuple is required containing the element and '
+                             'charge state of the species.')
+        return self.get(element, charge)
 
     cpdef object set(self, object species):
         """
         Replaces the species in the composition with a new list of species.
 
-        If there are multiple species with the same element and ionisation in
+        If there are multiple species with the same element and charge state in
         the list, only the last species with that specification will be added
         to the composition.
 
@@ -90,8 +91,8 @@ cdef class Composition:
            >>> d1_species = Species(deuterium, 1, d1_distribution)
            >>> plasma.composition.set([d0_species, d1_species])
            >>> [species for species in plasma.composition]
-           [<Species: element=deuterium, ionisation=0>,
-            <Species: element=deuterium, ionisation=1>]
+           [<Species: element=deuterium, charge=0>,
+            <Species: element=deuterium, charge=1>]
         """
 
         # must be an iterable
@@ -106,14 +107,14 @@ cdef class Composition:
         self._species = {}
 
         for item in species:
-            self._species[(item.element, item.ionisation)] = item
+            self._species[(item.element, item.charge)] = item
         self.notifier.notify()
 
     cpdef object add(self, Species species):
         """
         Adds a species to the plasma composition.
         
-        Replaces any existing species with the same element and ionisation
+        Replaces any existing species with the same element and charge
         state already in the composition.
         
         :param Species species: A Species object.
@@ -127,30 +128,30 @@ cdef class Composition:
         if not species:
             raise ValueError('Species must not be None type.')
 
-        self._species[(species.element, species.ionisation)] = species
+        self._species[(species.element, species.charge)] = species
         self.notifier.notify()
 
-    cpdef Species get(self, Element element, int ionisation):
+    cpdef Species get(self, Element element, int charge):
         """
         Get a specified plasma species.
         
         Raises a ValueError if the specified species is not found in the composition.
         
         :param Element element: The element object of the requested species.
-        :param int ionisation: The ionisation state of the requested species.
+        :param int charge: The charge state of the requested species.
         :return: The requested Species object.
         
         .. code-block:: pycon
 
            >>> plasma.composition.get(deuterium, 1)
-           <Species: element=deuterium, ionisation=1>
+           <Species: element=deuterium, charge=1>
         """
 
         try:
-            return self._species[(element, ionisation)]
+            return self._species[(element, charge)]
         except KeyError:
-            raise ValueError("Could not find a species with the specified element '{}' and ionisation {}."
-                             "".format(element.name, ionisation))
+            raise ValueError("Could not find a species with the specified element '{}' and charge {}."
+                             "".format(element.name, charge))
 
     cpdef object clear(self):
         """Removes all Species object instances from the parent plasma."""
@@ -409,10 +410,10 @@ cdef class Plasma(Node):
         sum_nz = 0
         sum_nz2 = 0
         for species in self._composition:
-            if species.ionisation > 0:
+            if species.charge > 0:
                 density = species.distribution.density(x, y, z)
-                sum_nz += density * species.ionisation
-                sum_nz2 += density * species.ionisation * species.ionisation
+                sum_nz += density * species.charge
+                sum_nz2 += density * species.charge * species.charge
 
         if sum_nz2 == 0:
             raise ValueError('Plasma does not contain any ionised species.')
