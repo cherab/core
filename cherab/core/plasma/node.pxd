@@ -36,7 +36,7 @@ cdef class Composition:
 
     cpdef object add(self, Species species)
 
-    cpdef Species get(self, Element element, int ionisation)
+    cpdef Species get(self, Element element, int charge)
 
     cpdef object clear(self)
 
