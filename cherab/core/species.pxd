@@ -24,5 +24,5 @@ cdef class Species:
 
     cdef readonly:
         Element element
-        int ionisation
+        int charge
         DistributionFunction distribution

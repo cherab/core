@@ -293,7 +293,7 @@ cdef class SingleRayAttenuator(BeamAttenuator):
 
         self._stopping_data = []
         for species in self._plasma.composition:
-            stopping_coeff = self._atomic_data.beam_stopping_rate(self._beam.element, species.element, species.ionisation)
+            stopping_coeff = self._atomic_data.beam_stopping_rate(self._beam.element, species.element, species.charge)
             self._stopping_data.append((species, stopping_coeff))
 
     def _change(self):
