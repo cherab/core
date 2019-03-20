@@ -23,5 +23,5 @@ cdef class Line:
 
     cdef readonly:
         Element element
-        int ionisation
+        int charge
         tuple transition

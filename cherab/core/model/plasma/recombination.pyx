@@ -48,7 +48,7 @@ cdef class RecombinationLine(PlasmaModel):
         self._change()
 
     def __repr__(self):
-        return '<RecombinationLine: element={}, ionisation={}, transition={}>'.format(self._line.element.name, self._line.ionisation, self._line.transition)
+        return '<RecombinationLine: element={}, charge={}, transition={}>'.format(self._line.element.name, self._line.charge, self._line.transition)
 
     cpdef Spectrum emission(self, Point3D point, Vector3D direction, Spectrum spectrum):
 
@@ -85,19 +85,19 @@ cdef class RecombinationLine(PlasmaModel):
 
         # locate target species
         # note: the target species receives an electron during recombination so must have
-        # an ionisation +1 relative to the ionisation state required for the emission line
-        receiver_ionisation = self._line.ionisation + 1
+        # a charge +1 relative to the charge state required for the emission line
+        receiver_charge = self._line.charge + 1
         try:
-            self._target_species = self._plasma.composition.get(self._line.element, receiver_ionisation)
+            self._target_species = self._plasma.composition.get(self._line.element, receiver_charge)
         except ValueError:
             raise RuntimeError("The plasma object does not contain the ion species for the specified line "
-                               "(element={}, ionisation={}).".format(self._line.element.symbol, receiver_ionisation))
+                               "(element={}, charge={}).".format(self._line.element.symbol, receiver_charge))
 
         # obtain rate function
-        self._rates = self._atomic_data.recombination_pec(self._line.element, self._line.ionisation, self._line.transition)
+        self._rates = self._atomic_data.recombination_pec(self._line.element, self._line.charge, self._line.transition)
 
         # identify wavelength
-        self._wavelength = self._atomic_data.wavelength(self._line.element, self._line.ionisation, self._line.transition)
+        self._wavelength = self._atomic_data.wavelength(self._line.element, self._line.charge, self._line.transition)
 
         # instance line shape renderer
         self._lineshape = self._lineshape_class(self._line, self._wavelength, self._target_species, self._plasma,

@@ -22,30 +22,30 @@ from cherab.core.atomic.rates cimport *
 
 cdef class AtomicData:
 
-    cpdef double wavelength(self, Element ion, int ionisation, tuple transition)
+    cpdef double wavelength(self, Element ion, int charge, tuple transition)
 
-    cpdef IonisationRate ionisation_rate(self, Element ion, int ionisation)
+    cpdef IonisationRate ionisation_rate(self, Element ion, int charge)
 
-    cpdef RecombinationRate recombination_rate(self, Element ion, int ionisation)
+    cpdef RecombinationRate recombination_rate(self, Element ion, int charge)
 
-    cpdef list beam_cx_pec(self, Element donor_ion, Element receiver_ion, int receiver_ionisation, tuple transition)
+    cpdef list beam_cx_pec(self, Element donor_ion, Element receiver_ion, int receiver_charge, tuple transition)
 
-    cpdef BeamStoppingRate beam_stopping_rate(self, Element beam_ion, Element plasma_ion, int ionisation)
+    cpdef BeamStoppingRate beam_stopping_rate(self, Element beam_ion, Element plasma_ion, int charge)
 
-    cpdef BeamPopulationRate beam_population_rate(self, Element beam_ion, int metastable, Element plasma_ion, int ionisation)
+    cpdef BeamPopulationRate beam_population_rate(self, Element beam_ion, int metastable, Element plasma_ion, int charge)
 
-    cpdef BeamEmissionPEC beam_emission_pec(self, Element beam_ion, Element plasma_ion, int ionisation, tuple transition)
+    cpdef BeamEmissionPEC beam_emission_pec(self, Element beam_ion, Element plasma_ion, int charge, tuple transition)
 
-    cpdef ImpactExcitationPEC impact_excitation_pec(self, Element ion, int ionisation, tuple transition)
+    cpdef ImpactExcitationPEC impact_excitation_pec(self, Element ion, int charge, tuple transition)
 
-    cpdef RecombinationPEC recombination_pec(self, Element ion, int ionisation, tuple transition)
+    cpdef RecombinationPEC recombination_pec(self, Element ion, int charge, tuple transition)
 
     cpdef TotalRadiatedPower total_radiated_power(self, Element element)
 
-    cpdef LineRadiationPower line_radiated_power_rate(self, Element element, int ionisation)
+    cpdef LineRadiationPower line_radiated_power_rate(self, Element element, int charge)
 
-    cpdef ContinuumPower continuum_radiated_power_rate(self, Element element, int ionisation)
+    cpdef ContinuumPower continuum_radiated_power_rate(self, Element element, int charge)
 
-    cpdef CXRadiationPower cx_radiated_power_rate(self, Element element, int ionisation)
+    cpdef CXRadiationPower cx_radiated_power_rate(self, Element element, int charge)
 
-    cpdef FractionalAbundance fractional_abundance(self, Element ion, int ionisation)
+    cpdef FractionalAbundance fractional_abundance(self, Element ion, int charge)

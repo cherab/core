@@ -201,10 +201,10 @@ cdef class BeamEmissionPEC(_BeamRate):
 cdef class _RadiatedPower:
     """Base class for radiated powers."""
 
-    def __init__(self, Element element, int ionisation):
+    def __init__(self, Element element, int charge):
 
         self.element = element
-        self.ionisation = ionisation
+        self.charge = charge
 
     def __call__(self, double electron_density, double electron_temperature):
         """
@@ -264,18 +264,18 @@ cdef class FractionalAbundance:
     Rate provider for fractional abundances in thermodynamic equilibrium.
 
     :param Element element: the radiating element
-    :param int ionisation: the integer charge state for this ionisation stage
+    :param int charge: the integer charge state for this ionisation stage
     :param str name: optional label identifying this rate
     """
 
-    def __init__(self, element, ionisation, name=''):
+    def __init__(self, element, charge, name=''):
 
         self.name = name
         self.element = element
 
-        if ionisation < 0:
+        if charge < 0:
             raise ValueError("Charge state must be neutral or positive.")
-        self.ionisation = ionisation
+        self.charge = charge
 
     cdef double evaluate(self, double electron_density, double electron_temperature) except? -1e999:
         """
@@ -299,4 +299,4 @@ cdef class FractionalAbundance:
 
         temp = [10**x for x in np.linspace(np.log10(temp_low), np.log10(temp_high), num=num_points)]
         abundances = [self.evaluate(dens, te) for te in temp]
-        plt.semilogx(temp, abundances, '.-', label='{}{}'.format(self.element.symbol, self.ionisation))
+        plt.semilogx(temp, abundances, '.-', label='{}{}'.format(self.element.symbol, self.charge))
