@@ -38,6 +38,9 @@ cdef class AtomicData:
     cpdef RecombinationRate recombination_rate(self, Element ion, int charge):
         raise NotImplementedError("The recombination_rate() virtual method is not implemented for this atomic data source.")
 
+    cpdef ThermalCXRate thermal_cx_rate(self, Element donor_ion, int donor_charge, Element receiver_ion, int receiver_charge):
+        raise NotImplementedError("The thermal_cx_rate() virtual method is not implemented for this atomic data source.")
+
     cpdef list beam_cx_pec(self, Element donor_ion, Element receiver_ion, int receiver_charge, tuple transition):
         """
         Returns a list of applicable charge exchange emission rates in W.m^3.

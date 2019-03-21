@@ -28,6 +28,8 @@ cdef class AtomicData:
 
     cpdef RecombinationRate recombination_rate(self, Element ion, int charge)
 
+    cpdef ThermalCXRate thermal_cx_rate(self, Element donor_ion, int donor_charge, Element receiver_ion, int receiver_charge)
+
     cpdef list beam_cx_pec(self, Element donor_ion, Element receiver_ion, int receiver_charge, tuple transition)
 
     cpdef BeamStoppingRate beam_stopping_rate(self, Element beam_ion, Element plasma_ion, int charge)

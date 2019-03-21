@@ -29,6 +29,11 @@ cdef class RecombinationRate:
     cpdef double evaluate(self, double density, double temperature) except? -1e999
 
 
+cdef class ThermalCXRate:
+
+    cpdef double evaluate(self, double density, double temperature) except? -1e999
+
+
 cdef class _PECRate:
     cpdef double evaluate(self, double density, double temperature) except? -1e999
 
