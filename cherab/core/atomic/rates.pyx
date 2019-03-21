@@ -64,6 +64,28 @@ cdef class RecombinationRate:
         raise NotImplementedError("The evaluate() virtual method must be implemented.")
 
 
+cdef class ThermalCXRate:
+    """
+    Effective charge exchange rate between two ions.
+    """
+
+    def __call__(self, double density, double temperature):
+        """Returns an effective charge exchange rate coefficient at the specified plasma conditions.
+
+        This function just wraps the cython evaluate() method.
+        """
+        return self.evaluate(density, temperature)
+
+    cpdef double evaluate(self, double density, double temperature) except? -1e999:
+        """Returns an effective charge exchange rate coefficient at the specified plasma conditions.
+
+        :param temperature: Electron temperature in eV.
+        :param density: Electron density in m^-3
+        :return: The effective charge exchange rate in m^-3.
+        """
+        raise NotImplementedError("The evaluate() virtual method must be implemented.")
+
+
 cdef class _PECRate:
     """
     Photon emissivity coefficient base class.
