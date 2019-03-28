@@ -18,11 +18,12 @@
 # See the Licence for the specific language governing permissions and limitations
 # under the Licence.
 
-from numpy import empty, linspace
+from numpy import asarray, empty, linspace
 from cherab.core.math.function cimport Function1D, Function2D, Function3D, VectorFunction2D, VectorFunction3D
 from cherab.core.math.function cimport autowrap_function1d, autowrap_function2d, autowrap_function3d, autowrap_vectorfunction2d, autowrap_vectorfunction3d
 from raysect.core cimport Vector3D
 cimport cython
+cimport numpy as np
 
 """
 This module provides a set of sampling functions for rapidly generating samples
@@ -71,6 +72,37 @@ cpdef tuple sample1d(object function1d, tuple x_range):
         v_view[i] = f1d.evaluate(x_view[i])
 
     return x, v
+
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
+cpdef np.ndarray sample1d_points(object function1d, object x_points):
+    """
+    Sample a 1D function at the specified points
+
+    :param function1d: a Python function or Function1D object
+    :param x_points: an array of points at which to sample the function
+    :return: an array containing the sampled values
+    """
+    cdef:
+        int i, nsamples
+        Function1D f1d
+        double[::1] x_view, v_view
+
+    x_points = asarray(x_points)
+
+    f1d = autowrap_function1d(function1d)
+    nsamples = len(x_points)
+
+    v = empty(nsamples)
+
+    x_view = x_points
+    v_view = v
+
+    for i in range(nsamples):
+        v_view[i] = f1d.evaluate(x_view[i])
+
+    return v
 
 
 @cython.boundscheck(False)

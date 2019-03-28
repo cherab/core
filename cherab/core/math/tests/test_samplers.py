@@ -19,6 +19,7 @@
 import unittest
 from numpy import empty
 from cherab.core.math.samplers import sample1d, sample2d, sample3d
+from cherab.core.math.samplers import sample1d_points
 
 
 def fn1d(x):
@@ -94,6 +95,26 @@ class TestSampler1D(unittest.TestCase):
             self.assertEqual(tx[i], rx[i], "X points [{}] is incorrect.".format(i))
             self.assertEqual(ts[i], rs[i], "Sample point [{}] is incorrect.".format(i))
 
+
+class TestSample1DPoints(unittest.TestCase):
+
+    def test_sample1d_points_invalid_range_type(self):
+         # invalid type
+        with self.assertRaises(TypeError, msg="Type error was not raised when a string was (invalidly) supplied for the range."):
+            sample1d_points(fn1d, "blah")
+
+    def test_sample1d_invalid_function_called(self):
+        # invalid function type
+        with self.assertRaises(TypeError, msg="Type error was not raised when a string was (invalidly) supplied for the function."):
+            sample1d("blah", (1, 2, 3))
+
+    def test_sample1d_sample(self):
+        rx = [1.0, 1.5, 2.0]
+        rs = [1.0, 2.25, 4.0]
+        ts = sample1d_points(fn1d, rx)
+
+        for i in range(3):
+            self.assertEqual(ts[i], rs[i], "Sample point [{}] is incorrect.".format(i))
 
 class TestSampler2D(unittest.TestCase):
 
