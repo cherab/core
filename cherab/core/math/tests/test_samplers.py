@@ -20,6 +20,7 @@ import unittest
 from numpy import empty
 from cherab.core.math.samplers import sample1d, sample2d, sample3d
 from cherab.core.math.samplers import sample1d_points
+from cherab.core.math.samplers import sample2d_points, sample2d_grid
 
 
 def fn1d(x):
@@ -98,15 +99,15 @@ class TestSampler1D(unittest.TestCase):
 
 class TestSample1DPoints(unittest.TestCase):
 
-    def test_sample1d_points_invalid_range_type(self):
+    def test_sample1d_points_invalid_points_type(self):
          # invalid type
-        with self.assertRaises(TypeError, msg="Type error was not raised when a string was (invalidly) supplied for the range."):
+        with self.assertRaises(ValueError, msg="Value error was not raised when a string was (invalidly) supplied for the range."):
             sample1d_points(fn1d, "blah")
 
     def test_sample1d_invalid_function_called(self):
         # invalid function type
         with self.assertRaises(TypeError, msg="Type error was not raised when a string was (invalidly) supplied for the function."):
-            sample1d("blah", (1, 2, 3))
+            sample1d_points("blah", (1, 2, 3))
 
     def test_sample1d_sample(self):
         rx = [1.0, 1.5, 2.0]
@@ -196,6 +197,68 @@ class TestSampler2D(unittest.TestCase):
 
                 self.assertEqual(ts[i][j], rs[i][j], "Sample point [{}, {}] is incorrect.".format(i, j))
 
+
+class TestSample2DPoints(unittest.TestCase):
+
+    def test_sample2d_points_invalid_points_type(self):
+         # invalid type
+        with self.assertRaises(ValueError, msg="Type error was not raised when a string was (invalidly) supplied for the range."):
+            sample2d_points(fn2d, "blah")
+
+    def test_sample2d_points_invalid_points_shape(self):
+        with self.assertRaises(ValueError, msg="Type error was not raised when the points array was the wrong shape."):
+            sample2d_points(fn2d, empty((3, 3)))
+
+    def test_sample2d_points_invalid_function_called(self):
+        # invalid function type
+        with self.assertRaises(TypeError, msg="Type error was not raised when a string was (invalidly) supplied for the function."):
+            sample2d_points("blah", empty(3, 2))
+
+    def test_sample2d_points_sample(self):
+        rx = [1.0, 1.5, 2.0]
+        ry = [2.0, 2.5, 3.0]
+        rpoints = empty((3, 2))
+        rpoints[:, 0] = rx
+        rpoints[:, 1] = ry
+        rs = empty(3)
+        for i in range(3):
+            rs[i] = rx[i] * rx[i] + 0.5 * ry[i]
+
+
+        ts = sample2d_points(fn2d, rpoints)
+
+        for i in range(3):
+            self.assertEqual(ts[i], rs[i], "Sample point [{}] is incorrect.".format(i))
+
+
+class TestSample2DGrid(unittest.TestCase):
+
+    def test_sample2d_grid_invalid_coords_type(self):
+        with self.assertRaises(ValueError, msg="Value error was not raised when the coordinate arrays were the wrong type"):
+            sample2d_grid(fn2d, "blah", 10)
+
+    def test_sample2d_grid_invalid_coords_shape(self):
+        with self.assertRaises(ValueError, msg="Value error was not raised when the coordinate arrays were the wrong shape"):
+            sample2d_grid(fn2d, empty((10, 2)), empty((2, 10)))
+
+    def test_sample2d_grid_invalid_function_called(self):
+        # invalid function type
+        with self.assertRaises(TypeError, msg="Type error was not raised when a string was (invalidly) supplied for the function."):
+            sample2d_grid("blah", empty(3), empty(2))
+
+    def test_sample2d_grid_sample(self):
+        rx = [1.0, 1.5, 2.0]
+        ry = [2.0, 2.5, 3.0]
+        rs = empty((3, 3))
+        for i in range(3):
+            for j in range(3):
+                rs[i, j] = rx[i] * rx[i] + 0.5 * ry[j]
+
+        ts = sample2d_grid(fn2d, rx, ry)
+
+        for i in range(3):
+            for j in range(3):
+                self.assertEqual(ts[i, j], rs[i, j], "Sample point [{}] is incorrect.".format(i))
 
 class TestSampler3D(unittest.TestCase):
 

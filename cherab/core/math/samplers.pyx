@@ -18,7 +18,7 @@
 # See the Licence for the specific language governing permissions and limitations
 # under the Licence.
 
-from numpy import asarray, empty, linspace
+from numpy import asarray, ascontiguousarray, empty, linspace
 from cherab.core.math.function cimport Function1D, Function2D, Function3D, VectorFunction2D, VectorFunction3D
 from cherab.core.math.function cimport autowrap_function1d, autowrap_function2d, autowrap_function3d, autowrap_vectorfunction2d, autowrap_vectorfunction3d
 from raysect.core cimport Vector3D
@@ -89,7 +89,7 @@ cpdef np.ndarray sample1d_points(object function1d, object x_points):
         Function1D f1d
         double[::1] x_view, v_view
 
-    x_points = asarray(x_points)
+    x_points = ascontiguousarray(x_points)
 
     f1d = autowrap_function1d(function1d)
     nsamples = len(x_points)
@@ -160,6 +160,88 @@ cpdef tuple sample2d(object function2d, tuple x_range, tuple y_range):
             v_view[i, j] = f2d.evaluate(x_view[i], y_view[j])
 
     return x, y, v
+
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
+cpdef np.ndarray sample2d_points(object function2d, object points):
+    """
+    Sample a 2D function at the specified points.
+
+    :param function2d: a Python function or Function2D object
+    :param points: an Nx2 array of points at which to sample the function
+    :return: a 1D array containing the sampled values at each point
+
+    This function is for sampling at an unstructured sequence of points.
+    For sampling over a regular grid, consider sample2d or sample2d_grid
+    instead.
+    """
+    cdef:
+        int i, j, nsamples
+        Function2D f2d
+        double[::1] x_view, y_view, v_view
+
+    points = asarray(points)
+    if points.ndim != 2 or points.shape[1] != 2:
+        raise ValueError("points should be an Nx2 array of points.")
+
+    f2d = autowrap_function2d(function2d)
+    x = ascontiguousarray(points[:, 0])
+    y = ascontiguousarray(points[:, 1])
+    nsamples = points.shape[0]
+    v = empty(nsamples)
+
+    x_view = x
+    y_view = y
+    v_view = v
+
+    for i in range(nsamples):
+        v_view[i] = f2d.evaluate(x_view[i], y_view[i])
+
+    return v
+
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
+cpdef np.ndarray sample2d_grid(object function2d, object x, object y):
+    """
+    Sample a 2D function on a rectilinear grid
+
+    :param function2d: a Python function or Function2D object
+    :param x: the x coordinates of each column in the grid
+    :param y: the y coordinates of each row in the grid
+    :return v: a 2D array containing the sampled values at each grid point
+
+    Note that v[i, j] = f(x[i], y[i])
+    """
+    cdef:
+        int i, j, x_samples, y_samples
+        Function2D f2d
+        double[::1] x_view, y_view
+        double[:, ::1] v_view
+
+    x = ascontiguousarray(x)
+    y = ascontiguousarray(y)
+    if x.ndim != 1:
+        raise ValueError("x should be a 1D sequence of coordinates")
+    if y.ndim != 1:
+        raise ValueError("y should be a 1D sequence of coordinates")
+
+    f2d = autowrap_function2d(function2d)
+
+    x_samples = x.shape[0]
+    y_samples = y.shape[0]
+    v = empty((x_samples, y_samples))
+
+    x_view = x
+    y_view = y
+    v_view = v
+
+    for i in range(x_samples):
+        for j in range(y_samples):
+            v_view[i, j] = f2d.evaluate(x_view[i], y_view[j])
+
+    return v
 
 
 @cython.boundscheck(False)
