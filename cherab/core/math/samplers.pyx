@@ -471,6 +471,97 @@ cpdef tuple samplevector2d(object function2d, tuple x_range, tuple y_range):
     return x, y, v
 
 
+@cython.boundscheck(False)
+@cython.wraparound(False)
+cpdef np.ndarray samplevector2d_points(object function2d, object points):
+    """
+    Sample a 2D vector function at the specified points.
+
+    :param function2d: a Python function or Function2D object
+    :param points: an Nx2 array of points at which to sample the function
+    :return: a Nx3 array containing the sampled values at each point
+
+    This function is for sampling at an unstructured sequence of points.
+    For sampling over a regular grid, consider samplevector2d or
+    samplevector2d_grid instead.
+    """
+    cdef:
+        int i, j, nsamples
+        VectorFunction2D f2d
+        double[::1] x_view, y_view,
+        double [:, ::1] v_view
+        Vector3D vector
+
+    points = asarray(points)
+    if points.ndim != 2 or points.shape[1] != 2:
+        raise ValueError("points should be an Nx2 array of points.")
+
+    f2d = autowrap_vectorfunction2d(function2d)
+    x = ascontiguousarray(points[:, 0], dtype=float)
+    y = ascontiguousarray(points[:, 1], dtype=float)
+    nsamples = points.shape[0]
+    v = empty((nsamples, 3))
+
+    x_view = x
+    y_view = y
+    v_view = v
+
+    for i in range(nsamples):
+        vector = f2d.evaluate(x_view[i], y_view[i])
+        v_view[i, 0] = vector.x
+        v_view[i, 1] = vector.y
+        v_view[i, 2] = vector.z
+
+    return v
+
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
+cpdef np.ndarray samplevector2d_grid(object function2d, object x, object y):
+    """
+    Sample a 2D vector function on a rectilinear grid
+
+    :param function2d: a Python function or Function2D object
+    :param x: the x coordinates of each column in the grid
+    :param y: the y coordinates of each row in the grid
+    :return v: a 3D array containing the sampled values at each grid point
+
+    Note that v[i, j] = f(x[i], y[j])
+    """
+    cdef:
+        int i, j, x_samples, y_samples
+        VectorFunction2D f2d
+        double[::1] x_view, y_view
+        double[:, :, ::1] v_view
+        Vector3D vector
+
+    x = ascontiguousarray(x, dtype=float)
+    y = ascontiguousarray(y, dtype=float)
+    if x.ndim != 1:
+        raise ValueError("x should be a 1D sequence of coordinates")
+    if y.ndim != 1:
+        raise ValueError("y should be a 1D sequence of coordinates")
+
+    f2d = autowrap_vectorfunction2d(function2d)
+
+    x_samples = x.shape[0]
+    y_samples = y.shape[0]
+    v = empty((x_samples, y_samples, 3))
+
+    x_view = x
+    y_view = y
+    v_view = v
+
+    for i in range(x_samples):
+        for j in range(y_samples):
+            vector = f2d.evaluate(x_view[i], y_view[j])
+            v_view[i, j, 0] = vector.x
+            v_view[i, j, 1] = vector.y
+            v_view[i, j, 2] = vector.z
+
+    return v
+
+
 # todo: add test
 @cython.boundscheck(False)
 @cython.wraparound(False)
@@ -548,3 +639,103 @@ cpdef tuple samplevector3d(object function3d, tuple x_range, tuple y_range, tupl
                 v_view[i, j, k, 2] = vector.z
 
     return x, y, z, v
+
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
+cpdef np.ndarray samplevector3d_points(object function3d, object points):
+    """
+    Sample a 3D vector function at the specified points.
+
+    :param function3d: a Python function or Function3D object
+    :param points: an Nx3 array of points at which to sample the function
+    :return: an Nx3 array containing the sampled values at each point
+
+    This function is for sampling at an unstructured sequence of points.
+    For sampling over a regular grid, consider samplevector3d or
+    samplevector3d_grid instead.
+    """
+    cdef:
+        int i, j, nsamples
+        VectorFunction3D f3d
+        double[::1] x_view, y_view, z_view,
+        double[:, ::1] v_view
+        Vector3D vector
+
+    points = asarray(points)
+    if points.ndim != 2 or points.shape[1] != 3:
+        raise ValueError("points should be an Nx3 array of points.")
+
+    f3d = autowrap_vectorfunction3d(function3d)
+    x = ascontiguousarray(points[:, 0], dtype=float)
+    y = ascontiguousarray(points[:, 1], dtype=float)
+    z = ascontiguousarray(points[:, 2], dtype=float)
+    nsamples = points.shape[0]
+    v = empty((nsamples, 3))
+
+    x_view = x
+    y_view = y
+    z_view = z
+    v_view = v
+
+    for i in range(nsamples):
+        vector = f3d.evaluate(x_view[i], y_view[i], z_view[i])
+        v_view[i, 0] = vector.x
+        v_view[i, 1] = vector.y
+        v_view[i, 2] = vector.z
+
+    return v
+
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
+cpdef np.ndarray samplevector3d_grid(object function3d, object x, object y, object z):
+    """
+    Sample a 3D vector function on a rectilinear grid
+
+    :param function3d: a Python function or Function3D object
+    :param x: the x coordinates of each column in the grid
+    :param y: the y coordinates of each row in the grid
+    :param z: the z coordinates of each plane in the grid
+    :return v: an NxMxkx3 array containing the sampled values at each grid point
+
+    Note that v[i, j, k] = f(x[i], y[j], z[k])
+    """
+    cdef:
+        int i, j, k, x_samples, y_samples, z_samples
+        VectorFunction3D f3d
+        double[::1] x_view, y_view, z_view
+        double[:, :, :, ::1] v_view
+        Vector3D vector
+
+    x = ascontiguousarray(x, dtype=float)
+    y = ascontiguousarray(y, dtype=float)
+    z = ascontiguousarray(z, dtype=float)
+    if x.ndim != 1:
+        raise ValueError("x should be a 1D sequence of coordinates")
+    if y.ndim != 1:
+        raise ValueError("y should be a 1D sequence of coordinates")
+    if z.ndim != 1:
+        raise ValueError("z should be a 1D sequence of coordinates")
+
+    f3d = autowrap_vectorfunction3d(function3d)
+
+    x_samples = x.shape[0]
+    y_samples = y.shape[0]
+    z_samples = z.shape[0]
+    v = empty((x_samples, y_samples, z_samples, 3))
+
+    x_view = x
+    y_view = y
+    z_view = z
+    v_view = v
+
+    for i in range(x_samples):
+        for j in range(y_samples):
+            for k in range(z_samples):
+                vector = f3d.evaluate(x_view[i], y_view[j], z_view[k])
+                v_view[i, j, k, 0] = vector.x
+                v_view[i, j, k, 1] = vector.y
+                v_view[i, j, k, 2] = vector.z
+
+    return v
