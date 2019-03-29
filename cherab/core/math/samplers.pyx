@@ -186,8 +186,8 @@ cpdef np.ndarray sample2d_points(object function2d, object points):
         raise ValueError("points should be an Nx2 array of points.")
 
     f2d = autowrap_function2d(function2d)
-    x = ascontiguousarray(points[:, 0])
-    y = ascontiguousarray(points[:, 1])
+    x = ascontiguousarray(points[:, 0], dtype=float)
+    y = ascontiguousarray(points[:, 1], dtype=float)
     nsamples = points.shape[0]
     v = empty(nsamples)
 
@@ -220,8 +220,8 @@ cpdef np.ndarray sample2d_grid(object function2d, object x, object y):
         double[::1] x_view, y_view
         double[:, ::1] v_view
 
-    x = ascontiguousarray(x)
-    y = ascontiguousarray(y)
+    x = ascontiguousarray(x, dtype=float)
+    y = ascontiguousarray(y, dtype=float)
     if x.ndim != 1:
         raise ValueError("x should be a 1D sequence of coordinates")
     if y.ndim != 1:
@@ -339,9 +339,9 @@ cpdef np.ndarray sample3d_points(object function3d, object points):
         raise ValueError("points should be an Nx3 array of points.")
 
     f3d = autowrap_function3d(function3d)
-    x = ascontiguousarray(points[:, 0])
-    y = ascontiguousarray(points[:, 1])
-    z = ascontiguousarray(points[:, 2])
+    x = ascontiguousarray(points[:, 0], dtype=float)
+    y = ascontiguousarray(points[:, 1], dtype=float)
+    z = ascontiguousarray(points[:, 2], dtype=float)
     nsamples = points.shape[0]
     v = empty(nsamples)
 
@@ -376,9 +376,9 @@ cpdef np.ndarray sample3d_grid(object function3d, object x, object y, object z):
         double[::1] x_view, y_view, z_view
         double[:, :, ::1] v_view
 
-    x = ascontiguousarray(x)
-    y = ascontiguousarray(y)
-    z = ascontiguousarray(z)
+    x = ascontiguousarray(x, dtype=float)
+    y = ascontiguousarray(y, dtype=float)
+    z = ascontiguousarray(z, dtype=float)
     if x.ndim != 1:
         raise ValueError("x should be a 1D sequence of coordinates")
     if y.ndim != 1:
