@@ -89,7 +89,7 @@ cpdef np.ndarray sample1d_points(object function1d, object x_points):
         Function1D f1d
         double[::1] x_view, v_view
 
-    x_points = ascontiguousarray(x_points)
+    x_points = ascontiguousarray(x_points, dtype=float)
 
     f1d = autowrap_function1d(function1d)
     nsamples = len(x_points)
@@ -212,7 +212,7 @@ cpdef np.ndarray sample2d_grid(object function2d, object x, object y):
     :param y: the y coordinates of each row in the grid
     :return v: a 2D array containing the sampled values at each grid point
 
-    Note that v[i, j] = f(x[i], y[i])
+    Note that v[i, j] = f(x[i], y[j])
     """
     cdef:
         int i, j, x_samples, y_samples
@@ -313,6 +313,97 @@ cpdef tuple sample3d(object function3d, tuple x_range, tuple y_range, tuple z_ra
                 v_view[i, j, k] = f3d.evaluate(x_view[i], y_view[j], z_view[k])
 
     return x, y, z, v
+
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
+cpdef np.ndarray sample3d_points(object function3d, object points):
+    """
+    Sample a 3D function at the specified points.
+
+    :param function3d: a Python function or Function3D object
+    :param points: an Nx3 array of points at which to sample the function
+    :return: a 1D array containing the sampled values at each point
+
+    This function is for sampling at an unstructured sequence of points.
+    For sampling over a regular grid, consider sample3d or sample3d_grid
+    instead.
+    """
+    cdef:
+        int i, j, nsamples
+        Function3D f3d
+        double[::1] x_view, y_view, z_view, v_view
+
+    points = asarray(points)
+    if points.ndim != 2 or points.shape[1] != 3:
+        raise ValueError("points should be an Nx3 array of points.")
+
+    f3d = autowrap_function3d(function3d)
+    x = ascontiguousarray(points[:, 0])
+    y = ascontiguousarray(points[:, 1])
+    z = ascontiguousarray(points[:, 2])
+    nsamples = points.shape[0]
+    v = empty(nsamples)
+
+    x_view = x
+    y_view = y
+    z_view = z
+    v_view = v
+
+    for i in range(nsamples):
+        v_view[i] = f3d.evaluate(x_view[i], y_view[i], z_view[i])
+
+    return v
+
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
+cpdef np.ndarray sample3d_grid(object function3d, object x, object y, object z):
+    """
+    Sample a 3D function on a rectilinear grid
+
+    :param function3d: a Python function or Function3D object
+    :param x: the x coordinates of each column in the grid
+    :param y: the y coordinates of each row in the grid
+    :param z: the z coordinates of each plane in the grid
+    :return v: a 3D array containing the sampled values at each grid point
+
+    Note that v[i, j, k] = f(x[i], y[j], z[k])
+    """
+    cdef:
+        int i, j, k, x_samples, y_samples, z_samples
+        Function3D f3d
+        double[::1] x_view, y_view, z_view
+        double[:, :, ::1] v_view
+
+    x = ascontiguousarray(x)
+    y = ascontiguousarray(y)
+    z = ascontiguousarray(z)
+    if x.ndim != 1:
+        raise ValueError("x should be a 1D sequence of coordinates")
+    if y.ndim != 1:
+        raise ValueError("y should be a 1D sequence of coordinates")
+    if z.ndim != 1:
+        raise ValueError("z should be a 1D sequence of coordinates")
+
+    f3d = autowrap_function3d(function3d)
+
+    x_samples = x.shape[0]
+    y_samples = y.shape[0]
+    z_samples = z.shape[0]
+    v = empty((x_samples, y_samples, z_samples))
+
+    x_view = x
+    y_view = y
+    z_view = z
+    v_view = v
+
+    for i in range(x_samples):
+        for j in range(y_samples):
+            for k in range(z_samples):
+                v_view[i, j, k] = f3d.evaluate(x_view[i], y_view[j], z_view[k])
+
+    return v
 
 
 # todo: add test
