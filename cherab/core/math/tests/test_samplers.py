@@ -22,6 +22,9 @@ from cherab.core.math.samplers import sample1d, sample2d, sample3d
 from cherab.core.math.samplers import sample1d_points
 from cherab.core.math.samplers import sample2d_points, sample2d_grid
 from cherab.core.math.samplers import sample3d_points, sample3d_grid
+from cherab.core.math.samplers import samplevector2d_points, samplevector2d_grid
+from cherab.core.math.samplers import samplevector3d_points, samplevector3d_grid
+from raysect.core import Vector3D
 
 
 def fn1d(x):
@@ -46,6 +49,27 @@ def fn3d(x, y, z):
     """
 
     return x * x + 0.5 * y - z
+
+
+def vfn1d(x):
+    """
+    Python 1D vector test function
+    """
+    return Vector3D(fn1d(x), 2 * fn1d(x), -fn1d(x))
+
+
+def vfn2d(x, y):
+    """
+    Python 2D vector test function
+    """
+    return Vector3D(fn2d(x, y), 2 * fn2d(x, y), -fn2d(x, y))
+
+
+def vfn3d(x, y, z):
+    """
+    Python 3D vector test function
+    """
+    return Vector3D(fn3d(x, y, z), 2 * fn3d(x, y, z), -fn3d(x, y, z))
 
 
 class TestSampler1D(unittest.TestCase):
@@ -117,6 +141,7 @@ class TestSample1DPoints(unittest.TestCase):
 
         for i in range(3):
             self.assertEqual(ts[i], rs[i], "Sample point [{}] is incorrect.".format(i))
+
 
 class TestSampler2D(unittest.TestCase):
 
@@ -368,6 +393,7 @@ class TestSampler3D(unittest.TestCase):
 
                     self.assertEqual(ts[i][j][k], rs[i][j][k], "Sample point [{}, {}, {}] is incorrect.".format(i, j, k))
 
+
 class TestSample3DPoints(unittest.TestCase):
 
     def test_sample3d_points_invalid_points_type(self):
@@ -434,3 +460,146 @@ class TestSample3DGrid(unittest.TestCase):
             for j in range(3):
                 for k in range(3):
                     self.assertEqual(ts[i, j, k], rs[i, j, k], "Sample point [{}] is incorrect.".format(i))
+
+
+class TestSampleVector2DPoints(unittest.TestCase):
+
+    def test_samplevector2d_points_invalid_points_type(self):
+         # invalid type
+        with self.assertRaises(ValueError, msg="Type error was not raised when a string was (invalidly) supplied for the range."):
+            samplevector2d_points(vfn2d, "blah")
+
+    def test_samplevector2d_points_invalid_points_shape(self):
+        with self.assertRaises(ValueError, msg="Type error was not raised when the points array was the wrong shape."):
+            samplevector2d_points(vfn2d, empty((3, 3)))
+
+    def test_samplevector2d_points_invalid_function_called(self):
+        # invalid function type
+        with self.assertRaises(TypeError, msg="Type error was not raised when a string was (invalidly) supplied for the function."):
+            samplevector2d_points("blah", empty(3, 2))
+
+    def test_samplevector2d_points_sample(self):
+        rx = [1.0, 1.5, 2.0]
+        ry = [2.0, 2.5, 3.0]
+        rpoints = empty((3, 2))
+        rpoints[:, 0] = rx
+        rpoints[:, 1] = ry
+        rs = empty((3, 3))
+        for i in range(3):
+            rs[i, 0] = rx[i] * rx[i] + 0.5 * ry[i]
+            rs[i, 1] = 2 * rs[i, 0]
+            rs[i, 2] = -rs[i, 0]
+
+
+        ts = samplevector2d_points(vfn2d, rpoints)
+
+        for i in range(3):
+            for j in range(3):
+                self.assertEqual(ts[i, j], rs[i, j], "Sample point [{}] is incorrect.".format((i, j)))
+
+
+class TestSampleVector2DGrid(unittest.TestCase):
+
+    def test_samplevector2d_grid_invalid_coords_type(self):
+        with self.assertRaises(ValueError, msg="Value error was not raised when the coordinate arrays were the wrong type"):
+            samplevector2d_grid(vfn2d, "blah", 10)
+
+    def test_samplevector2d_grid_invalid_coords_shape(self):
+        with self.assertRaises(ValueError, msg="Value error was not raised when the coordinate arrays were the wrong shape"):
+            samplevector2d_grid(vfn2d, empty((10, 2)), empty((2, 10)))
+
+    def test_samplevector2d_grid_invalid_function_called(self):
+        # invalid function type
+        with self.assertRaises(TypeError, msg="Type error was not raised when a string was (invalidly) supplied for the function."):
+            samplevector2d_grid("blah", empty(3), empty(2))
+
+    def test_samplevector2d_grid_sample(self):
+        rx = [1.0, 1.5, 2.0]
+        ry = [2.0, 2.5, 3.0]
+        rs = empty((3, 3, 3))
+        for i in range(3):
+            for j in range(3):
+                rs[i, j, 0] = rx[i] * rx[i] + 0.5 * ry[j]
+                rs[i, j, 1] = 2 * rs[i, j, 0]
+                rs[i, j, 2] = -rs[i, j, 0]
+
+        ts = samplevector2d_grid(vfn2d, rx, ry)
+
+        for i in range(3):
+            for j in range(3):
+                for k in range(3):
+                    self.assertEqual(ts[i, j, k], rs[i, j, k], "Sample point [{}] is incorrect.".format((i, j, k)))
+
+
+class TestSamplevector3DPoints(unittest.TestCase):
+
+    def test_samplevector3d_points_invalid_points_type(self):
+         # invalid type
+        with self.assertRaises(ValueError, msg="Type error was not raised when a string was (invalidly) supplied for the range."):
+            samplevector3d_points(vfn3d, "blah")
+
+    def test_samplevector3d_points_invalid_points_shape(self):
+        with self.assertRaises(ValueError, msg="Type error was not raised when the points array was the wrong shape."):
+            samplevector3d_points(vfn3d, empty((3, 2)))
+
+    def test_samplevector3d_points_invalid_function_called(self):
+        # invalid function type
+        with self.assertRaises(TypeError, msg="Type error was not raised when a string was (invalidly) supplied for the function."):
+            samplevector3d_points("blah", empty(3, 2))
+
+    def test_samplevector3d_points_sample(self):
+        rx = [1.0, 1.5, 2.0]
+        ry = [2.0, 2.5, 3.0]
+        rz = [3.0, 3.5, 4.0]
+        rpoints = empty((3, 3))
+        rpoints[:, 0] = rx
+        rpoints[:, 1] = ry
+        rpoints[:, 2] = rz
+        rs = empty((3, 3))
+        for i in range(3):
+            rs[i, 0] = rx[i] * rx[i] + 0.5 * ry[i] - rz[i]
+            rs[i, 1] = 2 * rs[i, 0]
+            rs[i, 2] = -rs[i, 0]
+
+
+        ts = samplevector3d_points(vfn3d, rpoints)
+
+        for i in range(3):
+            for j in range(3):
+                self.assertEqual(ts[i, j], rs[i, j], "Sample point [{}] is incorrect.".format((i, j)))
+
+
+class TestSamplevector3DGrid(unittest.TestCase):
+
+    def test_samplevector3d_grid_invalid_coords_type(self):
+        with self.assertRaises(ValueError, msg="Value error was not raised when the coordinate arrays were the wrong type"):
+            samplevector3d_grid(vfn3d, "blah", 10, {})
+
+    def test_samplevector3d_grid_invalid_coords_shape(self):
+        with self.assertRaises(ValueError, msg="Value error was not raised when the coordinate arrays were the wrong shape"):
+            samplevector3d_grid(vfn3d, empty((10, 2)), empty((2, 10)), empty((10)))
+
+    def test_samplevector3d_grid_invalid_function_called(self):
+        # invalid function type
+        with self.assertRaises(TypeError, msg="Type error was not raised when a string was (invalidly) supplied for the function."):
+            samplevector3d_grid("blah", empty(3), empty(2), empty(5))
+
+    def test_samplevector3d_grid_sample(self):
+        rx = [1.0, 1.5, 2.0]
+        ry = [2.0, 2.5, 3.0]
+        rz = [3.0, 3.5, 4.0]
+        rs = empty((3, 3, 3, 3))
+        for i in range(3):
+            for j in range(3):
+                for k in range(3):
+                    rs[i, j, k, 0] = rx[i] * rx[i] + 0.5 * ry[j] - rz[k]
+                    rs[i, j, k, 1] = 2 * rs[i, j, k, 0]
+                    rs[i, j, k, 2] = -rs[i, j, k, 0]
+
+        ts = samplevector3d_grid(vfn3d, rx, ry, rz)
+
+        for i in range(3):
+            for j in range(3):
+                for k in range(3):
+                    for h in range(3):
+                        self.assertEqual(ts[i, j, k, h], rs[i, j, k, h], "Sample point [{}] is incorrect.".format((i, j, k, h)))
