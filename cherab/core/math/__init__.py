@@ -17,6 +17,10 @@
 # under the Licence.
 
 from .samplers import sample1d, sample2d, sample3d, samplevector2d, samplevector3d
+from .samplers import sample1d_points, sample2d_points, sample3d_points
+from .samplers import sample2d_grid, sample3d_grid
+from .samplers import samplevector2d_points, samplevector3d_points
+from .samplers import samplevector2d_grid, samplevector3d_grid
 from .function import Function1D, Function2D, Function3D, VectorFunction2D, VectorFunction3D
 from .interpolators import Interpolate1DLinear, Interpolate1DCubic
 from .interpolators import Interpolate2DLinear, Interpolate2DCubic
