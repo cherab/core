@@ -18,9 +18,9 @@ method.
    >>> adas = OpenADAS()
    >>>
    >>> # request d-alpha instance of ImpactExcitationRate
-   >>> dalpha_excit = adas.impact_excitation_rate(deuterium, 0, (3, 2))
+   >>> dalpha_excit = adas.impact_excitation_pec(deuterium, 0, (3, 2))
    >>> # request d-alpha instance of RecombinationRate
-   >>> dalpha_recom = adas.recombination_rate(deuterium, 0, (3, 2))
+   >>> dalpha_recom = adas.recombination_pec(deuterium, 0, (3, 2))
    >>>
    >>> # settings for plot range
    >>> temp_low = 1
@@ -37,8 +37,8 @@ method.
    >>> plt.figure()
    >>> plt.loglog(electron_temperatures, dalpha_excit_pecs, '.-', label="D-alpha excitation")
    >>> plt.loglog(electron_temperatures, dalpha_recom_pecs, '.-', label="D-alpha recombination")
-   >>> plt.xlabel("Temperature (eV)")
-   >>> plt.ylabel("PECs (W m^-3)")
+   >>> plt.xlabel("Temperature [eV]")
+   >>> plt.ylabel("PECs [W m^3]")
    >>> plt.legend()
    >>> plt.show()
 
