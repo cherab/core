@@ -832,8 +832,6 @@ class TestInterpolators2D(unittest.TestCase):
                         v = self.derivative(self.interp_func, x, y, 1e-3, x_order, y_order)
                         r = self.interp_func.derivative(x, y, x_order, y_order)
 
-                        print(x, y, x_order, y_order, r, v, abs(r - v))
-
                         # skip small values that suffer from numerical sampling accuracy issues
                         if abs(v) < 1e-6 * 10**max(x_order, y_order):
                             continue
