@@ -50,7 +50,9 @@ def generate_derivative_operators(voxel_coords, grid_index_1d_to_2d_map,
     # assume voxels are ordered from top left to bottom right, in column-major
     # order with each successive voxel in a column below the previous one.
     # We should try to support voxel grids of different voxel sizes too.
-    dx, dy = np.diff(cell_centres[:2], axis=0).flatten()
+    cell_sizes = np.diff(cell_centres, axis=0)
+    dx = cell_sizes[0, :]
+    dy = cell_sizes[1, :]
     dx = np.min(abs(dx[dx != 0])).item()
     dy = -np.min(abs(dy[dy != 0])).item()
 
