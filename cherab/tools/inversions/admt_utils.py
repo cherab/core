@@ -234,4 +234,59 @@ def calculate_admt(voxel_radii, derivative_operators, psi_at_voxels, anisotropy=
     gradients in solution are 10 times smaller than perpendicular
     gradients.
     """
-    return
+    Dpar = np.full(psi_at_voxels.shape, 1)
+    Dperp = Dpar / anisotropy
+    Dx = derivative_operators["Dx"]
+    Dy = derivative_operators["Dy"]
+    Dxx = derivative_operators["Dxx"]
+    Dxy = derivative_operators["Dxy"]
+    Dyy = derivative_operators["Dyy"]
+    normalisation = (Dx @ psi_at_voxels)**2 + (Dy @ psi_at_voxels)**2
+    dpsidx = Dx @ psi_at_voxels
+    dpsidy = Dy @ psi_at_voxels
+    dpsidxdy = Dxy @ psi_at_voxels
+    dpsidxx = Dxx @ psi_at_voxels
+    dpsidyy = Dyy @ psi_at_voxels
+    ddperpdx = Dx @ Dperp
+    ddperpdy = Dy @ Dperp
+    ddpardx = Dx @ Dpar
+    ddpardy = Dy @ Dpar
+    cxx = (Dperp * (dpsidx)**2 + Dpar * (dpsidy)**2) / normalisation
+    cyy = (Dperp * (dpsidy)**2 + Dpar * (dpsidx)**2) / normalisation
+    cxy = (Dperp - Dpar) * (dpsidx * dpsidy) / normalisation
+    ddiff_term_cx = (
+        dpsidx**2 * ddperpdx + dpsidy**2 * ddpardx
+        + (dpsidx * dpsidy) * (ddperpdy - ddpardy)
+    )
+    dnorm_term_cx = -2 / normalisation * (
+        (Dperp * dpsidx**2 + Dpar * dpsidy**2) * (dpsidx * dpsidxx + dpsidy * dpsidyy)
+        + (Dperp - Dpar) * (dpsidx * dpsidy) * (dpsidx * dpsidxdy + dpsidy * dpsidyy)
+    )
+    ddiff_term_cy = (
+        dpsidy**2 * ddperpdy + dpsidx**2 * ddpardy
+        + (dpsidx * dpsidy) * (ddperpdx - ddpardx)
+    )
+    dnorm_term_cy = -2 / normalisation * (
+        (Dperp * dpsidy**2 + Dpar * dpsidx**2) * (dpsidx * dpsidxdy + dpsidy * dpsidyy)
+        + (Dperp - Dpar) * (dpsidy * dpsidy) * (dpsidx * dpsidxx + dpsidy * dpsidxdy)
+    )
+    toroidal_term_cx = cxx / voxel_radii * normalisation
+    toroidal_term_cy = cxy / voxel_radii * normalisation
+    cx = (
+        2 * Dperp * dpsidxx * dpsidx + 2 * Dpar * dpsidxdy * dpsidy
+        + (Dperp - Dpar) * (dpsidxdy * dpsidy + dpsidyy * dpsidx)
+        + ddiff_term_cx + dnorm_term_cx + toroidal_term_cx
+    ) / normalisation
+    cy = (
+        2 * Dperp * dpsidyy * dpsidy
+        + 2 * Dpar * dpsidxdy * dpsidx
+        + (Dperp - Dpar) * (dpsidxdy * dpsidx + dpsidxx * dpsidy)
+        + ddiff_term_cy + dnorm_term_cy + toroidal_term_cy
+    ) / normalisation
+    cx = np.diag(cx)
+    cy = np.diag(cy)
+    cxx = np.diag(cxx)
+    cyy = np.diag(cyy)
+    cxy = np.diag(cxy)
+    admt_operator = cx @ Dx + cy @ Dy + cxx @ Dxx + 2 * cxy @ Dxy + cyy @ Dyy
+    return admt_operator
