@@ -72,10 +72,6 @@ cdef class TotalRadiatedPower(PlasmaModel):
         for i in range(spectrum.bins):
             spectrum.samples_mv[i] += plt_radiance + prb_radiance
 
-        if point.x == -0.67199999999999993:
-            print('ne - {:.4G}'.format(ne), 'ni - {:.4G}'.format(ni), 'ni_upper - {:.4G}'.format(ni_upper))
-            print('plt_c - {:.4G}'.format(self._plt_rate.evaluate(ne, te)), 'prb_c - {:.4G}'.format(self._prb_rate.evaluate(ne, te)))
-
         return spectrum
 
     cdef int _populate_cache(self) except -1:
