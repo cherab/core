@@ -26,9 +26,10 @@ from cherab.core.species cimport Species
 cdef class TotalRadiatedPower(PlasmaModel):
 
     cdef:
+        bint _cache_loaded
         Element _element
         int _charge
-        Species _target_species
+        Species _line_rad_species, _recom_species
         LineRadiationPower _plt_rate
         ContinuumPower _prb_rate
 
