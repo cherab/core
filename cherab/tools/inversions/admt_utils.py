@@ -66,7 +66,7 @@ def generate_derivative_operators(voxel_coords, grid_index_1d_to_2d_map,
         ix, iy = grid_index_1d_to_2d_map[ith_cell]
 
         try:
-            n_left = grid_index_2d_to_1d_map[ix - 1, iy]  # neighbour 1, left of n0
+            n_left = grid_index_2d_to_1d_map[ix - 1, iy]  # left of n0
         except KeyError:
             at_left = True
         else:
@@ -74,15 +74,15 @@ def generate_derivative_operators(voxel_coords, grid_index_1d_to_2d_map,
             Dxx[ith_cell, n_left] = 1
 
         try:
-            n_below_left = grid_index_2d_to_1d_map[ix - 1, iy + 1]  # neighbour 2, below left of n0
+            n_below_left = grid_index_2d_to_1d_map[ix - 1, iy + 1]  # below left of n0
         except KeyError:
-            pass
             # KeyError does not necessarily mean bottom AND left
+            pass
         else:
             Dxy[ith_cell, n_below_left] = 1 / 4
 
         try:
-            n_below = grid_index_2d_to_1d_map[ix, iy + 1]  # neighbour 3, below n0
+            n_below = grid_index_2d_to_1d_map[ix, iy + 1]
         except KeyError:
             at_bottom = True
         else:
@@ -90,14 +90,14 @@ def generate_derivative_operators(voxel_coords, grid_index_1d_to_2d_map,
             Dyy[ith_cell, n_below] = 1
 
         try:
-            n_below_right = grid_index_2d_to_1d_map[ix + 1, iy + 1]  # neighbour 4, below right of n0
+            n_below_right = grid_index_2d_to_1d_map[ix + 1, iy + 1]
         except KeyError:
             pass
         else:
             Dxy[ith_cell, n_below_right] = -1 / 4
 
         try:
-            n_right = grid_index_2d_to_1d_map[ix + 1, iy]  # neighbour 5, right of n0
+            n_right = grid_index_2d_to_1d_map[ix + 1, iy]
         except KeyError:
             at_right = True
         else:
@@ -105,14 +105,14 @@ def generate_derivative_operators(voxel_coords, grid_index_1d_to_2d_map,
             Dxx[ith_cell, n_right] = 1
 
         try:
-            n_above_right = grid_index_2d_to_1d_map[ix + 1, iy - 1]  # neighbour 6, above right of n0
+            n_above_right = grid_index_2d_to_1d_map[ix + 1, iy - 1]
         except KeyError:
             pass
         else:
             Dxy[ith_cell, n_above_right] = 1 / 4
 
         try:
-            n_above = grid_index_2d_to_1d_map[ix, iy - 1]  # neighbour 7, above n0
+            n_above = grid_index_2d_to_1d_map[ix, iy - 1]
         except KeyError:
             at_top = True
         else:
@@ -120,7 +120,7 @@ def generate_derivative_operators(voxel_coords, grid_index_1d_to_2d_map,
             Dyy[ith_cell, n_above] = 1
 
         try:
-            n_above_left = grid_index_2d_to_1d_map[ix - 1, iy - 1]  # neighbour 8, above left of n0
+            n_above_left = grid_index_2d_to_1d_map[ix - 1, iy - 1]
         except KeyError:
             pass
         else:
