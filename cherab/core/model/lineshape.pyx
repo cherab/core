@@ -276,7 +276,7 @@ cdef class StarkBroadenedLine(LineShapeModel):
             raise ValueError('Stark broadening coefficients only available for hydrogenic species.')
         try:
             # Fitted Stark Constants
-            aij, bij, cij = self.STARK_MODEL_COEFFICIENTS[line.transition]
+            cij, aij, bij = self.STARK_MODEL_COEFFICIENTS[line.transition]
             self._aij = aij
             self._bij = bij
             self._cij = cij
