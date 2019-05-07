@@ -58,10 +58,11 @@ def generate_derivative_operators(voxel_coords, grid_index_1d_to_2d_map,
     # order with each successive voxel in a column below the previous one.
     # We should try to support voxel grids of different voxel sizes too.
     cell_sizes = np.diff(cell_centres, axis=0)
-    dx = cell_sizes[0, :]
-    dy = cell_sizes[1, :]
+    dx = cell_sizes[:, 0]
+    dy = cell_sizes[:, 1]
+    # dx and dy are distances in Ingesson's report, so should be positive
     dx = np.min(abs(dx[dx != 0])).item()
-    dy = -np.min(abs(dy[dy != 0])).item()
+    dy = np.min(abs(dy[dy != 0])).item()
 
     # Note that iy increases as y decreases (cells go from top to bottom),
     # which is the same as Ingesson's notation in equations 37-41
