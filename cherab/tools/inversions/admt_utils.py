@@ -7,16 +7,17 @@ for details.
 """
 __author__ = "Jack Lovell, Oak Ridge National Laboratory"
 
+from collections import Mapping
 import numpy as np
 
 
-def generate_derivative_operators(voxel_coords, grid_index_1d_to_2d_map,
+def generate_derivative_operators(voxel_vertices, grid_index_1d_to_2d_map,
                                   grid_index_2d_to_1d_map):
     r"""
     Generate the first and second derivative operators for a regular grid.
 
-    :param ndarray voxel_coords: an Nx2 array of coordinates of the
-    centre of each voxel, (R, Z)
+    :param ndarray voxel_vertices: an Nx4x2 array of coordinates of the
+    vertices of each voxel, (R, Z)
     :param dict grid_1d_to_2d_map: a mapping from the 1D array of
     voxels in the grid to a 2D array of voxels if they were arranged
     spatially.
@@ -44,8 +45,17 @@ def generate_derivative_operators(voxel_coords, grid_index_1d_to_2d_map,
 
     etc.
     """
-    num_cells = len(voxel_coords)
-    cell_centres = np.mean(voxel_coords, axis=1)
+    # Input argument validation: assume rectilinear voxels
+    voxel_vertices = np.asarray(voxel_vertices)
+    if voxel_vertices.ndim != 3 or voxel_vertices.shape[-2] != 4 or voxel_vertices.shape[-1] != 2:
+        raise TypeError("voxel_vertices must be an NxMx2 array of vertices")
+    if not isinstance(grid_index_1d_to_2d_map, Mapping):
+        raise TypeError("grid_index_1d_to_2d_map should be dict-like")
+    if not isinstance(grid_index_2d_to_1d_map, Mapping):
+        raise TypeError("grid_index_2d_to_1d_map should be dict-like")
+
+    num_cells = voxel_vertices.shape[0]
+    cell_centres = np.mean(voxel_vertices, axis=1)
     # Individual derivative operators
     Dx = np.zeros((num_cells, num_cells))
     Dy = np.zeros((num_cells, num_cells))

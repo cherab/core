@@ -198,6 +198,24 @@ class TestADMT(unittest.TestCase):
                                     / (4 * dxdy))
                 self.assertEqual(eq_deriv, deriv, msg="Failed for ({}, {})".format(xi, yj))
 
+    def test_invalid_coords(self):
+        """Test for invalid voxel_coords input"""
+        with self.assertRaises(TypeError):
+            generate_derivative_operators(self.VOXEL_COORDS, self.GRID_1D_TO_2D_MAP,
+                                          self.GRID_2D_TO_1D_MAP)
+
+    def test_invalid_1d_2d_mapping(self):
+        """Test for invalid 1D->2D input"""
+        with self.assertRaises(TypeError):
+            generate_derivative_operators(self.VOXEL_VERTICES, self.VOXEL_COORDS,
+                                          self.GRID_2D_TO_1D_MAP)
+
+    def test_invalid_2d_1d_mapping(self):
+        """Test for invalid 2D->1D input"""
+        with self.assertRaises(TypeError):
+            generate_derivative_operators(self.VOXEL_VERTICES, self.GRID_2D_TO_1D_MAP,
+                                          self.TEST_DATA_2D)
+
     def test_objective(self):
         pass
 
