@@ -18,12 +18,15 @@
 
 import unittest
 import numpy as np
-import numpy.testing as npt
 
 from cherab.tools.inversions import generate_derivative_operators
 
 class TestADMT(unittest.TestCase):
-    """Tests for ADMT utilities"""
+    """Tests for ADMT utilities
+
+    The derivative operators are tested to ensure that the results match
+    equations 37-41 in JET-R(99)08.
+    """
 
     NROW = 3
     NCOL = 3
@@ -86,105 +89,117 @@ class TestADMT(unittest.TestCase):
         VOXEL_VERTICES, GRID_1D_TO_2D_MAP, GRID_2D_TO_1D_MAP
     )
 
-    # TODO: generalise tests to more than 3x3 grid (use -1 for X, Y indices)
-
-    # Check that equations 38-41 in JET-R(99)08 are satisfied.
     def test_dx(self):
         """D/Dx (Equations 37)"""
         DtestDx = self.DERIVATIVE_OPERATORS["Dx"] @ self.VOXEL_TEST_DATA
         data = self.TEST_DATA_2D
-        for i in range(self.NROW):  # Test each row of the grid
-            i0 = self.GRID_2D_TO_1D_MAP[(0, i)]
-            i1 = self.GRID_2D_TO_1D_MAP[(1, i)]
-            i2 = self.GRID_2D_TO_1D_MAP[(2, i)]
-            yX = (data[2, i] - data[1, i]) / self.DX
-            y1 = (data[1, i] - data[0, i]) / self.DX
-            yx = (data[2, i] - data[0, i]) / (2 * self.DX)
-            npt.assert_equal(DtestDx[[i0, i1, i2]], (y1, yx, yX))
+        for xi in range(self.NCOL):
+            for yj in range(self.NROW):
+                deriv = DtestDx[self.GRID_2D_TO_1D_MAP[(xi, yj)]]
+                if xi == 0:  # Eq. 37b
+                    eq_deriv = (data[1, yj] - data[0, yj]) / self.DX
+                elif xi == self.NCOL - 1:  # Eq. 37c
+                    eq_deriv = (data[xi, yj] - data[xi - 1, yj]) / self.DX
+                else:  # Eq. 37a
+                    eq_deriv = (data[xi + 1, yj] - data[xi - 1, yj]) / (2 * self.DX)
+                self.assertEqual(eq_deriv, deriv, msg="Failed for ({}, {})".format(xi, yj))
 
     def test_dy(self):
         """D/Dy (Equations 38)"""
         DtestDy = self.DERIVATIVE_OPERATORS["Dy"] @ self.VOXEL_TEST_DATA
         data = self.TEST_DATA_2D
-        for i in range(self.NCOL):  # Test each column of the grid
-            i0 = self.GRID_2D_TO_1D_MAP[(i, 0)]
-            i1 = self.GRID_2D_TO_1D_MAP[(i, 1)]
-            i2 = self.GRID_2D_TO_1D_MAP[(i, 2)]
-            yx = (data[i, 0] - data[i, 2]) / (2 * self.DY)
-            onex = (data[i, 0] - data[i, 1]) / self.DY
-            Yx = (data[i, 1] - data[i, 2]) / self.DY
-            npt.assert_equal(DtestDy[[i0, i1, i2]], (onex, yx, Yx))
+        for xi in range(self.NCOL):
+            for yj in range(self.NROW):
+                deriv = DtestDy[self.GRID_2D_TO_1D_MAP[(xi, yj)]]
+                if yj == 0:  # Eq. 38b
+                    eq_deriv = (data[xi, 0] - data[xi, 1]) / self.DY
+                elif yj == self.NCOL - 1:  # Eq. 38c
+                    eq_deriv = (data[xi, yj - 1] - data[xi, yj]) / self.DY
+                else:  # Eq. 38a
+                    eq_deriv = (data[xi, yj - 1] - data[xi, yj + 1]) / (2 * self.DY)
+                self.assertEqual(eq_deriv, deriv, msg="Failed for ({}, {})".format(xi, yj))
 
     def test_dxx(self):
         """D/Dx2 (Equations 39)"""
         DtestDxx = self.DERIVATIVE_OPERATORS["Dxx"] @ self.VOXEL_TEST_DATA
         data = self.TEST_DATA_2D
-        for i in range(self.NROW):  # Test each row of the grid
-            i0 = self.GRID_2D_TO_1D_MAP[(0, i)]
-            i1 = self.GRID_2D_TO_1D_MAP[(1, i)]
-            i2 = self.GRID_2D_TO_1D_MAP[(2, i)]
-            yx = (data[2, i] + data[0, i] - 2 * data[1, i]) / self.DX**2
-            y1 = (data[1, i] - data[0, i]) / self.DX**2
-            yX = (data[2, i] - data[1, i]) / self.DX**2
-            npt.assert_equal(DtestDxx[[i0, i1, i2]], (y1, yx, yX))
+        for xi in range(self.NCOL):
+            for yj in range(self.NROW):
+                deriv = DtestDxx[self.GRID_2D_TO_1D_MAP[(xi, yj)]]
+                if xi == 0:  # Eq. 39b
+                    eq_deriv = (data[1, yj] - data[0, yj]) / self.DX**2
+                elif xi == self.NCOL - 1:  # Eq. 39c
+                    eq_deriv = (data[xi, yj] - data[xi - 1, yj]) / self.DX**2
+                else:  # Eq. 39a
+                    eq_deriv = (data[xi + 1, yj] + data[xi - 1, yj] - 2 * data[xi, yj]) / self.DX**2
+                self.assertEqual(eq_deriv, deriv, msg="Failed for ({}, {})".format(xi, yj))
 
     def test_dyy(self):
         """D/Dy2 (Equations 40)"""
         DtestDyy = self.DERIVATIVE_OPERATORS["Dyy"] @ self.VOXEL_TEST_DATA
         data = self.TEST_DATA_2D
-        for i in range(self.NCOL):  # Test each column of the grid
-            i0 = self.GRID_2D_TO_1D_MAP[(i, 0)]
-            i1 = self.GRID_2D_TO_1D_MAP[(i, 1)]
-            i2 = self.GRID_2D_TO_1D_MAP[(i, 2)]
-            yx = (data[i, 0] + data[i, 2] - 2 * data[i, 1]) / self.DY**2
-            onex = (data[i, 0] - data[i, 1]) / self.DY**2
-            Yx = (data[i, 1] - data[i, 2]) / self.DY**2
-            npt.assert_equal(DtestDyy[[i0, i1, i2]], (onex, yx, Yx))
+        for xi in range(self.NCOL):
+            for yj in range(self.NROW):
+                deriv = DtestDyy[self.GRID_2D_TO_1D_MAP[(xi, yj)]]
+                if yj == 0:  # Eq. 40b
+                    eq_deriv = (data[xi, 0] - data[xi, 1]) / self.DY**2
+                elif yj == self.NROW - 1:  # Eq. 40c
+                    eq_deriv = (data[xi, yj - 1] - data[xi, yj]) / self.DY**2
+                else:  # Eq. 40a
+                    eq_deriv = (data[xi, yj - 1] + data[xi, yj + 1] - 2 * data[xi, yj]) / self.DY**2
+                self.assertEqual(eq_deriv, deriv, msg="Failed for ({}, {})".format(xi, yj))
 
-    def test_dxy(self):  # pylint: disable=too-many-locals
+    def test_dyx(self):
         """D/DxDy (Equations 41)"""
         DtestDxy = self.DERIVATIVE_OPERATORS["Dxy"] @ self.VOXEL_TEST_DATA
         data = self.TEST_DATA_2D
         dxdy = self.DX * self.DY
-        # Test corners of the grid (41f to 41i)
-        i00 = self.GRID_2D_TO_1D_MAP[(0, 0)]
-        iX0 = self.GRID_2D_TO_1D_MAP[(2, 0)]
-        i0Y = self.GRID_2D_TO_1D_MAP[(0, 2)]
-        iXY = self.GRID_2D_TO_1D_MAP[(2, 2)]
-        oneone = (data[1, 0] + data[0, 1] - data[0, 0] - data[1, 1]) / dxdy
-        oneX = (data[2, 0] + data[1, 1] - data[1, 0] - data[2, 1]) / dxdy
-        Y1 = (data[1, 1] + data[0, 2] - data[0, 1] - data[1, 2]) / dxdy
-        YX = (data[2, 1] + data[1, 2] - data[2, 2] - data[1, 1]) / dxdy
-        npt.assert_equal(DtestDxy[[i00, iX0, i0Y, iXY]],
-                         (oneone, oneX, Y1, YX))
-        # Test edges (41b-41e)
-        for i in range(3):
-            i1x = self.GRID_2D_TO_1D_MAP[(i, 0)]
-            iYx = self.GRID_2D_TO_1D_MAP[(i, 2)]
-            iy1 = self.GRID_2D_TO_1D_MAP[(0, i)]
-            iyX = self.GRID_2D_TO_1D_MAP[(2, i)]
-            if 0 < i < 2:
-                onex = ((data[i + 1, 0] + data[i - 1, 1] - data[i - 1, 0] - data[i + 1, 1])
-                        / (2 * dxdy))
-                Yx = ((data[i + 1, -2] + data[i - 1, -1] - data[i - 1, -2] - data[i + 1, -1])
-                      / (2 * dxdy))
-                y1 = ((data[1, i - 1] + data[0, i + 1] - data[0, i - 1] - data[1, i + 1])
-                      / (2 * dxdy))
-                yX = ((data[-1, i - 1] + data[-2, i + 1] - data[-2, i - 1] - data[-1, i + 1])
-                      / (2 * dxdy))
-                np.testing.assert_equal(DtestDxy[[i1x, iYx, iy1, iyX]],
-                                        (onex, Yx, y1, yX))
-        # Test inner (41a)
-        for i in range(3):
-            for j in range(3):
-                if 0 < i < 2:
-                    if 0 < j < 2:
-                        ixy = self.GRID_2D_TO_1D_MAP[(i, j)]
-                        yx = ((data[i + 1, j - 1] + data[i - 1, j + 1]
-                               - data[i - 1, j - 1] - data[i + 1, j + 1])
-                              / (4 * dxdy))
-                        self.assertEqual(DtestDxy[ixy], yx)
-
+        for xi in range(self.NCOL):
+            for yj in range(self.NROW):
+                deriv = DtestDxy[self.GRID_2D_TO_1D_MAP[(xi, yj)]]
+                if xi == 0:
+                    if yj == 0:  # Eq. 41f
+                        eq_deriv = ((data[1, 0] + data[0, 1]
+                                     - data[0, 0] - data[1, 1])
+                                    / dxdy)
+                    elif yj == self.NROW - 1:  # Eq. 41h
+                        eq_deriv = ((data[1, yj - 1] + data[0, yj]
+                                     - data[0, yj - 1] - data[1, yj])
+                                    / dxdy)
+                    else:  # Eq. 41d
+                        eq_deriv = ((data[1, yj - 1] + data[0, yj + 1]
+                                     - data[0, yj - 1] - data[1, yj + 1])
+                                    / (2 * dxdy))
+                elif xi == self.NCOL - 1:
+                    if yj == 0:  # Eq. 41g
+                        eq_deriv = ((data[xi, 0] + data[xi - 1, 1]
+                                     - data[xi - 1, 0] - data[xi, 1])
+                                    / dxdy)
+                    elif yj == self.NROW - 1:  # Eq. 41i
+                        eq_deriv = ((data[xi, yj - 1] + data[xi - 1, yj]
+                                     - data[xi, yj] - data[xi - 1, yj - 1])
+                                    / dxdy)
+                    else:  # Eq. 41e
+                        eq_deriv = ((data[xi, yj - 1] + data[xi - 1, yj + 1]
+                                     - data[xi - 1, yj - 1] - data[xi, yj + 1])
+                                    / (2 * dxdy))
+                else:
+                    if yj == 0: # Eq. 41b
+                        eq_deriv = ((data[xi + 1, 0] + data[xi - 1, 1]
+                                     - data[xi - 1, 0] - data[xi + 1, 1])
+                                    / (2 * dxdy))
+                    elif yj == self.NROW - 1:  # Eq. 41c
+                        eq_deriv = ((data[xi + 1, yj - 1] + data[xi - 1, yj]
+                                     - data[xi - 1, yj - 1] - data[xi + 1, yj])
+                                    / (2 * dxdy))
+                    else:  # Eq. 41a
+                        eq_deriv = ((data[xi + 1, yj - 1] + data[xi - 1, yj + 1]
+                                     - data[xi - 1, yj - 1] - data[xi + 1, yj + 1])
+                                    / (4 * dxdy))
+                self.assertEqual(eq_deriv, deriv, msg="Failed for ({}, {})".format(xi, yj))
 
     def test_objective(self):
         pass
+
+if __name__ == "__main__":
+    unittest.main()
