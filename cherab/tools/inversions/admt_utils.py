@@ -5,6 +5,8 @@ This is based on work by L. C. Ingesson: see JET-R(99)08 available at
 http://www.euro-fusionscipub.org/wp-content/uploads/2014/11/JETR99008.pdf
 for details.
 """
+__author__ = "Jack Lovell, Oak Ridge National Laboratory"
+
 import numpy as np
 
 
@@ -15,7 +17,7 @@ def generate_derivative_operators(voxel_coords, grid_index_1d_to_2d_map,
 
     :param ndarray voxel_coords: an Nx2 array of coordinates of the
     centre of each voxel, (R, Z)
-    :param dict grid_flat_to_2d_map: a mapping from the 1D array of
+    :param dict grid_1d_to_2d_map: a mapping from the 1D array of
     voxels in the grid to a 2D array of voxels if they were arranged
     spatially.
     :param dict grid_2d_to_1d_map: the inverse mapping from a 2D
@@ -25,8 +27,13 @@ def generate_derivative_operators(voxel_coords, grid_index_1d_to_2d_map,
     operators: Dij for i, y ∊ (x, y) and Di for i ∊ (x, y).
 
     This function assumes that all voxels are rectilinear, with their
-    axes aligned to the coordinate axes. If this is not the case, the
-    results will be nonsense.
+    axes aligned to the coordinate axes. Additionally, all voxels are
+    assumed to have the same width and height. If this is not the case,
+    the results will be nonsense.
+
+    The mappings between the 1D list of voxel coordinate and their
+    order in a 2D grid assume that the 2D grid would by indexed by
+    (x, y), with the y coordinate varying most quickly.
 
     The return dict contains all the first and second derivative
     operators:
