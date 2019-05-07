@@ -93,7 +93,7 @@ class TestADMT(unittest.TestCase):
         """D/Dx (Equations 37)"""
         DtestDx = self.DERIVATIVE_OPERATORS["Dx"] @ self.VOXEL_TEST_DATA
         data = self.TEST_DATA_2D
-        for i in range(NROW):  # Test each row of the grid
+        for i in range(self.NROW):  # Test each row of the grid
             i0 = self.GRID_2D_TO_1D_MAP[(0, i)]
             i1 = self.GRID_2D_TO_1D_MAP[(1, i)]
             i2 = self.GRID_2D_TO_1D_MAP[(2, i)]
@@ -106,7 +106,7 @@ class TestADMT(unittest.TestCase):
         """D/Dy (Equations 38)"""
         DtestDy = self.DERIVATIVE_OPERATORS["Dy"] @ self.VOXEL_TEST_DATA
         data = self.TEST_DATA_2D
-        for i in range(NCOL):  # Test each column of the grid
+        for i in range(self.NCOL):  # Test each column of the grid
             i0 = self.GRID_2D_TO_1D_MAP[(i, 0)]
             i1 = self.GRID_2D_TO_1D_MAP[(i, 1)]
             i2 = self.GRID_2D_TO_1D_MAP[(i, 2)]
@@ -119,7 +119,7 @@ class TestADMT(unittest.TestCase):
         """D/Dx2 (Equations 39)"""
         DtestDxx = self.DERIVATIVE_OPERATORS["Dxx"] @ self.VOXEL_TEST_DATA
         data = self.TEST_DATA_2D
-        for i in range(NROW):  # Test each row of the grid
+        for i in range(self.NROW):  # Test each row of the grid
             i0 = self.GRID_2D_TO_1D_MAP[(0, i)]
             i1 = self.GRID_2D_TO_1D_MAP[(1, i)]
             i2 = self.GRID_2D_TO_1D_MAP[(2, i)]
@@ -132,7 +132,7 @@ class TestADMT(unittest.TestCase):
         """D/Dy2 (Equations 40)"""
         DtestDyy = self.DERIVATIVE_OPERATORS["Dyy"] @ self.VOXEL_TEST_DATA
         data = self.TEST_DATA_2D
-        for i in range(NCOL):  # Test each column of the grid
+        for i in range(self.NCOL):  # Test each column of the grid
             i0 = self.GRID_2D_TO_1D_MAP[(i, 0)]
             i1 = self.GRID_2D_TO_1D_MAP[(i, 1)]
             i2 = self.GRID_2D_TO_1D_MAP[(i, 2)]
