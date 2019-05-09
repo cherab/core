@@ -234,8 +234,64 @@ class TestADMT(unittest.TestCase):
             generate_derivative_operators(self.VOXEL_VERTICES, self.GRID_2D_TO_1D_MAP,
                                           self.TEST_DATA_2D)
 
-    def test_objective(self):
-        pass
+    def test_objective(self, debug=False):
+        """Test that the objective function looks sensible."""
+        # Make a test equilibrium and an emission vector which corresponds
+        # to a delta function. Check that when the objective operator is
+        # applied to the delta function profile, it turns it into a Gaussian
+        # blob aligned with the field, and with a parallel and perpendicular
+        # width ratio equal to that specified by the anisotropy parameter.
+
+        # Create the 2D test data
+        theta = np.pi / 2  # Vertical field
+        theta = 0  # Horizontal field
+        # theta = np.pi / 4  # Diagonal field
+        points = self.VOXELS_2D.reshape((-1, 2))
+        test_field = sample2d_points(
+            lambda x, y: x * np.sin(theta) + y * np.cos(theta),
+            points
+        )
+        test_field_2d = test_field.reshape(self.VOXELS_2D[:, :, 0].shape)
+        impulse_2d = np.zeros_like(self.TEST_DATA_2D)
+        impulse_2d[self.NCOL // 2, self.NROW // 2] = 1
+
+        # Wrap to 1D grid data
+        # test_field = np.empty_like(self.VOXEL_TEST_DATA)
+        impulse = np.empty_like(self.VOXEL_TEST_DATA)
+        for i in range(test_field.shape[0]):
+            index_2d = self.GRID_1D_TO_2D_MAP[i]
+            # test_field[i] = test_field_2d[index_2d]
+            impulse[i] = impulse_2d[index_2d]
+
+        # Apply the objective function to the impulse
+        derivative_operators = generate_derivative_operators(
+            self.VOXEL_VERTICES, self.GRID_1D_TO_2D_MAP, self.GRID_2D_TO_1D_MAP
+        )
+        voxel_radii = np.asarray(self.VOXEL_COORDS)[:, 0]
+        admt_operator = calculate_admt(
+            voxel_radii, derivative_operators, test_field,
+            self.DX, self.DY, anisotropy=10
+        )
+        kernel = admt_operator @ impulse
+        if debug:
+            print()
+            print(impulse_2d.T)  # Display as x vs y
+            print(test_field_2d.T)
+            kernel_2d = np.zeros_like(impulse_2d)
+            for i, (x, y) in self.GRID_1D_TO_2D_MAP.items():
+                kernel_2d[x, y] = kernel[i]
+            print(kernel_2d.T)
+            print(kernel.sum())  # Should be zero for large grids
+            plot_kernel(kernel, self.VOXEL_VERTICES)
+
+
+def plot_kernel(kernel, voxel_vertices):
+    """Plot a 1D grid function as a 2D image"""
+    voxels = [[Point2D(p[0], p[1]) for p in voxel] for voxel in voxel_vertices]
+    grid = ToroidalVoxelGrid(voxels)
+    grid.plot(voxel_values=abs(kernel))
+    plt.show()
+
 
 if __name__ == "__main__":
     unittest.main()
