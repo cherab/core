@@ -18,8 +18,12 @@
 
 import unittest
 import numpy as np
+import matplotlib.pyplot as plt
 
-from cherab.tools.inversions import generate_derivative_operators
+from raysect.core import Point2D
+from cherab.core.math.samplers import sample2d_points
+from cherab.tools.inversions import ToroidalVoxelGrid
+from cherab.tools.inversions import generate_derivative_operators, calculate_admt
 
 class TestADMT(unittest.TestCase):
     """Tests for ADMT utilities
@@ -27,11 +31,6 @@ class TestADMT(unittest.TestCase):
     The derivative operators are tested to ensure that the results match
     equations 37-41 in JET-R(99)08.
     """
-
-    NROW = 3
-    NCOL = 3
-    DX = 2
-    DY = 1
 
     # Voxels are ordered in successive descending columns
     VOXEL_COORDS = [
@@ -45,6 +44,24 @@ class TestADMT(unittest.TestCase):
         [6, 3],
         [6, 2],
     ]
+
+    NROW = 3
+    NCOL = 3
+    DX = 2
+    DY = 1
+    # Option to generate voxels programatically if desired
+    # VOXEL_COORDS = []
+    # GRID_1D_TO_2D_MAP = {}
+    # GRID_2D_TO_1D_MAP = {}
+    # i = 0
+    # for xi in range(NCOL):
+    #     for yj in range(NROW):
+    #         VOXEL_COORDS.append([xi * DX + 1, (NROW - yj) * DY + 1])
+    #         GRID_1D_TO_2D_MAP[i] = (xi, yj)
+    #         GRID_2D_TO_1D_MAP[(xi, yj)] = i
+    #         i += 1
+
+    VOXEL_COORDS = np.asarray(VOXEL_COORDS)
 
     VOXEL_VERTICES = []
     for (h, k) in VOXEL_COORDS:
@@ -78,7 +95,8 @@ class TestADMT(unittest.TestCase):
         (2, 2): 8,
     }
 
-    VOXEL_TEST_DATA = np.arange(10, 19)**3  # Varying second derivatives
+    # Choose test data where the second derivative varies
+    VOXEL_TEST_DATA = np.arange(VOXEL_COORDS.shape[0], dtype=np.float64)**3 + 10
 
     # Voxels are ordered in descending columns, as per Ingesson
     VOXELS_2D = np.reshape(VOXEL_COORDS, (NROW, NCOL, 2))
