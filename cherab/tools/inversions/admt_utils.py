@@ -233,16 +233,18 @@ def generate_derivative_operators(voxel_vertices, grid_index_1d_to_2d_map,
     return operators
 
 
-def calculate_admt(voxel_radii, derivative_operators, psi_at_voxels, anisotropy=10):
+def calculate_admt(voxel_radii, derivative_operators, psi_at_voxels, dx, dy, anisotropy=10):
     r"""
     Calculate the ADMT regularisation operator.
 
     :param ndarray voxel_radii: a 1D array of the radius at the centre
     of each voxel in the grid
     :param tuple derivative_operators: a named tuple with the derivative
-    operators for the grid, as returned by :func:`generate_derivative_operators`
+    operators for the grid, as returned by :func:generate_derivative_operators
     :param ndarray psi_at_voxels: the magnetic flux at the centre of
     each voxel in the grid
+    :param float dx: the width of each voxel.
+    :param float dy: the height of each voxel
     :param float anisotropy: the ratio of the smoothing in the parallel
     and perpendicular directions.
 
@@ -253,6 +255,20 @@ def calculate_admt(voxel_radii, derivative_operators, psi_at_voxels, anisotropy=
     magnetic field. For example, `anisotropy=10` implies parallel
     gradients in solution are 10 times smaller than perpendicular
     gradients.
+
+    This function assumes that all voxels are rectilinear, with their
+    axes aligned to the coordinate axes. Additionally, all voxels are
+    assumed to have the same width and height. If this is not the case,
+    the results will be nonsense.
+
+    N.B. the expression for the ADMT operator is taken from equation
+    56 of Ingesson's report, where the ADMT operator L satisfies:
+
+    .. math::
+        \Omega = L^T \cdot L
+
+    This means it is suitable for use in Cherab's inversion methods,
+    such as NNLS and SART.
     """
     Dpar = np.full(psi_at_voxels.shape, 1)
     Dperp = Dpar / anisotropy
@@ -309,4 +325,5 @@ def calculate_admt(voxel_radii, derivative_operators, psi_at_voxels, anisotropy=
     cyy = np.diag(cyy)
     cxy = np.diag(cxy)
     admt_operator = cx @ Dx + cy @ Dy + cxx @ Dxx + 2 * cxy @ Dxy + cyy @ Dyy
+    admt_operator *= np.sqrt(dx * dy)
     return admt_operator
