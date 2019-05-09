@@ -304,12 +304,13 @@ def calculate_admt(voxel_radii, derivative_operators, psi_at_voxels, dx, dy, ani
     )
     dnorm_term_cy = -2 / normalisation * (
         (Dperp * dpsidy**2 + Dpar * dpsidx**2) * (dpsidx * dpsidxdy + dpsidy * dpsidyy)
-        + (Dperp - Dpar) * (dpsidy * dpsidy) * (dpsidx * dpsidxx + dpsidy * dpsidxdy)
+        + (Dperp - Dpar) * (dpsidx * dpsidy) * (dpsidx * dpsidxx + dpsidy * dpsidxdy)
     )
     toroidal_term_cx = cxx / voxel_radii * normalisation
     toroidal_term_cy = cxy / voxel_radii * normalisation
     cx = (
-        2 * Dperp * dpsidxx * dpsidx + 2 * Dpar * dpsidxdy * dpsidy
+        2 * Dperp * dpsidxx * dpsidx
+        + 2 * Dpar * dpsidxdy * dpsidy
         + (Dperp - Dpar) * (dpsidxdy * dpsidy + dpsidyy * dpsidx)
         + ddiff_term_cx + dnorm_term_cx + toroidal_term_cx
     ) / normalisation
