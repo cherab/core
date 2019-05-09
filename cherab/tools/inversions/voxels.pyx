@@ -27,7 +27,7 @@ from matplotlib.collections import PatchCollection
 from raysect.core cimport (Node, Point2D, Vector2D, Point3D, Vector3D,
                            rotate_z, AffineMatrix3D, new_point3d)
 from raysect.core.math cimport triangulate2d, translate, rotate_basis
-from raysect.core.math.function cimport Function3D
+from raysect.core.math.function cimport autowrap_function3d
 from raysect.core.math.cython.utility cimport winding2d, find_index
 from raysect.core.math.random cimport uniform, point_triangle
 from raysect.primitive import Mesh, Cylinder, Cone, Intersect, Subtract, Union
@@ -561,8 +561,7 @@ class ToroidalVoxelGrid(VoxelCollection):
         :rtype: np.ndarray
         """
 
-        if not isinstance(emission_function, Function3D):
-            raise TypeError("The emission_function argument must be of type Function2D.")
+        emission_function = autowrap_function3d(emission_function)
 
         emissivities = np.zeros(self.count)
 
