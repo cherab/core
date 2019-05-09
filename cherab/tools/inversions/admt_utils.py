@@ -44,6 +44,12 @@ def generate_derivative_operators(voxel_vertices, grid_index_1d_to_2d_map,
         D_{xy} \equiv \frac{\partial^2}{\partial x \partial y}
 
     etc.
+
+    Note that the standard 2D laplacian (for isotropic regularisation)
+    can be trivially calculated as L = Dxx * dx + Dyy * dy, where dx and
+    dy are the voxel width and height respectively. This expression does
+    not however produce the 2D laplacian derived from the N-dimensional
+    case.
     """
     # Input argument validation: assume rectilinear voxels
     voxel_vertices = np.asarray(voxel_vertices)
