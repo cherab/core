@@ -45,6 +45,9 @@ cdef class Composition:
         self._species = {}
         self.notifier = Notifier()
 
+    def __len__(self):
+        return len(self._species)
+
     def __iter__(self):
         """
         Used to iterate over all the Species objects in the parent plasma.
