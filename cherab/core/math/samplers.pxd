@@ -15,13 +15,23 @@
 #
 # See the Licence for the specific language governing permissions and limitations
 # under the Licence.
+cimport numpy as np
 
 cpdef tuple sample1d(object function1d, tuple x_range)
+cpdef np.ndarray sample1d_points(object function1d, object x_points)
 
 cpdef tuple sample2d(object function2d, tuple x_range, tuple y_range)
+cpdef np.ndarray sample2d_points(object function2d, object points)
+cpdef np.ndarray sample2d_grid(object function2d, object x, object y)
 
 cpdef tuple sample3d(object function3d, tuple x_range, tuple y_range, tuple z_range)
+cpdef np.ndarray sample3d_points(object function3d, object points)
+cpdef np.ndarray sample3d_grid(object function3d, object x, object y, object z)
 
 cpdef tuple samplevector2d(object function2d, tuple x_range, tuple y_range)
+cpdef np.ndarray samplevector2d_points(object function2d, object points)
+cpdef np.ndarray samplevector2d_grid(object function2d, object x, object y)
 
 cpdef tuple samplevector3d(object function3d, tuple x_range, tuple y_range, tuple z_range)
+cpdef np.ndarray samplevector3d_points(object function3d, object points)
+cpdef np.ndarray samplevector3d_grid(object function3d, object x, object y, object z)
