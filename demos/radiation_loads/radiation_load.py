@@ -2,14 +2,17 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.spatial import Delaunay
-from raysect.core import Point2D, translate
+from raysect.core import Point2D, Point3D, translate, Vector3D, rotate_basis
 from raysect.core.math import Interpolator2DMesh
-from raysect.optical import World
+from raysect.optical import World, Spectrum
 from raysect.primitive import Cylinder
+from raysect.optical.observer import PinholeCamera, PowerPipeline2D
 
 from cherab.core.math import sample2d, AxisymmetricMapper
 from cherab.tools.emitters import RadiationFunction
 
+
+plt.ion()
 
 #############################
 # define radiation function #
@@ -55,7 +58,7 @@ def rad_function(r, z):
 num_vertical_points = 100
 vertical_points = np.linspace(-2, 2, num_vertical_points)
 num_radial_points = 30
-radial_points = np.linspace(0, 1.5, num_radial_points)
+radial_points = np.linspace(0, 4, num_radial_points)
 
 vertex_coords = np.empty((num_vertical_points * num_radial_points, 2))
 for i in range(num_radial_points):
@@ -93,3 +96,16 @@ plt.axis('equal')
 plt.xlabel('r axis')
 plt.ylabel('z axis')
 plt.title("Radiation profile in r-z plane")
+
+
+camera = PinholeCamera((256, 256), pipelines=[PowerPipeline2D()], parent=world)
+camera.transform = translate(-3.5, -2.5, 0)*rotate_basis(Vector3D(1, 0, 0), Vector3D(0, 0, 1))
+camera.pixel_samples = 1
+
+plt.ion()
+camera.observe()
+plt.ioff()
+plt.show()
+
+
+
