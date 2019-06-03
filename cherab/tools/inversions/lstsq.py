@@ -28,16 +28,13 @@ def invert_regularised_lstsq(w_matrix, b_vector, alpha=0.01, tikhonov_matrix=Non
     This is a thin wrapper around numpy.linalg.lstsq, which modifies
     the arguments to include the supplied Tikhonov regularisation matrix.
 
-    If tikhonov_matrix is None, the matrix used is alpha times the
-    identity matrix.
-
     :param np.ndarray w_matrix: The sensitivity matrix describing the coupling between the
       detectors and the voxels. Must be an array with shape :math:`(N_d, N_s)`.
     :param np.ndarray b_vector: The measured power/radiance vector with shape :math:`(N_d)`.
     :param float alpha: The regularisation hyperparameter :math:`\alpha` which determines
       the regularisation strength of the tikhonov matrix.
     :param np.ndarray tikhonov_matrix: The tikhonov regularisation matrix operator, an array
-      with shape :math:`(N_s, N_s)`.
+      with shape :math:`(N_s, N_s)`. If None, the identity matrix is used.
     :return: (x, residuals), the solution and residual vectors.
 
     .. code-block:: pycon
@@ -49,7 +46,9 @@ def invert_regularised_lstsq(w_matrix, b_vector, alpha=0.01, tikhonov_matrix=Non
     m, n = w_matrix.shape
 
     if tikhonov_matrix is None:
-        tikhonov_matrix = np.identity(n) * alpha
+        tikhonov_matrix = np.identity(n)
+
+    tikhonov_matrix = alpha * tikhonov_matrix
 
     # Extend W to have form ...
     c_matrix = np.zeros((m+n, n))
