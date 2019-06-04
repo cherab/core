@@ -18,9 +18,17 @@
 
 import numpy as np
 from libc.math cimport sqrt, erf, M_SQRT2, floor, ceil, fabs
+from cherab.core cimport Plasma
 from cherab.core.utility.constants cimport ATOMIC_MASS, ELEMENTARY_CHARGE, SPEED_OF_LIGHT
 from raysect.optical.spectrum cimport new_spectrum
 cimport cython
+
+
+cdef double RECIP_ATOMIC_MASS = 1 / ATOMIC_MASS
+
+
+cdef double evamu_to_ms(double x):
+    return sqrt(2 * x * ELEMENTARY_CHARGE * RECIP_ATOMIC_MASS)
 
 
 @cython.cdivision(True)
@@ -338,5 +346,95 @@ cdef class StarkBroadenedLine(LineShapeModel):
         for i in range(start, end):
             # Radiance ???
             spectrum.samples_mv[i] += radiance * raw_lineshape.samples_mv[i]
+
+        return spectrum
+
+
+cdef class BeamLineShapeModel:
+    """
+    A base class for building beam emission line shapes.
+
+    :param Line line: The emission line object for this line shape.
+    :param float wavelength: The rest wavelength for this emission line.
+    :param Beam beam: The beam class that is emitting.
+    """
+
+    def __init__(self, Line line, double wavelength, Beam beam):
+
+        self.line = line
+        self.wavelength = wavelength
+        self.beam = beam
+
+    cpdef Spectrum add_line(self, double radiance, Point3D beam_point, Point3D plasma_point,
+                            Vector3D beam_direction, Vector3D observation_direction, Spectrum spectrum):
+        raise NotImplementedError('Child lineshape class must implement this method.')
+
+
+                                    # [    Sigma group   ][        Pi group            ]
+cdef list STARK_STATISTICAL_WEIGHTS = [0.586167, 0.206917, 0.153771, 0.489716, 0.356513]  # from E. Delabie
+cdef double SIGMA_TO_PI = 0.56
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
+@cython.initializedcheck(False)
+@cython.cdivision(True)
+cdef class BeamEmissionMultiplet(BeamLineShapeModel):
+    """
+    Produces Beam Emission Multiplet line shape, also known as the Motional Stark Effect spectrum.
+    """
+
+    cpdef Spectrum add_line(self, double radiance, Point3D beam_point, Point3D plasma_point,
+                            Vector3D beam_direction, Vector3D observation_direction, Spectrum spectrum):
+
+        cdef double x, y, z
+        cdef Plasma plasma
+        cdef double te, sigma, stark_split, beam_ion_mass, beam_temperature
+        cdef double natural_wavelength, central_wavelength
+        cdef double d, inty_sig, inty_pi, efield
+        cdef Vector3D b_field, beam_velocity
+
+        # extract for more compact code
+        x = plasma_point.x
+        y = plasma_point.y
+        z = plasma_point.z
+
+        plasma = self.beam.get_plasma()
+
+        te = plasma.get_electron_distribution().effective_temperature(x, y, z)
+        if te <= 0.0:
+            return spectrum
+
+        # calculate Stark splitting
+        b_field = plasma.get_b_field().evaluate(x, y, z)
+        beam_velocity = beam_direction.normalise().mul(evamu_to_ms(self.beam.energy))
+        efield = beam_velocity.cross(b_field).get_length()
+        stark_split = fabs(2.77e-8 * efield)  # TODO - calculate splitting factor? Reject other lines?
+
+        # calculate emission line central wavelength, doppler shifted along observation direction
+        natural_wavelength = self.wavelength
+        central_wavelength = doppler_shift(natural_wavelength, observation_direction, beam_velocity)
+
+        # calculate doppler broadening
+        beam_ion_mass = self.beam.element.atomic_weight
+        beam_temperature = self.beam.get_temperature()
+        sigma = thermal_broadening(self.wavelength, beam_temperature, beam_ion_mass)
+
+        # calculate relative intensities of sigma and pi lines. Code from E. Delabie.
+        d = 1 / (1 + SIGMA_TO_PI)
+        inty_sig = SIGMA_TO_PI * d * radiance
+        inty_pi = 0.5 * d * radiance
+
+        # add Sigma lines to output
+        spectrum = add_gaussian_line(inty_sig * STARK_STATISTICAL_WEIGHTS[0], central_wavelength, sigma, spectrum)
+        spectrum = add_gaussian_line(inty_sig * STARK_STATISTICAL_WEIGHTS[1], central_wavelength + stark_split, sigma, spectrum)
+        spectrum = add_gaussian_line(inty_sig * STARK_STATISTICAL_WEIGHTS[1], central_wavelength - stark_split, sigma, spectrum)
+
+        # add Pi lines to output
+        spectrum = add_gaussian_line(inty_pi * STARK_STATISTICAL_WEIGHTS[2], central_wavelength + 2*stark_split, sigma, spectrum)
+        spectrum = add_gaussian_line(inty_pi * STARK_STATISTICAL_WEIGHTS[2], central_wavelength - 2*stark_split, sigma, spectrum)
+        spectrum = add_gaussian_line(inty_pi * STARK_STATISTICAL_WEIGHTS[3], central_wavelength + 3*stark_split, sigma, spectrum)
+        spectrum = add_gaussian_line(inty_pi * STARK_STATISTICAL_WEIGHTS[3], central_wavelength - 3*stark_split, sigma, spectrum)
+        spectrum = add_gaussian_line(inty_pi * STARK_STATISTICAL_WEIGHTS[4], central_wavelength + 4*stark_split, sigma, spectrum)
+        spectrum = add_gaussian_line(inty_pi * STARK_STATISTICAL_WEIGHTS[4], central_wavelength - 4*stark_split, sigma, spectrum)
 
         return spectrum

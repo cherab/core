@@ -1,5 +1,3 @@
-# cython: language_level=3
-
 # Copyright 2016-2018 Euratom
 # Copyright 2016-2018 United Kingdom Atomic Energy Authority
 # Copyright 2016-2018 Centro de Investigaciones Energéticas, Medioambientales y Tecnológicas
@@ -19,5 +17,17 @@
 # under the Licence.
 
 
-from .charge_exchange import BeamCXLine
-from .beam_emission import BeamEmissionLine
+from cherab.core cimport Line
+from cherab.core.beam cimport BeamModel
+from cherab.core.model.lineshape cimport BeamLineShapeModel
+
+
+cdef class BeamEmissionLine(BeamModel):
+
+    cdef:
+        Line _line
+        double _wavelength
+        list _rates_list
+        BeamLineShapeModel _lineshape
+
+    cdef int _populate_cache(self) except -1
