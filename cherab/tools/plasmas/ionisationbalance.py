@@ -44,7 +44,7 @@ def get_rates_tcx(atomic_data:AtomicData, donor:Element, donor_charge, receiver:
 
     return coef_tcx
 
-def fractional(atomic_data, element, n_e, t_e, tcx_donor=None, tcx_donor_density=None, tcx_donor_charge=0):
+def fractional(atomic_data:AtomicData, element:Element, n_e, t_e, tcx_donor:Element=None, tcx_donor_density=None, tcx_donor_charge=0):
     """
     Calculate fractional abundance of individual charge states for the specified element, temperature and density using steady state ionization balance. If tcx_donor is specified,
     the balance equation will take into accout effects of charge exchage with specified donor. The results are returned as
@@ -97,7 +97,7 @@ def fractional(atomic_data, element, n_e, t_e, tcx_donor=None, tcx_donor_density
     matbal = np.concatenate((matbal, np.ones((1, matbal.shape[1]))), axis=0)
 
     # construct RHS of the balance steady-state equation
-    rhs = np.zeroes((matbal.shape[0]))
+    rhs = np.zeros((matbal.shape[0]))
     rhs[-1] = n_e
 
     abundance = lsq_linear(matbal, rhs, bounds=(0, n_e))["x"]
@@ -112,7 +112,7 @@ def fractional(atomic_data, element, n_e, t_e, tcx_donor=None, tcx_donor_density
 
     return abundance_dict
 
-def from_element_density(atomic_data, element, element_density, n_e, t_e, tcx_donor=None, tcx_donor_density=None, tcx_donor_charge=0):
+def from_element_density(atomic_data:AtomicData, element:Element, element_density, n_e, t_e, tcx_donor:Element=None, tcx_donor_density=None, tcx_donor_charge=0):
     """
     Calculate density of individual charge states for the specified element,electron temperature, electron density and element density
     using steady state ionization balance. If tcx_donor is specified, the balance equation will take into accout effects
@@ -138,7 +138,7 @@ def from_element_density(atomic_data, element, element_density, n_e, t_e, tcx_do
 
     return abundance_dict
 
-def from_stage_density(atomic_data, element, stage_charge, stage_density, n_e, t_e, tcx_donor=None, tcx_donor_density=None, tcx_donor_charge=0):
+def from_stage_density(atomic_data:AtomicData, element:Element, stage_charge, stage_density, n_e, t_e, tcx_donor:Element=None, tcx_donor_density=None, tcx_donor_charge=0):
     """
     Calculate density of individual charge states for the specified element,electron temperature, electron density and density of a single charge state
     using steady state ionization balance. If tcx_donor is specified, the balance equation will take into accout effects
@@ -168,7 +168,7 @@ def from_stage_density(atomic_data, element, stage_charge, stage_density, n_e, t
 
     return abundance_dict
 
-def match_bulk_element_density(atomic_data, bulk_element, abundances, n_e, t_e):
+def match_bulk_element_density(atomic_data:AtomicData, bulk_element:Element, abundances, n_e, t_e):
     """
     Calculates densities of charge states of bulk plasma element for specified impurity densities, electron density and
     electron temperature. Ratio of densities of ionization stages of the bulk element follows the steady state balance
