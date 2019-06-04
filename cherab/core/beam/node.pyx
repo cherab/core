@@ -212,12 +212,16 @@ cdef class Beam(Node):
         Returns the bean density at the specified position in beam coordinates.
         
         Note: this function is only defined over the domain 0 < z < beam_length.
+        Outside of this range the density is clamped to zero.
         
         :param x: x coordinate in meters.
         :param y: y coordinate in meters.
         :param z: z coordinate in meters.
         :return: Beam density in m^-3
         """
+
+        if z < 0 or z > self._length:
+            return 0
 
         return self._attenuator.density(x, y, z)
 
