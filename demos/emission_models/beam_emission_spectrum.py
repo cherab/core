@@ -119,15 +119,24 @@ beam_full.integrator.min_samples = 10
 ######################################
 # Visualise beam behaviour in Plasma #
 
+beam_density = np.empty((200, 200))
+xpts = np.linspace(-1, 2, 200)
+zpts = np.linspace(-1, 1, 200)
+for i, xpt in enumerate(xpts):
+    for j, zpt in enumerate(zpts):
+        pt = Point3D(xpt, 0, zpt).transform(beam_full.to_local())
+        beam_density[i, j] = beam_full.density(pt.x, pt.y, pt.z)
+
 plt.ion()
 plt.figure()
-x, _, z, beam_density = sample3d(beam_full.density, (-0.5, 0.5, 200), (0, 0, 1), (0, 3, 200))
-plt.imshow(np.transpose(np.squeeze(beam_density)), extent=[-0.5, 0.5, 0, 3], origin='lower')
+# x, _, z, beam_density = sample3d(beam_full.density, (-0.5, 0.5, 200), (0, 0, 1), (0, 3, 200))
+plt.imshow(np.transpose(beam_density), extent=[-1, 2, -1, 1], origin='lower')
+plt.plot([1.25, 0], [0, 0], 'k')
 plt.colorbar()
 plt.axis('equal')
 plt.xlabel('x axis (beam coords)')
 plt.ylabel('z axis (beam coords)')
-plt.title("Beam full energy density profile in r-z plane")
+plt.title("Beam full energy density profile in x-z plane")
 
 
 z = np.linspace(0, 3, 200)
@@ -149,3 +158,10 @@ s = ray.trace(world)
 plt.figure()
 plt.plot(s.wavelengths, s.samples)
 plt.show()
+
+
+camera = PinholeCamera((128, 128), parent=world, transform=translate(1.25, -3.5, 0) * rotate_basis(Vector3D(0, 1, 0), Vector3D(0, 0, 1)))
+camera.spectral_rays = 1
+camera.spectral_bins = 15
+camera.pixel_samples = 50
+camera.observe()
