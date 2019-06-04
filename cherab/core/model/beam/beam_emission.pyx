@@ -21,8 +21,10 @@
 
 cimport cython
 from raysect.core cimport Point3D, Vector3D
+from raysect.core.math.function cimport autowrap_function1d, autowrap_function2d
 
 from cherab.core cimport Species, Plasma, Beam, Element, DistributionFunction, BeamEmissionPEC, Spectrum, AtomicData
+from cherab.core.math cimport Constant1D, Constant2D
 from cherab.core.atomic.elements import Isotope, hydrogen
 from cherab.core.model.lineshape cimport BeamEmissionMultiplet
 from cherab.core.utility.constants cimport RECIP_4_PI, ELEMENTARY_CHARGE, ATOMIC_MASS
@@ -31,15 +33,32 @@ cdef double RECIP_ELEMENTARY_CHARGE = 1 / ELEMENTARY_CHARGE
 cdef double RECIP_ATOMIC_MASS = 1 / ATOMIC_MASS
 
 
+# example statistical weights supplied by E. Delabie for JET like plasmas
+                            # [    Sigma group   ][        Pi group            ]
+# STARK_STATISTICAL_WEIGHTS = [0.586167, 0.206917, 0.153771, 0.489716, 0.356513]
+SIGMA_TO_PI = Constant2D(0.56)
+SIGMA1_TO_SIGMA0 = Constant1D(0.7060001671878492)  # s1*2/s0
+PI2_TO_PI3 = Constant1D(0.3140003593919741)  # pi2/pi3
+PI4_TO_PI3 = Constant1D(0.7279994935840365)  # pi4/pi3
+
+
+# TODO - the sigma/pi line ratios should be moved to an atomic data source
 cdef class BeamEmissionLine(BeamModel):
     """Calculates beam emission multiplets for a single beam component.
 
     :param Line line: the transition of interest.
     """
 
-    def __init__(self, Line line not None, Beam beam=None, Plasma plasma=None, AtomicData atomic_data=None):
+    def __init__(self, Line line not None, Beam beam=None, Plasma plasma=None, AtomicData atomic_data=None,
+                 sigma_to_pi=SIGMA_TO_PI, sigma1_to_sigma0=SIGMA1_TO_SIGMA0,
+                 pi2_to_pi3=PI2_TO_PI3, pi4_to_pi3=PI4_TO_PI3):
 
         super().__init__(beam, plasma, atomic_data)
+
+        self._sigma_to_pi = autowrap_function2d(sigma_to_pi)
+        self._sigma1_to_sigma0 = autowrap_function1d(sigma1_to_sigma0)
+        self._pi2_to_pi3 = autowrap_function1d(pi2_to_pi3)
+        self._pi4_to_pi3 = autowrap_function1d(pi4_to_pi3)
 
         self.line = line
 
@@ -147,7 +166,8 @@ cdef class BeamEmissionLine(BeamModel):
             self._rates_list.append((species.distribution, rate))
 
         # instance line shape renderer
-        self._lineshape = BeamEmissionMultiplet(self._line, self._wavelength, self._beam)
+        self._lineshape = BeamEmissionMultiplet(self._line, self._wavelength, self._beam, self._sigma_to_pi,
+                                                self._sigma1_to_sigma0, self._pi2_to_pi3, self._pi4_to_pi3)
 
     def _change(self):
 

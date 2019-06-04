@@ -21,6 +21,7 @@ cimport numpy as np
 
 from raysect.optical cimport Spectrum, Point3D, Vector3D
 from cherab.core cimport Line, Species, Plasma, Beam
+from cherab.core.math cimport Function1D, Function2D
 
 
 cpdef double doppler_shift(double wavelength, Vector3D observation_direction, Vector3D velocity)
@@ -72,4 +73,8 @@ cdef class BeamLineShapeModel:
 
 
 cdef class BeamEmissionMultiplet(BeamLineShapeModel):
-    pass
+
+    cdef:
+
+        Function2D _sigma_to_pi
+        Function1D _sigma1_to_sigma0, _pi2_to_pi3, _pi4_to_pi3
