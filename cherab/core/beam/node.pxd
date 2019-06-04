@@ -76,4 +76,6 @@ cdef class Beam(Node):
 
     cdef double get_sigma(self)
 
+    cdef Plasma get_plasma(self)
+
     cdef int _modified(self) except -1
