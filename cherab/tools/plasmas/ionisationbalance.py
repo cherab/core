@@ -50,7 +50,7 @@ def get_rates_tcx(atomic_data: AtomicData, donor: Element, donor_charge, receive
 
 
 def _fractional_abundance(atomic_data: AtomicData, element: Element, n_e, t_e, tcx_donor: Element = None,
-                          tcx_donor_density=None, tcx_donor_charge=0):
+                          tcx_donor_density=0, tcx_donor_charge=0):
     """
     Calculate fractional abundance of charge states of the specified element, for the specified temperature and density using
     steady state ionization balance. If tcx_donor is specified, the balance equation will take into accout effects
@@ -70,7 +70,7 @@ def _fractional_abundance(atomic_data: AtomicData, element: Element, n_e, t_e, t
     coef_recom = get_rates_recombination(atomic_data, element)  # get recombination rate interpolators
 
     # get tcx rate interpolators if requested
-    if tcx_donor is not None and tcx_donor_density is not None:
+    if tcx_donor is not None and tcx_donor_density > 0:
         coef_tcx = get_rates_tcx(atomic_data, tcx_donor, tcx_donor_charge, element)
 
     # atomic number to determine ionisation matrix shape
@@ -84,7 +84,7 @@ def _fractional_abundance(atomic_data: AtomicData, element: Element, n_e, t_e, t
     matbal[-1, -1] -= coef_recom[atomic_number](n_e, t_e)
     matbal[-1, -2] += coef_ion[atomic_number - 1](n_e, t_e)
 
-    if tcx_donor is not None and tcx_donor_density is not None:
+    if tcx_donor is not None and tcx_donor_density > 0:
         matbal[0, 1] += tcx_donor_density / n_e * coef_tcx[1](n_e, t_e)
         matbal[-1, -1] -= tcx_donor_density / n_e * coef_tcx[atomic_number](n_e, t_e)
 
@@ -93,7 +93,7 @@ def _fractional_abundance(atomic_data: AtomicData, element: Element, n_e, t_e, t
         matbal[i, i - 1] += coef_ion[i - 1](n_e, t_e)
         matbal[i, i] -= (coef_ion[i](n_e, t_e) + coef_recom[i](n_e, t_e))
         matbal[i, i + 1] += coef_recom[i + 1](n_e, t_e)
-        if tcx_donor is not None and tcx_donor_density is not None:
+        if tcx_donor is not None and tcx_donor_density > 0:
             matbal[i, i] -= tcx_donor_density / n_e * coef_tcx[i](n_e, t_e)
             matbal[i, i + 1] += tcx_donor_density / n_e * coef_tcx[i + 1](n_e, t_e)
 
@@ -345,7 +345,7 @@ def _profile1d_fractional(atomic_data: AtomicData, element: Element, n_e_profile
     """
     # Function returning None instead of donor density interpolator to later reduce number of if statements
     if tcx_donor is None:
-        tcx_donor_n_profile = [None] * len(n_e_profile)
+        tcx_donor_n_profile = np.zeros_like(n_e_profile)
 
     # crate the array for profiles
     number_chargestates = element.atomic_number + 1
@@ -541,7 +541,7 @@ def interpolators1d_fractional(atomic_data: AtomicData, element: Element, free_v
     """
     # Function returning None instead of donor density interpolator to later reduce number of if statements
     if tcx_donor is None:
-        tcx_donor_n_interpolator = lambda psin: None
+        tcx_donor_n_interpolator = lambda psin: 0
 
     n_e_profile = np.zeros_like(free_variable)
     t_e_profile = np.zeros_like(free_variable)
@@ -587,7 +587,7 @@ def interpolators1d_from_elementdensity(atomic_data: AtomicData, element: Elemen
 
     # Function returning None instead of donor density interpolator to later reduce number of if statements
     if tcx_donor is None:
-        tcx_donor_n_interpolator = lambda psin: None
+        tcx_donor_n_interpolator = lambda psin: 0
 
     # calculate fractional abundance profiles for element ionic stages
     atomic_chargestates = element.atomic_number + 1
@@ -648,7 +648,7 @@ def interpolators1d_match_element_density(atomic_data: AtomicData, element: Elem
 
     # Function returning None instead of donor density interpolator to later reduce number of if statements
     if tcx_donor is None:
-        tcx_donor_n_interpolator = lambda psin: None
+        tcx_donor_n_interpolator = lambda psin: 0
 
     n_e_profile = np.zeros_like(free_variable)
     t_e_profile = np.zeros_like(free_variable)
