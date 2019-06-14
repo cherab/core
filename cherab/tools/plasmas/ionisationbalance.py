@@ -328,142 +328,151 @@ def match_element_density(atomic_data: AtomicData, element: Element, abundances,
     return element_abundance_dict
 
 
-def _profile1d_fractional(atomic_data: AtomicData, element: Element, n_e_profile, t_e_profile,
-                          tcx_donor: Element = None, tcx_donor_n_profile=None, tcx_donor_charge=0):
+def _profile_fractional_abundance(atomic_data: AtomicData, element: Element, n_e_profile,
+                                 t_e_profile, tcx_donor: Element = None, tcx_donor_n_profile=None, tcx_donor_charge=0):
     """
     Calculate profiles of fractional abundance of the specified element for the specified electron density and temperature.
     For more information see _fractional_abundance function.
     :param atomic_data: Any cherab AtomicData source
     :param element: Any cherab element
-    :param n_e_profile: 1d numpy array profile giving values of electron density for free_variable
-    :param t_e_profile: 1d numpy array profile giving values of electron density for free_variable
+    :param n_e_profile: numpy array profile giving values of electron density for free_variable
+    :param t_e_profile: numpy array profile giving values of electron density for free_variable
     :param tcx_donor: Optional, specifies donating species in tcx collisions.
-    :param tcx_donor_n_profile: Optional, mandatory if tcx_donor parameter passed. 1d numpy array profile giving density of donors in m^-3
+    :param tcx_donor_n_profile: Optional, mandatory if tcx_donor parameter passed. Numpy array profile giving density of donors in m^-3
     :param tcx_donor_charge: Optional, specifies the charge of the donor. Default is 0.
-    :return: 1d profiles of fractional abundances of charge states of the element. Dim 0 corresponds to the ion charge,
-    dim 1 holds the profiles.
+    :return: Profiles of fractional abundances of charge states of the element. Dim 0 corresponds to the ion charge
     """
-    # Function returning None instead of donor density interpolator to later reduce number of if statements
-    if tcx_donor is None:
+    if tcx_donor_n_profile is None:
         tcx_donor_n_profile = np.zeros_like(n_e_profile)
-
-    # crate the array for profiles
-    number_chargestates = element.atomic_number + 1
-    fractional_profiles = np.zeros((number_chargestates, n_e_profile.shape[0]))
-
-    # calculate fractional abungances for provided electron profiles
-    for index, (n_e, t_e, n_donor) in enumerate(zip(n_e_profile, t_e_profile, tcx_donor_n_profile)):
-        fractional_profiles[:, index] = _fractional_abundance(atomic_data, element, n_e, t_e, tcx_donor, n_donor,
-                                                              tcx_donor_charge)
-
-    return fractional_profiles
+    #check shape consistency
+    if (not n_e_profile.shape == t_e_profile.shape or not n_e_profile.shape == tcx_donor_n_profile.shape):
+        raise ValueError("profile shapes have to be identical")
 
 
-def profile1d_fractional(atomic_data: AtomicData, element: Element, n_e_profile, t_e_profile,
-                         tcx_donor: Element = None, tcx_donor_n_profile=None, tcx_donor_charge=0):
+    density = np.zeros((element.atomic_number + 1, *n_e_profile.shape))
+    for index in np.ndindex(*n_e_profile.shape):
+        density[(Ellipsis, *index)] = _fractional_abundance(atomic_data, element, n_e_profile[index], t_e_profile[index], tcx_donor, tcx_donor_n_profile[index], tcx_donor_charge)
+
+    return density
+
+
+def profile_fractional_abundance(atomic_data: AtomicData, element: Element, n_e_profile,
+                                  t_e_profile, tcx_donor: Element = None, tcx_donor_n_profile=None, tcx_donor_charge=0):
     """
     Calculate profiles of fractional abundance of the specified element for the specified electron density and temperature.
     For more information see _fractional_abundance function.
     :param atomic_data: Any cherab AtomicData source
     :param element: Any cherab element
-    :param n_e_profile: 1d profile giving values of electron density for free_variable
-    :param t_e_profile: 1d profile giving values of electron density for free_variable
+    :param n_e_profile: numpy array profile giving values of electron density for free_variable
+    :param t_e_profile: numpy array profile giving values of electron density for free_variable
     :param tcx_donor: Optional, specifies donating species in tcx collisions.
-    :param tcx_donor_n_profile: Optional, mandatory if tcx_donor parameter passed. 1d profile giving density of donors in m^-3
+    :param tcx_donor_n_profile: Optional, mandatory if tcx_donor parameter passed. Numpy array profile giving density of donors in m^-3
     :param tcx_donor_charge: Optional, specifies the charge of the donor. Default is 0.
-    :return: Dictionary containing 1d numpy arrays of profiles of fractional abundances of charge states of the element in the form {charge: profile}
+    :return: Dictionary with profiles of fractional abundances in the form {charge: profile}
     """
 
-    # get density profiles of the ion charges
-    fractional_profiles = _profile1d_fractional(atomic_data, element, n_e_profile, t_e_profile, tcx_donor,
-                                                tcx_donor_n_profile, tcx_donor_charge)
+    #calculate fractional abundance
+    fractional_abundance = _profile_fractional_abundance(atomic_data, element, n_e_profile, t_e_profile, tcx_donor, tcx_donor_n_profile, tcx_donor_charge)
 
-    # transform into dictionary
-    fractional_profiles_dict = {}
-    for index, value in enumerate(fractional_profiles):
-        fractional_profiles_dict[index] = value
+        # transform into dictionary
+    fractional_abundance_dict = {}
+    for index, value in enumerate(fractional_abundance):
+        fractional_abundance_dict[index] = value
 
-    return fractional_profiles_dict
+    return fractional_abundance_dict
 
 
-def _profile1d_from_elementdensity(atomic_data: AtomicData, element: Element, element_density_profile, n_e_profile,
-                                   t_e_profile,
-                                   tcx_donor: Element = None, tcx_donor_n_profile=None, tcx_donor_charge=0):
+def _profile_from_elementdensity(atomic_data: AtomicData, element: Element, element_density_profile, n_e_profile,
+              t_e_profile, tcx_donor: Element = None, tcx_donor_n_profile=None, tcx_donor_charge=0):
     """
     For given profiles of plasma parametres the function calulates density profiles of charge states of the element. For more
     information see _from_element_density function.
     :param atomic_data: Any cherab AtomicData source
     :param element: Any cherab element
     :param element_density_profile: Density profile of the element in m^-3
-    :param n_e_profile: 1d profile giving values of electron density for free_variable
-    :param t_e_profile: 1d profile giving values of electron density for free_variable
+    :param n_e_profile: profile giving values of electron density for free_variable
+    :param t_e_profile: profile giving values of electron density for free_variable
     :param tcx_donor: Optional, specifies donating species in tcx collisions.
-    :param tcx_donor_n_profile: Optional, mandatory if tcx_donor parameter passed. 1d profile giving density of donors in m^-3
+    :param tcx_donor_n_profile: Optional, mandatory if tcx_donor parameter passed. Profile giving density of donors in m^-3
     :param tcx_donor_charge: Optional, specifies the charge of the donor. Default is 0.
-    :return: 1d profiles of fractional abundances of charge states of the element. Dim 0 is the profile, Dim 2 are the charge states
+    :return: Fractional abundance profiles of charge states of the element. Dim 0 corresponds to charge of charge states.
     """
 
-    # calculate fractional abundance profiles for element ionic stages
-    fractional_profiles = _profile1d_fractional(atomic_data, element, n_e_profile, t_e_profile, tcx_donor,
-                                                tcx_donor_n_profile, tcx_donor_charge)
 
-    # normalize fractional abundance profiles with profile of element density
-    density_profiles = fractional_profiles * element_density_profile[np.newaxis, :]
+    if tcx_donor_n_profile is None:
+        tcx_donor_n_profile = np.zeros_like(n_e_profile)
+    #check shape consistency
+    if (not element_density_profile.shape == n_e_profile.shape or not n_e_profile.shape == t_e_profile.shape
+        or not n_e_profile.shape == tcx_donor_n_profile.shape):
+        raise ValueError("profile shapes have to be identical")
 
-    return density_profiles
+
+    density = np.zeros((element.atomic_number + 1, *n_e_profile.shape))
+    for index in np.ndindex(*n_e_profile.shape):
+        density[(Ellipsis, *index)] = _from_element_density(atomic_data, element, element_density_profile[index], n_e_profile[index], t_e_profile[index], tcx_donor, tcx_donor_n_profile[index], tcx_donor_charge)
+
+    return density
 
 
-def profile1d_from_elementdensity(atomic_data: AtomicData, element: Element, element_density_profile, n_e_profile,
-                                  t_e_profile,
-                                  tcx_donor: Element = None, tcx_donor_n_profile=None, tcx_donor_charge=0):
+
+def profile_from_elementdensity(atomic_data: AtomicData, element: Element, element_density_profile, n_e_profile,
+                                 t_e_profile, tcx_donor: Element = None, tcx_donor_n_profile=None, tcx_donor_charge=0):
     """
     For given profiles of plasma parametres the function calulates density profiles of charge states of the element. For more
     information see _from_element_density function.
     :param atomic_data: Any cherab AtomicData source
     :param element: Any cherab element
     :param element_density_profile: Density profile of the element in m^-3
-    :param n_e_profile: 1d profile giving values of electron density for free_variable
-    :param t_e_profile: 1d profile giving values of electron density for free_variable
+    :param n_e_profile: profile giving values of electron density for free_variable
+    :param t_e_profile: profile giving values of electron density for free_variable
     :param tcx_donor: Optional, specifies donating species in tcx collisions.
-    :param tcx_donor_n_profile: Optional, mandatory if tcx_donor parameter passed. 1d profile giving density of donors in m^-3
+    :param tcx_donor_n_profile: Optional, mandatory if tcx_donor parameter passed. Profile giving density of donors in m^-3
     :param tcx_donor_charge: Optional, specifies the charge of the donor. Default is 0.
-    :return: 1d profiles of fractional abundances of charge states of the element. Dim 0 is the profile, Dim 2 are the charge states
+    :return: Dictionary with density profiles of charge states of the element in the form {charge: profile}
     """
 
-    # get array with density profiles
-    density_profiles = _profile1d_from_elementdensity(atomic_data, element, element_density_profile, n_e_profile,
-                                                      t_e_profile,
-                                                      tcx_donor, tcx_donor_n_profile, tcx_donor_charge)
+
+    #calculate density profiles
+    densities = _profile_from_elementdensity(atomic_data, element, element_density_profile, n_e_profile, t_e_profile, tcx_donor,
+                                             tcx_donor_n_profile, tcx_donor_charge)
 
     # transform into dictionary
-    density_profiles_dict = {}
-    for rownumber, row in enumerate(density_profiles):
-        density_profiles_dict[rownumber] = row
+    densities_dict = {}
+    for index, value in enumerate(densities):
+        densities_dict[index] = value
 
-    return density_profiles_dict
+    return densities_dict
 
 
-def _profile1d_match_density(atomic_data: AtomicData, element: Element, n_species_profile, n_e_profile, t_e_profile,
+def _profile_match_density(atomic_data: AtomicData, element: Element, n_species_profile, n_e_profile, t_e_profile,
                              tcx_donor: Element = None, tcx_donor_n_profile=None, tcx_donor_charge=0):
     """
-    For given profiles of plasma parametres the function calulates profile of fractional abunces of charge states of the element.
+    For given profiles of plasma parametres the function calulates density profiles of charge states of the element. The density
+    is normalized using n_species_profiles and n_e_profiles to reach plasme neutrality condition.
     :param atomic_data: Any cherab AtomicData source
     :param element: Any cherab element
-    :param n_species_profile: Density profile of the other plasma species in m^-3
+    :param element_density_profile: Density profile of the element in m^-3
     :param n_e_profile: 1d profile giving values of electron density for free_variable
     :param t_e_profile: 1d profile giving values of electron density for free_variable
     :param tcx_donor: Optional, specifies donating species in tcx collisions.
     :param tcx_donor_n_profile: Optional, mandatory if tcx_donor parameter passed. 1d profile giving density of donors in m^-3
     :param tcx_donor_charge: Optional, specifies the charge of the donor. Default is 0.
-    :return: 1d profile of fractional abundance of charge states of the element
+    :return: Density profiles of charge states of the element. Dim 0 corresponds to charge of charge states.
     """
 
     if not isinstance(n_species_profile, list) and not isinstance(n_species_profile, dict) and not isinstance(
             n_species_profile, np.ndarray):
         raise TypeError(
-            "abundances has to be dictionary or a numpy array holding information about densities of a single element in the form {charge:density} or list of such dictionaries.")
+            "abundances has to be dictionary or a numpy array holding information about densities of a single element in the form {charge:density} or list of such dictionaries or arrays.")
     elif isinstance(n_species_profile, dict) or isinstance(n_species_profile, np.ndarray):
         n_species_profile = [n_species_profile]
+
+    if tcx_donor_n_profile is None:
+        tcx_donor_n_profile = np.zeros_like(n_e_profile)
+    #check shape consistency
+    if ( not n_e_profile.shape == t_e_profile.shape or not n_e_profile.shape == tcx_donor_n_profile.shape):
+        raise ValueError("profile shapes have to be identical")
+
 
     number_chargestates = element.atomic_number + 1
 
@@ -475,30 +484,26 @@ def _profile1d_match_density(atomic_data: AtomicData, element: Element, n_specie
             for key, item in abundance.items():
                 n_species_profile[i][key] = item
 
-    # calculate fractional abundance profiles
-    fractional_abundances = _profile1d_fractional(atomic_data, element, n_e_profile, t_e_profile, tcx_donor,
-                                                  tcx_donor_n_profile, tcx_donor_charge)
+    # check element profile consistency
+    for spec in n_species_profile:
+        if not spec[0, ...].shape == n_e_profile.shape:
+            raise ValueError("profile shapes have to be identical")
 
-    # normalize fractional abundance profiles to match electron densities
-    density_matched = np.zeros_like(fractional_abundances)
-    for rownumber, row in enumerate(fractional_abundances.T):
-        element_n_e = n_e_profile[rownumber]
+    density = np.zeros((number_chargestates, *n_e_profile.shape))
+    for index in np.ndindex(*n_e_profile.shape):
+        spec_list = []
         for spec in n_species_profile:
-            for index, value in enumerate(spec[:, rownumber]):
-                element_n_e -= index * value
+            spec_list.append(spec[(Ellipsis, *index)])
+        density[(Ellipsis, *index)] = _match_element_density(atomic_data, element, spec_list, n_e_profile[index], t_e_profile[index], tcx_donor, tcx_donor_n_profile[index], tcx_donor_charge)
 
-        if element_n_e < 0:
-            element_n_e = 0
-        density_matched[:, rownumber] = row * element_n_e
-
-    return density_matched
+    return density
 
 
-def profile1d_match_density(atomic_data: AtomicData, element: Element, species_density_profiles, n_e_profile,
-                            t_e_profile,
-                            tcx_donor: Element = None, tcx_donor_n_profile=None, tcx_donor_charge=0):
+def profile_match_density(atomic_data: AtomicData, element: Element, n_species_profile, n_e_profile, t_e_profile,
+                           tcx_donor: Element = None, tcx_donor_n_profile=None, tcx_donor_charge=0):
     """
-    For given profiles of plasma parametres the function calulates profile of fractional abunces of charge states of the element.
+    For given profiles of plasma parametres the function calulates density profiles of charge states of the element. The density
+    is normalized using n_species_profiles and n_e_profiles to reach plasme neutrality condition.
     :param atomic_data: Any cherab AtomicData source
     :param element: Any cherab element
     :param element_density_profile: Density profile of the element in m^-3
@@ -507,20 +512,20 @@ def profile1d_match_density(atomic_data: AtomicData, element: Element, species_d
     :param tcx_donor: Optional, specifies donating species in tcx collisions.
     :param tcx_donor_n_profile: Optional, mandatory if tcx_donor parameter passed. 1d profile giving density of donors in m^-3
     :param tcx_donor_charge: Optional, specifies the charge of the donor. Default is 0.
-    :return: 1d profile of fractional abundance of charge states of the element
+    :return: Dictionary with density profiles of charge states of the element in the form {charge: profile}
+
     """
 
-    # calculate density profiles
-    density_matched = _profile1d_match_density(atomic_data, element, species_density_profiles, n_e_profile, t_e_profile,
-                                               tcx_donor,
-                                               tcx_donor_n_profile, tcx_donor_charge)
+    #calculate density profiles
+    densities = _profile_from_elementdensity(atomic_data, element, n_e_profile, n_e_profile, t_e_profile, tcx_donor,
+                                             tcx_donor_n_profile, tcx_donor_charge)
 
     # transform into dictionary
-    density_matched_dict = {}
-    for rownumber, row in enumerate(density_matched):
-        density_matched_dict[rownumber] = row
+    densities_dict = {}
+    for index, value in enumerate(densities):
+        densities_dict[index] = value
 
-    return density_matched_dict
+    return densities_dict
 
 
 def interpolators1d_fractional(atomic_data: AtomicData, element: Element, free_variable, n_e_interpolator,
@@ -554,8 +559,8 @@ def interpolators1d_fractional(atomic_data: AtomicData, element: Element, free_v
         tcx_donor_n_profile[i] = tcx_donor_n_interpolator(value)
 
     # calculate fractional abundace profiles
-    fractional_profiles = _profile1d_fractional(atomic_data, element, n_e_profile, t_e_profile, tcx_donor,
-                                                tcx_donor_n_profile, tcx_donor_charge)
+    fractional_profiles = _profile_fractional_abundance(atomic_data, element, n_e_profile, t_e_profile, tcx_donor,
+                                                        tcx_donor_n_profile, tcx_donor_charge)
 
     # use profiles to create interpolators for profiles
     fractional_interpolators = {}
@@ -608,8 +613,8 @@ def interpolators1d_from_elementdensity(atomic_data: AtomicData, element: Elemen
         tcx_donor_n_profile[index] = tcx_donor_n_interpolator(value)
 
     # calculate fractional abundace profiles
-    density_profiles = _profile1d_from_elementdensity(atomic_data, element, element_density_profile, n_e_profile,
-                                                      t_e_profile, tcx_donor, tcx_donor_n_profile, tcx_donor_charge)
+    density_profiles = _profile_from_elementdensity(atomic_data, element, element_density_profile, n_e_profile,
+                                                    t_e_profile, tcx_donor, tcx_donor_n_profile, tcx_donor_charge)
 
     # use profiles to create interpolators for profiles
     density_interpolators = {}
@@ -667,9 +672,9 @@ def interpolators1d_match_element_density(atomic_data: AtomicData, element: Elem
             for key, item in species_density_interpolators[i].items():
                 density_spec_profile[i][key, index] = item(value)
 
-    density_profiles = _profile1d_match_density(atomic_data, element, density_spec_profile, n_e_profile, t_e_profile,
-                                                tcx_donor,
-                                                tcx_n_donor_profile, tcx_donor_charge)
+    density_profiles = _profile_match_density(atomic_data, element, density_spec_profile, n_e_profile, t_e_profile,
+                                              tcx_donor,
+                                              tcx_n_donor_profile, tcx_donor_charge)
     # use profiles to create interpolators for profiles
     density_interpolators = {}
     for rownumber, row in enumerate(density_profiles):
