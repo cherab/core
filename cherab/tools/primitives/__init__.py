@@ -17,3 +17,4 @@
 # under the Licence.
 
 from .annulus_mesh import generate_annulus_mesh_segments
+from .axisymmetric_mesh import axisymmetric_mesh_from_polygon
