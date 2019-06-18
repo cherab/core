@@ -37,34 +37,38 @@ from cherab.tools.equilibrium import example_equilibrium, plot_equilibrium
 print('Populating example equilibrium object...')
 equilibrium = example_equilibrium()
 
-print('Equilibrium time: {}s'.format(equilibrium.time))
+# the cherab package has a convenience tool for viewing an equilibrium
+# this function samples the various equilibrium attributes and renders them as images
+print('Plotting equilibrium data...')
+plot_equilibrium(equilibrium, detail=True)
 
 # The core equilibrium properties are accessible as attributes on the the equilibrium object.
 # For a full list of available attributes, see the object itself
 
 # Psi and normalised psi are returned as 2D functions (see cherab.core.math.function.Function2D),
-# they are cubically interpolated version of the raw gridded data.
-# e.g. to obtain a value of psi normalised at the point (r=2.1m, z=0.2m), simply call the function:
+# they are cubically interpolated version of the raw gridded data. e.g. to obtain a value of psi
+# normalised at the point (r=2.1m, z=0.2m), simply call the function:
 psi_n = equilibrium.psi_normalised(2.1, 0.2)
 print('Psi normalised at (2.1, 0.2)m: {}'.format(psi_n))
 
-# The magnetic field is similarly accessible, it is returned as a 2D vector function.
-# e.g. to obtain the components of the field at the point (r=2.1m, z=0.2m), simply call the function:
+# The magnetic field is similarly accessible, it is returned as a 2D vector function. e.g. to
+# obtain the components of the field at the point (r=2.1m, z=0.2m), simply call the function:
 b = equilibrium.b_field(2.1, 0.2)
 print('B-field at (2.1, 0.2)m: {}'.format(b))
 
-# The inside_lcfs attribute returns a 2D function that identifies if a point lies inside the last closed flux surface.
-# The function returns a value of 1.0 inside and a value of 0.0 outside the LCFS.
+# The inside_lcfs attribute returns a 2D function that identifies if a point lies inside the
+# last closed flux surface. The function returns a value of 1.0 inside and a value of 0.0
+# outside the LCFS.
 print('Inside LCFS at (2.1, 0.2)m: {}'.format(equilibrium.inside_lcfs(2.1, 0.2)))
 print('Inside LCFS at (2.1, 1.5)m: {}'.format(equilibrium.inside_lcfs(2.1, 1.5)))
 
 # The equilibrium object includes methods for mapping functions onto the flux surfaces.
-# These create 2D or 3D functions or e.g. temperature, density etc... according to the profile being mapped.
-# The user can supply either a python function (with 1 argument - normalised psi), a Function1D object or a numerical
-# array holding the normalised psi and function values.
+# These create 2D or 3D functions or e.g. temperature, density etc... according to the profile
+# being mapped. The user can supply either a python function (with 1 argument - normalised psi),
+# a Function1D object or a numerical array holding the normalised psi and function values.
 
-# In this example we create fake 2D and 3D "temperature" profiles from an array of data.
-# The array is interpolated with cubic interpolation and then mapped onto the normalised psi grid.
+# In this example we create fake 2D and 3D "temperature" profiles from an array of data. The
+# array is interpolated with cubic interpolation and then mapped onto the normalised psi grid.
 temperature_2d = equilibrium.map2d([[0, 0.5, 0.9, 1.0], [2500, 2000, 1000, 0]])
 temperature_3d = equilibrium.map3d([[0, 0.5, 0.9, 1.0], [2500, 2000, 1000, 0]])
 
@@ -141,8 +145,3 @@ plt.pcolormesh(x, y, temperature_grid.transpose(), shading='gouraud')
 plt.autoscale(tight=True)
 plt.colorbar()
 plt.title('3D Temperature (x-y slice, function)')
-
-# the cherab package has a convenience tool for viewing an equilibrium
-# this function samples the various equilibrium attributes and renders them as images
-print('Plotting equilibrium data...')
-plot_equilibrium(equilibrium, detail=True)

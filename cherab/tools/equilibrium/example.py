@@ -9,6 +9,11 @@ from cherab.tools.equilibrium.efit import EFITEquilibrium
 def example_equilibrium():
     """
     Return a populated instance of the example equilibrium.
+
+    .. code-block:: pycon
+
+       >>> from cherab.tools.equilibrium import example_equilibrium
+       >>> equilibrium = example_equilibrium()
     """
 
     directory = os.path.split(__file__)[0]
