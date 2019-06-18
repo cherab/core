@@ -29,13 +29,21 @@ cdef class RadiationFunction(InhomogeneousVolumeEmitter):
 
     Radiates power over 4 pi according to the supplied 3D radiation function. Note that this model
     ignores the spectral range of the observer. The power specified will be spread of the entire
-    observable spectral range.
+    observable spectral range. Useful for calculating total radiated power loads on reactor wall
+    components.
     
     :param Function3D radiation_function: A 3D radiation function that specifies the amount of radiation
       to be radiated at a given point, :math:`\phi(x, y, z)` [W/m^2].
     :param float vertical_offset: The vertical offset that will be applied to the radiation function,
       defaults to 0.
     :param float step: The scale length for integration of the radiation function.
+
+    .. code-block:: pycon
+
+       >>> from cherab.tools.emitters import RadiationFunction
+       >>>
+       >>> # define your own 3D radiation function and insert it into this class
+       >>> radiation_emitter = RadiationFunction(rad_function_3d)
     """
 
     cdef:
