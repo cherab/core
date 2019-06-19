@@ -12,37 +12,41 @@ from cherab.core.math import sample2d, AxisymmetricMapper
 from cherab.tools.emitters import RadiationFunction
 
 
-plt.ion()
-
 #############################
 # define radiation function #
 
-plasma_axis = Point2D(2.5, 0)
-lcfs_radius = 1
-ring_radius = 0.5
+PLASMA_AXIS = Point2D(1.5, 0)
+LCFS_RADIUS = 1
+RING_RADIUS = 0.5
 
-peak = 1
-centre_peak_width = 0.05
-ring_width = 0.025
+RADIATION_PEAK = 1
+CENTRE_PEAK_WIDTH = 0.05
+RING_WIDTH = 0.025
+
+# distance of wall from LCFS
+WALL_LCFS_OFFSET = 0.1
+
+CYLINDER_RADIUS = PLASMA_AXIS.x + LCFS_RADIUS + WALL_LCFS_OFFSET * 1.1
+CYLINDER_HEIGHT = (LCFS_RADIUS + WALL_LCFS_OFFSET) * 2
 
 
 def rad_function(r, z):
 
     sample_point = Point2D(r, z)
-    direction = plasma_axis.vector_to(sample_point)
+    direction = PLASMA_AXIS.vector_to(sample_point)
     bearing = np.arctan2(direction.y, direction.x)
 
     # calculate radius of coordinate from magnetic axis
     radius_from_axis = direction.length
-    closest_ring_point = plasma_axis + (direction.normalise() * 0.5)
+    closest_ring_point = PLASMA_AXIS + (direction.normalise() * 0.5)
     radius_from_ring = sample_point.distance_to(closest_ring_point)
 
     # evaluate pedestal-> core function
-    if radius_from_axis <= lcfs_radius:
+    if radius_from_axis <= LCFS_RADIUS:
 
-        central_radiatior = peak * np.exp(-(radius_from_axis**2) / centre_peak_width)
+        central_radiatior = RADIATION_PEAK * np.exp(-(radius_from_axis ** 2) / CENTRE_PEAK_WIDTH)
 
-        ring_radiator = peak * np.cos(bearing) * np.exp(-(radius_from_ring**2) / ring_width)
+        ring_radiator = RADIATION_PEAK * np.cos(bearing) * np.exp(-(radius_from_ring ** 2) / RING_WIDTH)
         ring_radiator = max(0, ring_radiator)
 
         return central_radiatior + ring_radiator
@@ -50,39 +54,16 @@ def rad_function(r, z):
         return 0
 
 
-####################
-# 2D mesh creation #
-
-# make a triangular mesh in the r-z plane
-
-num_vertical_points = 100
-vertical_points = np.linspace(-2, 2, num_vertical_points)
-num_radial_points = 30
-radial_points = np.linspace(0, 4, num_radial_points)
-
-vertex_coords = np.empty((num_vertical_points * num_radial_points, 2))
-for i in range(num_radial_points):
-    for j in range(num_vertical_points):
-        index = i * num_vertical_points + j
-        vertex_coords[index, 0] = radial_points[i]
-        vertex_coords[index, 1] = vertical_points[j]
-
-# perform Delaunay triangulation to produce triangular mesh
-triangles = Delaunay(vertex_coords).simplices
-
-# sample our radiation function at the mesh vertices
-vertex_powers = np.array([rad_function(r, z) for r, z in vertex_coords])
-
-
-#################################
-# add radiation source to world #
-
-world = World()
-
-rad_function_3d = AxisymmetricMapper(Interpolator2DMesh(vertex_coords, vertex_powers, triangles, limit=False))
+# add radiation source to world
+rad_function_3d = AxisymmetricMapper(rad_function)
 radiation_emitter = RadiationFunction(rad_function_3d, vertical_offset=-1)
 
-geom = Cylinder(4, 2, transform=translate(0, 0, -1), parent=world, material=radiation_emitter)
+world = World()
+geom = Cylinder(CYLINDER_RADIUS, CYLINDER_HEIGHT,
+                transform=translate(0, 0, -1), parent=world, material=radiation_emitter)
+
+
+
 
 
 ######################

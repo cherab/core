@@ -85,10 +85,10 @@ Surface Radiation Loads
      - .. image:: ./radiation_loads/toroidal_wall.png
           :height: 150px
           :width: 150px
-   * - :ref:`Surface radiation loads <surface_radiation_loads>`
-     - Demo of loading a plasma from SOLPS and using its radiation data to calculate
-       total radiation arriving at surfaces.
-     - .. image:: ./radiation_loads/AUG_wall_outline.png
+   * - :ref:`Symmetric Power Load Calculation <symmetric_power_load>`
+     - Calculating the power load by exploiting symmetry. We manually
+       create an array of detectors for sampling.
+     - .. image:: ./radiation_loads/symmetric_power_load.png
           :height: 150px
           :width: 150px
 
