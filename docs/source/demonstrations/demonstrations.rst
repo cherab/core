@@ -48,8 +48,8 @@ Creating Plasmas
           :height: 150px
           :width: 150px
    * - :ref:`Flux Function Plasmas <flux_function_plasmas>`
-     - Specifying a plasma distribution in terms of 1D flux functions.
-     - .. image:: ./plasmas/equilibrium_mapped_te_xz.png
+     - Loading the example EFIT equilibrium and making 1D flux functions.
+     - .. image:: ./plasmas/equilibrium_surfaces.png
           :height: 150px
           :width: 150px
    * - :ref:`2D Mesh Plasmas <mesh2d_plasma>`
@@ -63,10 +63,40 @@ Creating Plasmas
           :height: 150px
           :width: 150px
 
+
+Surface Radiation Loads
+=======================
+
+.. list-table::
+   :widths: 28 50 22
+   :header-rows: 1
+
+   * - Name
+     - Description
+     - Preview
+   * - :ref:`Defining A Radiation Function <radiation_function>`
+     - Defining an example radiation function.
+     - .. image:: ./radiation_loads/radiation_function.png
+          :height: 150px
+          :width: 150px
+   * - :ref:`Defining A Wall From A 2D Polygon <wall_from_polygon>`
+     - A toroidal mesh representing the tokamak wall is made from a
+       2D polygon outline.
+     - .. image:: ./radiation_loads/toroidal_wall.png
+          :height: 150px
+          :width: 150px
+   * - :ref:`Surface radiation loads <surface_radiation_loads>`
+     - Demo of loading a plasma from SOLPS and using its radiation data to calculate
+       total radiation arriving at surfaces.
+     - .. image:: ./radiation_loads/AUG_wall_outline.png
+          :height: 150px
+          :width: 150px
+
+
 Code examples gallery
 =====================
 
-.. list-table:: CHERAB Examples
+.. list-table::
    :widths: 28 50 22
    :header-rows: 1
 
@@ -103,11 +133,5 @@ Code examples gallery
        Localisation of the plasma emission is examined by plotting profiles of parameters
        such as density and temperature along the ray trajectory.
      - .. image:: ./line_emission/balmer_series_spectra.png
-          :height: 150px
-          :width: 150px
-   * - :ref:`Surface radiation loads <surface_radiation_loads>`
-     - Demo of loading a plasma from SOLPS and using its radiation data to calculate
-       total radiation arriving at surfaces.
-     - .. image:: ./radiation_wall_loads/AUG_wall_outline.png
           :height: 150px
           :width: 150px
