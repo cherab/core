@@ -2,11 +2,7 @@ from cherab.core.atomic import neon, hydrogen, helium
 from cherab.core.math import Interpolate1DCubic
 from cherab.openadas import OpenADAS
 from cherab.tools.plasmas.ionisationbalance import (_fractional_abundance, fractional_abundance,
-                                                    from_element_density, _from_element_density, _profile1d_fractional,
-                                                    profile1d_fractional, interpolators1d_fractional, _profile1d_from_elementdensity,
-                                                    profile1d_from_elementdensity, interpolators1d_from_elementdensity,
-                                                    _match_element_density, match_element_density, _profile1d_match_density,
-                                                    profile1d_match_density, interpolators1d_match_element_density)
+                                                    interpolators1d_fractional)
 
 import matplotlib.pyplot as plt
 import matplotlib._color_data as mcd
@@ -74,7 +70,7 @@ element2 = helium
 element_bulk = hydrogen
 
 # test fractional abundance calculations
-if True:
+if False:
     _abundance_fractional_spot = _fractional_abundance(adas, element, n_e(psi_value), t_e(psi_value))
     abundance_fractional_spot = fractional_abundance(adas, element, n_e(psi_value), t_e(psi_value))
     _abundance_fractional_spot_tcx = _fractional_abundance(adas, element, n_e(psi_value), t_e(psi_value),
@@ -82,14 +78,16 @@ if True:
     abundance_fractional_spot_tcx = fractional_abundance(adas, element, n_e(psi_value), t_e(psi_value),
                                                                    hydrogen, 3e15, 0)
 
-    _abundance_profile = _profile1d_fractional(adas, element, n_e_profile, t_e_profile)
-    abundance_profile = profile1d_fractional(adas, element, n_e_profile, t_e_profile)
+    _abundance_fractional_profile = _fractional_abundance(adas, element, n_e_profile, t_e_profile)
+    abundance_fractional_profile = fractional_abundance(adas, element, n_e_profile, t_e_profile)
+
+    abundance_fractional_profile = _fractional_abundance(adas, element, n_e, t_e, free_variable=psin_1d)
 
     abundance_fractional_interpolators = interpolators1d_fractional(adas, element, psin_1d, n_e, t_e)
 
     # calculate total abundance for consistency check
     abundance_spot_total = np.sum(_abundance_fractional_spot)
-    abundance_profile_total = np.sum(_abundance_profile, axis=0)
+    abundance_profile_total = np.sum(_abundance_fractional_profile, axis=0)
     abundance_profile_total_interpolators = np.zeros_like(abundance_profile_total)
     for key, item in abundance_fractional_interpolators.items():
         for index, value in enumerate(psin_1d):
@@ -97,7 +95,7 @@ if True:
 
     fig_fractional = plt.subplots()
     ax = fig_fractional[1]
-    for index, value in enumerate(_abundance_profile):
+    for index, value in enumerate(_abundance_fractional_profile):
         ax.plot(psin_1d, value, "x", color=colors[15 + index])
     for index, value in enumerate(_abundance_fractional_spot):
         ax.plot(psi_value, value, "o", color=colors[15 + index])
@@ -118,7 +116,7 @@ if True:
     ax.legend()
 
 # test calculations of charge state densities
-if True:
+if False:
     density_element_spot = _from_element_density(adas, element, n_element(psi_value), n_e(psi_value), t_e(psi_value))
     density_element2_spot = _from_element_density(adas, element2, n_element2(psi_value), n_e(psi_value), t_e(psi_value))
     density_bulk_spot = _match_element_density(adas, element_bulk, [density_element_spot, density_element2_spot],
