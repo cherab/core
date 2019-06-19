@@ -377,6 +377,9 @@ cdef class Beam(Node):
         self._configure_geometry()
         self._configure_attenuator()
 
+    cdef Plasma get_plasma(self):
+        return self._plasma
+
     @property
     def attenuator(self):
         return self._attenuator
