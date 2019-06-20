@@ -22,8 +22,8 @@ CYLINDER_HEIGHT = (LCFS_RADIUS + WALL_LCFS_OFFSET) * 2
 WALL_RADIUS = LCFS_RADIUS + WALL_LCFS_OFFSET
 
 
-######################################
-# make toroidal wall wrapping plasma #
+##########################################
+# make toroidal wall wrapping the plasma #
 
 # number of poloidal wall elements
 num = 250
