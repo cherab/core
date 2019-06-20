@@ -22,9 +22,27 @@ constructed manually using the Raysect Pixel detector class.
 
 .. literalinclude:: ../../../../demos/radiation_loads/symmetric_power_load.py
 
+When this script is run, the output confirms power is conserved.
+
+
+    >>> python symmetric_power_load.py
+    Total radiated power => 4.848 MW
+    CHERAB total detected power => 4.844 MW
+
+.. figure:: symmetric_power_load_detectors.png
+   :align: center
+
+   **Caption:** The emission source function with the wall detector positions
+   overlaid.
+
+.. figure:: symmetric_power_load_zoomed_detectors.png
+   :align: center
+
+   **Caption:** A zoomed in view of the wall detectors (black) and their surface
+   normals (red).
+
 .. figure:: symmetric_power_load.png
    :align: center
 
    **Caption:** The power loading in MW/m^2 measured on the pixel detectors wrapping
    around the wall.
-

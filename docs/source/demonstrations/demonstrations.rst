@@ -91,7 +91,17 @@ Surface Radiation Loads
      - .. image:: ./radiation_loads/symmetric_power_load.png
           :height: 150px
           :width: 150px
-
+   * - `Mesh Observer <https://raysect.github.io/documentation/demonstrations/observers/mesh_observers.html>`_
+     - Calculating powers on an arbitrary 3D surface (Raysect docs).
+     - .. image:: https://raysect.github.io/documentation/_images/mesh_observers.jpg
+          :height: 150px
+          :width: 150px
+   * - :ref:`AUG - SOLPS radiation load example <aug_solps_radiation_load>`
+     - An older demonstration of the tutorials above using a SOLPS simulation
+       and an AUG wall outline.
+     - .. image:: ./radiation_loads/AUG_wall_outline.png
+          :height: 150px
+          :width: 150px
 
 Code examples gallery
 =====================
