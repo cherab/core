@@ -4,6 +4,7 @@ Tools
 
 .. toctree::
 
+   plasmas
    materials
    primitives
    observers
