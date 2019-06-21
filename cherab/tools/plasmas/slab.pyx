@@ -110,11 +110,49 @@ cdef class IonFunction(Function3D):
 
 
 # TODO - replace with ionisation balance calculations
-def build_slab_plasma(width=1, length=5, height=1, peak_density=1e19, peak_temperature=2500,
+def build_slab_plasma(length=5, width=1, height=1, peak_density=1e19, peak_temperature=2500,
                       pedestal_top=1, neutral_temperature=0.5, impurities=None,
-                      world=None, atomic_data=OpenADAS(permit_extrapolation=True)):
+                      parent=None, atomic_data=OpenADAS(permit_extrapolation=True)):
+    """
+    Constructs a simple slab of plasma.
 
-    plasma = Plasma(parent=world)
+    The plasma is defined for positive x starting at x = 0, symmetric in y-z. The plasma
+    parameters such as electron density and temperature evolve in 1 dimension according
+    to the input parameters specified. The slab includes an optional pedestal.
+
+    Raysect cannot handle infinite geometry, so overall spatial dimensions of the slab need
+    to be set, [length, width, height]. These can be set very large to make an effectively
+    infinite slab of plasma, although the numerical performance will degrade accordingly.
+    The dimensions should be set appropriately with valid assumptions for your scenario.
+
+    Impurity species can be included as a list of tuples, where each tuple specifies an
+    impurity. The specification format is (species, charge, concentration). For example:
+
+        >>> impurities=[(carbon, 6, 0.005)]
+
+    :param float length: the overall length of the slab along x.
+    :param float width: the y width of the slab.
+    :param float height: the z height of the slab.
+    :param float peak_density: the peak electron density at the pedestal top.
+    :param float peak_temperature: the peak electron temperature at the pedestal top.
+    :param float pedestal_top: the length of the pedestal top.
+    :param float neutral_temperature: the background neutral temperature.
+    :param list impurities: an optional list of impurities to include.
+    :param parent: the Raysect scene-graph parent node.
+    :param atomic_data: the atomic data provider to use for subsequent spectroscopic calculations,
+      defaults to atomic_data=OpenADAS(permit_extrapolation=True).
+
+    .. code-block:: pycon
+
+       >>> from raysect.optical import World
+       >>> from cherab.core.atomic import carbon
+       >>> from cherab.tools.plasmas.slab import build_slab_plasma
+       >>>
+       >>> plasma = build_slab_plasma(peak_density=5e19, impurities=[(carbon, 6, 0.005)])
+       >>> plasma.parent = World()
+    """
+
+    plasma = Plasma(parent=parent)
     plasma.atomic_data = atomic_data
     plasma.geometry = Box(Point3D(0, -width/2, -height/2), Point3D(length, width/2, height/2))
 

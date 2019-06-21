@@ -57,6 +57,11 @@ Creating Plasmas
      - .. image:: ./plasmas/mesh_plasma_column.png
           :height: 150px
           :width: 150px
+   * - :ref:`Slab Plasma <slab_plasma>`
+     - Constructing a slab of plasma defined along +ve x.
+     - .. image:: ./plasmas/slab_plasma.png
+          :height: 150px
+          :width: 150px
    * - :ref:`Beams into Plasmas <beams_into_plasmas>`
      - Specifying a mono-energetic neutral beam that interacts with a plasma.
      - .. image:: ./plasmas/beam_into_plasma.png
