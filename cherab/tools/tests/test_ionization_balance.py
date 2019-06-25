@@ -1,15 +1,13 @@
 import unittest
+from collections.abc import Iterable
+
+import numpy as np
 from cherab.core.atomic import neon, hydrogen, helium
 from cherab.core.math import Interpolate1DCubic
 from cherab.openadas import OpenADAS
-from cherab.tools.plasmas.ionisationbalance import (_fractional_abundance, fractional_abundance,
-                                                    interpolators1d_fractional,_from_elementdensity, from_elementdensity,
-                                                    _match_plasma_neutrality, interpolators1d_from_elementdensity,
-                                                    interpolators1d_match_plasma_neutrality)
-
-import matplotlib.pyplot as plt
-import matplotlib._color_data as mcd
-import numpy as np
+from cherab.tools.plasmas.ionisationbalance import (fractional_abundance,
+                                                    from_elementdensity,
+                                                    match_plasma_neutrality)
 
 
 def doubleparabola(r, Centre, Edge, p, q):
@@ -38,8 +36,11 @@ def get_electron_density_spot(densities):
     return n_e
 
 
-class TestIonizationBalance1D(unittest.TestCase):
+def exp_decay(r, lamb, max_val):
+    return max_val * np.exp((r - r.max()) * lamb)
 
+
+class TestIonizationBalance1D(unittest.TestCase):
     # create plasma profiles and interpolators
     psin_1d = np.linspace(0, 1.1, 50, endpoint=True)
     psin_1d_detailed = np.linspace(0, 1.1, 450, endpoint=True)
@@ -51,12 +52,16 @@ class TestIonizationBalance1D(unittest.TestCase):
     n_element_profile = doubleparabola(psin_1d, 1e17, 1e17, 2, 2) + normal(psin_1d, 0.9, 0.1, 5e17)
     n_element2_profile = doubleparabola(psin_1d, 5e17, 1e17, 2, 2)
 
+    n_tcx_donor_profile = exp_decay(psin_1d, 10, 3e16)
+
     t_e = Interpolate1DCubic(psin_1d, t_e_profile)
     n_e = Interpolate1DCubic(psin_1d, n_e_profile)
 
     t_element = Interpolate1DCubic(psin_1d, t_element_profile)
     n_element = Interpolate1DCubic(psin_1d, n_element_profile)
     n_element2 = Interpolate1DCubic(psin_1d, n_element2_profile)
+
+    n_tcx_donor = Interpolate1DCubic(psin_1d, n_tcx_donor_profile)
 
     # denser psi array to test interpolators
     n_e_profile_detailed = np.zeros_like(psin_1d_detailed)
@@ -75,41 +80,314 @@ class TestIonizationBalance1D(unittest.TestCase):
 
     tcx_donor = hydrogen
 
-    n_tcx_donor = 3e16
-
     TOLERANCE = 1e-3
 
     def sumup_fractions(self, fractions):
 
-        total = 0
         if isinstance(fractions, dict):
-            iterator =  fractions.items()
-        elif isinstance(fractions, np.ndarray):
-            iterator = enumerate(fractions)
+            if isinstance(fractions[0], Iterable):
+                total = np.zeros_like(fractions[0])
+            else:
+                total = 0
 
-        for index, value in iterator:
-            total += value
+            for index, values in fractions.items():
+                total += values
+
+        elif isinstance(fractions, np.ndarray):
+            total = np.zeros_like(fractions[0, ...])
+
+            for index in np.ndindex(fractions.shape):
+                total[index] += fractions[index]
 
         return total
 
-    def test_0d_from_0d(self):
+    def sumup_electrons(self, densities):
+        if isinstance(densities, dict):
+            if isinstance(densities[0], Iterable):
+                total = np.zeros_like(densities[0])
+            else:
+                total = 0
+
+            for index, values in densities.items():
+                total += values * index
+
+        elif isinstance(densities, np.ndarray):
+            total = np.zeros_like(densities[0, ...])
+
+            for index in np.ndindex(densities.shape):
+                total[index] += densities[index] * index[0]
+
+        return total
+
+    def test_fractional_0d_from_0d(self):
         """
         test fractional abundance calculation with float numbers as inputs
         :return:
         """
-        abundance_fractional = fractional_abundance(self.adas, self.element, self.n_e(self.psi_value), self.t_e(self.psi_value))
+        abundance_fractional = fractional_abundance(self.adas, self.element, self.n_e(self.psi_value),
+                                                    self.t_e(self.psi_value))
 
         fraction_sum = self.sumup_fractions(abundance_fractional)
         self.assertTrue(1 - fraction_sum < self.TOLERANCE)
 
-    def test_0d_from_0d_tcx(self):
+    def test_fractional_0d_from_0d_tcx(self):
         """
         test fractional abundance calculation with thermal cx and float numbers as inputs
         :return:
         """
-        abundance_fractional = fractional_abundance(self.adas, self.element, self.n_e(self.psi_value), self.t_e(self.psi_value),
-                                                    self.tcx_donor, self.n_tcx_donor, 0)
+        abundance_fractional = fractional_abundance(self.adas, self.element, self.n_e(self.psi_value),
+                                                    self.t_e(self.psi_value),
+                                                    self.tcx_donor, self.n_tcx_donor(self.psi_value), 0)
 
         fraction_sum = self.sumup_fractions(abundance_fractional)
         self.assertTrue(1 - fraction_sum < self.TOLERANCE)
 
+    def test_fractional_0d_from_interpolators(self):
+        """
+        test interpolators and free_variable as inputs
+        :return:
+        """
+
+        abundance_fractional = fractional_abundance(self.adas, self.element, self.n_e, self.t_e,
+                                                    free_variable=self.psi_value)
+
+        fraction_sum = self.sumup_fractions(abundance_fractional)
+        self.assertTrue(1 - fraction_sum < self.TOLERANCE)
+
+    def test_fractional_0d_from_interpolators_tcx(self):
+        """
+        test interpolators and free_variable as inputs
+        :return:
+        """
+
+        abundance_fractional = fractional_abundance(self.adas, self.element, self.n_e, self.t_e,
+                                                    tcx_donor=self.tcx_donor, tcx_donor_n=self.n_tcx_donor,
+                                                    tcx_donor_charge=0, free_variable=self.psi_value)
+
+        fraction_sum = self.sumup_fractions(abundance_fractional)
+        self.assertTrue(1 - fraction_sum < self.TOLERANCE)
+
+    def test_fractional_0d_from_mixed(self):
+        """
+        test mixed types of inputs
+        :return:
+        """
+
+        abundance_fractional = fractional_abundance(self.adas, self.element, self.n_e(self.psi_value), self.t_e,
+                                                    free_variable=self.psi_value)
+
+        fraction_sum = self.sumup_fractions(abundance_fractional)
+        self.assertTrue(1 - fraction_sum < self.TOLERANCE)
+
+        abundance_fractional = fractional_abundance(self.adas, self.element, self.n_e, self.t_e(self.psi_value),
+                                                    free_variable=self.psi_value)
+
+        fraction_sum = self.sumup_fractions(abundance_fractional)
+        self.assertTrue(1 - fraction_sum < self.TOLERANCE)
+
+    def test_fractional_1d_from_1d(self):
+        """
+        test calculation of 1d fractional profiles with 1d iterables as inputs
+        :return:
+        """
+        abundance_fractional = fractional_abundance(self.adas, self.element, self.n_e_profile, self.t_e_profile)
+
+        fraction_sum = self.sumup_fractions(abundance_fractional)
+        self.assertTrue(np.allclose(fraction_sum, 1, atol=self.TOLERANCE))
+
+    def test_fractional_1d_from_1d_tcx(self):
+        """
+        test calculation of 1d fractional profiles with 1d iterables as inputs
+        :return:
+        """
+
+        abundance_fractional = fractional_abundance(self.adas, self.element, self.n_e_profile, self.t_e_profile,
+                                                    tcx_donor=self.tcx_donor, tcx_donor_n=self.n_tcx_donor_profile,
+                                                    tcx_donor_charge=0)
+
+        fraction_sum = self.sumup_fractions(abundance_fractional)
+        self.assertTrue(np.allclose(fraction_sum, 1, atol=self.TOLERANCE))
+
+    def test_fractional_1d_from_interpolators(self):
+        """
+        test calculation of 1d fractional profiles with 1d interpolators as inputs
+        :return:
+        """
+        abundance_fractional = fractional_abundance(self.adas, self.element, self.n_e, self.t_e,
+                                                    free_variable=self.psin_1d)
+
+        fraction_sum = self.sumup_fractions(abundance_fractional)
+        self.assertTrue(np.allclose(fraction_sum, 1, atol=self.TOLERANCE))
+
+    def test_fractional_1d_from_interpolators_tcx(self):
+        """
+        test calculation of 1d fractional profiles with 1d iterables as inputs
+        :return:
+        """
+
+        abundance_fractional = fractional_abundance(self.adas, self.element, self.n_e, self.t_e,
+                                                    tcx_donor=self.tcx_donor, tcx_donor_n=self.n_tcx_donor,
+                                                    tcx_donor_charge=0, free_variable=self.psin_1d)
+
+        fraction_sum = self.sumup_fractions(abundance_fractional)
+        self.assertTrue(np.allclose(fraction_sum, 1, atol=self.TOLERANCE))
+
+    def test_fractional_from_mixed(self):
+        """
+        test calculation of 1d fractional profiles with mixed types as inputs
+        :return:
+        """
+
+        abundance_fractional = fractional_abundance(self.adas, self.element, self.n_e_profile, self.t_e,
+                                                    free_variable=self.psin_1d)
+
+        fraction_sum = self.sumup_fractions(abundance_fractional)
+        self.assertTrue(np.allclose(fraction_sum, 1, atol=self.TOLERANCE))
+
+        abundance_fractional = fractional_abundance(self.adas, self.element, self.n_e, self.t_e_profile,
+                                                    free_variable=self.psin_1d)
+
+        fraction_sum = self.sumup_fractions(abundance_fractional)
+        self.assertTrue(np.allclose(fraction_sum, 1, atol=self.TOLERANCE))
+
+    def test_fractional_from_mixed_tcx(self):
+        """
+        test calculation of 1d fractional profiles with mixed types as inputs
+        :return:
+        """
+
+        abundance_fractional = fractional_abundance(self.adas, self.element, self.n_e_profile, self.t_e,
+                                                    tcx_donor=self.tcx_donor, tcx_donor_n=self.n_tcx_donor,
+                                                    tcx_donor_charge=0, free_variable=self.psin_1d)
+
+        fraction_sum = self.sumup_fractions(abundance_fractional)
+        self.assertTrue(np.allclose(fraction_sum, 1, atol=self.TOLERANCE))
+
+        abundance_fractional = fractional_abundance(self.adas, self.element, self.n_e, self.t_e_profile,
+                                                    tcx_donor=self.tcx_donor, tcx_donor_n=self.n_tcx_donor,
+                                                    tcx_donor_charge=0, free_variable=self.psin_1d)
+
+        fraction_sum = self.sumup_fractions(abundance_fractional)
+        self.assertTrue(np.allclose(fraction_sum, 1, atol=self.TOLERANCE))
+
+        abundance_fractional = fractional_abundance(self.adas, self.element, self.n_e, self.t_e_profile,
+                                                    tcx_donor=self.tcx_donor, tcx_donor_n=self.n_tcx_donor_profile,
+                                                    tcx_donor_charge=0, free_variable=self.psin_1d)
+
+        fraction_sum = self.sumup_fractions(abundance_fractional)
+        self.assertTrue(np.allclose(fraction_sum, 1, atol=self.TOLERANCE))
+
+    def test_balance_0d_elementdensity(self):
+        """
+        test calculation of ionization balance
+        :return:
+        """
+        # test with floats as input
+        densities = from_elementdensity(self.adas, self.element, self.n_element(self.psi_value),
+                                        self.n_e(self.psi_value), self.t_e(self.psi_value))
+        total = self.sumup_fractions(densities)
+        self.assertTrue(np.isclose(total, self.n_element(self.psi_value), rtol=self.TOLERANCE))
+
+        # test with interpolators
+        densities = from_elementdensity(self.adas, self.element, self.n_element(self.psi_value),
+                                        self.n_e(self.psi_value), self.t_e(self.psi_value))
+        total = self.sumup_fractions(densities)
+        self.assertTrue(np.isclose(total, self.n_element(self.psi_value), rtol=self.TOLERANCE))
+
+        # test with mixed parameters
+        densities = from_elementdensity(self.adas, self.element, self.n_element,
+                                        self.n_e(self.psi_value), self.t_e(self.psi_value),
+                                        free_variable=self.psi_value)
+        total = self.sumup_fractions(densities)
+        self.assertTrue(np.isclose(total, self.n_element(self.psi_value), rtol=self.TOLERANCE))
+
+    def test_balance_0d_matchdensity(self):
+        """test matching of plasma neutrality"""
+
+        densities_1 = from_elementdensity(self.adas, self.element, self.n_element,
+                                          self.n_e(self.psi_value), self.t_e(self.psi_value),
+                                          free_variable=self.psi_value)
+
+        densities_2 = from_elementdensity(self.adas, self.element2, self.n_element2,
+                                          self.n_e(self.psi_value), self.t_e(self.psi_value),
+                                          free_variable=self.psi_value)
+
+        densities_3 = match_plasma_neutrality(self.adas, self.element_bulk, [densities_1, densities_2],
+                                              self.n_e(self.psi_value), self.t_e(self.psi_value))
+
+        total = self.sumup_electrons(densities_1)
+        total += self.sumup_electrons(densities_2)
+        total += self.sumup_electrons(densities_3)
+
+        self.assertTrue(np.isclose(total, self.n_e(self.psi_value), rtol=self.TOLERANCE))
+
+    def test_balance_0d_matchdensity_tcx(self):
+        """test matching of plasma neutrality"""
+
+        densities_1 = from_elementdensity(self.adas, self.element, self.n_element,
+                                          self.n_e(self.psi_value), self.t_e(self.psi_value),
+                                          free_variable=self.psi_value,
+                                          tcx_donor=self.tcx_donor, tcx_donor_n=self.n_tcx_donor, tcx_donor_charge=0,
+                                          )
+
+        densities_2 = from_elementdensity(self.adas, self.element2, self.n_element2,
+                                          self.n_e(self.psi_value), self.t_e(self.psi_value),
+                                          free_variable=self.psi_value,
+                                          tcx_donor=self.tcx_donor, tcx_donor_n=self.n_tcx_donor, tcx_donor_charge=0,
+                                          )
+
+        densities_3 = match_plasma_neutrality(self.adas, self.element_bulk, [densities_1, densities_2],
+                                              self.n_e(self.psi_value), self.t_e(self.psi_value))
+
+        total = self.sumup_electrons(densities_1)
+        total += self.sumup_electrons(densities_2)
+        total += self.sumup_electrons(densities_3)
+
+        self.assertTrue(np.isclose(total, self.n_e(self.psi_value), rtol=self.TOLERANCE))
+
+    def test_balance_1d_matchdensity(self):
+        """test matching of plasma neutrality for 1d profiles"""
+
+        densities_1 = from_elementdensity(self.adas, self.element, self.n_element,
+                                          self.n_e, self.t_e_profile,
+                                          free_variable=self.psin_1d)
+
+        densities_2 = from_elementdensity(self.adas, self.element2, self.n_element2,
+                                          self.n_e_profile, self.t_e,
+                                          free_variable=self.psin_1d)
+
+        densities_3 = match_plasma_neutrality(self.adas, self.element_bulk, [densities_1, densities_2],
+                                              self.n_e, self.t_e_profile,
+                                              free_variable=self.psin_1d)
+
+        total = self.sumup_electrons(densities_1)
+        total += self.sumup_electrons(densities_2)
+        total += self.sumup_electrons(densities_3)
+
+        self.assertTrue(np.allclose(total, self.n_e_profile, rtol=self.TOLERANCE))
+
+    def test_balance_1d_matchdensity_tcx(self):
+        """test matching of plasma neutrality for 1d profiles with thermal cx"""
+
+        densities_1 = from_elementdensity(self.adas, self.element, self.n_element,
+                                          self.n_e, self.t_e_profile,
+                                          free_variable=self.psin_1d,
+                                          tcx_donor=self.tcx_donor, tcx_donor_n=self.n_tcx_donor, tcx_donor_charge=0
+                                          )
+
+        densities_2 = from_elementdensity(self.adas, self.element2, self.n_element2,
+                                          self.n_e_profile, self.t_e,
+                                          free_variable=self.psin_1d,
+                                          tcx_donor=self.tcx_donor, tcx_donor_n=self.n_tcx_donor, tcx_donor_charge=0)
+
+        densities_3 = match_plasma_neutrality(self.adas, self.element_bulk, [densities_1, densities_2],
+                                              self.n_e, self.t_e_profile,
+                                              free_variable=self.psin_1d,
+                                              tcx_donor=self.tcx_donor, tcx_donor_n=self.n_tcx_donor,
+                                              tcx_donor_charge=0)
+
+        total = self.sumup_electrons(densities_1)
+        total += self.sumup_electrons(densities_2)
+        total += self.sumup_electrons(densities_3)
+
+        self.assertTrue(np.allclose(total, self.n_e_profile, rtol=self.TOLERANCE))
