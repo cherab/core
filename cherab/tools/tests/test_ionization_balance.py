@@ -5,9 +5,9 @@ import numpy as np
 from cherab.core.atomic import neon, hydrogen, helium
 from cherab.core.math import Interpolate1DCubic
 from cherab.openadas import OpenADAS
-from cherab.tools.plasmas.ionisationbalance import (fractional_abundance,
-                                                    from_elementdensity,
-                                                    match_plasma_neutrality)
+from cherab.tools.plasmas.ionisationbalance import (fractional_abundance, from_elementdensity, match_plasma_neutrality,
+                                                    interpolators1d_fractional, interpolators1d_from_elementdensity,
+                                                    interpolators1d_match_plasma_neutrality)
 
 
 def doubleparabola(r, Centre, Edge, p, q):
@@ -118,6 +118,16 @@ class TestIonizationBalance1D(unittest.TestCase):
                 total[index] += densities[index] * index[0]
 
         return total
+
+    def evaluate_interpolators(self, interpolators, free_variable):
+
+        profiles = {}
+        for key, item in interpolators.items():
+            profiles[key] = np.zeros_like(free_variable)
+            for index in np.ndindex(*free_variable.shape):
+                profiles[key][index] = item(free_variable[index])
+
+        return profiles
 
     def test_fractional_0d_from_0d(self):
         """
@@ -277,6 +287,36 @@ class TestIonizationBalance1D(unittest.TestCase):
         fraction_sum = self.sumup_fractions(abundance_fractional)
         self.assertTrue(np.allclose(fraction_sum, 1, atol=self.TOLERANCE))
 
+    def test_fractional_inetrpolators_1d(self):
+        """
+        test calculation of 1d fractional interpolators
+        :return:
+        """
+
+        interpolators_fractional = interpolators1d_fractional(self.atomic_data, self.element, self.psin_1d,
+                                                              self.n_e_profile, self.t_e)
+
+        profiles = self.evaluate_interpolators(interpolators_fractional, self.psin_1d)
+        fraction_sum = self.sumup_fractions(profiles)
+
+        self.assertTrue(np.allclose(fraction_sum, 1, atol=self.TOLERANCE))
+
+    def test_fractional_inetrpolators_tcx(self):
+        """
+        test calculation of 1d fractional interpolators with thermal cx
+        :return:
+        """
+
+        interpolators_fractional = interpolators1d_fractional(self.atomic_data, self.element, self.psin_1d,
+                                                              self.n_e_profile, self.t_e, tcx_donor=self.tcx_donor,
+                                                              tcx_donor_n=self.n_tcx_donor_profile,
+                                                              tcx_donor_charge=0)
+
+        profiles = self.evaluate_interpolators(interpolators_fractional, self.psin_1d)
+        fraction_sum = self.sumup_fractions(profiles)
+
+        self.assertTrue(np.allclose(fraction_sum, 1, atol=self.TOLERANCE))
+
     def test_balance_0d_elementdensity(self):
         """
         test calculation of ionization balance
@@ -301,7 +341,7 @@ class TestIonizationBalance1D(unittest.TestCase):
         total = self.sumup_fractions(densities)
         self.assertTrue(np.isclose(total, self.n_element(self.psi_value), rtol=self.TOLERANCE))
 
-    def test_balance_0d_matchdensity(self):
+    def test_balance_0d_plasma_neutrality(self):
         """test matching of plasma neutrality"""
 
         densities_1 = from_elementdensity(self.atomic_data, self.element, self.n_element,
@@ -321,7 +361,7 @@ class TestIonizationBalance1D(unittest.TestCase):
 
         self.assertTrue(np.isclose(total, self.n_e(self.psi_value), rtol=self.TOLERANCE))
 
-    def test_balance_0d_matchdensity_tcx(self):
+    def test_balance_0d_plasma_neutrality_tcx(self):
         """test matching of plasma neutrality"""
 
         densities_1 = from_elementdensity(self.atomic_data, self.element, self.n_element,
@@ -345,7 +385,7 @@ class TestIonizationBalance1D(unittest.TestCase):
 
         self.assertTrue(np.isclose(total, self.n_e(self.psi_value), rtol=self.TOLERANCE))
 
-    def test_balance_1d_matchdensity(self):
+    def test_balance_1d_plasma_neutrality(self):
         """test matching of plasma neutrality for 1d profiles"""
 
         densities_1 = from_elementdensity(self.atomic_data, self.element, self.n_element,
@@ -366,7 +406,7 @@ class TestIonizationBalance1D(unittest.TestCase):
 
         self.assertTrue(np.allclose(total, self.n_e_profile, rtol=self.TOLERANCE))
 
-    def test_balance_1d_matchdensity_tcx(self):
+    def test_balance_1d_plasma_neutrality_tcx(self):
         """test matching of plasma neutrality for 1d profiles with thermal cx"""
 
         densities_1 = from_elementdensity(self.atomic_data, self.element, self.n_element,
@@ -389,5 +429,106 @@ class TestIonizationBalance1D(unittest.TestCase):
         total = self.sumup_electrons(densities_1)
         total += self.sumup_electrons(densities_2)
         total += self.sumup_electrons(densities_3)
+
+        self.assertTrue(np.allclose(total, self.n_e_profile, rtol=self.TOLERANCE))
+
+    def test_balance_1d_interpolators_from_element_density(self):
+        """
+        test calculation of 1d interpolators of charge stage densities
+        :return:
+        """
+
+        interpolators_abundance = interpolators1d_from_elementdensity(self.atomic_data, self.element, self.psin_1d,
+                                                                      self.n_element,
+                                                                      self.n_e_profile, self.t_e)
+
+        profiles = self.evaluate_interpolators(interpolators_abundance, self.psin_1d)
+        fraction_sum = self.sumup_fractions(profiles)
+
+        self.assertTrue(np.allclose(fraction_sum, self.n_element_profile, rtol=self.TOLERANCE))
+
+    def test_balance_1d_interpolators_from_element_density_tcx(self):
+        """
+        test calculation of 1d interpolators of ion charge state densities
+        :return:
+        """
+
+        interpolators_abundance = interpolators1d_from_elementdensity(self.atomic_data, self.element, self.psin_1d,
+                                                                      self.n_element,
+                                                                      self.n_e_profile, self.t_e,
+                                                                      tcx_donor=self.tcx_donor,
+                                                                      tcx_donor_n=self.n_tcx_donor, tcx_donor_charge=0)
+
+        profiles = self.evaluate_interpolators(interpolators_abundance, self.psin_1d)
+        fraction_sum = self.sumup_fractions(profiles)
+
+        self.assertTrue(np.allclose(fraction_sum, self.n_element_profile, rtol=self.TOLERANCE))
+
+    def test_balance_1d_interpolators_plasma_neutrality(self):
+        """
+        test calulation of 1d interpolators for ion charge state densities using plasma neutrality condition.
+        :return:
+        """
+
+        interpolators_abundance_1 = interpolators1d_from_elementdensity(self.atomic_data, self.element, self.psin_1d,
+                                                                        self.n_element,
+                                                                        self.n_e_profile, self.t_e)
+
+        interpolators_abundance_2 = interpolators1d_from_elementdensity(self.atomic_data, self.element2, self.psin_1d,
+                                                                        self.n_element2,
+                                                                        self.n_e_profile, self.t_e)
+
+        interpolators_abundance_3 = interpolators1d_match_plasma_neutrality(self.atomic_data, self.element,
+                                                                            self.psin_1d,
+                                                                            [interpolators_abundance_1,
+                                                                             interpolators_abundance_2],
+                                                                            self.n_e_profile, self.t_e)
+
+        profiles1 = self.evaluate_interpolators(interpolators_abundance_1, self.psin_1d)
+        profiles2 = self.evaluate_interpolators(interpolators_abundance_2, self.psin_1d)
+        profiles3 = self.evaluate_interpolators(interpolators_abundance_3, self.psin_1d)
+
+        total = self.sumup_electrons(profiles1)
+        total += self.sumup_electrons(profiles2)
+        total += self.sumup_electrons(profiles3)
+
+        self.assertTrue(np.allclose(total, self.n_e_profile, rtol=self.TOLERANCE))
+
+    def test_balance_1d_interpolators_plasma_neutrality_tcx(self):
+        """
+        test calulation of 1d interpolators for ion charge state densities using plasma neutrality condition.
+        :return:
+        """
+
+        interpolators_abundance_1 = interpolators1d_from_elementdensity(self.atomic_data, self.element, self.psin_1d,
+                                                                        self.n_element,
+                                                                        self.n_e_profile, self.t_e,
+                                                                        tcx_donor=self.tcx_donor,
+                                                                        tcx_donor_n=self.n_tcx_donor,
+                                                                        tcx_donor_charge=0)
+
+        interpolators_abundance_2 = interpolators1d_from_elementdensity(self.atomic_data, self.element2, self.psin_1d,
+                                                                        self.n_element2,
+                                                                        self.n_e_profile, self.t_e,
+                                                                        tcx_donor=self.tcx_donor,
+                                                                        tcx_donor_n=self.n_tcx_donor,
+                                                                        tcx_donor_charge=0)
+
+        interpolators_abundance_3 = interpolators1d_match_plasma_neutrality(self.atomic_data, self.element,
+                                                                            self.psin_1d,
+                                                                            [interpolators_abundance_1,
+                                                                             interpolators_abundance_2],
+                                                                            self.n_e_profile, self.t_e,
+                                                                            tcx_donor=self.tcx_donor,
+                                                                            tcx_donor_n=self.n_tcx_donor,
+                                                                            tcx_donor_charge=0)
+
+        profiles1 = self.evaluate_interpolators(interpolators_abundance_1, self.psin_1d)
+        profiles2 = self.evaluate_interpolators(interpolators_abundance_2, self.psin_1d)
+        profiles3 = self.evaluate_interpolators(interpolators_abundance_3, self.psin_1d)
+
+        total = self.sumup_electrons(profiles1)
+        total += self.sumup_electrons(profiles2)
+        total += self.sumup_electrons(profiles3)
 
         self.assertTrue(np.allclose(total, self.n_e_profile, rtol=self.TOLERANCE))
