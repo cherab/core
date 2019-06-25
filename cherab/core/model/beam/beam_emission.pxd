@@ -16,5 +16,21 @@
 # See the Licence for the specific language governing permissions and limitations
 # under the Licence.
 
-from .annulus_mesh import generate_annulus_mesh_segments
-from .axisymmetric_mesh import axisymmetric_mesh_from_polygon
+
+from cherab.core cimport Line
+from cherab.core.math cimport Function1D, Function2D
+from cherab.core.beam cimport BeamModel
+from cherab.core.model.lineshape cimport BeamLineShapeModel
+
+
+cdef class BeamEmissionLine(BeamModel):
+
+    cdef:
+        Line _line
+        double _wavelength
+        list _rates_list
+        BeamLineShapeModel _lineshape
+        Function2D _sigma_to_pi
+        Function1D _sigma1_to_sigma0, _pi2_to_pi3, _pi4_to_pi3
+
+    cdef int _populate_cache(self) except -1
