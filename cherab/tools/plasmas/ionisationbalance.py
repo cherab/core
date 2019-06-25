@@ -33,7 +33,11 @@ def _parametres_to_numpy(*parametres, free_variable = None):
         if np.isscalar(param) and not isinstance(param, str):
             arrays.append(np.array([param]))
         elif isinstance(param, dict):#deal with dictionary
-            array = np.zeros((len(param), *param[0].shape))
+            if isinstance(param[0], (Function1D, Function2D)):
+                array = np.zeros((len(param), *free_variable.shape))
+            else:
+                array = np.zeros((len(param), *param[0].shape))
+
             for key, value in param.items():
                 array[key, ...] = _parametres_to_numpy(value, free_variable=free_variable)[0]
             arrays.append(array)
@@ -451,7 +455,7 @@ def match_plasma_neutrality(atomic_data: AtomicData, element: Element, n_species
 
     n_species_arrays = []
     for spec in n_species:
-        spec = _parametres_to_numpy(spec)[0]
+        spec = _parametres_to_numpy(spec, free_variable=free_variable)[0]
         n_species_arrays.append(spec)
 
     #calculate density profiles
@@ -482,7 +486,8 @@ def interpolators1d_fractional(atomic_data: AtomicData, element: Element, free_v
     :return: dictionary with 1d interpolators of fractional abundance of charge states of the element in the form {charge: density}
     """
 
-    fractional_profiles = fractional_abundance(atomic_data, element, n_e, t_e, tcx_donor, tcx_donor_n, tcx_donor_charge)
+    fractional_profiles = fractional_abundance(atomic_data, element, n_e, t_e, tcx_donor, tcx_donor_n, tcx_donor_charge,
+                                               free_variable=free_variable)
 
     # use profiles to create interpolators for profiles
     fractional_interpolators = {}
@@ -511,7 +516,8 @@ def interpolators1d_from_elementdensity(atomic_data: AtomicData, element: Elemen
     :return: dictionary with 1d interpolators of fractional abundance of charge states of the element in the form {charge: interpolator}
     """
 
-    densities = from_elementdensity(atomic_data, element, element_density, n_e, t_e, tcx_donor, tcx_donor_n, tcx_donor_charge)
+    densities = from_elementdensity(atomic_data, element, element_density, n_e, t_e, tcx_donor, tcx_donor_n, tcx_donor_charge,
+                                    free_variable=free_variable)
 
     density_interpolators = {}
     for key, value in densities.items():
@@ -541,7 +547,7 @@ def interpolators1d_match_plasma_neutrality(atomic_data: AtomicData, element: El
     """
 
     density_profiles = match_plasma_neutrality(atomic_data, element, species_density, n_e,
-                                               t_e, tcx_donor, tcx_donor_n, tcx_donor_charge)
+                                               t_e, tcx_donor, tcx_donor_n, tcx_donor_charge, free_variable=free_variable)
 
     # use profiles to create interpolators for profiles
     density_interpolators = {}
