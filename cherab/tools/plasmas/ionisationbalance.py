@@ -28,32 +28,33 @@ def _parametres_to_numpy(*parametres, free_variable = None):
         elif np.isscalar(free_variable):
             free_variable = np.array([free_variable])
 
-
+    #take care of all possible input types
     for param in parametres:
         if np.isscalar(param) and not isinstance(param, str):
             arrays.append(np.array([param]))
         elif isinstance(param, dict):#deal with dictionary
+            #if first item is an interpolator, use shape of free_variable
             if isinstance(param[0], (Function1D, Function2D)):
                 array = np.zeros((len(param), *free_variable.shape))
             else:
                 array = np.zeros((len(param), *param[0].shape))
-
+            #convert items into numpy arrays
             for key, value in param.items():
                 array[key, ...] = _parametres_to_numpy(value, free_variable=free_variable)[0]
             arrays.append(array)
-        elif isinstance(param, Function1D):
+        elif isinstance(param, Function1D): #take care of Function1D input type
             array = np.zeros(free_variable.shape)
-            for index, value in enumerate(free_variable):
+            for index, value in enumerate(free_variable): #evaluate for free_variable
                 array[index] = param(value)
             arrays.append(array)
-        elif isinstance(param, Function2D):
+        elif isinstance(param, Function2D): #take care of Function2D input type
             array = np.zeros(free_variable[0].shape)
             for index, xvalue in enumerate(free_variable[0]):
                 for yindex, yvalue in enumerate(free_variable[1]):
                     array[index, yindex] = param(xvalue, yvalue)
             arrays.append(array)
-        elif not isinstance(param, np.ndarray):
-            raise ValueError("Parametres can be Iterable, scalar, list, interpolating function or None, {0} passed".format(type(param)))
+        elif not isinstance(param, np.ndarray):#well there are types which should not be treated
+            raise ValueError("Parametres can be Iterable, scalar, list, Function1D, Function2D or None, {0} passed".format(type(param)))
         else:
             arrays.append(param)
 
