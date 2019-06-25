@@ -113,6 +113,9 @@ cdef class EFITEquilibrium:
         z = np.array(z, dtype=np.float64)
         psi = np.array(psi_grid, dtype=np.float64)
         f_profile = np.array(f_profile, dtype=np.float64)
+        q_profile = np.array(q_profile, dtype=np.float64)
+        lcfs_polygon = np.array(lcfs_polygon, dtype=np.float64)
+        limiter_polygon = np.array(limiter_polygon, dtype=np.float64)
 
         # store raw data
         self.r_data = r
@@ -120,10 +123,10 @@ cdef class EFITEquilibrium:
         self.psi_data = psi
 
         # interpolate poloidal flux grid data
-        self.psi = Interpolate2DCubic(r, z, psi_grid)
+        self.psi = Interpolate2DCubic(r, z, psi)
         self.psi_axis = psi_axis
         self.psi_lcfs = psi_lcfs
-        self.psi_normalised = Interpolate2DCubic(r, z, (psi_grid - psi_axis) / (psi_lcfs - psi_axis))
+        self.psi_normalised = Interpolate2DCubic(r, z, (psi - psi_axis) / (psi_lcfs - psi_axis))
 
         # store equilibrium attributes
         self.r_range = r.min(), r.max()
@@ -140,7 +143,7 @@ cdef class EFITEquilibrium:
         self._process_polygons(lcfs_polygon, limiter_polygon, self.psi_normalised)
 
         # calculate b-field
-        dpsi_dr, dpsi_dz = self._calculate_differentials(r, z, psi_grid)
+        dpsi_dr, dpsi_dz = self._calculate_differentials(r, z, psi)
         self.b_field = MagneticField(self.psi_normalised, dpsi_dr, dpsi_dz, self._f_profile, b_vacuum_radius, b_vacuum_magnitude, self.inside_lcfs)
 
         # populate flux coordinate attributes
