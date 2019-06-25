@@ -1,14 +1,15 @@
+from collections.abc import Iterable
+
+import matplotlib._color_data as mcd
+import matplotlib.pyplot as plt
+import numpy as np
 from cherab.core.atomic import neon, hydrogen, helium
 from cherab.core.math import Interpolate1DCubic
 from cherab.openadas import OpenADAS
-from cherab.tools.plasmas.ionisationbalance import (_fractional_abundance, fractional_abundance,
-                                                    interpolators1d_fractional,_from_elementdensity, from_elementdensity,
-                                                    _match_plasma_neutrality, interpolators1d_from_elementdensity,
+from cherab.tools.plasmas.ionisationbalance import (fractional_abundance,
+                                                    interpolators1d_fractional, from_elementdensity,
+                                                    match_plasma_neutrality, interpolators1d_from_elementdensity,
                                                     interpolators1d_match_plasma_neutrality)
-
-import matplotlib.pyplot as plt
-import matplotlib._color_data as mcd
-import numpy as np
 
 
 def doubleparabola(r, Centre, Edge, p, q):
@@ -19,13 +20,23 @@ def normal(x, mu, sd, height=1, offset=0):
     return height * np.exp(-1 * np.power(x - mu, 2) / (2 * sd ** 2)) + offset
 
 
-def get_electron_density_profile(abundances):
-    n_e = np.zeros((abundances[0].shape[1]))
-    for abundance in abundances:
-        for rownumber, row in enumerate(abundance.T):
-            n_e[rownumber] += np.sum(row * np.arange(row.shape[0]))
+def sumup_electrons(densities):
+    if isinstance(densities, dict):
+        if isinstance(densities[0], Iterable):
+            total = np.zeros_like(densities[0])
+        else:
+            total = 0
 
-    return n_e
+        for index, values in densities.items():
+            total += values * index
+
+    elif isinstance(densities, np.ndarray):
+        total = np.zeros_like(densities[0, ...])
+
+        for index in np.ndindex(densities.shape):
+            total[index] += densities[index] * index[0]
+
+    return total
 
 
 def get_electron_density_spot(densities):
@@ -36,8 +47,9 @@ def get_electron_density_spot(densities):
 
     return n_e
 
+
 def exp_decay(r, lamb, max_val):
-    return max_val * np.exp((r-r.max())*lamb)
+    return max_val * np.exp((r - r.max()) * lamb)
 
 
 colors = list(mcd.XKCD_COLORS)  # load color list to iterate over
@@ -68,147 +80,98 @@ adas = OpenADAS(permit_extrapolation=True)
 element = neon
 element2 = helium
 element_bulk = hydrogen
+donor_element = hydrogen
 
 # Calculate profiles of fractional abundace for the element
 abundance_fractional_profile = fractional_abundance(adas, element, n_e_profile, t_e_profile)
-abundance_fractional_profile_tcx = fractional_abundance(adas, element, n_e_profile, t_e_profile)
+abundance_fractional_profile_tcx = fractional_abundance(adas, element, n_e_profile, t_e_profile,
+                                                        tcx_donor=donor_element, tcx_donor_n=n_tcx_donor,
+                                                        tcx_donor_charge=0, free_variable=psin_1d)
 
-fig_fractional = plt.subplots()
-ax = fig_fractional[1]
+fig_abundance = plt.subplots()
+ax = fig_abundance[1]
+for key in abundance_fractional_profile.keys():
+    ax.plot(psin_1d, abundance_fractional_profile[key], label="{0} {1}+".format(element.symbol, key), color=colors[key])
+    ax.plot(psin_1d, abundance_fractional_profile_tcx[key], "--", label="{0} {1}+ (tcx)".format(element.symbol, key),
+            color=colors[key])
 
+ax.legend()
+ax.set_xlabel("$\Psi_n$")
+ax.set_ylabel("fractional abundance [a.u.]")
 
-if False:
+# calculate charge state density profiles by specifying element density
+density_element_profiles = from_elementdensity(adas, element, n_element, n_e_profile,
+                                               t_e, free_variable=psin_1d)
+density_element_profiles_tcx = from_elementdensity(adas, element, n_element, n_e_profile,
+                                                   t_e, tcx_donor=donor_element, tcx_donor_n=n_tcx_donor_profile,
+                                                   tcx_donor_charge=0, free_variable=psin_1d)
 
-    _abundance_fractional_profile = _fractional_abundance(adas, element, n_e_profile, t_e_profile)
-    abundance_fractional_profile = fractional_abundance(adas, element, n_e_profile, t_e_profile)
+fig_abundance = plt.subplots()
+ax = fig_abundance[1]
+ax.plot(psin_1d, n_element_profile, "k", label="n_element")
+for key in density_element_profiles.keys():
+    ax.plot(psin_1d, density_element_profiles[key], label="{0} {1}+".format(element.symbol, key), color=colors[key])
+    ax.plot(psin_1d, density_element_profiles_tcx[key], "--", label="{0} {1}+ (tcx)".format(element.symbol, key),
+            color=colors[key])
 
-    abundance_fractional_interpolators = interpolators1d_fractional(adas, element, psin_1d, n_e_profile, t_e_profile)
+ax.legend()
+ax.set_xlabel("$\Psi_n$")
+ax.set_ylabel("ion density [m$^{-3}]$")
 
-    # calculate total abundance for consistency check
-    abundance_spot_total = np.sum(_abundance_fractional_spot)
-    abundance_profile_total = np.sum(_abundance_fractional_profile, axis=0)
-    abundance_profile_total_interpolators = np.zeros_like(abundance_profile_total)
-    for key, item in abundance_fractional_interpolators.items():
-        for index, value in enumerate(psin_1d):
-            abundance_profile_total_interpolators[index] += item(value)
+# calculate fill the plasma with bulk element to match plasma neutrality condition
 
-    fig_fractional = plt.subplots()
-    ax = fig_fractional[1]
-    for index, value in enumerate(_abundance_fractional_profile):
-        ax.plot(psin_1d, value, "x", color=colors[15 + index])
-    for index, value in enumerate(_abundance_fractional_spot):
-        ax.plot(psi_value, value, "o", color=colors[15 + index])
+# calculate ion densities for a 2nd element
+density_element2_profiles_tcx = from_elementdensity(adas, element2, n_element2, n_e_profile,
+                                                    t_e, tcx_donor=donor_element, tcx_donor_n=n_tcx_donor_profile,
+                                                    tcx_donor_charge=0, free_variable=psin_1d)
 
-    for key, item in abundance_fractional_interpolators.items():
-        tmp = np.zeros_like(psin_1d)
-        for index, value in enumerate(psin_1d):
-            tmp[index] = item(value)
-        ax.plot(psin_1d, tmp, color=colors[15 + key])
+# fill plasma with 3rd element to match plasma neutrality
+density_element3_profiles_tcx = match_plasma_neutrality(adas, element_bulk,
+                                                        [density_element_profiles_tcx, density_element2_profiles_tcx],
+                                                        n_e, t_e, tcx_donor=donor_element,
+                                                        tcx_donor_n=n_tcx_donor_profile,
+                                                        tcx_donor_charge=0, free_variable=psin_1d)
 
-    ax.plot(psin_1d, abundance_profile_total, "x", color="xkcd:red")
-    ax.plot(psi_value, abundance_spot_total, "o", color="xkcd:red")
-    ax.plot(psin_1d, abundance_profile_total_interpolators, color="xkcd:red", label="total")
+n_e_recalculated = sumup_electrons(density_element_profiles_tcx)
+n_e_recalculated += sumup_electrons(density_element2_profiles_tcx)
+n_e_recalculated += sumup_electrons(density_element3_profiles_tcx)
 
-    for i in range(element.atomic_number + 1):
-        ax.plot([], [], color=colors[15 + i], label="{0}{1}+".format(element.symbol, i))
+fig_plasma = plt.subplots()
+ax = fig_plasma[1]
+for key in density_element_profiles.keys():
+    ax.plot(psin_1d, density_element_profiles_tcx[key], "--", label="{0} {1}+".format(element.symbol, key),
+            color=colors[key])
 
-    ax.legend()
+for key2 in density_element2_profiles_tcx.keys():
+    ax.plot(psin_1d, density_element2_profiles_tcx[key2], "--", label="{0} {1}+ (tcx)".format(element2.symbol, key2),
+            color=colors[key2 + key])
 
-# test calculations of charge state densities
-if False:
-    #1d values
-    density_element_spot = _from_elementdensity(adas, element, n_element(psi_value), n_e(psi_value), t_e(psi_value))
-    density_element2_spot = _from_elementdensity(adas, element2, n_element2(psi_value), n_e(psi_value), t_e(psi_value))
-    density_bulk_spot = _match_plasma_neutrality(adas, element_bulk, [density_element_spot, density_element2_spot],
-                                               n_e(psi_value), t_e(psi_value))
-    density_total_spot = get_electron_density_spot([density_element_spot, density_element2_spot, density_bulk_spot])
+for key3 in density_element3_profiles_tcx.keys():
+    ax.plot(psin_1d, density_element3_profiles_tcx[key3], "--",
+            label="{0} {1}+ (tcx)".format(element_bulk.symbol, key3), color=colors[key3 + key2 + key])
 
-    density_element_profiles = _from_elementdensity(adas, element, n_element, n_e_profile,
-                                                              t_e_profile, free_variable=psin_1d)
-    density_element2_profiles = _from_elementdensity(adas, element2, n_element2_profile, n_e_profile,
-                                                               t_e_profile)
-    density_bulk_profiles = _match_plasma_neutrality(adas, element_bulk,
-                                                     [density_element_profiles, density_element2_profiles],
-                                                     n_e_profile, t_e_profile)
+ax.plot(psin_1d, n_e_profile, "kx", label="input n_e")
+ax.plot(psin_1d, n_e_recalculated, "k-", label="recalculated n_e")
 
-    density_total_profile = get_electron_density_profile([density_element_profiles, density_element2_profiles,
-                                                          density_bulk_profiles])
+ax.legend()
+ax.set_xlabel("$\Psi_n$")
+ax.set_ylabel("ion density [m$^{-3}]$")
 
-    density_element_interpolators = interpolators1d_from_elementdensity(adas, element, psin_1d, n_element_profile,
-                                                                        n_e_profile, t_e_profile)
-    density_element2_interpolators = interpolators1d_from_elementdensity(adas, element2, psin_1d, n_element2_profile,
-                                                                         n_e_profile, t_e_profile)
-    density_bulk_interpolators = interpolators1d_match_plasma_neutrality(adas, element_bulk, psin_1d,
-                                                                       [density_element_profiles,
-                                                                        density_element2_profiles],
-                                                                        n_e_profile, t_e_profile)
+# create ion density 1d interpolators
+interpolators_element_1d_fractional = interpolators1d_fractional(adas, element, psin_1d, n_e, t_e,
+                                                                 tcx_donor=donor_element,
+                                                                 tcx_donor_n=n_tcx_donor, tcx_donor_charge=0)
+interpolators_element_1d_density = interpolators1d_from_elementdensity(adas, element, psin_1d, n_element, n_e, t_e,
+                                                                       tcx_donor=donor_element,
+                                                                       tcx_donor_n=n_tcx_donor, tcx_donor_charge=0)
+interpolators_element2_1d_density = interpolators1d_from_elementdensity(adas, element2, psin_1d, n_element2, n_e, t_e,
+                                                                        tcx_donor=donor_element,
+                                                                        tcx_donor_n=n_tcx_donor, tcx_donor_charge=0)
 
-
-    fig_densities = plt.subplots()
-    ax = fig_densities[1]
-    # Element 1
-    density_total_interpolators = np.zeros_like(psin_1d_detailed)
-
-    for rownumber, row in enumerate(density_element_profiles):
-        ax.plot(psin_1d, row, "x", color=colors[15 + rownumber])
-    for index, value in enumerate(density_element_spot):
-        ax.plot(psi_value, value, "o", color=colors[15 + index])
-
-    for key, item in density_element_interpolators.items():
-        tmp = np.zeros_like(psin_1d_detailed)
-        for index, value in enumerate(psin_1d_detailed):
-            tmp[index] = item(value)
-        density_total_interpolators = density_total_interpolators + tmp * key
-        ax.plot(psin_1d_detailed, tmp, color=colors[15 + key])
-
-    for i in range(element.atomic_number + 1):
-        ax.plot([], [], color=colors[15 + i], lw=3, label="{0} {1}+".format(element.symbol, i))
-
-    # Element 2
-    for rownumber, row in enumerate(density_element2_profiles):
-        ax.plot(psin_1d, row, "x", color=colors[5 + rownumber])
-    for index, value in enumerate(density_element2_spot):
-        ax.plot(psi_value, value, "o", color=colors[5 + index])
-
-    for key, item in density_element2_interpolators.items():
-        tmp = np.zeros_like(psin_1d_detailed)
-        for index, value in enumerate(psin_1d_detailed):
-            tmp[index] = item(value)
-        density_total_interpolators = density_total_interpolators + tmp * key
-        ax.plot(psin_1d_detailed, tmp, color=colors[5 + key])
-
-    for i in range(element2.atomic_number + 1):
-        ax.plot([], [], color=colors[5 + i], lw=3, label="{0} {1}+".format(element2.symbol, i))
-
-    # Element bulk
-    for rownumber, row in enumerate(density_bulk_profiles):
-        ax.plot(psin_1d, row, "x", color=colors[30 + rownumber])
-    for index, value in enumerate(density_bulk_spot):
-        ax.plot(psi_value, value, "o", color=colors[30 + index])
-
-    for key, item in density_bulk_interpolators.items():
-        tmp = np.zeros_like(psin_1d_detailed)
-        for index, value in enumerate(psin_1d_detailed):
-            tmp[index] = item(value)
-        density_total_interpolators = density_total_interpolators + tmp * key
-        ax.plot(psin_1d_detailed, tmp, color=colors[30 + key])
-
-    for i in range(element_bulk.atomic_number + 1):
-        ax.plot([], [], color=colors[30 + i], lw=3, label="{0} {1}+".format(element_bulk.symbol, i))
-
-    ax.plot(psin_1d, n_e_profile, color="xkcd:red", label="e input")
-    ax.plot(psin_1d, density_total_profile, ":", color="xkcd:red", label="e profiles")
-    ax.plot(psin_1d_detailed, density_total_interpolators, ".-", color="xkcd:red", label="e interpolators")
-    ax.plot(psi_value, density_total_spot, "o", color="xkcd:red")
-    ax.plot([], [], "k--", label="error n_e profiles ")
-    ax.plot([], [], "k-", label=" error n_e interpolators ")
-
-    ax2 = ax.twinx()
-    ax2.plot(psin_1d, (density_total_profile - n_e_profile) / n_e_profile, "k--")
-    ax2.plot(psin_1d_detailed, (density_total_interpolators - n_e_profile_detailed) / n_e_profile_detailed, "k-")
-
-    ax.set_xlabel("$\Psi_{pol}$")
-    ax.set_ylabel("density [m^-3]")
-    ax2.set_ylabel("electron density error")
-    ax.legend()
-    fig_densities[0].tight_layout()
+# also it is possible to combine different kinds of parameter types (profiles. numbers and interpolators)
+interpolators_element3_1d_density = interpolators1d_match_plasma_neutrality(adas, element_bulk, psin_1d,
+                                                                            [interpolators_element_1d_density,
+                                                                             density_element2_profiles_tcx],
+                                                                            n_e, t_e, tcx_donor=donor_element,
+                                                                            tcx_donor_n=n_tcx_donor,
+                                                                            tcx_donor_charge=0)
