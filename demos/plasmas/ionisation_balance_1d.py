@@ -2,11 +2,9 @@ from cherab.core.atomic import neon, hydrogen, helium
 from cherab.core.math import Interpolate1DCubic
 from cherab.openadas import OpenADAS
 from cherab.tools.plasmas.ionisationbalance import (_fractional_abundance, fractional_abundance,
-                                                    from_element_density, _from_element_density, _profile1d_fractional,
-                                                    profile1d_fractional, interpolators1d_fractional, _profile1d_from_elementdensity,
-                                                    profile1d_from_elementdensity, interpolators1d_from_elementdensity,
-                                                    _match_element_density, match_element_density, _profile1d_match_density,
-                                                    profile1d_match_density, interpolators1d_match_element_density)
+                                                    interpolators1d_fractional,_from_elementdensity, from_elementdensity,
+                                                    _match_plasma_neutrality, interpolators1d_from_elementdensity,
+                                                    interpolators1d_match_plasma_neutrality)
 
 import matplotlib.pyplot as plt
 import matplotlib._color_data as mcd
@@ -33,7 +31,8 @@ def get_electron_density_profile(abundances):
 def get_electron_density_spot(densities):
     n_e = 0
     for spec in densities:
-        n_e += np.sum(spec * np.arange(spec.shape[0]))
+        for index, value in enumerate(spec):
+            n_e += index * value
 
     return n_e
 
@@ -75,21 +74,31 @@ element_bulk = hydrogen
 
 # test fractional abundance calculations
 if True:
-    _abundance_fractional_spot = _fractional_abundance(adas, element, n_e(psi_value), t_e(psi_value))
-    abundance_fractional_spot = fractional_abundance(adas, element, n_e(psi_value), t_e(psi_value))
-    _abundance_fractional_spot_tcx = _fractional_abundance(adas, element, n_e(psi_value), t_e(psi_value),
-                                                                     hydrogen, 3e15, 0)
+
+    #test calculation from a single set of numbers
+    #abundance_fractional_spot = fractional_abundance(adas, element, n_e(psi_value), t_e(psi_value))
+    #abundance_fractional_spot_tcx = fractional_abundance(adas, element, n_e(psi_value), t_e(psi_value),
+    #                                                                 hydrogen, 3e15, 0)
+
+    #test calculation from a single set of numbers
+    abundance_fractional_spot = fractional_abundance(adas, element, n_e, t_e, free_variable=psi_value)
+    abundance_fractional_spot_tcx = fractional_abundance(adas, element, n_e, t_e,
+                                                         hydrogen, 3e15, 0, free_variable=psi_value)
+
+
+if False:
+
     abundance_fractional_spot_tcx = fractional_abundance(adas, element, n_e(psi_value), t_e(psi_value),
                                                                    hydrogen, 3e15, 0)
 
-    _abundance_profile = _profile1d_fractional(adas, element, n_e_profile, t_e_profile)
-    abundance_profile = profile1d_fractional(adas, element, n_e_profile, t_e_profile)
+    _abundance_fractional_profile = _fractional_abundance(adas, element, n_e_profile, t_e_profile)
+    abundance_fractional_profile = fractional_abundance(adas, element, n_e_profile, t_e_profile)
 
-    abundance_fractional_interpolators = interpolators1d_fractional(adas, element, psin_1d, n_e, t_e)
+    abundance_fractional_interpolators = interpolators1d_fractional(adas, element, psin_1d, n_e_profile, t_e_profile)
 
     # calculate total abundance for consistency check
     abundance_spot_total = np.sum(_abundance_fractional_spot)
-    abundance_profile_total = np.sum(_abundance_profile, axis=0)
+    abundance_profile_total = np.sum(_abundance_fractional_profile, axis=0)
     abundance_profile_total_interpolators = np.zeros_like(abundance_profile_total)
     for key, item in abundance_fractional_interpolators.items():
         for index, value in enumerate(psin_1d):
@@ -97,7 +106,7 @@ if True:
 
     fig_fractional = plt.subplots()
     ax = fig_fractional[1]
-    for index, value in enumerate(_abundance_profile):
+    for index, value in enumerate(_abundance_fractional_profile):
         ax.plot(psin_1d, value, "x", color=colors[15 + index])
     for index, value in enumerate(_abundance_fractional_spot):
         ax.plot(psi_value, value, "o", color=colors[15 + index])
@@ -118,31 +127,34 @@ if True:
     ax.legend()
 
 # test calculations of charge state densities
-if True:
-    density_element_spot = _from_element_density(adas, element, n_element(psi_value), n_e(psi_value), t_e(psi_value))
-    density_element2_spot = _from_element_density(adas, element2, n_element2(psi_value), n_e(psi_value), t_e(psi_value))
-    density_bulk_spot = _match_element_density(adas, element_bulk, [density_element_spot, density_element2_spot],
+if False:
+    #1d values
+    density_element_spot = _from_elementdensity(adas, element, n_element(psi_value), n_e(psi_value), t_e(psi_value))
+    density_element2_spot = _from_elementdensity(adas, element2, n_element2(psi_value), n_e(psi_value), t_e(psi_value))
+    density_bulk_spot = _match_plasma_neutrality(adas, element_bulk, [density_element_spot, density_element2_spot],
                                                n_e(psi_value), t_e(psi_value))
-
     density_total_spot = get_electron_density_spot([density_element_spot, density_element2_spot, density_bulk_spot])
 
-    density_element_profiles = _profile1d_from_elementdensity(adas, element, n_element_profile, n_e_profile,
-                                                              t_e_profile)
-    density_element2_profiles = _profile1d_from_elementdensity(adas, element2, n_element2_profile, n_e_profile,
+    density_element_profiles = _from_elementdensity(adas, element, n_element, n_e_profile,
+                                                              t_e_profile, free_variable=psin_1d)
+    density_element2_profiles = _from_elementdensity(adas, element2, n_element2_profile, n_e_profile,
                                                                t_e_profile)
-    density_bulk_profiles = _profile1d_match_density(adas, element_bulk,
+    density_bulk_profiles = _match_plasma_neutrality(adas, element_bulk,
                                                      [density_element_profiles, density_element2_profiles],
                                                      n_e_profile, t_e_profile)
 
     density_total_profile = get_electron_density_profile([density_element_profiles, density_element2_profiles,
                                                           density_bulk_profiles])
 
-    density_element_interpolators = interpolators1d_from_elementdensity(adas, element, psin_1d, n_element, n_e, t_e)
-    density_element2_interpolators = interpolators1d_from_elementdensity(adas, element2, psin_1d, n_element2, n_e, t_e)
-    density_bulk_interpolators = interpolators1d_match_element_density(adas, element_bulk, psin_1d_detailed,
-                                                                       [density_element_interpolators,
-                                                                        density_element2_interpolators],
-                                                                       n_e, t_e)
+    density_element_interpolators = interpolators1d_from_elementdensity(adas, element, psin_1d, n_element_profile,
+                                                                        n_e_profile, t_e_profile)
+    density_element2_interpolators = interpolators1d_from_elementdensity(adas, element2, psin_1d, n_element2_profile,
+                                                                         n_e_profile, t_e_profile)
+    density_bulk_interpolators = interpolators1d_match_plasma_neutrality(adas, element_bulk, psin_1d,
+                                                                       [density_element_profiles,
+                                                                        density_element2_profiles],
+                                                                        n_e_profile, t_e_profile)
+
 
     fig_densities = plt.subplots()
     ax = fig_densities[1]
