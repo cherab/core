@@ -3,7 +3,7 @@ from scipy.optimize import lsq_linear
 from cherab.core import AtomicData
 from cherab.core.atomic import Element
 from cherab.core.math import Interpolate1DLinear, Function1D, Function2D, Interpolate2DLinear
-
+from collections.abc import Iterable
 
 def _parametres_to_numpy(*parametres, free_variable = None):
     """
@@ -35,7 +35,7 @@ def _parametres_to_numpy(*parametres, free_variable = None):
         elif isinstance(param, dict):#deal with dictionary
             array = np.zeros((len(param), *param[0].shape))
             for key, value in param.items():
-                array[key, ...] = _parametres_to_numpy(value, free_variable)
+                array[key, ...] = _parametres_to_numpy(value, free_variable=free_variable)[0]
             arrays.append(array)
         elif isinstance(param, Function1D):
             array = np.zeros(free_variable.shape)
@@ -48,13 +48,8 @@ def _parametres_to_numpy(*parametres, free_variable = None):
                 for yindex, yvalue in enumerate(free_variable[1]):
                     array[index, yindex] = param(xvalue, yvalue)
             arrays.append(array)
-        elif isinstance(param, dict):
-            array = np.zeros((len(param), *param[0].shape))
-            for index, value in enumerate(param):
-                array[index, ...] = value
-            arrays.append(array)
         elif not isinstance(param, np.ndarray):
-            raise ValueError("Parametres can be np.ndarray, scalar, list or None, {0} passed".format(type(param)))
+            raise ValueError("Parametres can be Iterable, scalar, list, interpolating function or None, {0} passed".format(type(param)))
         else:
             arrays.append(param)
 
@@ -77,17 +72,20 @@ def _assign_donor_density(donor_density, major_profile, free_variable = None):
     :return: numpy array
     """
     # donor density should be array of the correct shape, if not assigned
-    if donor_density is None:
-        if np.isscalar(major_profile):
-            donor_density = np.array([0])
-        else:
+    if donor_density is None: #if none, it hsa to be replaced by an array of zeros of the correct shape
+        if isinstance(major_profile, (Function1D, Function2D)) and free_variable is not None:
+            donor_density = np.zeros_like(free_variable)
+        elif isinstance(major_profile, (Function1D, Function2D)) and free_variable is None:
+            raise ValueError("free_variable has to be passed along with an iterpolator")
+        elif isinstance(major_profile, Iterable):
             donor_density = np.zeros_like(major_profile)
+        elif np.isscalar(major_profile) or np.isscalar(free_variable):
+            donor_density = np.zeros([1])
     elif isinstance(donor_density, (Function1D, Function2D)):
-        donor_density = _parametres_to_numpy(donor_density, free_variable=free_variable)
-    elif np.isscalar(donor_density):
+        donor_density = _parametres_to_numpy(donor_density, free_variable=free_variable)[0]
+
+    if np.isscalar(donor_density) or donor_density.ndim == 0:
         donor_density = np.array([donor_density])
-
-
 
     return donor_density
 
@@ -388,7 +386,7 @@ def from_elementdensity(atomic_data: AtomicData, element: Element, element_densi
 
     #calculate density profiles
     densities = _from_elementdensity(atomic_data, element, element_density, n_e, t_e, tcx_donor,
-                                     tcx_donor_n, tcx_donor_charge, free_variable)
+                                     tcx_donor_n, tcx_donor_charge)
 
     # transform into dictionary
     densities_dict = {}
@@ -428,7 +426,7 @@ def _match_plasma_neutrality(atomic_data: AtomicData, element: Element, n_specie
 
 
 def match_plasma_neutrality(atomic_data: AtomicData, element: Element, n_species, n_e, t_e,
-                            tcx_donor: Element = None, tcx_donor_n=None, tcx_donor_charge=0):
+                            tcx_donor: Element = None, tcx_donor_n=None, tcx_donor_charge=0, free_variable=None):
     """
     For given profiles of plasma parametres the function calulates density profiles of charge states of the element. The density
     is normalized using n_species_profiles and n_e_profiles to reach plasme neutrality condition.
@@ -446,17 +444,18 @@ def match_plasma_neutrality(atomic_data: AtomicData, element: Element, n_species
 
 
     # donor density should be array of the correct shape, if not assigned or if interpolating function passed
-    tcx_donor_n = _assign_donor_density(tcx_donor_n, n_e)
+    tcx_donor_n = _assign_donor_density(tcx_donor_n, n_e, free_variable=free_variable)
 
     #check consistency of parametres and transform them into numpy arrays to allow calculations of frac. abundance
-    n_e, t_e, tcx_donor_n = _parametres_to_numpy(n_e, t_e, tcx_donor_n)
+    n_e, t_e, tcx_donor_n = _parametres_to_numpy(n_e, t_e, tcx_donor_n, free_variable=free_variable)
 
     n_species_arrays = []
     for spec in n_species:
-        n_species_arrays.append(_parametres_to_numpy(spec))
+        spec = _parametres_to_numpy(spec)[0]
+        n_species_arrays.append(spec)
 
     #calculate density profiles
-    densities = _match_plasma_neutrality(atomic_data, element, n_species, n_e, t_e, tcx_donor,
+    densities = _match_plasma_neutrality(atomic_data, element, n_species_arrays, n_e, t_e, tcx_donor,
                                          tcx_donor_n, tcx_donor_charge)
 
     # transform into dictionary
