@@ -36,6 +36,9 @@ def get_electron_density_spot(densities):
 
     return n_e
 
+def exp_decay(r, lamb, max_val):
+    return max_val * np.exp((r-r.max())*lamb)
+
 
 colors = list(mcd.XKCD_COLORS)  # load color list to iterate over
 
@@ -49,6 +52,7 @@ n_e_profile = doubleparabola(psin_1d, 6e19, 5e18, 2, 2)
 t_element_profile = doubleparabola(psin_1d, 1500, 40, 2, 2)
 n_element_profile = doubleparabola(psin_1d, 1e17, 1e17, 2, 2) + normal(psin_1d, 0.9, 0.1, 5e17)
 n_element2_profile = doubleparabola(psin_1d, 5e17, 1e17, 2, 2)
+n_tcx_donor_profile = exp_decay(psin_1d, 10, 3e16)
 
 t_e = Interpolate1DCubic(psin_1d, t_e_profile)
 n_e = Interpolate1DCubic(psin_1d, n_e_profile)
@@ -56,14 +60,7 @@ n_e = Interpolate1DCubic(psin_1d, n_e_profile)
 t_element = Interpolate1DCubic(psin_1d, t_element_profile)
 n_element = Interpolate1DCubic(psin_1d, n_element_profile)
 n_element2 = Interpolate1DCubic(psin_1d, n_element2_profile)
-
-# denser psi array to test interpolators
-n_e_profile_detailed = np.zeros_like(psin_1d_detailed)
-for index, value in enumerate(psin_1d_detailed):
-    n_e_profile_detailed[index] = n_e(value)
-
-# define psi for single-point tests
-psi_value = 0.9
+n_tcx_donor = Interpolate1DCubic(psin_1d, n_tcx_donor_profile)
 
 # load adas atomic database and define elements
 adas = OpenADAS(permit_extrapolation=True)
@@ -72,24 +69,15 @@ element = neon
 element2 = helium
 element_bulk = hydrogen
 
-# test fractional abundance calculations
-if True:
+# Calculate profiles of fractional abundace for the element
+abundance_fractional_profile = fractional_abundance(adas, element, n_e_profile, t_e_profile)
+abundance_fractional_profile_tcx = fractional_abundance(adas, element, n_e_profile, t_e_profile)
 
-    #test calculation from a single set of numbers
-    #abundance_fractional_spot = fractional_abundance(adas, element, n_e(psi_value), t_e(psi_value))
-    #abundance_fractional_spot_tcx = fractional_abundance(adas, element, n_e(psi_value), t_e(psi_value),
-    #                                                                 hydrogen, 3e15, 0)
-
-    #test calculation from a single set of numbers
-    abundance_fractional_spot = fractional_abundance(adas, element, n_e, t_e, free_variable=psi_value)
-    abundance_fractional_spot_tcx = fractional_abundance(adas, element, n_e, t_e,
-                                                         hydrogen, 3e15, 0, free_variable=psi_value)
+fig_fractional = plt.subplots()
+ax = fig_fractional[1]
 
 
 if False:
-
-    abundance_fractional_spot_tcx = fractional_abundance(adas, element, n_e(psi_value), t_e(psi_value),
-                                                                   hydrogen, 3e15, 0)
 
     _abundance_fractional_profile = _fractional_abundance(adas, element, n_e_profile, t_e_profile)
     abundance_fractional_profile = fractional_abundance(adas, element, n_e_profile, t_e_profile)
