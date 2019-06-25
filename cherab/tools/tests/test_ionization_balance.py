@@ -72,7 +72,7 @@ class TestIonizationBalance1D(unittest.TestCase):
     psi_value = 0.9
 
     # load adas atomic database and define elements
-    adas = OpenADAS(permit_extrapolation=True)
+    atomic_data = OpenADAS(permit_extrapolation=True)
 
     element = neon
     element2 = helium
@@ -124,7 +124,7 @@ class TestIonizationBalance1D(unittest.TestCase):
         test fractional abundance calculation with float numbers as inputs
         :return:
         """
-        abundance_fractional = fractional_abundance(self.adas, self.element, self.n_e(self.psi_value),
+        abundance_fractional = fractional_abundance(self.atomic_data, self.element, self.n_e(self.psi_value),
                                                     self.t_e(self.psi_value))
 
         fraction_sum = self.sumup_fractions(abundance_fractional)
@@ -135,7 +135,7 @@ class TestIonizationBalance1D(unittest.TestCase):
         test fractional abundance calculation with thermal cx and float numbers as inputs
         :return:
         """
-        abundance_fractional = fractional_abundance(self.adas, self.element, self.n_e(self.psi_value),
+        abundance_fractional = fractional_abundance(self.atomic_data, self.element, self.n_e(self.psi_value),
                                                     self.t_e(self.psi_value),
                                                     self.tcx_donor, self.n_tcx_donor(self.psi_value), 0)
 
@@ -148,7 +148,7 @@ class TestIonizationBalance1D(unittest.TestCase):
         :return:
         """
 
-        abundance_fractional = fractional_abundance(self.adas, self.element, self.n_e, self.t_e,
+        abundance_fractional = fractional_abundance(self.atomic_data, self.element, self.n_e, self.t_e,
                                                     free_variable=self.psi_value)
 
         fraction_sum = self.sumup_fractions(abundance_fractional)
@@ -160,7 +160,7 @@ class TestIonizationBalance1D(unittest.TestCase):
         :return:
         """
 
-        abundance_fractional = fractional_abundance(self.adas, self.element, self.n_e, self.t_e,
+        abundance_fractional = fractional_abundance(self.atomic_data, self.element, self.n_e, self.t_e,
                                                     tcx_donor=self.tcx_donor, tcx_donor_n=self.n_tcx_donor,
                                                     tcx_donor_charge=0, free_variable=self.psi_value)
 
@@ -173,13 +173,13 @@ class TestIonizationBalance1D(unittest.TestCase):
         :return:
         """
 
-        abundance_fractional = fractional_abundance(self.adas, self.element, self.n_e(self.psi_value), self.t_e,
+        abundance_fractional = fractional_abundance(self.atomic_data, self.element, self.n_e(self.psi_value), self.t_e,
                                                     free_variable=self.psi_value)
 
         fraction_sum = self.sumup_fractions(abundance_fractional)
         self.assertTrue(1 - fraction_sum < self.TOLERANCE)
 
-        abundance_fractional = fractional_abundance(self.adas, self.element, self.n_e, self.t_e(self.psi_value),
+        abundance_fractional = fractional_abundance(self.atomic_data, self.element, self.n_e, self.t_e(self.psi_value),
                                                     free_variable=self.psi_value)
 
         fraction_sum = self.sumup_fractions(abundance_fractional)
@@ -190,7 +190,7 @@ class TestIonizationBalance1D(unittest.TestCase):
         test calculation of 1d fractional profiles with 1d iterables as inputs
         :return:
         """
-        abundance_fractional = fractional_abundance(self.adas, self.element, self.n_e_profile, self.t_e_profile)
+        abundance_fractional = fractional_abundance(self.atomic_data, self.element, self.n_e_profile, self.t_e_profile)
 
         fraction_sum = self.sumup_fractions(abundance_fractional)
         self.assertTrue(np.allclose(fraction_sum, 1, atol=self.TOLERANCE))
@@ -201,7 +201,7 @@ class TestIonizationBalance1D(unittest.TestCase):
         :return:
         """
 
-        abundance_fractional = fractional_abundance(self.adas, self.element, self.n_e_profile, self.t_e_profile,
+        abundance_fractional = fractional_abundance(self.atomic_data, self.element, self.n_e_profile, self.t_e_profile,
                                                     tcx_donor=self.tcx_donor, tcx_donor_n=self.n_tcx_donor_profile,
                                                     tcx_donor_charge=0)
 
@@ -213,7 +213,7 @@ class TestIonizationBalance1D(unittest.TestCase):
         test calculation of 1d fractional profiles with 1d interpolators as inputs
         :return:
         """
-        abundance_fractional = fractional_abundance(self.adas, self.element, self.n_e, self.t_e,
+        abundance_fractional = fractional_abundance(self.atomic_data, self.element, self.n_e, self.t_e,
                                                     free_variable=self.psin_1d)
 
         fraction_sum = self.sumup_fractions(abundance_fractional)
@@ -225,7 +225,7 @@ class TestIonizationBalance1D(unittest.TestCase):
         :return:
         """
 
-        abundance_fractional = fractional_abundance(self.adas, self.element, self.n_e, self.t_e,
+        abundance_fractional = fractional_abundance(self.atomic_data, self.element, self.n_e, self.t_e,
                                                     tcx_donor=self.tcx_donor, tcx_donor_n=self.n_tcx_donor,
                                                     tcx_donor_charge=0, free_variable=self.psin_1d)
 
@@ -238,13 +238,13 @@ class TestIonizationBalance1D(unittest.TestCase):
         :return:
         """
 
-        abundance_fractional = fractional_abundance(self.adas, self.element, self.n_e_profile, self.t_e,
+        abundance_fractional = fractional_abundance(self.atomic_data, self.element, self.n_e_profile, self.t_e,
                                                     free_variable=self.psin_1d)
 
         fraction_sum = self.sumup_fractions(abundance_fractional)
         self.assertTrue(np.allclose(fraction_sum, 1, atol=self.TOLERANCE))
 
-        abundance_fractional = fractional_abundance(self.adas, self.element, self.n_e, self.t_e_profile,
+        abundance_fractional = fractional_abundance(self.atomic_data, self.element, self.n_e, self.t_e_profile,
                                                     free_variable=self.psin_1d)
 
         fraction_sum = self.sumup_fractions(abundance_fractional)
@@ -256,21 +256,21 @@ class TestIonizationBalance1D(unittest.TestCase):
         :return:
         """
 
-        abundance_fractional = fractional_abundance(self.adas, self.element, self.n_e_profile, self.t_e,
+        abundance_fractional = fractional_abundance(self.atomic_data, self.element, self.n_e_profile, self.t_e,
                                                     tcx_donor=self.tcx_donor, tcx_donor_n=self.n_tcx_donor,
                                                     tcx_donor_charge=0, free_variable=self.psin_1d)
 
         fraction_sum = self.sumup_fractions(abundance_fractional)
         self.assertTrue(np.allclose(fraction_sum, 1, atol=self.TOLERANCE))
 
-        abundance_fractional = fractional_abundance(self.adas, self.element, self.n_e, self.t_e_profile,
+        abundance_fractional = fractional_abundance(self.atomic_data, self.element, self.n_e, self.t_e_profile,
                                                     tcx_donor=self.tcx_donor, tcx_donor_n=self.n_tcx_donor,
                                                     tcx_donor_charge=0, free_variable=self.psin_1d)
 
         fraction_sum = self.sumup_fractions(abundance_fractional)
         self.assertTrue(np.allclose(fraction_sum, 1, atol=self.TOLERANCE))
 
-        abundance_fractional = fractional_abundance(self.adas, self.element, self.n_e, self.t_e_profile,
+        abundance_fractional = fractional_abundance(self.atomic_data, self.element, self.n_e, self.t_e_profile,
                                                     tcx_donor=self.tcx_donor, tcx_donor_n=self.n_tcx_donor_profile,
                                                     tcx_donor_charge=0, free_variable=self.psin_1d)
 
@@ -283,19 +283,19 @@ class TestIonizationBalance1D(unittest.TestCase):
         :return:
         """
         # test with floats as input
-        densities = from_elementdensity(self.adas, self.element, self.n_element(self.psi_value),
+        densities = from_elementdensity(self.atomic_data, self.element, self.n_element(self.psi_value),
                                         self.n_e(self.psi_value), self.t_e(self.psi_value))
         total = self.sumup_fractions(densities)
         self.assertTrue(np.isclose(total, self.n_element(self.psi_value), rtol=self.TOLERANCE))
 
         # test with interpolators
-        densities = from_elementdensity(self.adas, self.element, self.n_element(self.psi_value),
+        densities = from_elementdensity(self.atomic_data, self.element, self.n_element(self.psi_value),
                                         self.n_e(self.psi_value), self.t_e(self.psi_value))
         total = self.sumup_fractions(densities)
         self.assertTrue(np.isclose(total, self.n_element(self.psi_value), rtol=self.TOLERANCE))
 
         # test with mixed parameters
-        densities = from_elementdensity(self.adas, self.element, self.n_element,
+        densities = from_elementdensity(self.atomic_data, self.element, self.n_element,
                                         self.n_e(self.psi_value), self.t_e(self.psi_value),
                                         free_variable=self.psi_value)
         total = self.sumup_fractions(densities)
@@ -304,15 +304,15 @@ class TestIonizationBalance1D(unittest.TestCase):
     def test_balance_0d_matchdensity(self):
         """test matching of plasma neutrality"""
 
-        densities_1 = from_elementdensity(self.adas, self.element, self.n_element,
+        densities_1 = from_elementdensity(self.atomic_data, self.element, self.n_element,
                                           self.n_e(self.psi_value), self.t_e(self.psi_value),
                                           free_variable=self.psi_value)
 
-        densities_2 = from_elementdensity(self.adas, self.element2, self.n_element2,
+        densities_2 = from_elementdensity(self.atomic_data, self.element2, self.n_element2,
                                           self.n_e(self.psi_value), self.t_e(self.psi_value),
                                           free_variable=self.psi_value)
 
-        densities_3 = match_plasma_neutrality(self.adas, self.element_bulk, [densities_1, densities_2],
+        densities_3 = match_plasma_neutrality(self.atomic_data, self.element_bulk, [densities_1, densities_2],
                                               self.n_e(self.psi_value), self.t_e(self.psi_value))
 
         total = self.sumup_electrons(densities_1)
@@ -324,19 +324,19 @@ class TestIonizationBalance1D(unittest.TestCase):
     def test_balance_0d_matchdensity_tcx(self):
         """test matching of plasma neutrality"""
 
-        densities_1 = from_elementdensity(self.adas, self.element, self.n_element,
+        densities_1 = from_elementdensity(self.atomic_data, self.element, self.n_element,
                                           self.n_e(self.psi_value), self.t_e(self.psi_value),
                                           free_variable=self.psi_value,
                                           tcx_donor=self.tcx_donor, tcx_donor_n=self.n_tcx_donor, tcx_donor_charge=0,
                                           )
 
-        densities_2 = from_elementdensity(self.adas, self.element2, self.n_element2,
+        densities_2 = from_elementdensity(self.atomic_data, self.element2, self.n_element2,
                                           self.n_e(self.psi_value), self.t_e(self.psi_value),
                                           free_variable=self.psi_value,
                                           tcx_donor=self.tcx_donor, tcx_donor_n=self.n_tcx_donor, tcx_donor_charge=0,
                                           )
 
-        densities_3 = match_plasma_neutrality(self.adas, self.element_bulk, [densities_1, densities_2],
+        densities_3 = match_plasma_neutrality(self.atomic_data, self.element_bulk, [densities_1, densities_2],
                                               self.n_e(self.psi_value), self.t_e(self.psi_value))
 
         total = self.sumup_electrons(densities_1)
@@ -348,15 +348,15 @@ class TestIonizationBalance1D(unittest.TestCase):
     def test_balance_1d_matchdensity(self):
         """test matching of plasma neutrality for 1d profiles"""
 
-        densities_1 = from_elementdensity(self.adas, self.element, self.n_element,
+        densities_1 = from_elementdensity(self.atomic_data, self.element, self.n_element,
                                           self.n_e, self.t_e_profile,
                                           free_variable=self.psin_1d)
 
-        densities_2 = from_elementdensity(self.adas, self.element2, self.n_element2,
+        densities_2 = from_elementdensity(self.atomic_data, self.element2, self.n_element2,
                                           self.n_e_profile, self.t_e,
                                           free_variable=self.psin_1d)
 
-        densities_3 = match_plasma_neutrality(self.adas, self.element_bulk, [densities_1, densities_2],
+        densities_3 = match_plasma_neutrality(self.atomic_data, self.element_bulk, [densities_1, densities_2],
                                               self.n_e, self.t_e_profile,
                                               free_variable=self.psin_1d)
 
@@ -369,18 +369,18 @@ class TestIonizationBalance1D(unittest.TestCase):
     def test_balance_1d_matchdensity_tcx(self):
         """test matching of plasma neutrality for 1d profiles with thermal cx"""
 
-        densities_1 = from_elementdensity(self.adas, self.element, self.n_element,
+        densities_1 = from_elementdensity(self.atomic_data, self.element, self.n_element,
                                           self.n_e, self.t_e_profile,
                                           free_variable=self.psin_1d,
                                           tcx_donor=self.tcx_donor, tcx_donor_n=self.n_tcx_donor, tcx_donor_charge=0
                                           )
 
-        densities_2 = from_elementdensity(self.adas, self.element2, self.n_element2,
+        densities_2 = from_elementdensity(self.atomic_data, self.element2, self.n_element2,
                                           self.n_e_profile, self.t_e,
                                           free_variable=self.psin_1d,
                                           tcx_donor=self.tcx_donor, tcx_donor_n=self.n_tcx_donor, tcx_donor_charge=0)
 
-        densities_3 = match_plasma_neutrality(self.adas, self.element_bulk, [densities_1, densities_2],
+        densities_3 = match_plasma_neutrality(self.atomic_data, self.element_bulk, [densities_1, densities_2],
                                               self.n_e, self.t_e_profile,
                                               free_variable=self.psin_1d,
                                               tcx_donor=self.tcx_donor, tcx_donor_n=self.n_tcx_donor,
