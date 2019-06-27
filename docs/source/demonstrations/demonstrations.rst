@@ -48,13 +48,18 @@ Creating Plasmas
           :height: 150px
           :width: 150px
    * - :ref:`Flux Function Plasmas <flux_function_plasmas>`
-     - Specifying a plasma distribution in terms of 1D flux functions.
-     - .. image:: ./plasmas/equilibrium_mapped_te_xz.png
+     - Loading the example EFIT equilibrium and making 1D flux functions.
+     - .. image:: ./plasmas/equilibrium_surfaces.png
           :height: 150px
           :width: 150px
    * - :ref:`2D Mesh Plasmas <mesh2d_plasma>`
      - Specifying a plasma distribution with a 2D r-z triangular mesh.
      - .. image:: ./plasmas/mesh_plasma_column.png
+          :height: 150px
+          :width: 150px
+   * - :ref:`Slab Plasma <slab_plasma>`
+     - Constructing a slab of plasma defined along +ve x.
+     - .. image:: ./plasmas/slab_plasma.png
           :height: 150px
           :width: 150px
    * - :ref:`Beams into Plasmas <beams_into_plasmas>`
@@ -63,10 +68,50 @@ Creating Plasmas
           :height: 150px
           :width: 150px
 
+
+Surface Radiation Loads
+=======================
+
+.. list-table::
+   :widths: 28 50 22
+   :header-rows: 1
+
+   * - Name
+     - Description
+     - Preview
+   * - :ref:`Defining A Radiation Function <radiation_function>`
+     - Defining an example radiation function.
+     - .. image:: ./radiation_loads/radiation_function.png
+          :height: 150px
+          :width: 150px
+   * - :ref:`Defining A Wall From A 2D Polygon <wall_from_polygon>`
+     - A toroidal mesh representing the tokamak wall is made from a
+       2D polygon outline.
+     - .. image:: ./radiation_loads/toroidal_wall.png
+          :height: 150px
+          :width: 150px
+   * - :ref:`Symmetric Power Load Calculation <symmetric_power_load>`
+     - Calculating the power load by exploiting symmetry. We manually
+       create an array of detectors for sampling.
+     - .. image:: ./radiation_loads/symmetric_power_load.png
+          :height: 150px
+          :width: 150px
+   * - `Mesh Observer <https://raysect.github.io/documentation/demonstrations/observers/mesh_observers.html>`_
+     - Calculating powers on an arbitrary 3D surface (Raysect docs).
+     - .. image:: https://raysect.github.io/documentation/_images/mesh_observers.jpg
+          :height: 150px
+          :width: 150px
+   * - :ref:`AUG - SOLPS radiation load example <aug_solps_radiation_load>`
+     - An older demonstration of the tutorials above using a SOLPS simulation
+       and an AUG wall outline.
+     - .. image:: ./radiation_loads/AUG_wall_outline.png
+          :height: 150px
+          :width: 150px
+
 Code examples gallery
 =====================
 
-.. list-table:: CHERAB Examples
+.. list-table::
    :widths: 28 50 22
    :header-rows: 1
 
@@ -103,11 +148,5 @@ Code examples gallery
        Localisation of the plasma emission is examined by plotting profiles of parameters
        such as density and temperature along the ray trajectory.
      - .. image:: ./line_emission/balmer_series_spectra.png
-          :height: 150px
-          :width: 150px
-   * - :ref:`Surface radiation loads <surface_radiation_loads>`
-     - Demo of loading a plasma from SOLPS and using its radiation data to calculate
-       total radiation arriving at surfaces.
-     - .. image:: ./radiation_wall_loads/AUG_wall_outline.png
           :height: 150px
           :width: 150px
