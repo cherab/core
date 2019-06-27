@@ -16,13 +16,46 @@
 # See the Licence for the specific language governing permissions and limitations
 # under the Licence.
 
-from cherab.core.math.samplers cimport *
-from cherab.core.math.function cimport *
-from cherab.core.math.interpolators cimport *
-from cherab.core.math.caching cimport *
-from cherab.core.math.blend cimport *
-from cherab.core.math.clamp cimport *
-from cherab.core.math.constant cimport *
-from cherab.core.math.mappers cimport *
-from cherab.core.math.mask cimport *
-from cherab.core.math.slice cimport *
+from cherab.core.math.function cimport Function1D, Function2D, Function3D
+
+
+cdef class ClampOutput1D(Function1D):
+
+    cdef:
+        Function1D _f
+        double _min, _max
+
+
+cdef class ClampOutput2D(Function2D):
+
+    cdef:
+        Function2D _f
+        double _min, _max
+
+
+cdef class ClampOutput3D(Function3D):
+
+    cdef:
+        Function3D _f
+        double _min, _max
+
+
+cdef class ClampInput1D(Function1D):
+
+    cdef:
+        Function1D _f
+        double _xmin, _xmax
+
+
+cdef class ClampInput2D(Function2D):
+
+    cdef:
+        Function2D _f
+        double _xmin, _xmax, _ymin, _ymax
+
+
+cdef class ClampInput3D(Function3D):
+
+    cdef:
+        Function3D _f
+        double _xmin, _xmax, _ymin, _ymax, _zmin, _zmax
