@@ -63,6 +63,10 @@ cdef class RadiationFunction(InhomogeneousVolumeEmitter):
                                      World world, Ray ray, Primitive primitive,
                                      AffineMatrix3D world_to_local, AffineMatrix3D local_to_world):
 
-        cdef double wvl_range = ray.max_wavelength - ray.min_wavelength
-        spectrum.samples_mv[:] = self.radiation_function(point.x, point.y, point.z + self.vertical_offset) / (4 * M_PI * wvl_range * spectrum.bins)
+        cdef double wvl_range, d_wvl
+
+        wvl_range = ray.max_wavelength - ray.min_wavelength
+        d_wvl = wvl_range / spectrum.bins
+
+        spectrum.samples_mv[:] = self.radiation_function(point.x, point.y, point.z + self.vertical_offset) / (4 * M_PI * (wvl_range))
         return spectrum
