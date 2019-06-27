@@ -27,6 +27,8 @@ from .interpolators import Interpolate2DLinear, Interpolate2DCubic
 from .interpolators import Interpolate3DLinear, Interpolate3DCubic
 from .caching import Caching1D, Caching2D, Caching3D
 from .blend import Blend1D, Blend2D, Blend3D
+from .clamp import ClampOutput1D, ClampOutput2D, ClampOutput3D
+from .clamp import ClampInput1D, ClampInput2D, ClampInput3D
 from .constant import Constant1D, Constant2D, Constant3D, ConstantVector2D, ConstantVector3D
 from .mappers import IsoMapper2D, IsoMapper3D, Swizzle2D, Swizzle3D, AxisymmetricMapper, VectorAxisymmetricMapper
 from .mask import PolygonMask2D
