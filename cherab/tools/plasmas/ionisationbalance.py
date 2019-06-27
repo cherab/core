@@ -1,11 +1,13 @@
+from collections.abc import Iterable
+
 import numpy as np
-from scipy.optimize import lsq_linear
 from cherab.core import AtomicData
 from cherab.core.atomic import Element
 from cherab.core.math import Interpolate1DLinear, Function1D, Function2D, Interpolate2DLinear
-from collections.abc import Iterable
+from scipy.optimize import lsq_linear
 
-def _parametres_to_numpy(*parametres, free_variable = None):
+
+def _parametres_to_numpy(*parametres, free_variable=None):
     """
     Check the consistency of parametres. Parametres can be scalar numbers, numpy arrays or dictionary of type {charge: rate}.
 
@@ -19,7 +21,7 @@ def _parametres_to_numpy(*parametres, free_variable = None):
     arrays = []
     shapes = []
 
-    #values of free variable has to be numpy arrays
+    # values of free variable has to be numpy arrays
     if free_variable is not None:
         if isinstance(free_variable, (list, tuple)):
             for index, value in enumerate(free_variable):
@@ -28,50 +30,53 @@ def _parametres_to_numpy(*parametres, free_variable = None):
         elif np.isscalar(free_variable):
             free_variable = np.array([free_variable])
 
-    #take care of all possible input types
+    # take care of all possible input types
     for param in parametres:
         if np.isscalar(param) and not isinstance(param, str):
             arrays.append(np.array([param]))
-        elif isinstance(param, dict):#deal with dictionary
-            #if first item is an interpolator, use shape of free_variable
+        elif isinstance(param, dict):  # deal with dictionary
+            # if first item is an interpolator, use shape of free_variable
             if isinstance(param[0], Function1D):
                 array = np.zeros((len(param), *free_variable.shape))
             elif isinstance(param[0], Function2D):
                 array = np.zeros((len(param), *free_variable[0].shape, *free_variable[1].shape))
             else:
                 array = np.zeros((len(param), *param[0].shape))
-            #convert items into numpy arrays
+            # convert items into numpy arrays
             for key, value in param.items():
                 array[key, ...] = _parametres_to_numpy(value, free_variable=free_variable)[0]
             arrays.append(array)
-        elif isinstance(param, Function1D): #take care of Function1D input type
+        elif isinstance(param, Function1D):  # take care of Function1D input type
             array = np.zeros(free_variable.shape)
-            for index, value in enumerate(free_variable): #evaluate for free_variable
+            for index, value in enumerate(free_variable):  # evaluate for free_variable
                 array[index] = param(value)
             arrays.append(array)
-        elif isinstance(param, Function2D): #take care of Function2D input type
+        elif isinstance(param, Function2D):  # take care of Function2D input type
             if not isinstance(param, (tuple, list)) and not len(free_variable) == 2:
-                raise ValueError("In case of 2d interpolator free variable has to be tupple of length 2 storing x and y coordinates")
+                raise ValueError(
+                    "In case of 2d interpolator free variable has to be tupple of length 2 storing x and y coordinates")
             array = np.zeros((*free_variable[0].shape, *free_variable[1].shape))
             for xindex, xvalue in enumerate(free_variable[0]):
                 for yindex, yvalue in enumerate(free_variable[1]):
                     array[xindex, yindex] = param(xvalue, yvalue)
             arrays.append(array)
-        elif not isinstance(param, np.ndarray):#well there are types which should not be treated
-            raise ValueError("Parametres can be Iterable, scalar, list, Function1D, Function2D or None, {0} passed".format(type(param)))
+        elif not isinstance(param, np.ndarray):  # well there are types which should not be treated
+            raise ValueError(
+                "Parametres can be Iterable, scalar, list, Function1D, Function2D or None, {0} passed".format(
+                    type(param)))
         else:
             arrays.append(param)
 
         shapes.append(arrays[-1].shape)
 
-    #test if all arrays have the same shape
+    # test if all arrays have the same shape
     if not all(shapes[0] == shape for shape in shapes):
-         raise ValueError("Profiles and free_variable have to have the same shape")
+        raise ValueError("Profiles and free_variable have to have the same shape")
 
     return arrays
 
 
-def _assign_donor_density(donor_density, major_profile, free_variable = None):
+def _assign_donor_density(donor_density, major_profile, free_variable=None):
     """
     If donor density is none, it should be assigned a zeros numpy array of the shape matching free_variable or
     major_profile if free_variable is None. It is populated if donor_density is an interpolating function.
@@ -81,7 +86,7 @@ def _assign_donor_density(donor_density, major_profile, free_variable = None):
     :return: numpy array
     """
     # donor density should be array of the correct shape, if not assigned
-    if donor_density is None: #if none, it hsa to be replaced by an array of zeros of the correct shape
+    if donor_density is None:  # if none, it hsa to be replaced by an array of zeros of the correct shape
         if isinstance(major_profile, Function1D) and free_variable is not None:
             donor_density = np.zeros_like(free_variable)
         elif isinstance(major_profile, Function2D) and free_variable is not None:
@@ -145,7 +150,7 @@ def get_rates_tcx(atomic_data: AtomicData, donor: Element, donor_charge, receive
     return coef_tcx
 
 
-def _fractional_abundance_point(element: Element, n_e, t_e, coef_ion, coef_recom, coef_tcx = None, tcx_donor_density=0):
+def _fractional_abundance_point(element: Element, n_e, t_e, coef_ion, coef_recom, coef_tcx=None, tcx_donor_density=0):
     """
     Calculate fractional abundance of charge states of the specified element, for the specified temperature and density using
     steady state ionization balance. If tcx_donor is specified, the balance equation will take into accout effects
@@ -227,7 +232,7 @@ def _from_element_density_point(atomic_data: AtomicData, element: Element, eleme
     :return: array with densities in m^-3 of ion charge states. Array indexes correspond to ion charge state.
     """
 
-    #load atomic data for the element
+    # load atomic data for the element
     if coef_ion is None:
         coef_ion = get_rates_ionisation(atomic_data, element)  # get ionisation rate interpolators
     if coef_recom is None:
@@ -238,7 +243,6 @@ def _from_element_density_point(atomic_data: AtomicData, element: Element, eleme
         coef_tcx = get_rates_tcx(atomic_data, tcx_donor, tcx_donor_charge, element)
     else:
         coef_tcx = None
-
 
     # calculate fractional abundance for the element
     fractional_abundance = _fractional_abundance_point(element, n_e, t_e, coef_ion, coef_recom, coef_tcx,
@@ -255,7 +259,8 @@ def _from_element_density_point(atomic_data: AtomicData, element: Element, eleme
     return abundance
 
 
-def _match_element_density_point(atomic_data: AtomicData, element: Element, n_species, n_e, t_e, tcx_donor: Element = None,
+def _match_element_density_point(atomic_data: AtomicData, element: Element, n_species, n_e, t_e,
+                                 tcx_donor: Element = None,
                                  tcx_donor_density=None, tcx_donor_charge=0, coef_ion=None, coef_recom=None,
                                  coef_tcx=None):
     """
@@ -278,7 +283,7 @@ def _match_element_density_point(atomic_data: AtomicData, element: Element, n_sp
     :return: array with densities in m^-3 of ion charge states. Array indexes correspond to ion charge state.
     """
 
-    #load atomic data for the element
+    # load atomic data for the element
     if coef_ion is None:
         coef_ion = get_rates_ionisation(atomic_data, element)  # get ionisation rate interpolators
     if coef_recom is None:
@@ -335,8 +340,7 @@ def _fractional_abundance(atomic_data: AtomicData, element: Element, n_e,
     :return: dim 0 corresponds to element charge state, dim > 0 correspond to dimensions of provided values.
     """
 
-
-    #load atomic data for the element
+    # load atomic data for the element
     if coef_ion is None:
         coef_ion = get_rates_ionisation(atomic_data, element)  # get ionisation rate interpolators
     if coef_recom is None:
@@ -348,12 +352,11 @@ def _fractional_abundance(atomic_data: AtomicData, element: Element, n_e,
     else:
         coef_tcx = None
 
-
     density = np.zeros((element.atomic_number + 1, *n_e.shape))
     for index in np.ndindex(*n_e.shape):
         density[(Ellipsis, *index)] = _fractional_abundance_point(element, n_e[index], t_e[index],
                                                                   coef_ion, coef_recom, coef_tcx,
-                                                                   tcx_donor_n[index])
+                                                                  tcx_donor_n[index])
 
     return density
 
@@ -378,13 +381,14 @@ def fractional_abundance(atomic_data: AtomicData, element: Element, n_e,
     # donor density should be array of the correct shape, if not assigned or if interpolating function passed
     tcx_donor_n = _assign_donor_density(tcx_donor_n, n_e, free_variable)
 
-    #check consistency of parametres and transform them into numpy arrays to allow calculations of frac. abundance
+    # check consistency of parametres and transform them into numpy arrays to allow calculations of frac. abundance
     n_e, t_e, tcx_donor_n = _parametres_to_numpy(n_e, t_e, tcx_donor_n, free_variable=free_variable)
 
-    #calculate fractional abundance
-    fractional_abundance = _fractional_abundance(atomic_data, element, n_e, t_e, tcx_donor, tcx_donor_n, tcx_donor_charge)
+    # calculate fractional abundance
+    fractional_abundance = _fractional_abundance(atomic_data, element, n_e, t_e, tcx_donor, tcx_donor_n,
+                                                 tcx_donor_charge)
 
-        # transform into dictionary
+    # transform into dictionary
     fractional_abundance_dict = {}
     for index, value in enumerate(fractional_abundance):
         fractional_abundance_dict[index] = value
@@ -408,8 +412,7 @@ def _from_elementdensity(atomic_data: AtomicData, element: Element, element_dens
     :return: dim 0 corresponds to element charge state, dim > 0 correspond to dimensions of provided values.
     """
 
-
-    #load atomic data for the element
+    # load atomic data for the element
     coef_ion = get_rates_ionisation(atomic_data, element)  # get ionisation rate interpolators
     coef_recom = get_rates_recombination(atomic_data, element)  # get recombination rate interpolators
 
@@ -450,12 +453,11 @@ def from_elementdensity(atomic_data: AtomicData, element: Element, element_densi
     # donor density should be array of the correct shape, if not assigned or if interpolating function passed
     tcx_donor_n_profile = _assign_donor_density(tcx_donor_n, n_e, free_variable)
 
-    #check consistency of parametres and transform them into numpy arrays to allow calculations of frac. abundance
+    # check consistency of parametres and transform them into numpy arrays to allow calculations of frac. abundance
     element_density, n_e, t_e, tcx_donor_n = _parametres_to_numpy(element_density, n_e, t_e,
-                                                                                          tcx_donor_n_profile, free_variable=free_variable)
+                                                                  tcx_donor_n_profile, free_variable=free_variable)
 
-
-    #calculate density profiles
+    # calculate density profiles
     densities = _from_elementdensity(atomic_data, element, element_density, n_e, t_e, tcx_donor,
                                      tcx_donor_n, tcx_donor_charge)
 
@@ -483,8 +485,7 @@ def _match_plasma_neutrality(atomic_data: AtomicData, element: Element, n_specie
     :return: Density profiles of charge states of the element. Dim 0 corresponds to charge of charge states.
     """
 
-
-    #load atomic data for the element
+    # load atomic data for the element
     coef_ion = get_rates_ionisation(atomic_data, element)  # get ionisation rate interpolators
     coef_recom = get_rates_recombination(atomic_data, element)  # get recombination rate interpolators
 
@@ -496,14 +497,14 @@ def _match_plasma_neutrality(atomic_data: AtomicData, element: Element, n_specie
 
     number_chargestates = element.atomic_number + 1
 
-
     density = np.zeros((number_chargestates, *n_e_profile.shape))
     for index in np.ndindex(*n_e_profile.shape):
         spec_list = []
         for spec in n_species:
             spec_list.append(spec[(Ellipsis, *index)])
         density[(Ellipsis, *index)] = _match_element_density_point(atomic_data, element, spec_list, n_e_profile[index],
-                                                                   t_e_profile[index], tcx_donor, tcx_donor_n_profile[index],
+                                                                   t_e_profile[index], tcx_donor,
+                                                                   tcx_donor_n_profile[index],
                                                                    tcx_donor_charge, coef_ion, coef_recom, coef_tcx)
 
     return density
@@ -528,11 +529,10 @@ def match_plasma_neutrality(atomic_data: AtomicData, element: Element, n_species
 
     """
 
-
     # donor density should be array of the correct shape, if not assigned or if interpolating function passed
     tcx_donor_n = _assign_donor_density(tcx_donor_n, n_e, free_variable=free_variable)
 
-    #check consistency of parametres and transform them into numpy arrays to allow calculations of frac. abundance
+    # check consistency of parametres and transform them into numpy arrays to allow calculations of frac. abundance
     n_e, t_e, tcx_donor_n = _parametres_to_numpy(n_e, t_e, tcx_donor_n, free_variable=free_variable)
 
     n_species_arrays = []
@@ -540,7 +540,7 @@ def match_plasma_neutrality(atomic_data: AtomicData, element: Element, n_species
         spec = _parametres_to_numpy(spec, free_variable=free_variable)[0]
         n_species_arrays.append(spec)
 
-    #calculate density profiles
+    # calculate density profiles
     densities = _match_plasma_neutrality(atomic_data, element, n_species_arrays, n_e, t_e, tcx_donor,
                                          tcx_donor_n, tcx_donor_charge)
 
@@ -627,7 +627,8 @@ def interpolators1d_from_elementdensity(atomic_data: AtomicData, element: Elemen
     :return: dictionary with 1d interpolators of fractional abundance of charge states of the element in the form {charge: interpolator}
     """
 
-    densities = from_elementdensity(atomic_data, element, element_density, n_e, t_e, tcx_donor, tcx_donor_n, tcx_donor_charge,
+    densities = from_elementdensity(atomic_data, element, element_density, n_e, t_e, tcx_donor, tcx_donor_n,
+                                    tcx_donor_charge,
                                     free_variable=free_variable)
 
     density_interpolators = {}
@@ -658,7 +659,8 @@ def interpolators1d_match_plasma_neutrality(atomic_data: AtomicData, element: El
     """
 
     density_profiles = match_plasma_neutrality(atomic_data, element, species_density, n_e,
-                                               t_e, tcx_donor, tcx_donor_n, tcx_donor_charge, free_variable=free_variable)
+                                               t_e, tcx_donor, tcx_donor_n, tcx_donor_charge,
+                                               free_variable=free_variable)
 
     # use profiles to create interpolators for profiles
     density_interpolators = {}
@@ -687,7 +689,8 @@ def interpolators2d_from_elementdensity(atomic_data: AtomicData, element: Elemen
     :return: dictionary with 1d interpolators of fractional abundance of charge states of the element in the form {charge: interpolator}
     """
 
-    densities = from_elementdensity(atomic_data, element, element_density, n_e, t_e, tcx_donor, tcx_donor_n, tcx_donor_charge,
+    densities = from_elementdensity(atomic_data, element, element_density, n_e, t_e, tcx_donor, tcx_donor_n,
+                                    tcx_donor_charge,
                                     free_variable=free_variable)
 
     density_interpolators = {}
@@ -718,7 +721,8 @@ def interpolators2d_match_plasma_neutrality(atomic_data: AtomicData, element: El
     """
 
     density_profiles = match_plasma_neutrality(atomic_data, element, species_density, n_e,
-                                               t_e, tcx_donor, tcx_donor_n, tcx_donor_charge, free_variable=free_variable)
+                                               t_e, tcx_donor, tcx_donor_n, tcx_donor_charge,
+                                               free_variable=free_variable)
 
     # use profiles to create interpolators for profiles
     density_interpolators = {}
