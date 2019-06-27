@@ -1,17 +1,12 @@
-from cherab.tools.equilibrium import example_equilibrium, plot_equilibrium
-import matplotlib.pyplot as plt
-
-import numpy as np
 from collections.abc import Iterable
-from cherab.core.math import Interpolate1DCubic, Interpolate2DCubic
-from cherab.tools.plasmas.ionisationbalance import (fractional_abundance, from_elementdensity, match_plasma_neutrality,
-                                                    interpolators1d_fractional, interpolators1d_from_elementdensity,
-                                                    interpolators1d_match_plasma_neutrality,
-                                                    interpolators2d_fractional, interpolators2d_from_elementdensity,
-                                                    interpolators2d_match_plasma_neutrality)
 
+import matplotlib.pyplot as plt
+import numpy as np
 from cherab.core.atomic import neon, hydrogen, helium
+from cherab.core.math import Interpolate1DCubic, Interpolate2DCubic
 from cherab.openadas import OpenADAS
+from cherab.tools.equilibrium import example_equilibrium
+from cherab.tools.plasmas.ionisationbalance import (fractional_abundance)
 
 
 def doubleparabola(r, Centre, Edge, p, q, lim=None):
@@ -27,7 +22,7 @@ def doubleparabola(r, Centre, Edge, p, q, lim=None):
     """
 
     if lim is not None:
-        dp =  (Centre - Edge) * np.power((1 - np.power((r - r.min()) / (lim - r.min()), p)), q) + Edge
+        dp = (Centre - Edge) * np.power((1 - np.power((r - r.min()) / (lim - r.min()), p)), q) + Edge
 
         lm = np.where(r > lim)[0]
         dp[lm] = Edge
@@ -35,6 +30,7 @@ def doubleparabola(r, Centre, Edge, p, q, lim=None):
         dp = (Centre - Edge) * np.power((1 - np.power((r - r.min()) / (r.max() - r.min()), p)), q) + Edge
 
     return dp
+
 
 def normal(x, mu, sd, height=1, offset=0):
     return height * np.exp(-1 * np.power(x - mu, 2) / (2 * sd ** 2)) + offset
@@ -69,7 +65,6 @@ def get_electron_density_spot(densities):
 
 
 def exp_decay(r, lamb, max_val, lim=None):
-
     ed = max_val * np.exp((r - r.max()) * lamb)
     if lim is not None:
         lm = np.where(r > lim)[0]
@@ -77,8 +72,9 @@ def exp_decay(r, lamb, max_val, lim=None):
 
     return ed
 
+
 equilibrium = example_equilibrium()
-#plot_equilibrium(equilibrium, detail=True)
+# plot_equilibrium(equilibrium, detail=True)
 # load adas atomic database and define elements
 atomic_data = OpenADAS(permit_extrapolation=True)
 
@@ -96,7 +92,6 @@ for index0, value0 in enumerate(r):
     for index1, value1 in enumerate(z):
         psin_2d[index0, index1] = equilibrium.psi_normalised(value0, value1)
 
-
 # create plasma profiles and interpolators
 psin_1d = np.linspace(0, psin_2d.max(), 50, endpoint=True)
 
@@ -108,7 +103,6 @@ n_element_profile_1d = doubleparabola(psin_1d, 1e17, 1e17, 2, 2, 1) + normal(psi
 n_element2_profile_1d = doubleparabola(psin_1d, 5e17, 1e17, 2, 2, 1)
 n_tcx_donor_profile_1d = exp_decay(psin_1d, 10, 3e16, 1)
 
-
 t_e_1d = Interpolate1DCubic(psin_1d, t_e_profile_1d)
 n_e_1d = Interpolate1DCubic(psin_1d, n_e_profile_1d)
 
@@ -116,7 +110,6 @@ t_element_1d = Interpolate1DCubic(psin_1d, t_element_profile_1d)
 n_element_1d = Interpolate1DCubic(psin_1d, n_element_profile_1d)
 n_element2_1d = Interpolate1DCubic(psin_1d, n_element2_profile_1d)
 n_tcx_donor_1d = Interpolate1DCubic(psin_1d, n_tcx_donor_profile_1d)
-
 
 psin_2d = np.zeros(equilibrium.psi_data.shape)
 
@@ -146,13 +139,11 @@ n_element_profile_2d = np.zeros_like(psin_2d)
 for index in np.ndindex(*n_element_profile_2d.shape):
     n_element_profile_2d[index] = n_element_1d(psin_2d[index])
 
-
 n_element_2d = Interpolate2DCubic(equilibrium.r_data, equilibrium.z_data, n_element_profile_2d)
 
 n_element2_profile_2d = np.zeros_like(psin_2d)
 for index in np.ndindex(*n_element2_profile_2d.shape):
     n_element2_profile_2d[index] = n_element2_1d(psin_2d[index])
-
 
 n_element2_2d = Interpolate2DCubic(equilibrium.r_data, equilibrium.z_data, n_element2_profile_2d)
 
@@ -162,22 +153,26 @@ for index in np.ndindex(*n_tcx_donor_profile_2d.shape):
 
 n_tcx_donor_2d = Interpolate2DCubic(equilibrium.r_data, equilibrium.z_data, n_element_profile_2d)
 
-
-#calculate fractional abundance profiles by providing arrays
+# calculate fractional abundance profiles by providing arrays
 element_fractional_abundance = fractional_abundance(atomic_data, element, n_e_profile_2d,
                                                     t_e_profile_2d, tcx_donor=donor_element,
                                                     tcx_donor_n=n_tcx_donor_profile_2d, tcx_donor_charge=0)
 
 plot_ne = plt.subplots()
 ax = plot_ne[1]
-ax.contourf(equilibrium.r_data, equilibrium.z_data, n_e_profile_2d.T)
+ax.contourf(equilibrium.r_data, equilibrium.z_data, t_e_profile_2d.T)
+ax.contour(equilibrium.r_data, equilibrium.z_data, equilibrium.psi_data.T, colors="white")
+ax.plot(equilibrium.limiter_polygon[:, 0], equilibrium.limiter_polygon[:, 1], "k-")
+ax.plot(equilibrium.lcfs_polygon[:, 0], equilibrium.lcfs_polygon[:, 1], "r-")
+ax.set_title("Te [eV]")
+ax.set_aspect(1)
 
 for key, item in element_fractional_abundance.items():
     plot_fractional_abundance = plt.subplots()
     ax = plot_fractional_abundance[1]
     ax.contourf(equilibrium.r_data, equilibrium.z_data, item.T)
     ax.contour(equilibrium.r_data, equilibrium.z_data, equilibrium.psi_data.T, colors="white")
-    ax.plot(equilibrium.limiter_polygon[:,0], equilibrium.limiter_polygon[:,1], "k-")
-    ax.plot(equilibrium.lcfs_polygon[:,0], equilibrium.lcfs_polygon[:,1], "r-")
+    ax.plot(equilibrium.limiter_polygon[:, 0], equilibrium.limiter_polygon[:, 1], "k-")
+    ax.plot(equilibrium.lcfs_polygon[:, 0], equilibrium.lcfs_polygon[:, 1], "r-")
     ax.set_title("{} {}+".format(element.symbol, key))
     ax.set_aspect(1)
