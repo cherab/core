@@ -23,7 +23,7 @@ become stable until we have finished moving the source code to github.
    atomic/atomic_data
    plasmas/plasmas
    models/emission_models
-   math
+   math/math
    tools/tools
 
 
