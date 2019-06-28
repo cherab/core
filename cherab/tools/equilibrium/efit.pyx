@@ -114,8 +114,6 @@ cdef class EFITEquilibrium:
         psi = np.array(psi_grid, dtype=np.float64)
         f_profile = np.array(f_profile, dtype=np.float64)
         q_profile = np.array(q_profile, dtype=np.float64)
-        lcfs_polygon = np.array(lcfs_polygon, dtype=np.float64)
-        limiter_polygon = np.array(limiter_polygon, dtype=np.float64)
 
         # store raw data
         self.r_data = r
@@ -177,6 +175,7 @@ cdef class EFITEquilibrium:
         # lcfs polygon
         # polygon mask requires an Nx2 array and it must be c contiguous
         # transposing simply swaps the indexing, so need to re-instance
+        lcfs_polygon = np.array(lcfs_polygon, dtype=np.float64)
         lcfs_polygon = np.ascontiguousarray(lcfs_polygon.transpose())
         self.lcfs_polygon = lcfs_polygon
         self.inside_lcfs = EFITLCFSMask(lcfs_polygon, psi_normalised)
@@ -188,6 +187,7 @@ cdef class EFITEquilibrium:
         else:
             # polygon mask requires an Nx2 array and it must be c contiguous
             # transposing simply swaps the indexing, so need to re-instance
+            limiter_polygon = np.array(limiter_polygon, dtype=np.float64)
             limiter_polygon = np.ascontiguousarray(limiter_polygon.transpose())
             self.limiter_polygon = limiter_polygon
             self.inside_limiter = PolygonMask2D(limiter_polygon)
