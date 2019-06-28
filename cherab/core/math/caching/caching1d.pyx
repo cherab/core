@@ -34,27 +34,28 @@ EPSILON = 1.e-7
 
 cdef class Caching1D(Function1D):
     """
-    Precalculate and cache a 1D function on a finite space area. The function
-    is sampled and a cubic interpolation is then used to calculate a cubic
-    spline approximation of the function. As the spline has a constant cost of
-    evaluation, this decreases the evaluation time of functions which are very
-    often used.
+    Precalculate and cache a 1D function on a finite space area.
+
+    The function is sampled and a cubic interpolation is then used to calculate
+    a cubic spline approximation of the function. As the spline has a constant
+    cost of evaluation, this decreases the evaluation time of functions which
+    are very often used.
+
     The sampling and interpolation are done locally and on demand, so that the
-    caching is done progressively when the function is evaluated.
-    Coordinates are normalised to the range [0, 1] to avoid float accuracy
-    troubles. The values of the function are normalised if their boundaries
-    are given.
+    caching is done progressively when the function is evaluated. Coordinates
+    are normalised to the range [0, 1] to avoid float accuracy troubles. The
+    values of the function are normalised if their boundaries are given.
 
     :param object function1d: 1D function to be cached.
     :param tuple space_area: space area where the function has to be cached:
-    (minx, maxx)
+      (minx, maxx).
     :param double resolution: resolution of the sampling
     :param no_boundary_error: Behaviour when evaluated outside the caching area.
-    When False a ValueError is raised. When True the function is directly
-    evaluated (without caching). Default is False.
+      When False a ValueError is raised. When True the function is directly
+      evaluated (without caching). Default is False.
     :param function_boundaries: Boundaries of the function values for
-    normalisation: (min, max). If None, function values are not normalised.
-    Default is None.
+      normalisation: (min, max). If None, function values are not normalised.
+      Default is None.
     """
 
     def __init__(self, object function1d, tuple space_area, double resolution, no_boundary_error=False, function_boundaries=None):
