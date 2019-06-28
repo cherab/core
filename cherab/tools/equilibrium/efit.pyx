@@ -57,8 +57,8 @@ cdef class EFITEquilibrium:
     :param float psi_axis: The psi value at the magnetic axis.
     :param float psi_lcfs: The psi value at the LCFS.
     :param Point2D magnetic_axis: The coordinates of the magnetic axis.
-    :param Point2D x_points: The list of x-points.
-    :param Point2D x_points: The list of strike-points.
+    :param x_points: A list or tuple of x-points.
+    :param strike_points: A list or tuple of strike-points.
     :param f_profile: The current flux profile on psin (2xN array).
     :param q_profile: The safety factor (q) profile on psin (2xN array).
     :param float b_vacuum_radius: Vacuum B-field reference radius (in meters).
