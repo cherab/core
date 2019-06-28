@@ -6,7 +6,10 @@ from cherab.core.atomic import neon, hydrogen, helium
 from cherab.core.math import Interpolate1DCubic, Interpolate2DCubic
 from cherab.openadas import OpenADAS
 from cherab.tools.equilibrium import example_equilibrium
-from cherab.tools.plasmas.ionisationbalance import (fractional_abundance)
+from cherab.tools.plasmas.ionisationbalance import (fractional_abundance, equilibrium_map3d_fractional,
+                                                    equilibrium_map3d_from_elementdensity,
+                                                    equilibrium_map3d_match_plasma_neutrality,
+                                                    from_elementdensity)
 
 
 def doubleparabola(r, Centre, Edge, p, q, lim=None):
@@ -152,12 +155,14 @@ for index in np.ndindex(*n_tcx_donor_profile_2d.shape):
     n_tcx_donor_profile_2d[index] = n_tcx_donor_1d(psin_2d[index])
 
 n_tcx_donor_2d = Interpolate2DCubic(equilibrium.r_data, equilibrium.z_data, n_element_profile_2d)
-
-# calculate fractional abundance profiles by providing arrays
+########################################################################################################################
+# calculate fractional abundance profiles
 element_fractional_abundance = fractional_abundance(atomic_data, element, n_e_profile_2d,
                                                     t_e_profile_2d, tcx_donor=donor_element,
                                                     tcx_donor_n=n_tcx_donor_profile_2d, tcx_donor_charge=0)
 
+
+# plot
 plot_ne = plt.subplots()
 ax = plot_ne[1]
 ax.contourf(equilibrium.r_data, equilibrium.z_data, t_e_profile_2d.T)
@@ -176,3 +181,76 @@ for key, item in element_fractional_abundance.items():
     ax.plot(equilibrium.lcfs_polygon[:, 0], equilibrium.lcfs_polygon[:, 1], "r-")
     ax.set_title("{} {}+".format(element.symbol, key))
     ax.set_aspect(1)
+
+
+########################################################################################################################
+#use equilibrium and map3d
+element_abundance_equilibrium = equilibrium_map3d_from_elementdensity(atomic_data, element, equilibrium, psin_1d, n_element_1d,
+                                                                      n_e_1d, t_e_1d, donor_element, n_tcx_donor_1d,
+                                                                      tcx_donor_charge=0)
+element2_abundance_equilibrium = equilibrium_map3d_from_elementdensity(atomic_data, element2, equilibrium, psin_1d, n_element2_1d,
+                                                                      n_e_1d, t_e_1d, donor_element, n_tcx_donor_1d,
+                                                                      tcx_donor_charge=0)
+
+profile = np.zeros((*equilibrium.r_data.shape, *equilibrium.z_data.shape))
+for key, item in element_abundance_equilibrium.items():
+    for index0, value0 in enumerate(equilibrium.r_data):
+        for index1, value1 in enumerate(equilibrium.z_data):
+            profile[index0, index1] = item(value0, 0, value1)
+
+    plot_fractional_abundance = plt.subplots()
+    ax = plot_fractional_abundance[1]
+    ax.contourf(equilibrium.r_data, equilibrium.z_data, profile.T)
+    ax.contour(equilibrium.r_data, equilibrium.z_data, equilibrium.psi_data.T, colors="white")
+    ax.plot(equilibrium.limiter_polygon[:, 0], equilibrium.limiter_polygon[:, 1], "k-")
+    ax.plot(equilibrium.lcfs_polygon[:, 0], equilibrium.lcfs_polygon[:, 1], "r-")
+    ax.set_title("{} {}+".format(element.symbol, key))
+    ax.set_aspect(1)
+
+
+
+profile = np.zeros((*equilibrium.r_data.shape, *equilibrium.z_data.shape))
+for key, item in element2_abundance_equilibrium.items():
+    for index0, value0 in enumerate(equilibrium.r_data):
+        for index1, value1 in enumerate(equilibrium.z_data):
+            profile[index0, index1] = item(value0, 0, value1)
+
+    plot_fractional_abundance = plt.subplots()
+    ax = plot_fractional_abundance[1]
+    ax.contourf(equilibrium.r_data, equilibrium.z_data, profile.T)
+    ax.contour(equilibrium.r_data, equilibrium.z_data, equilibrium.psi_data.T, colors="white")
+    ax.plot(equilibrium.limiter_polygon[:, 0], equilibrium.limiter_polygon[:, 1], "k-")
+    ax.plot(equilibrium.lcfs_polygon[:, 0], equilibrium.lcfs_polygon[:, 1], "r-")
+    ax.set_title("{} {}+".format(element2.symbol, key))
+    ax.set_aspect(1)
+
+#fill deuterium
+
+element_abundance_1d = from_elementdensity(atomic_data, element, n_element_1d, n_e_1d, t_e_1d, donor_element,
+                                           n_tcx_donor_1d, 0, psin_1d)
+element2_abundance_1d = from_elementdensity(atomic_data, element2, n_element2_1d, n_e_1d, t_e_1d, donor_element,
+                                           n_tcx_donor_1d, 0, psin_1d)
+
+
+element_bulk_abundance = equilibrium_map3d_match_plasma_neutrality(atomic_data, element_bulk, equilibrium, psin_1d,
+                                                         [element_abundance_1d, element2_abundance_1d], n_e_1d, t_e_1d,
+                                                         donor_element, n_tcx_donor_1d, 0)
+
+
+
+
+profile = np.zeros((*equilibrium.r_data.shape, *equilibrium.z_data.shape))
+for key, item in element_bulk_abundance.items():
+    for index0, value0 in enumerate(equilibrium.r_data):
+        for index1, value1 in enumerate(equilibrium.z_data):
+            profile[index0, index1] = item(value0, 0, value1)
+
+    plot_fractional_abundance = plt.subplots()
+    ax = plot_fractional_abundance[1]
+    ax.contourf(equilibrium.r_data, equilibrium.z_data, profile.T)
+    ax.contour(equilibrium.r_data, equilibrium.z_data, equilibrium.psi_data.T, colors="white")
+    ax.plot(equilibrium.limiter_polygon[:, 0], equilibrium.limiter_polygon[:, 1], "k-")
+    ax.plot(equilibrium.lcfs_polygon[:, 0], equilibrium.lcfs_polygon[:, 1], "r-")
+    ax.set_title("{} {}+".format(element.symbol, key))
+    ax.set_aspect(1)
+

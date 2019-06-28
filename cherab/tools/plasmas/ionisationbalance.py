@@ -1,10 +1,12 @@
 from collections.abc import Iterable
 
-import numpy as np
 from cherab.core import AtomicData
 from cherab.core.atomic import Element
-from cherab.core.math import Interpolate1DLinear, Function1D, Function2D, Interpolate2DLinear
+from cherab.core.math import Interpolate1DLinear, Function1D, Function2D, Interpolate2DLinear, AxisymmetricMapper
+from cherab.tools.equilibrium import EFITEquilibrium
+
 from scipy.optimize import lsq_linear
+import numpy as np
 
 
 def _parametres_to_numpy(*parametres, free_variable=None):
@@ -561,10 +563,11 @@ def interpolators1d_fractional(atomic_data: AtomicData, element: Element, free_v
     :param element: Any cherab element
     :param free_variable: Free variable (coordinate) to calculate the 1d fractional abundance interpolators from.If 2D interpolator is passed
      free_variable has to be list or tuple of 1D arrays with coordinates
-    :param n_e_interpolator: 1d interpolator giving values of electron density for free_variable
-    :param t_e_interpolator: 1d interpolator giving values of electron density for free_variable
+    :param n_e_interpolator: 1d iterable or interpolator giving values of electron density for free_variable
+    :param t_e_interpolator: 1d iterable or  interpolator giving values of electron density for free_variable
     :param tcx_donor: Optional, specifies donating species in tcx collisions.
-    :param tcx_donor_n_interpolator: Optional, mandatory if tcx_donor parameter passed. 1d interpolator giving density of donors in m^-3
+    :param tcx_donor_n_interpolator: Optional, mandatory if tcx_donor parameter passed. 1d iterable interpolator giving
+     density of donors in m^-3
     :param tcx_donor_charge: Optional, specifies the charge of the donor. Default is 0.
     :return: dictionary with 1d interpolators of fractional abundance of charge states of the element in the form {charge: density}
     """
@@ -618,7 +621,7 @@ def interpolators1d_from_elementdensity(atomic_data: AtomicData, element: Elemen
     :param atomic_data: Any cherab AtomicData source
     :param element: Any cherab element
     :param free_variable: Free variable (coordinate) to calculate the 1d fractional abundance interpolators from.
-    :param element_density_interpolator: 1d interpolator giving values of element density for free_variable in m^-3
+    :param element_density: 1d iterable or an interpolator giving values of element density for free_variable in m^-3
     :param n_e_interpolator: 1d interpolator giving values of electron density for free_variable
     :param t_e_interpolator: 1d interpolator giving values of electron density for free_variable
     :param tcx_donor: Optional, specifies donating species in tcx collisions.
@@ -730,3 +733,100 @@ def interpolators2d_match_plasma_neutrality(atomic_data: AtomicData, element: El
         density_interpolators[key] = Interpolate2DLinear(*free_variable, item)
 
     return density_interpolators
+
+def abundance_axisymmetric_mapper(abundance):
+    """
+    Convert 2d abundance interpolators into AxisymmetricMapper.
+    :param abundance: Dictionary with 2d Abundace/fractional abundance interpolators
+    :return:
+    """
+
+    mappers = {}
+    for key, item in abundance.items():
+        mappers[key] = AxisymmetricMapper(item)
+
+    return mappers
+
+def equilibrium_map3d_fractional(atomic_data: AtomicData, element: Element, equilibrium: EFITEquilibrium, psin_1d, n_e_profile,
+                       t_e_profile, tcx_donor: Element = None, tcx_donor_n=None, tcx_donor_charge = 0):
+    """
+    Creates AxisymmetricMapper interpolator of fractional abundance of the specified element for the specified electron densities, temperatures
+    and equilibrium by using the equilibrium.map3d function.
+    :param atomic_data: Any cherab AtomicData source
+    :param element: Any cherab element
+    :param equilibrium: EFITEquilibrium object
+    :param psin_1d:1D array with normalized poloidal flux coordinates
+    :param n_e_profile: 1d iterable or interpolator giving values of electron density
+    :param t_e_profile: 1d iterable or interpolator giving values of electron temperature
+    :param tcx_donor: Optional, specifies donating species in tcx collisions.
+    :param tcx_donor_n: Optional, mandatory if tcx_donor parameter passed. 1d iterable interpolator giving
+     density of donors in m^-3
+    :param tcx_donor_charge: Optional, specifies the charge of the donor. Default is 0.
+    :return:
+    """
+
+    fractional_profiles = interpolators1d_fractional(atomic_data, element, psin_1d, n_e_profile, t_e_profile,
+                                                     tcx_donor, tcx_donor_n, tcx_donor_charge)
+
+    mapped_3d = {}
+    for key, item in fractional_profiles.items():
+        mapped_3d[key] = equilibrium.map3d(item)
+
+    return mapped_3d
+
+def equilibrium_map3d_from_elementdensity(atomic_data: AtomicData, element: Element, equilibrium: EFITEquilibrium, psin_1d, n_element,
+                                 n_e_profile, t_e_profile, tcx_donor: Element = None, tcx_donor_n=None, tcx_donor_charge = 0):
+    """
+    Creates AxisymmetricMapper interpolator of fractional abundance of the specified element for the specified electron densities, temperatures,
+    element densities and equilibrium by using the equilibrium.map3d function.
+    :param atomic_data: Any cherab AtomicData source
+    :param element: Any cherab element
+    :param equilibrium: EFITEquilibrium object
+    :param psin_1d:1D array with normalized poloidal flux coordinates
+    :param element_density: 1d iterable or an interpolator giving values of element density for free_variable in m^-3
+    :param n_e_profile: 1d iterable or interpolator giving values of electron density
+    :param t_e_profile: 1d iterable or interpolator giving values of electron temperature
+    :param tcx_donor: Optional, specifies donating species in tcx collisions.
+    :param tcx_donor_n: Optional, mandatory if tcx_donor parameter passed. 1d iterable interpolator giving
+     density of donors in m^-3
+    :param tcx_donor_charge: Optional, specifies the charge of the donor. Default is 0.
+    :return:
+    """
+
+    abundance_profiles = interpolators1d_from_elementdensity(atomic_data, element, psin_1d, n_element, n_e_profile,
+                                                             t_e_profile, tcx_donor, tcx_donor_n, tcx_donor_charge)
+
+    mapped_3d = {}
+    for key, item in abundance_profiles.items():
+        mapped_3d[key] = equilibrium.map3d(item)
+
+    return mapped_3d
+
+def equilibrium_map3d_match_plasma_neutrality(atomic_data: AtomicData, element: Element, equilibrium: EFITEquilibrium,
+                                              psin_1d, species_density, n_e_profile, t_e_profile, tcx_donor: Element = None,
+                                              tcx_donor_n=None, tcx_donor_charge=0):
+    """
+    Creates AxisymmetricMapper interpolator of fractional abundance of the specified element for the specified electron densities, temperatures
+    and equilibrium by using the equilibrium.map3d function.
+    :param atomic_data: Any cherab AtomicData source
+    :param element: Any cherab element
+    :param equilibrium: EFITEquilibrium object
+    :param psin_1d:1D array with normalized poloidal flux coordinates
+    :param species_density: list of 1d iterables interpolators giving values of element density for the values of psi in m^-3
+    :param n_e_profile: 1d iterable or interpolator giving values of electron density
+    :param t_e_profile: 1d iterable or interpolator giving values of electron temperature
+    :param tcx_donor: Optional, specifies donating species in tcx collisions.
+    :param tcx_donor_n: Optional, mandatory if tcx_donor parameter passed. 1d iterable interpolator giving
+     density of donors in m^-3
+    :param tcx_donor_charge: Optional, specifies the charge of the donor. Default is 0.
+    :return:
+    """
+
+    abundance_profiles = match_plasma_neutrality(atomic_data, element, species_density, n_e_profile, t_e_profile, tcx_donor, tcx_donor_n,
+                                               tcx_donor_charge, free_variable=psin_1d)
+
+    mapped_3d = {}
+    for key, item in abundance_profiles.items():
+        mapped_3d[key] = equilibrium.map3d((psin_1d, item))
+
+    return mapped_3d
