@@ -3,13 +3,18 @@ from collections.abc import Iterable
 
 import numpy as np
 from cherab.core.atomic import neon, hydrogen, helium
-from cherab.core.math import Interpolate1DCubic, Interpolate2DCubic, Function1D, Function2D
+from cherab.core.math import Interpolate1DCubic, Interpolate2DCubic, Function1D, Function2D, AxisymmetricMapper
 from cherab.openadas import OpenADAS
 from cherab.tools.plasmas.ionisationbalance import (fractional_abundance, from_elementdensity, match_plasma_neutrality,
                                                     interpolators1d_fractional, interpolators1d_from_elementdensity,
                                                     interpolators1d_match_plasma_neutrality,
                                                     interpolators2d_fractional, interpolators2d_from_elementdensity,
-                                                    interpolators2d_match_plasma_neutrality)
+                                                    interpolators2d_match_plasma_neutrality,
+                                                    abundance_axisymmetric_mapper,
+                                                    equilibrium_map3d_fractional, equilibrium_map3d_from_elementdensity,
+                                                    equilibrium_map3d_match_plasma_neutrality)
+
+from cherab.tools.equilibrium import example_equilibrium
 
 
 def doubleparabola(r, Centre, Edge, p, q):
@@ -185,6 +190,10 @@ class TestIonizationBalance1D(unittest.TestCase):
                 for index0, value0 in enumerate(free_variable[0]):
                     for index1, value1 in enumerate(free_variable[1]):
                         profiles[key][index0, index1] = item(value0, value1)
+            elif isinstance(item, AxisymmetricMapper):
+                profiles[key] = np.zeros_like(free_variable)
+                for index, value in enumerate(free_variable):
+                        profiles[key][index] = item(value, 0, 0)
 
         return profiles
 
@@ -874,3 +883,118 @@ class TestIonizationBalance1D(unittest.TestCase):
         total += self.sumup_electrons(profiles3)
 
         self.assertTrue(np.allclose(total, self.n_e_profile_2d, rtol=self.TOLERANCE))
+
+    def test_axisymmetric_mapper(self):
+        "test axisymmetric mapping"
+
+        #fractional abundance
+        interpolators_fractional = interpolators2d_fractional(self.atomic_data, self.element, (self.r, self.z),
+                                                              self.n_e_profile_2d, self.t_e_2d,
+                                                              tcx_donor=self.tcx_donor,
+                                                              tcx_donor_n=self.n_tcx_donor_profile_2d,
+                                                              tcx_donor_charge=0)
+
+        mappers = abundance_axisymmetric_mapper(interpolators_fractional)
+
+
+
+        profile = self.evaluate_interpolators(mappers, self.r)
+
+        total = self.sumup_fractions(profile)
+
+
+        self.assertTrue(np.allclose(total, 1, rtol=self.TOLERANCE))
+
+    def test_equilibrium_map3d_fractional(self):
+        """
+        test calculation of fractional abundance and application of map3d functionality of equilibrium
+        :return:
+        """
+
+        equilibrium = example_equilibrium()
+
+        mapper = equilibrium_map3d_fractional(self.atomic_data, self.element, equilibrium, self.psin_1d,
+                                                                      self.n_e_profile_1d, self.t_e_profile_1d, self.tcx_donor,
+                                                                      self.n_tcx_donor_profile_1d, tcx_donor_charge=0)
+        psin_1d = np.linspace(0, 0.99, 10)
+        r = np.zeros_like(psin_1d)
+        for index, value in enumerate(psin_1d):
+            r[index] = equilibrium.psin_to_r(value)
+
+        profile = self.evaluate_interpolators(mapper, r)
+
+        total = self.sumup_fractions(profile)
+
+
+        self.assertTrue(np.allclose(total, 1, rtol=self.TOLERANCE))
+
+    def test_equilibrium_map3d_from_elementdensity(self):
+        """
+        test calculation of abundance and application of map3d functionality of equilibrium
+        :return:
+        """
+
+        equilibrium = example_equilibrium()
+
+        mapper = equilibrium_map3d_from_elementdensity(self.atomic_data, self.element, equilibrium, self.psin_1d,
+                                                       self.n_element_1d, self.n_e_1d,
+                                                       self.t_e_1d, self.tcx_donor, self.n_tcx_donor_1d,
+                                                       tcx_donor_charge=0)
+
+        inlcfs = np.where(self.psin_1d < 1)[0]
+        psin_1d = self.psin_1d[inlcfs]
+        n = np.zeros_like(psin_1d)
+        r = np.zeros_like(psin_1d)
+        for index, value in enumerate(psin_1d):
+            n[index] = self.n_element_1d(value)
+            r[index] = equilibrium.psin_to_r(value)
+
+        profile = self.evaluate_interpolators(mapper, r)
+        total = self.sumup_fractions(profile)
+
+        self.assertTrue(np.allclose(total, n, rtol=self.TOLERANCE))
+
+    def test_equilibrium_map3d_plasma_neutrality(self):
+        """
+        test calculation of abundance and application of map3d functionality of equilibrium
+        :return:
+        """
+
+        equilibrium = example_equilibrium()
+
+        interpolators_element1 = interpolators1d_from_elementdensity(self.atomic_data, self.element, self.psin_1d,
+                                                                      self.n_element_1d,
+                                                                      self.n_e_1d, self.t_e_1d,
+                                                                      tcx_donor=self.tcx_donor,
+                                                                      tcx_donor_n=self.n_tcx_donor_1d,
+                                                                      tcx_donor_charge=0)
+
+        interpolators_element2 = interpolators1d_from_elementdensity(self.atomic_data, self.element2, self.psin_1d,
+                                                                      self.n_element2_1d,
+                                                                      self.n_e_1d, self.t_e_1d,
+                                                                      tcx_donor=self.tcx_donor,
+                                                                      tcx_donor_n=self.n_tcx_donor_1d,
+                                                                      tcx_donor_charge=0)
+
+        mapper = equilibrium_map3d_match_plasma_neutrality(self.atomic_data, self.element_bulk, equilibrium, self.psin_1d,
+                                                  [interpolators_element1, interpolators_element2],
+                                                  self.n_e_1d, self.t_e_1d, self.tcx_donor,
+                                                  self.n_tcx_donor_1d, 0)
+
+        inlcfs = np.where(self.psin_1d < 1)[0]
+        psin_1d = self.psin_1d[inlcfs]
+        n = np.zeros_like(psin_1d)
+        r = np.zeros_like(psin_1d)
+        for index, value in enumerate(psin_1d):
+            n[index] = self.n_e_1d(value)
+            r[index] = equilibrium.psin_to_r(value)
+
+        profile1 = self.evaluate_interpolators(interpolators_element1, psin_1d)
+        profile2 = self.evaluate_interpolators(interpolators_element2, psin_1d)
+        profile3 = self.evaluate_interpolators(mapper, r)
+
+        total = self.sumup_electrons(profile1)
+        total += self.sumup_electrons(profile2)
+        total += self.sumup_electrons(profile3)
+
+        self.assertTrue(np.allclose(total, n, rtol=self.TOLERANCE))
