@@ -336,24 +336,20 @@ cdef class Interpolate3DLinear(_Interpolate3DBase):
     :param object y: An array-like object containing real values.
     :param object z: An array-like object containing real values.
     :param object f: A 3D array-like object of sample values corresponding to the
-    `x`, `y` and `z` array points.
-    :param bint extrapolate: optional
-    If True, the extrapolation of data is enabled outside the range of the
-    data set. The default is False. A ValueError is raised if extrapolation
-    is disabled and a point is requested outside the data set.
-    :param object extrapolation_type: optional
-    Sets the method of extrapolation. The options are: 'nearest' (default),
-     'linear'
-    :param double extrapolation_range: optional
-    The attribute can be set to limit the range beyond the data set bounds
-    that extrapolation is permitted. The default range is set to infinity.
-    Requesting data beyond the extrapolation range will result in a
-    ValueError being raised.
-    :param tolerate_single_value: optional
-    If True, single-value arrays will be tolerated as inputs. If a single
-    value is supplied, that value will be extrapolated over the entire
-    real range. If False (default), supplying a single value will result
-    in a ValueError being raised.
+      `x`, `y` and `z` array points.
+    :param bint extrapolate: If True, the extrapolation of data is enabled outside
+      the range of the data set. The default is False. A ValueError is raised if
+      extrapolation is disabled and a point is requested outside the data set.
+    :param object extrapolation_type: Sets the method of extrapolation.
+      The options are: 'nearest' (default), 'linear'.
+    :param double extrapolation_range: The attribute can be set to limit the range
+      beyond the data set bounds that extrapolation is permitted. The default range
+      is set to infinity. Requesting data beyond the extrapolation range will result
+      in a ValueError being raised.
+    :param tolerate_single_value: If True, single-value arrays will be tolerated as
+      inputs. If a single value is supplied, that value will be extrapolated over
+      the entire real range. If False (default), supplying a single value will
+      result in a ValueError being raised.
     """
 
     def __init__(self, object x, object y, object z, object f, bint extrapolate=False, str extrapolation_type='nearest',
@@ -470,37 +466,33 @@ cdef class Interpolate3DCubic(_Interpolate3DBase):
     Interpolates 3D data using cubic interpolation.
 
     Data and coordinates are first normalised to the range [0, 1] so as to
-    prevent inaccuracy from float numbers.
-    A local calculation based on finite differences is used. The
-    splines coefficients are calculated on demand and are cached as they
-    are calculated. Plus, no more than one polynomial is calculated at
-    each evaluation. The first derivatives and the cross
-    derivatives (xy, xz, yz and xyz) are imposed by the finite differences
-    approximation, and the resulting function is C1 (first derivatives are
-    continuous).
+    prevent inaccuracy from float numbers. A local calculation based on
+    finite differences is used. The splines coefficients are calculated
+    on demand and are cached as they are calculated. Plus, no more than
+    one polynomial is calculated at each evaluation. The first derivatives
+    and the cross derivatives (xy, xz, yz and xyz) are imposed by the
+    finite differences approximation, and the resulting function is C1
+    (first derivatives are continuous).
 
     :param object x: An array-like object containing real values.
     :param object y: An array-like object containing real values.
     :param object z: An array-like object containing real values.
     :param object f: A 3D array-like object of sample values corresponding to the
-    `x`, `y` and `z` array points.
-    :param bint extrapolate: optional
-    If True, the extrapolation of data is enabled outside the range of the
-    data set. The default is False. A ValueError is raised if extrapolation
-    is disabled and a point is requested outside the data set.
-    :param object extrapolation_type: optional
-    Sets the method of extrapolation. The options are: 'nearest' (default),
-     'linear', 'quadratic'
-    :param double extrapolation_range: optional
-    The attribute can be set to limit the range beyond the data set bounds
-    that extrapolation is permitted. The default range is set to infinity.
-    Requesting data beyond the extrapolation range will result in a
-    ValueError being raised.
-    :param tolerate_single_value: optional
-    If True, single-value arrays will be tolerated as inputs. If a single
-    value is supplied, that value will be extrapolated over the entire
-    real range. If False (default), supplying a single value will result
-    in a ValueError being raised.
+      `x`, `y` and `z` array points.
+    :param bint extrapolate: If True, the extrapolation of data is enabled
+      outside the range of the data set. The default is False. A ValueError
+      is raised if extrapolation is disabled and a point is requested
+      outside the data set.
+    :param object extrapolation_type: Sets the method of extrapolation.
+      The options are: 'nearest' (default), 'linear', 'quadratic'.
+    :param double extrapolation_range: The attribute can be set to limit
+      the range beyond the data set bounds that extrapolation is permitted.
+      The default range is set to infinity. Requesting data beyond the
+      extrapolation range will result in a ValueError being raised.
+    :param tolerate_single_value: If True, single-value arrays will be
+      tolerated as inputs. If a single value is supplied, that value will
+      be extrapolated over the entire real range. If False (default),
+      supplying a single value will result in a ValueError being raised.
     """
 
     def __init__(self, object x, object y, object z, object f, bint extrapolate=False, double extrapolation_range=INFINITY,
