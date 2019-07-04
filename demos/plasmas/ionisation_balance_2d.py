@@ -6,31 +6,31 @@ from cherab.core.atomic import neon, hydrogen, helium
 from cherab.core.math import Interpolate1DCubic, Interpolate2DCubic
 from cherab.openadas import OpenADAS
 from cherab.tools.equilibrium import example_equilibrium
-from cherab.tools.plasmas.ionisationbalance import (fractional_abundance, equilibrium_map3d_fractional,
-                                                    equilibrium_map3d_from_elementdensity,
-                                                    equilibrium_map3d_match_plasma_neutrality,
-                                                    from_elementdensity)
+from cherab.tools.plasmas.ionisation_balance import (fractional_abundance, equilibrium_map3d_fractional,
+                                                     equilibrium_map3d_from_elementdensity,
+                                                     equilibrium_map3d_match_plasma_neutrality,
+                                                     from_elementdensity)
 
 
-def doubleparabola(r, Centre, Edge, p, q, lim=None):
+def double_parabola(r, centre, edge, p, q, lim=None):
     """
     Double parabolic function to mimic plasma profiles
+
     :param r: free variable coordinate
-    :param Centre: Value profile reaches in the cenre
-    :param Edge: Value profile reaches at the edge
+    :param centre: Value profile reaches in the cenre
+    :param edge: Value profile reaches at the edge
     :param p: Shape parameter
     :param q: Shape parameter
     :param lim: limit above which the profile is constant to treat the edge and prevent divergence of values
-    :return:
     """
 
     if lim is not None:
-        dp = (Centre - Edge) * np.power((1 - np.power((r - r.min()) / (lim - r.min()), p)), q) + Edge
+        dp = (centre - edge) * np.power((1 - np.power((r - r.min()) / (lim - r.min()), p)), q) + edge
 
         lm = np.where(r > lim)[0]
-        dp[lm] = Edge
+        dp[lm] = edge
     else:
-        dp = (Centre - Edge) * np.power((1 - np.power((r - r.min()) / (r.max() - r.min()), p)), q) + Edge
+        dp = (centre - edge) * np.power((1 - np.power((r - r.min()) / (r.max() - r.min()), p)), q) + edge
 
     return dp
 
@@ -98,12 +98,12 @@ for index0, value0 in enumerate(r):
 # create plasma profiles and interpolators
 psin_1d = np.linspace(0, psin_2d.max(), 50, endpoint=True)
 
-t_e_profile_1d = doubleparabola(psin_1d, 5000, 10, 2, 2, 1)
-n_e_profile_1d = doubleparabola(psin_1d, 6e19, 5e18, 2, 2, 1)
+t_e_profile_1d = double_parabola(psin_1d, 5000, 10, 2, 2, 1)
+n_e_profile_1d = double_parabola(psin_1d, 6e19, 5e18, 2, 2, 1)
 
-t_element_profile_1d = doubleparabola(psin_1d, 1500, 40, 2, 2, 1)
-n_element_profile_1d = doubleparabola(psin_1d, 1e17, 1e17, 2, 2, 1) + normal(psin_1d, 0.9, 0.1, 5e17)
-n_element2_profile_1d = doubleparabola(psin_1d, 5e17, 1e17, 2, 2, 1)
+t_element_profile_1d = double_parabola(psin_1d, 1500, 40, 2, 2, 1)
+n_element_profile_1d = double_parabola(psin_1d, 1e17, 1e17, 2, 2, 1) + normal(psin_1d, 0.9, 0.1, 5e17)
+n_element2_profile_1d = double_parabola(psin_1d, 5e17, 1e17, 2, 2, 1)
 n_tcx_donor_profile_1d = exp_decay(psin_1d, 10, 3e16, 1)
 
 t_e_1d = Interpolate1DCubic(psin_1d, t_e_profile_1d)
@@ -155,8 +155,11 @@ for index in np.ndindex(*n_tcx_donor_profile_2d.shape):
     n_tcx_donor_profile_2d[index] = n_tcx_donor_1d(psin_2d[index])
 
 n_tcx_donor_2d = Interpolate2DCubic(equilibrium.r_data, equilibrium.z_data, n_element_profile_2d)
+
+
 ########################################################################################################################
 # calculate fractional abundance profiles
+
 element_fractional_abundance = fractional_abundance(atomic_data, element, n_e_profile_2d,
                                                     t_e_profile_2d, tcx_donor=donor_element,
                                                     tcx_donor_n=n_tcx_donor_profile_2d, tcx_donor_charge=0)
@@ -185,6 +188,7 @@ for key, item in element_fractional_abundance.items():
 
 ########################################################################################################################
 #use equilibrium and map3d
+
 element_abundance_equilibrium = equilibrium_map3d_from_elementdensity(atomic_data, element, equilibrium, psin_1d, n_element_1d,
                                                                       n_e_1d, t_e_1d, donor_element, n_tcx_donor_1d,
                                                                       tcx_donor_charge=0)
@@ -208,7 +212,6 @@ for key, item in element_abundance_equilibrium.items():
     ax.set_aspect(1)
 
 
-
 profile = np.zeros((*equilibrium.r_data.shape, *equilibrium.z_data.shape))
 for key, item in element2_abundance_equilibrium.items():
     for index0, value0 in enumerate(equilibrium.r_data):
@@ -224,7 +227,7 @@ for key, item in element2_abundance_equilibrium.items():
     ax.set_title("{} {}+".format(element2.symbol, key))
     ax.set_aspect(1)
 
-#fill deuterium
+# fill with deuterium back ground
 
 element_abundance_1d = from_elementdensity(atomic_data, element, n_element_1d, n_e_1d, t_e_1d, donor_element,
                                            n_tcx_donor_1d, 0, psin_1d)
@@ -235,8 +238,6 @@ element2_abundance_1d = from_elementdensity(atomic_data, element2, n_element2_1d
 element_bulk_abundance = equilibrium_map3d_match_plasma_neutrality(atomic_data, element_bulk, equilibrium, psin_1d,
                                                          [element_abundance_1d, element2_abundance_1d], n_e_1d, t_e_1d,
                                                          donor_element, n_tcx_donor_1d, 0)
-
-
 
 
 profile = np.zeros((*equilibrium.r_data.shape, *equilibrium.z_data.shape))

@@ -1,19 +1,20 @@
-from collections.abc import Iterable
 
+from collections.abc import Iterable
 import matplotlib._color_data as mcd
 import matplotlib.pyplot as plt
 import numpy as np
+
 from cherab.core.atomic import neon, hydrogen, helium
 from cherab.core.math import Interpolate1DCubic
 from cherab.openadas import OpenADAS
-from cherab.tools.plasmas.ionisationbalance import (fractional_abundance,
-                                                    interpolators1d_fractional, from_elementdensity,
-                                                    match_plasma_neutrality, interpolators1d_from_elementdensity,
-                                                    interpolators1d_match_plasma_neutrality)
+from cherab.tools.plasmas.ionisation_balance import (fractional_abundance,
+                                                     interpolators1d_fractional, from_elementdensity,
+                                                     match_plasma_neutrality, interpolators1d_from_elementdensity,
+                                                     interpolators1d_match_plasma_neutrality)
 
 
-def doubleparabola(r, Centre, Edge, p, q):
-    return (Centre - Edge) * np.power((1 - np.power((r - r.min()) / (r.max() - r.min()), p)), q) + Edge
+def double_parabola(r, centre, edge, p, q):
+    return (centre - edge) * np.power((1 - np.power((r - r.min()) / (r.max() - r.min()), p)), q) + edge
 
 
 def normal(x, mu, sd, height=1, offset=0):
@@ -58,12 +59,12 @@ colors = list(mcd.XKCD_COLORS)  # load color list to iterate over
 psin_1d = np.linspace(0, 1.1, 50, endpoint=True)
 psin_1d_detailed = np.linspace(0, 1.1, 450, endpoint=True)
 
-t_e_profile = doubleparabola(psin_1d, 5000, 10, 2, 2)
-n_e_profile = doubleparabola(psin_1d, 6e19, 5e18, 2, 2)
+t_e_profile = double_parabola(psin_1d, 5000, 10, 2, 2)
+n_e_profile = double_parabola(psin_1d, 6e19, 5e18, 2, 2)
 
-t_element_profile = doubleparabola(psin_1d, 1500, 40, 2, 2)
-n_element_profile = doubleparabola(psin_1d, 1e17, 1e17, 2, 2) + normal(psin_1d, 0.9, 0.1, 5e17)
-n_element2_profile = doubleparabola(psin_1d, 5e17, 1e17, 2, 2)
+t_element_profile = double_parabola(psin_1d, 1500, 40, 2, 2)
+n_element_profile = double_parabola(psin_1d, 1e17, 1e17, 2, 2) + normal(psin_1d, 0.9, 0.1, 5e17)
+n_element2_profile = double_parabola(psin_1d, 5e17, 1e17, 2, 2)
 n_tcx_donor_profile = exp_decay(psin_1d, 10, 3e16)
 
 t_e = Interpolate1DCubic(psin_1d, t_e_profile)
@@ -82,7 +83,7 @@ element2 = helium
 element_bulk = hydrogen
 donor_element = hydrogen
 
-# Calculate profiles of fractional abundace for the element
+# calculate profiles of fractional abundance for the element
 abundance_fractional_profile = fractional_abundance(adas, element, n_e_profile, t_e_profile)
 abundance_fractional_profile_tcx = fractional_abundance(adas, element, n_e_profile, t_e_profile,
                                                         tcx_donor=donor_element, tcx_donor_n=n_tcx_donor,
@@ -95,9 +96,10 @@ for key in abundance_fractional_profile.keys():
     ax.plot(psin_1d, abundance_fractional_profile_tcx[key], "--", label="{0} {1}+ (tcx)".format(element.symbol, key),
             color=colors[key])
 
-ax.legend()
+ax.legend(loc=6)
 ax.set_xlabel("$\Psi_n$")
 ax.set_ylabel("fractional abundance [a.u.]")
+plt.title('Fractional Abundance VS $\Psi_n$')
 
 # calculate charge state density profiles by specifying element density
 density_element_profiles = from_elementdensity(adas, element, n_element, n_e_profile,
@@ -114,7 +116,7 @@ for key in density_element_profiles.keys():
     ax.plot(psin_1d, density_element_profiles_tcx[key], "--", label="{0} {1}+ (tcx)".format(element.symbol, key),
             color=colors[key])
 
-ax.legend()
+ax.legend(loc=6)
 ax.set_xlabel("$\Psi_n$")
 ax.set_ylabel("ion density [m$^{-3}]$")
 
@@ -153,7 +155,7 @@ for key3 in density_element3_profiles_tcx.keys():
 ax.plot(psin_1d, n_e_profile, "kx", label="input n_e")
 ax.plot(psin_1d, n_e_recalculated, "k-", label="recalculated n_e")
 
-ax.legend()
+ax.legend(loc=6)
 ax.set_xlabel("$\Psi_n$")
 ax.set_ylabel("ion density [m$^{-3}]$")
 
