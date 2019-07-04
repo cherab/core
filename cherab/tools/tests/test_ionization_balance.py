@@ -1,24 +1,44 @@
+
+# Copyright 2016-2018 Euratom
+# Copyright 2016-2018 United Kingdom Atomic Energy Authority
+# Copyright 2016-2018 Centro de Investigaciones Energéticas, Medioambientales y Tecnológicas
+#
+# Licensed under the EUPL, Version 1.1 or – as soon they will be approved by the
+# European Commission - subsequent versions of the EUPL (the "Licence");
+# You may not use this work except in compliance with the Licence.
+# You may obtain a copy of the Licence at:
+#
+# https://joinup.ec.europa.eu/software/page/eupl5
+#
+# Unless required by applicable law or agreed to in writing, software distributed
+# under the Licence is distributed on an "AS IS" basis, WITHOUT WARRANTIES OR
+# CONDITIONS OF ANY KIND, either express or implied.
+#
+# See the Licence for the specific language governing permissions and limitations
+# under the Licence.
+
+
 import unittest
 from collections.abc import Iterable
-
 import numpy as np
+
 from cherab.core.atomic import neon, hydrogen, helium
 from cherab.core.math import Interpolate1DCubic, Interpolate2DCubic, Function1D, Function2D, AxisymmetricMapper
 from cherab.openadas import OpenADAS
-from cherab.tools.plasmas.ionisationbalance import (fractional_abundance, from_elementdensity, match_plasma_neutrality,
-                                                    interpolators1d_fractional, interpolators1d_from_elementdensity,
-                                                    interpolators1d_match_plasma_neutrality,
-                                                    interpolators2d_fractional, interpolators2d_from_elementdensity,
-                                                    interpolators2d_match_plasma_neutrality,
-                                                    abundance_axisymmetric_mapper,
-                                                    equilibrium_map3d_fractional, equilibrium_map3d_from_elementdensity,
-                                                    equilibrium_map3d_match_plasma_neutrality)
+from cherab.tools.plasmas.ionisation_balance import (fractional_abundance, from_elementdensity, match_plasma_neutrality,
+                                                     interpolators1d_fractional, interpolators1d_from_elementdensity,
+                                                     interpolators1d_match_plasma_neutrality,
+                                                     interpolators2d_fractional, interpolators2d_from_elementdensity,
+                                                     interpolators2d_match_plasma_neutrality,
+                                                     abundance_axisymmetric_mapper,
+                                                     equilibrium_map3d_fractional, equilibrium_map3d_from_elementdensity,
+                                                     equilibrium_map3d_match_plasma_neutrality)
 
 from cherab.tools.equilibrium import example_equilibrium
 
 
-def doubleparabola(r, Centre, Edge, p, q):
-    return (Centre - Edge) * np.power((1 - np.power((r - r.min()) / (r.max() - r.min()), p)), q) + Edge
+def double_parabola(r, centre, edge, p, q):
+    return (centre - edge) * np.power((1 - np.power((r - r.min()) / (r.max() - r.min()), p)), q) + edge
 
 
 def normal(x, mu, sd, height=1, offset=0):
@@ -48,17 +68,18 @@ def exp_decay(r, lamb, max_val):
 
 
 class TestIonizationBalance1D(unittest.TestCase):
+
     # create plasma profiles and interpolators
     # 1d profiles
     psin_1d = np.linspace(0, 1.1, 15, endpoint=True)
     psin_1d_detailed = np.linspace(0, 1.1, 50, endpoint=True)
 
-    t_e_profile_1d = doubleparabola(psin_1d, 5000, 10, 2, 2)
-    n_e_profile_1d = doubleparabola(psin_1d, 6e19, 5e18, 2, 2)
+    t_e_profile_1d = double_parabola(psin_1d, 5000, 10, 2, 2)
+    n_e_profile_1d = double_parabola(psin_1d, 6e19, 5e18, 2, 2)
 
-    t_element_profile_1d = doubleparabola(psin_1d, 1500, 40, 2, 2)
-    n_element_profile_1d = doubleparabola(psin_1d, 1e17, 1e17, 2, 2) + normal(psin_1d, 0.9, 0.1, 5e17)
-    n_element2_profile_1d = doubleparabola(psin_1d, 5e17, 1e17, 2, 2)
+    t_element_profile_1d = double_parabola(psin_1d, 1500, 40, 2, 2)
+    n_element_profile_1d = double_parabola(psin_1d, 1e17, 1e17, 2, 2) + normal(psin_1d, 0.9, 0.1, 5e17)
+    n_element2_profile_1d = double_parabola(psin_1d, 5e17, 1e17, 2, 2)
 
     n_tcx_donor_profile_1d = exp_decay(psin_1d, 10, 3e16)
 
@@ -200,7 +221,6 @@ class TestIonizationBalance1D(unittest.TestCase):
     def test_fractional_0d_from_0d(self):
         """
         test fractional abundance calculation with float numbers as inputs
-        :return:
         """
         abundance_fractional = fractional_abundance(self.atomic_data, self.element, self.n_e_1d(self.psi_value),
                                                     self.t_e_1d(self.psi_value))
@@ -211,7 +231,6 @@ class TestIonizationBalance1D(unittest.TestCase):
     def test_fractional_0d_from_0d_tcx(self):
         """
         test fractional abundance calculation with thermal cx and float numbers as inputs
-        :return:
         """
         abundance_fractional = fractional_abundance(self.atomic_data, self.element, self.n_e_1d(self.psi_value),
                                                     self.t_e_1d(self.psi_value),
@@ -223,7 +242,6 @@ class TestIonizationBalance1D(unittest.TestCase):
     def test_fractional_0d_from_interpolators(self):
         """
         test interpolators and free_variable as inputs
-        :return:
         """
 
         abundance_fractional = fractional_abundance(self.atomic_data, self.element, self.n_e_1d, self.t_e_1d,
@@ -235,7 +253,6 @@ class TestIonizationBalance1D(unittest.TestCase):
     def test_fractional_0d_from_interpolators_tcx(self):
         """
         test interpolators and free_variable as inputs
-        :return:
         """
 
         abundance_fractional = fractional_abundance(self.atomic_data, self.element, self.n_e_1d, self.t_e_1d,
@@ -248,7 +265,6 @@ class TestIonizationBalance1D(unittest.TestCase):
     def test_fractional_0d_from_mixed(self):
         """
         test mixed types of inputs
-        :return:
         """
 
         abundance_fractional = fractional_abundance(self.atomic_data, self.element, self.n_e_1d(self.psi_value),
@@ -268,7 +284,6 @@ class TestIonizationBalance1D(unittest.TestCase):
     def test_fractional_1d_from_1d(self):
         """
         test calculation of 1d fractional profiles with 1d iterables as inputs
-        :return:
         """
         abundance_fractional = fractional_abundance(self.atomic_data, self.element, self.n_e_profile_1d,
                                                     self.t_e_profile_1d)
@@ -279,7 +294,6 @@ class TestIonizationBalance1D(unittest.TestCase):
     def test_fractional_1d_from_1d_tcx(self):
         """
         test calculation of 1d fractional profiles with 1d iterables as inputs
-        :return:
         """
 
         abundance_fractional = fractional_abundance(self.atomic_data, self.element, self.n_e_profile_1d,
@@ -293,7 +307,6 @@ class TestIonizationBalance1D(unittest.TestCase):
     def test_fractional_1d_from_interpolators(self):
         """
         test calculation of 1d fractional profiles with 1d interpolators as inputs
-        :return:
         """
         abundance_fractional = fractional_abundance(self.atomic_data, self.element, self.n_e_1d, self.t_e_1d,
                                                     free_variable=self.psin_1d)
@@ -304,7 +317,6 @@ class TestIonizationBalance1D(unittest.TestCase):
     def test_fractional_1d_from_interpolators_tcx(self):
         """
         test calculation of 1d fractional profiles with 1d iterables as inputs
-        :return:
         """
 
         abundance_fractional = fractional_abundance(self.atomic_data, self.element, self.n_e_1d, self.t_e_1d,
@@ -317,7 +329,6 @@ class TestIonizationBalance1D(unittest.TestCase):
     def test_fractional_from_mixed(self):
         """
         test calculation of 1d fractional profiles with mixed types as inputs
-        :return:
         """
 
         abundance_fractional = fractional_abundance(self.atomic_data, self.element, self.n_e_profile_1d, self.t_e_1d,
@@ -335,7 +346,6 @@ class TestIonizationBalance1D(unittest.TestCase):
     def test_fractional_from_mixed_tcx(self):
         """
         test calculation of 1d fractional profiles with mixed types as inputs
-        :return:
         """
 
         abundance_fractional = fractional_abundance(self.atomic_data, self.element, self.n_e_profile_1d, self.t_e_1d,
@@ -362,7 +372,6 @@ class TestIonizationBalance1D(unittest.TestCase):
     def test_fractional_inetrpolators_1d(self):
         """
         test calculation of 1d fractional interpolators
-        :return:
         """
 
         interpolators_fractional = interpolators1d_fractional(self.atomic_data, self.element, self.psin_1d,
@@ -376,7 +385,6 @@ class TestIonizationBalance1D(unittest.TestCase):
     def test_fractional_inetrpolators_1d_tcx(self):
         """
         test calculation of 1d fractional interpolators with thermal cx
-        :return:
         """
 
         interpolators_fractional = interpolators1d_fractional(self.atomic_data, self.element, self.psin_1d,
@@ -393,7 +401,6 @@ class TestIonizationBalance1D(unittest.TestCase):
     def test_balance_0d_elementdensity(self):
         """
         test calculation of ionization balance
-        :return:
         """
         # test with floats as input
         densities = from_elementdensity(self.atomic_data, self.element, self.n_element_1d(self.psi_value),
@@ -508,7 +515,6 @@ class TestIonizationBalance1D(unittest.TestCase):
     def test_balance_1d_interpolators_from_element_density(self):
         """
         test calculation of 1d interpolators of charge stage densities
-        :return:
         """
 
         interpolators_abundance = interpolators1d_from_elementdensity(self.atomic_data, self.element, self.psin_1d,
@@ -523,7 +529,6 @@ class TestIonizationBalance1D(unittest.TestCase):
     def test_balance_1d_interpolators_from_element_density_tcx(self):
         """
         test calculation of 1d interpolators of ion charge state densities
-        :return:
         """
 
         interpolators_abundance = interpolators1d_from_elementdensity(self.atomic_data, self.element, self.psin_1d,
@@ -541,7 +546,6 @@ class TestIonizationBalance1D(unittest.TestCase):
     def test_balance_1d_interpolators_plasma_neutrality(self):
         """
         test calulation of 1d interpolators for ion charge state densities using plasma neutrality condition.
-        :return:
         """
 
         interpolators_abundance_1 = interpolators1d_from_elementdensity(self.atomic_data, self.element, self.psin_1d,
@@ -571,7 +575,6 @@ class TestIonizationBalance1D(unittest.TestCase):
     def test_balance_1d_interpolators_plasma_neutrality_tcx(self):
         """
         test calulation of 1d interpolators for ion charge state densities using plasma neutrality condition.
-        :return:
         """
 
         interpolators_abundance_1 = interpolators1d_from_elementdensity(self.atomic_data, self.element, self.psin_1d,
@@ -610,7 +613,6 @@ class TestIonizationBalance1D(unittest.TestCase):
     def test_fractional_2d_from_2d(self):
         """
         test fractional abundance 2d profile calculation with arrays as inputs
-        :return:
         """
         abundance_fractional = fractional_abundance(self.atomic_data, self.element, self.n_e_profile_2d,
                                                     self.t_e_profile_2d)
@@ -621,7 +623,6 @@ class TestIonizationBalance1D(unittest.TestCase):
     def test_fractional_2d_from_2d_tcx(self):
         """
         test fractional abundance 2d profile calculation with arrays as inputs with thermal cx
-        :return:
         """
         abundance_fractional = fractional_abundance(self.atomic_data, self.element, self.n_e_profile_2d,
                                                     self.t_e_profile_2d, tcx_donor=self.tcx_donor,
@@ -633,7 +634,6 @@ class TestIonizationBalance1D(unittest.TestCase):
     def test_fractional_2d_from_interpolators(self):
         """
         test fractional abundance 2d profile calculation with interpolators as inputs
-        :return:
         """
         abundance_fractional = fractional_abundance(self.atomic_data, self.element, self.n_e_2d,
                                                     self.t_e_2d, free_variable=(self.r, self.z))
@@ -644,7 +644,6 @@ class TestIonizationBalance1D(unittest.TestCase):
     def test_fractional_2d_from_interpolators_tcx(self):
         """
         test fractional abundance 2d profile calculation with interpolators as inputs with thermal cx
-        :return:
         """
         abundance_fractional = fractional_abundance(self.atomic_data, self.element, self.n_e_2d,
                                                     self.t_e_2d, tcx_donor=self.tcx_donor,
@@ -657,7 +656,6 @@ class TestIonizationBalance1D(unittest.TestCase):
     def test_fractional_2d_from_mixed(self):
         """
         test fractional abundance 2d profile calculation with mixed inputs
-        :return:
         """
         abundance_fractional = fractional_abundance(self.atomic_data, self.element, self.n_e_profile_2d,
                                                     self.t_e_2d, free_variable=(self.r, self.z))
@@ -668,7 +666,6 @@ class TestIonizationBalance1D(unittest.TestCase):
     def test_fractional_2d_from_mixed_tcx(self):
         """
         test fractional abundance 2d profile calculation with mixed inputs with thermal cx
-        :return:
         """
         abundance_fractional = fractional_abundance(self.atomic_data, self.element, self.n_e_profile_2d,
                                                     self.t_e_2d, tcx_donor=self.tcx_donor,
@@ -681,7 +678,6 @@ class TestIonizationBalance1D(unittest.TestCase):
     def test_balance_2d_elementdensity(self):
         """
         test abundance 2d profile calculation from element density
-        :return:
         """
         abundance = from_elementdensity(self.atomic_data, self.element, self.n_element_profile_2d, self.n_e_2d,
                                         self.t_e_profile_2d, free_variable=(self.r, self.z))
@@ -692,7 +688,6 @@ class TestIonizationBalance1D(unittest.TestCase):
     def test_balance_2d_elementdensity_tcx(self):
         """
         test abundance 2d profile calculation from element density
-        :return:
         """
         abundance = from_elementdensity(self.atomic_data, self.element, self.n_element_profile_2d, self.n_e_2d,
                                         self.t_e_profile_2d, tcx_donor=self.tcx_donor,
@@ -750,7 +745,6 @@ class TestIonizationBalance1D(unittest.TestCase):
     def test_fractional_inetrpolators_2d(self):
         """
         test calculation of 1d fractional interpolators
-        :return:
         """
 
         interpolators_fractional = interpolators2d_fractional(self.atomic_data, self.element, (self.r, self.z),
@@ -764,7 +758,6 @@ class TestIonizationBalance1D(unittest.TestCase):
     def test_fractional_inetrpolators_2d_tcx(self):
         """
         test calculation of 1d fractional interpolators with thermal cx
-        :return:
         """
 
         interpolators_fractional = interpolators2d_fractional(self.atomic_data, self.element, (self.r, self.z),
@@ -781,7 +774,6 @@ class TestIonizationBalance1D(unittest.TestCase):
     def test_balance_2d_interpolators_from_element_density(self):
         """
         test calculation of 2d interpolators of charge stage densities
-        :return:
         """
 
         interpolators_abundance = interpolators2d_from_elementdensity(self.atomic_data, self.element, (self.r, self.z),
@@ -796,7 +788,6 @@ class TestIonizationBalance1D(unittest.TestCase):
     def test_balance_2d_interpolators_from_element_density_tcx(self):
         """
         test calculation of 2d interpolators of ion charge state densities
-        :return:
         """
 
         interpolators_abundance = interpolators2d_from_elementdensity(self.atomic_data, self.element, (self.r, self.z),
@@ -814,7 +805,6 @@ class TestIonizationBalance1D(unittest.TestCase):
     def test_balance_2d_interpolators_plasma_neutrality(self):
         """
         test calulation of 2d interpolators for ion charge state densities using plasma neutrality condition.
-        :return:
         """
 
         interpolators_abundance_1 = interpolators2d_from_elementdensity(self.atomic_data, self.element,
@@ -846,7 +836,6 @@ class TestIonizationBalance1D(unittest.TestCase):
     def test_balance_2d_interpolators_plasma_neutrality_tcx(self):
         """
         test calulation of 2d interpolators for ion charge state densities using plasma neutrality condition.
-        :return:
         """
 
         interpolators_abundance_1 = interpolators2d_from_elementdensity(self.atomic_data, self.element,
@@ -908,7 +897,6 @@ class TestIonizationBalance1D(unittest.TestCase):
     def test_equilibrium_map3d_fractional(self):
         """
         test calculation of fractional abundance and application of map3d functionality of equilibrium
-        :return:
         """
 
         equilibrium = example_equilibrium()
@@ -925,13 +913,11 @@ class TestIonizationBalance1D(unittest.TestCase):
 
         total = self.sumup_fractions(profile)
 
-
         self.assertTrue(np.allclose(total, 1, rtol=self.TOLERANCE))
 
     def test_equilibrium_map3d_from_elementdensity(self):
         """
         test calculation of abundance and application of map3d functionality of equilibrium
-        :return:
         """
 
         equilibrium = example_equilibrium()
@@ -957,7 +943,6 @@ class TestIonizationBalance1D(unittest.TestCase):
     def test_equilibrium_map3d_plasma_neutrality(self):
         """
         test calculation of abundance and application of map3d functionality of equilibrium
-        :return:
         """
 
         equilibrium = example_equilibrium()
