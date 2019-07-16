@@ -86,16 +86,17 @@ cdef class IonFunction(Function3D):
     @cython.cdivision(True)
     cdef double evaluate(self, double x, double y, double z) except? -1e999:
 
-        cdef double value
+        cdef double value, x_norm
 
         if self._cache:
             if x == self._cache_x and y == self._cache_y and z == self._cache_z:
                 return self._cache_v
 
-        if 0 <= x <= self.pedestal_top:
+        x_norm = x / self.pedestal_top
+        if 0 <= x_norm <= 1:
             value = ((self.t_core - self.t_lcfs) *
-                    pow((1 - pow((1-x) / self.pedestal_top, self.p)), self.q) + self.t_lcfs)
-        elif x >= self.pedestal_top:
+                    pow((1 - pow((1 - x_norm), self.p)), self.q) + self.t_lcfs)
+        elif x_norm >= 1:
             value = self.t_core
         else:
             value = 0.0
