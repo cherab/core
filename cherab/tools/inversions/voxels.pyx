@@ -76,14 +76,14 @@ class AxisymmetricVoxel(Voxel):
     :param Material material: The emission material of this Voxel, defaults
       to a UnityVolumeEmitter() for weight matrix calculations.
     :param str primitive_type: Specifies the primitive type, can be either
-      'mesh' or 'csg'. Defaults to the mesh representation.
+      'mesh' or 'csg'. Defaults to the CSG representation.
 
     :ivar float volume: The geometric volume of this voxel.
     :ivar float cross_sectional_area: The cross sectional area of the voxel in
       the r-z plane.
     """
 
-    def __init__(self, vertices, parent=None, material=None, primitive_type='mesh'):
+    def __init__(self, vertices, parent=None, material=None, primitive_type='csg'):
 
         super().__init__(parent=parent)
 
@@ -421,11 +421,11 @@ class ToroidalVoxelGrid(VoxelCollection):
       active emitters.
     :param str primitive_type: The geometry type to use for the AxisymmetricVoxel
       instances, can be ['mesh', 'csg']. See their documentation for more information.
-      Defaults to `primitive_type='mesh'`.
+      Defaults to `primitive_type='csg'`.
     """
 
     def __init__(self, voxel_coordinates, name='', parent=None, transform=None,
-                 active="all", primitive_type='mesh'):
+                 active="all", primitive_type='csg'):
 
         super().__init__(name=name, parent=parent, transform=transform)
 
