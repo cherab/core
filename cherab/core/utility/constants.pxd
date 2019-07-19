@@ -27,3 +27,5 @@ cdef:
     double DEGREES_TO_RADIANS
     double RADIANS_TO_DEGREES
     double PLANCK_CONSTANT
+    double ELECTRON_CLASSICAL_RADIUS
+    double ELECTRON_MASS
