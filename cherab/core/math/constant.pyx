@@ -45,6 +45,8 @@ cdef class Constant1D(Function1D):
 cdef class Constant2D(Function2D):
     """Constant 2D real function.
 
+    Inherits from Function2D, implements `__call__(x, y)`.
+
     .. code-block:: pycon
 
        >>> from cherab.core.math import Constant2D
@@ -67,6 +69,8 @@ cdef class Constant2D(Function2D):
 cdef class Constant3D(Function3D):
     """Constant 3D real function.
 
+    Inherits from Function3D, implements `__call__(x, y, z)`.
+
     .. code-block:: pycon
 
        >>> from cherab.core.math import Constant3D
@@ -87,7 +91,22 @@ cdef class Constant3D(Function3D):
 
 
 cdef class ConstantVector2D(VectorFunction2D):
-    """Constant 2D real vector function. Do not propagate NaN values."""
+    """Constant 2D real vector function.
+
+    Inherits from Function2D, implements `__call__(x, y)`.
+
+    .. code-block:: pycon
+
+       >>> from raysect.core.math import Vector3D
+       >>> from cherab.core.math import ConstantVector2D
+       >>>
+       >>> f2 = ConstantVector2D(Vector3D(0.5, 0.5, 0.5))
+       >>>
+       >>> f2(1, 1)
+       Vector3D(0.5, 0.5, 0.5)
+       >>> f2(-1, 7e6)
+       Vector3D(0.5, 0.5, 0.5)
+    """
 
     def __init__(self, Vector3D value not None):
         self.value = value
@@ -97,7 +116,22 @@ cdef class ConstantVector2D(VectorFunction2D):
 
 
 cdef class ConstantVector3D(VectorFunction3D):
-    """Constant 3D real vector function. Do not propagate NaN values."""
+    """Constant 3D real vector function.
+
+    Inherits from Function3D, implements `__call__(x, y, z)`.
+
+    .. code-block:: pycon
+
+       >>> from raysect.core.math import Vector3D
+       >>> from cherab.core.math import ConstantVector3D
+       >>>
+       >>> f3 = ConstantVector3D(Vector3D(0.5, 0.5, 0.5))
+       >>>
+       >>> f3(1, 1, 6)
+       Vector3D(0.5, 0.5, 0.5)
+       >>> f3(-1, 7e6, -1e999)
+       Vector3D(0.5, 0.5, 0.5)
+    """
 
     def __init__(self, Vector3D value not None):
         self.value = value
