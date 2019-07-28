@@ -42,6 +42,22 @@ cpdef tuple sample1d(object function1d, tuple x_range):
     :param function1d: a Python function or Function1D object
     :param x_range: a tuple defining the sample range: (min, max, samples)
     :return: a tuple containing the sampled values: (x_points, function_samples)
+    
+    .. code-block:: pycon
+
+       >>> from raysect.core.math.function.function1d import PythonFunction1D
+       >>> from cherab.core.math import sample1d
+       >>>
+       >>> def my_func(x):
+       >>>     return x**2
+       >>>
+       >>> f1 = PythonFunction1D(my_func)
+       >>>
+       >>> x_pts, f_vals = sample1d(f1, (0, 3, 5))
+       >>> x_pts
+       array([0.  , 0.75, 1.5 , 2.25, 3.  ])
+       >>> f_vals
+       array([0.    , 0.5625, 2.25  , 5.0625, 9.    ])
     """
 
     cdef:
@@ -83,6 +99,20 @@ cpdef np.ndarray sample1d_points(object function1d, object x_points):
     :param function1d: a Python function or Function1D object
     :param x_points: an array of points at which to sample the function
     :return: an array containing the sampled values
+
+    .. code-block:: pycon
+
+       >>> from raysect.core.math.function.function1d import PythonFunction1D
+       >>> from cherab.core.math import sample1d_points
+       >>>
+       >>> def my_func(x):
+       >>>     return x**2
+       >>>
+       >>> f1 = PythonFunction1D(my_func)
+       >>>
+       >>> f_vals = sample1d_points(f1, [1, 2, 3])
+       >>> f_vals
+       array([1., 4., 9.])
     """
     cdef:
         int i, nsamples
