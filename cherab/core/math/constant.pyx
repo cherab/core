@@ -19,7 +19,21 @@
 # under the Licence.
 
 cdef class Constant1D(Function1D):
-    """Constant 1D real function. Do not propagate NaN values."""
+    """Constant 1D real function.
+
+    Inherits from Function1D, implements `__call__(x)`.
+
+    .. code-block:: pycon
+
+       >>> from cherab.core.math import Constant1D
+       >>>
+       >>> f = Constant1D(5.3)
+       >>>
+       >>> f(0.3)
+       5.3
+       >>> f(-1.3e6)
+       5.3
+    """
 
     def __init__(self, double value):
         self.value = value
@@ -29,7 +43,19 @@ cdef class Constant1D(Function1D):
 
 
 cdef class Constant2D(Function2D):
-    """Constant 2D real function. Do not propagate NaN values."""
+    """Constant 2D real function.
+
+    .. code-block:: pycon
+
+       >>> from cherab.core.math import Constant2D
+       >>>
+       >>> f = Constant2D(-7.9)
+       >>>
+       >>> f(3.7, -8.3)
+       -7.9
+       >>> f(3e999, -5)
+       -7.9
+    """
 
     def __init__(self, double value):
         self.value = value
@@ -39,7 +65,19 @@ cdef class Constant2D(Function2D):
 
 
 cdef class Constant3D(Function3D):
-    """Constant 3D real function. Do not propagate NaN values."""
+    """Constant 3D real function.
+
+    .. code-block:: pycon
+
+       >>> from cherab.core.math import Constant3D
+       >>>
+       >>> f = Constant3D(0)
+       >>>
+       >>> f(1,2,3)
+       0.0
+       >>> f(-3, 100, -7e999)
+       0.0
+    """
 
     def __init__(self, double value):
         self.value = value
