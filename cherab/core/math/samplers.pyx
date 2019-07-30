@@ -145,6 +145,28 @@ cpdef tuple sample2d(object function2d, tuple x_range, tuple y_range):
     :param x_range: a tuple defining the x sample range: (x_min, x_max, x_samples)
     :param y_range: a tuple defining the y sample range: (y_min, y_max, y_samples)
     :return: a tuple containing the sampled values: (x_points, y_points, function_samples)
+
+    .. code-block:: pycon
+
+       >>> from raysect.core.math.function.function2d import PythonFunction2D
+       >>> from cherab.core.math import sample2d
+       >>>
+       >>> def my_func(x, y):
+       >>>     return x**2 + y
+       >>>
+       >>> f2 = PythonFunction2D(my_func)
+       >>>
+       >>> x_pts, y_pts, f_vals = sample2d(f2, (1, 3, 5), (1, 3, 5))
+       >>> x_pts
+       array([1. , 1.5, 2. , 2.5, 3. ])
+       >>> y_pts
+       array([1. , 1.5, 2. , 2.5, 3. ])
+       >>> f_vals
+       array([[ 2.  ,  2.5 ,  3.  ,  3.5 ,  4.  ],
+              [ 3.25,  3.75,  4.25,  4.75,  5.25],
+              [ 5.  ,  5.5 ,  6.  ,  6.5 ,  7.  ],
+              [ 7.25,  7.75,  8.25,  8.75,  9.25],
+              [10.  , 10.5 , 11.  , 11.5 , 12.  ]])
     """
 
     cdef:
@@ -198,13 +220,27 @@ cpdef np.ndarray sample2d_points(object function2d, object points):
     """
     Sample a 2D function at the specified points.
 
+    This function is for sampling at an unstructured sequence of points.
+    For sampling over a regular grid, consider sample2d or sample2d_grid
+    instead.
+
     :param function2d: a Python function or Function2D object
     :param points: an Nx2 array of points at which to sample the function
     :return: a 1D array containing the sampled values at each point
 
-    This function is for sampling at an unstructured sequence of points.
-    For sampling over a regular grid, consider sample2d or sample2d_grid
-    instead.
+    .. code-block:: pycon
+
+       >>> from raysect.core.math.function.function2d import PythonFunction2D
+       >>> from cherab.core.math import sample2d
+       >>>
+       >>> def my_func(x, y):
+       >>>     return x**2 + y
+       >>>
+       >>> f2 = PythonFunction2D(my_func)
+       >>>
+       >>> f_vals = sample2d_points(f2, [[1, 1], [2, 2], [3, 3]])
+       >>> f_vals
+       array([ 2.,  6., 12.])
     """
     cdef:
         int i, j, nsamples
@@ -237,12 +273,27 @@ cpdef np.ndarray sample2d_grid(object function2d, object x, object y):
     """
     Sample a 2D function on a rectilinear grid
 
+    Note that v[i, j] = f(x[i], y[j])
+
     :param function2d: a Python function or Function2D object
     :param x: the x coordinates of each column in the grid
     :param y: the y coordinates of each row in the grid
     :return v: a 2D array containing the sampled values at each grid point
 
-    Note that v[i, j] = f(x[i], y[j])
+    .. code-block:: pycon
+
+       >>> from raysect.core.math.function.function2d import PythonFunction2D
+       >>> from cherab.core.math import sample2d_grid
+       >>>
+       >>> def my_func(x, y):
+       >>>     return x**2 + y
+       >>>
+       >>> f2 = PythonFunction2D(my_func)
+       >>>
+       >>> f_vals = sample2d_grid(f2, [1, 2], [1, 2, 3])
+       >>> f_vals
+       array([[2., 3., 4.],
+              [5., 6., 7.]])
     """
     cdef:
         int i, j, x_samples, y_samples
@@ -285,6 +336,30 @@ cpdef tuple sample3d(object function3d, tuple x_range, tuple y_range, tuple z_ra
     :param y_range: a tuple defining the y sample range: (y_min, y_max, y_samples)
     :param z_range: a tuple defining the z sample range: (z_min, z_max, z_samples)
     :return: a tuple containing the sampled values: (x_points, y_points, z_points, function_samples)
+
+    .. code-block:: pycon
+
+       >>> from raysect.core.math.function.function3d import PythonFunction3D
+       >>> from cherab.core.math import sample3d
+       >>>
+       >>> def my_func(x, y, z):
+       >>>     return x**3 + y**2 + z
+       >>>
+       >>> f3 = PythonFunction3D(my_func)
+       >>>
+       >>> x_pts, y_pts, z_pts, f_vals = sample3d(f3, (1, 3, 3), (1, 3, 3), (1, 3, 3))
+       >>> x_pts
+       array([1., 2., 3.])
+       >>> f_vals
+       array([[[ 3.,  4.,  5.],
+               [ 6.,  7.,  8.],
+               [11., 12., 13.]],       
+              [[10., 11., 12.],
+               [13., 14., 15.],
+               [18., 19., 20.]],
+              [[29., 30., 31.],
+               [32., 33., 34.],
+               [37., 38., 39.]]])
     """
 
     cdef:
@@ -351,13 +426,27 @@ cpdef np.ndarray sample3d_points(object function3d, object points):
     """
     Sample a 3D function at the specified points.
 
-    :param function3d: a Python function or Function3D object
-    :param points: an Nx3 array of points at which to sample the function
-    :return: a 1D array containing the sampled values at each point
-
     This function is for sampling at an unstructured sequence of points.
     For sampling over a regular grid, consider sample3d or sample3d_grid
     instead.
+
+    :param function3d: a Python function or Function3D object
+    :param points: an Nx3 array of points at which to sample the function
+    :return: a 1D array containing the sampled values at each point
+    
+    .. code-block:: pycon
+
+       >>> from raysect.core.math.function.function3d import PythonFunction3D
+       >>> from cherab.core.math import sample3d_points
+       >>>
+       >>> def my_func(x, y, z):
+       >>>     return x**3 + y**2 + z
+       >>>
+       >>> f3 = PythonFunction3D(my_func)
+       >>>
+       >>> f_vals = sample3d_points(f3, [[1,1,1], [2,2,2], [3,3,3]])
+       >>> f_vals
+       array([ 3., 14., 39.])
     """
     cdef:
         int i, j, nsamples
@@ -392,13 +481,35 @@ cpdef np.ndarray sample3d_grid(object function3d, object x, object y, object z):
     """
     Sample a 3D function on a rectilinear grid
 
+    Note that v[i, j, k] = f(x[i], y[j], z[k])
+
     :param function3d: a Python function or Function3D object
     :param x: the x coordinates of each column in the grid
     :param y: the y coordinates of each row in the grid
     :param z: the z coordinates of each plane in the grid
     :return v: a 3D array containing the sampled values at each grid point
 
-    Note that v[i, j, k] = f(x[i], y[j], z[k])
+    .. code-block:: pycon
+
+       >>> from raysect.core.math.function.function3d import PythonFunction3D
+       >>> from cherab.core.math import sample3d_grid
+       >>>
+       >>> def my_func(x, y, z):
+       >>>     return x**3 + y**2 + z
+       >>>
+       >>> f3 = PythonFunction3D(my_func)
+       >>>
+       >>> f_vals = sample3d_grid(f3, (1, 3, 3), (1, 3, 3), (1, 3, 3))
+       >>> f_vals
+       array([[[ 3.,  5.,  5.],
+               [11., 13., 13.],
+               [11., 13., 13.]],
+              [[29., 31., 31.],
+               [37., 39., 39.],
+               [37., 39., 39.]],
+              [[29., 31., 31.],
+               [37., 39., 39.],
+               [37., 39., 39.]]])
     """
     cdef:
         int i, j, k, x_samples, y_samples, z_samples
@@ -450,6 +561,33 @@ cpdef tuple samplevector2d(object function2d, tuple x_range, tuple y_range):
     :param x_range: a tuple defining the x sample range: (x_min, x_max, x_samples)
     :param y_range: a tuple defining the y sample range: (y_min, y_max, y_samples)
     :return: a tuple containing the sampled values: (x_points, y_points, function_samples)
+
+    .. code-block:: pycon
+
+       >>> from raysect.core.math import Vector3D
+       >>> from cherab.core.math import samplevector2d
+       >>> from cherab.core.math.function.vectorfunction2d import PythonVectorFunction2D
+       >>>
+       >>> def my_func(x, y):
+       >>>     return Vector3D(x, y, 0)
+       >>>
+       >>> f2 = PythonVectorFunction2D(my_func)
+       >>> 
+       >>> x_pts, y_pts, f_vals = samplevector2d(f2, (1, 3, 3), (1, 3, 3))
+       >>> x_pts
+       array([1., 2., 3.])
+       >>> y_pts
+       array([1., 2., 3.])
+       >>> f_vals
+       array([[[1., 1., 0.],
+               [1., 2., 0.],
+               [1., 3., 0.]],
+              [[2., 1., 0.],
+               [2., 2., 0.],
+               [2., 3., 0.]],
+              [[3., 1., 0.],
+               [3., 2., 0.],
+               [3., 3., 0.]]])
     """
 
     cdef:
@@ -507,13 +645,30 @@ cpdef np.ndarray samplevector2d_points(object function2d, object points):
     """
     Sample a 2D vector function at the specified points.
 
+    This function is for sampling at an unstructured sequence of points.
+    For sampling over a regular grid, consider samplevector2d or
+    samplevector2d_grid instead.
+
     :param function2d: a Python function or Function2D object
     :param points: an Nx2 array of points at which to sample the function
     :return: a Nx3 array containing the sampled values at each point
 
-    This function is for sampling at an unstructured sequence of points.
-    For sampling over a regular grid, consider samplevector2d or
-    samplevector2d_grid instead.
+    .. code-block:: pycon
+    
+       >>> from raysect.core.math import Vector3D
+       >>> from cherab.core.math import samplevector2d_points
+       >>> from cherab.core.math.function.vectorfunction2d import PythonVectorFunction2D
+       >>>
+       >>> def my_func(x, y):
+       >>>     return Vector3D(x, y, 0)
+       >>>
+       >>> f2 = PythonVectorFunction2D(my_func)
+       >>> 
+       >>> f_vals = samplevector2d_points(f2, [[1, 1], [2, 2], [3, 3]])
+       >>> f_vals
+       array([[1., 1., 0.],
+              [2., 2., 0.],
+              [3., 3., 0.]])
     """
     cdef:
         int i, j, nsamples
@@ -557,6 +712,26 @@ cpdef np.ndarray samplevector2d_grid(object function2d, object x, object y):
     :return v: a 3D array containing the sampled values at each grid point
 
     Note that v[i, j] = f(x[i], y[j])
+    
+    .. code-block:: pycon
+    
+       >>> from raysect.core.math import Vector3D
+       >>> from cherab.core.math import samplevector2d_grid
+       >>> from cherab.core.math.function.vectorfunction2d import PythonVectorFunction2D
+       >>>
+       >>> def my_func(x, y):
+       >>>     return Vector3D(x, y, 0)
+       >>>
+       >>> f2 = PythonVectorFunction2D(my_func)
+       >>> 
+       >>> f_vals = samplevector2d_grid(f2, [1, 2], [1, 2, 3])
+       >>> f_vals
+       array([[[1., 1., 0.],
+               [1., 2., 0.],
+               [1., 3., 0.]],
+              [[2., 1., 0.],
+               [2., 2., 0.],
+               [2., 3., 0.]]])
     """
     cdef:
         int i, j, x_samples, y_samples
@@ -607,6 +782,41 @@ cpdef tuple samplevector3d(object function3d, tuple x_range, tuple y_range, tupl
     :param y_range: a tuple defining the y sample range: (y_min, y_max, y_samples)
     :param z_range: a tuple defining the z sample range: (z_min, z_max, z_samples)
     :return: a tuple containing the sampled values: (x_points, y_points, z_points, function_samples)
+
+    .. code-block:: pycon
+    
+       >>> from raysect.core.math import Vector3D
+       >>> from cherab.core.math import samplevector3d
+       >>> from cherab.core.math.function.vectorfunction3d import PythonVectorFunction3D
+       >>>
+       >>> def my_func(x, y, z):
+       >>>     return Vector3D(x, y, z)
+       >>>
+       >>> f3 = PythonVectorFunction3D(my_func)
+       >>> 
+       >>> x_pts, y_pts, z_pts, f_vals = samplevector3d(f3, (1, 2, 2), (1, 3, 3), (1, 3, 3))
+       >>> x_pts
+       array([1., 2.])
+       >>> f_vals
+       array([[[[1., 1., 1.],
+                [1., 1., 2.],
+                [1., 1., 3.]],
+               [[1., 2., 1.],
+                [1., 2., 2.],
+                [1., 2., 3.]],
+               [[1., 3., 1.],
+                [1., 3., 2.],
+                [1., 3., 3.]]],
+
+              [[[2., 1., 1.],
+                [2., 1., 2.],
+                [2., 1., 3.]],
+               [[2., 2., 1.],
+                [2., 2., 2.],
+                [2., 2., 3.]],
+               [[2., 3., 1.],
+                [2., 3., 2.],
+                [2., 3., 3.]]]])
     """
 
     cdef:
@@ -677,13 +887,30 @@ cpdef np.ndarray samplevector3d_points(object function3d, object points):
     """
     Sample a 3D vector function at the specified points.
 
+    This function is for sampling at an unstructured sequence of points.
+    For sampling over a regular grid, consider samplevector3d or
+    samplevector3d_grid instead.
+
     :param function3d: a Python function or Function3D object
     :param points: an Nx3 array of points at which to sample the function
     :return: an Nx3 array containing the sampled values at each point
 
-    This function is for sampling at an unstructured sequence of points.
-    For sampling over a regular grid, consider samplevector3d or
-    samplevector3d_grid instead.
+    .. code-block:: pycon
+    
+       >>> from raysect.core.math import Vector3D
+       >>> from cherab.core.math import samplevector3d_points
+       >>> from cherab.core.math.function.vectorfunction3d import PythonVectorFunction3D
+       >>>
+       >>> def my_func(x, y, z):
+       >>>     return Vector3D(x, y, z)
+       >>>
+       >>> f3 = PythonVectorFunction3D(my_func)
+       >>> 
+       >>> f_vals = samplevector3d_points(f3, [[1,1,1], [2,2,2], [3,3,3]])
+       >>> f_vals
+       array([[1., 1., 1.],
+              [2., 2., 2.],
+              [3., 3., 3.]])
     """
     cdef:
         int i, j, nsamples
@@ -723,13 +950,46 @@ cpdef np.ndarray samplevector3d_grid(object function3d, object x, object y, obje
     """
     Sample a 3D vector function on a rectilinear grid
 
+    Note that v[i, j, k] = f(x[i], y[j], z[k])
+
     :param function3d: a Python function or Function3D object
     :param x: the x coordinates of each column in the grid
     :param y: the y coordinates of each row in the grid
     :param z: the z coordinates of each plane in the grid
     :return v: an NxMxkx3 array containing the sampled values at each grid point
 
-    Note that v[i, j, k] = f(x[i], y[j], z[k])
+    .. code-block:: pycon
+    
+       >>> from raysect.core.math import Vector3D
+       >>> from cherab.core.math import samplevector3d_grid
+       >>> from cherab.core.math.function.vectorfunction3d import PythonVectorFunction3D
+       >>>
+       >>> def my_func(x, y, z):
+       >>>     return Vector3D(x, y, z)
+       >>>
+       >>> f3 = PythonVectorFunction3D(my_func)
+       >>> 
+       >>> f_vals = samplevector3d_grid(f3, [1,2], [1,2,3], [1,2,3])
+       >>> f_vals
+       array([[[[1., 1., 1.],
+                [1., 1., 2.],
+                [1., 1., 3.]],
+               [[1., 2., 1.],
+                [1., 2., 2.],
+                [1., 2., 3.]],
+               [[1., 3., 1.],
+                [1., 3., 2.],
+                [1., 3., 3.]]],
+
+              [[[2., 1., 1.],
+                [2., 1., 2.],
+                [2., 1., 3.]],
+               [[2., 2., 1.],
+                [2., 2., 2.],
+                [2., 2., 3.]],
+               [[2., 3., 1.],
+                [2., 3., 2.],
+                [2., 3., 3.]]]])
     """
     cdef:
         int i, j, k, x_samples, y_samples, z_samples
