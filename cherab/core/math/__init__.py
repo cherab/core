@@ -21,7 +21,8 @@ from .samplers import sample1d_points, sample2d_points, sample3d_points
 from .samplers import sample2d_grid, sample3d_grid
 from .samplers import samplevector2d_points, samplevector3d_points
 from .samplers import samplevector2d_grid, samplevector3d_grid
-from .function import Function1D, Function2D, Function3D, VectorFunction2D, VectorFunction3D
+from .function import Function1D, Function2D, Function3D, VectorFunction2D, PythonVectorFunction2D, \
+    VectorFunction3D, PythonVectorFunction3D
 from .interpolators import Interpolate1DLinear, Interpolate1DCubic
 from .interpolators import Interpolate2DLinear, Interpolate2DCubic
 from .interpolators import Interpolate3DLinear, Interpolate3DCubic
@@ -33,4 +34,3 @@ from .constant import Constant1D, Constant2D, Constant3D, ConstantVector2D, Cons
 from .mappers import IsoMapper2D, IsoMapper3D, Swizzle2D, Swizzle3D, AxisymmetricMapper, VectorAxisymmetricMapper
 from .mask import PolygonMask2D
 from .slice import Slice2D, Slice3D
-
