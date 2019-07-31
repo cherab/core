@@ -22,6 +22,29 @@ from cherab.core.math.function cimport autowrap_function2d, autowrap_function3d
 
 
 cdef class Slice2D(Function1D):
+    """
+    Exposes a slice of a Function2D as a Function1D.
+
+    :param Function2D function: the function to be sliced.
+    :param axis: the axis to be sliced. Must be ['x', 'y'] or [0, 1].
+    :param float value: the axis value at which to return a slice
+
+    .. code-block:: pycon
+
+       >>> from cherab.core.math import Slice2D
+       >>> from raysect.core.math.function.function2d import PythonFunction2D
+       >>>
+       >>> def my_func(x, y):
+       >>>     return x**2 + y
+       >>>
+       >>> f2 = PythonFunction2D(my_func)
+       >>> f1 = Slice2D(f2, 'x', 1.5)
+       >>>
+       >>> f1(0)
+       2.25
+       >>> f1(1)
+       3.25
+    """
 
     def __init__(self, object function, object axis, double value):
 
@@ -50,6 +73,29 @@ cdef class Slice2D(Function1D):
 
 
 cdef class Slice3D(Function2D):
+    """
+    Exposes a slice of a Function3D as a Function2D.
+
+    :param Function3D function: the function to be sliced.
+    :param axis: the axis to be sliced. Must be ['x', 'y', 'z'] or [0, 1, 2].
+    :param float value: the axis value at which to return a slice
+
+    .. code-block:: pycon
+
+       >>> from cherab.core.math import Slice3D
+       >>> from raysect.core.math.function.function3d import PythonFunction3D
+       >>>
+       >>> def my_func(x, y, z):
+       >>>     return x**3 + y**2 + z
+       >>>
+       >>> f3 = PythonFunction3D(my_func)
+       >>> f2 = Slice3D(f3, 'x', 1.5)
+       >>>
+       >>> f2(0, 0)
+       3.375
+       >>> f2(1, 0)
+       4.375
+    """
 
     def __init__(self, object function, object axis, double value):
 
