@@ -57,6 +57,30 @@ cdef class Caching3D(Function3D):
     :param function_boundaries: Boundaries of the function values for
       normalisation: (min, max). If None, function values are not normalised.
       Default is None.
+
+    .. code-block:: pycon
+
+       >>> from numpy import sqrt
+       >>> from time import sleep
+       >>> from cherab.core.math import Caching3D
+       >>> from raysect.core.math.function.function3d import PythonFunction3D
+       >>>
+       >>> def expensive_radius(x, y, z):
+       >>>     sleep(5)
+       >>>     return sqrt(x**2 + y**2 + z**2)
+       >>> f3 = PythonFunction3D(expensive_radius)
+       >>>
+       >>> f3 = Caching3D(f3, (-5, 5, -5, 5, -5, 5), (0.1, 0.1, 0.1))
+       >>>
+       >>> # if you try this, first two executions will be slow, third will be fast
+       >>> # Note: the first execution might be particularly slow, this is because it
+       >>> # sets up the caching structures on first execution.
+       >>> f3(1.5, 1.5, 1.5)
+       2.598076
+       >>> f3(1.6, 1.5, 1.5)
+       2.657066
+       >>> f3(1.55, 1.5, 1.5)
+       2.627260
     """
 
     def __init__(self, object function3d, tuple space_area, tuple resolution, no_boundary_error=False, function_boundaries=None):
