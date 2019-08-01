@@ -11,52 +11,39 @@ objects and are therefore considerably faster than the equivalent Python code.
 1D Sampling
 -----------
 
-.. autoclass:: cherab.core.math.samplers.sample1d
-   :members:
+.. autofunction:: cherab.core.math.samplers.sample1d
 
-.. autoclass:: cherab.core.math.samplers.sample1d_points
-   :members:
+.. autofunction:: cherab.core.math.samplers.sample1d_points
 
 
 2D Sampling
 -----------
 
-.. autoclass:: cherab.core.math.samplers.sample2d
-   :members:
+.. autofunction:: cherab.core.math.samplers.sample2d
 
-.. autoclass:: cherab.core.math.samplers.sample2d_points
-   :members:
+.. autofunction:: cherab.core.math.samplers.sample2d_points
 
-.. autoclass:: cherab.core.math.samplers.sample2d_grid
-   :members:
+.. autofunction:: cherab.core.math.samplers.sample2d_grid
 
-.. autoclass:: cherab.core.math.samplers.samplevector2d
-   :members:
+.. autofunction:: cherab.core.math.samplers.samplevector2d
 
-.. autoclass:: cherab.core.math.samplers.samplevector2d_points
-   :members:
+.. autofunction:: cherab.core.math.samplers.samplevector2d_points
 
-.. autoclass:: cherab.core.math.samplers.samplevector2d_grid
-   :members:
+.. autofunction:: cherab.core.math.samplers.samplevector2d_grid
 
 
 3D Sampling
 -----------
 
-.. autoclass:: cherab.core.math.samplers.sample3d
-   :members:
+.. autofunction:: cherab.core.math.samplers.sample3d
 
-.. autoclass:: cherab.core.math.samplers.sample3d_points
-   :members:
+.. autofunction:: cherab.core.math.samplers.sample3d_points
 
-.. autoclass:: cherab.core.math.samplers.sample3d_grid
-   :members:
+.. autofunction:: cherab.core.math.samplers.sample3d_grid
 
-.. autoclass:: cherab.core.math.samplers.samplevector3d
-   :members:
+.. autofunction:: cherab.core.math.samplers.samplevector3d
 
-.. autoclass:: cherab.core.math.samplers.samplevector3d_points
-   :members:
+.. autofunction:: cherab.core.math.samplers.samplevector3d_points
 
-.. autoclass:: cherab.core.math.samplers.samplevector3d_grid
-   :members:
+.. autofunction:: cherab.core.math.samplers.samplevector3d_grid
+
