@@ -2,7 +2,7 @@ from raysect.optical.spectrum cimport Spectrum
 from cherab.core.model.lineshape import add_gaussian_line, thermal_broadening
 from cherab.core.utility.constants cimport DEGREES_TO_RADIANS, ATOMIC_MASS, RECIP_4_PI
 from cherab.core.model.lineshape cimport thermal_broadening, add_gaussian_line
-from cherab.core.utility.constants cimport PLANCK_CONSTANT, SPEED_OF_LIGHT, ELECTRON_CLASSICAL_RADIUS, ELECTRON_MASS, ELEMENTARY_CHARGE
+from cherab.core.utility.constants cimport PLANCK_CONSTANT, SPEED_OF_LIGHT, ELECTRON_CLASSICAL_RADIUS, ELECTRON_REST_MASS, ELEMENTARY_CHARGE
 cimport cython
 from libc.math cimport exp, sqrt, cos, M_PI as pi
 
@@ -50,7 +50,7 @@ cdef class SeldenMatobaThomsonSpectrum(ScatteringModel):
 
     def __init__(self):
         # from article: 2 * alpha = m_e * c **2 /(k * T_e), here rewritten for Te in eV
-        self._CONST_ALPHA = ELECTRON_MASS * SPEED_OF_LIGHT ** 2 / ( 2 * ELEMENTARY_CHARGE)
+        self._CONST_ALPHA = ELECTRON_REST_MASS * SPEED_OF_LIGHT ** 2 / ( 2 * ELEMENTARY_CHARGE)
 
     @cython.cdivision(True)
     cdef double seldenmatoba_spectral_shape(self, epsilon, cos_theta, alpha):
