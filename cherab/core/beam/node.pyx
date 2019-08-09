@@ -26,6 +26,7 @@ from raysect.core cimport translate, rotate_x
 from raysect.optical cimport World, AffineMatrix3D, Primitive, Ray, new_vector3d
 from raysect.optical.material.emitter.inhomogeneous cimport NumericalIntegrator
 
+from cherab.core.beam.material cimport BeamMaterial
 from cherab.core.beam.model cimport BeamModel
 from cherab.core.atomic cimport AtomicData, Element
 from cherab.core.utility import Notifier
@@ -468,10 +469,7 @@ cdef class Beam(Node):
         self._geometry.name = 'Beam Geometry'
 
         # add plasma material
-        # self._geometry.material = BeamMaterial(self, self._plasma, self._atomic_data, list(self._models), self.integrator)
-
-        from raysect.optical.material import UnityVolumeEmitter
-        self._geometry.material = UnityVolumeEmitter()
+        self._geometry.material = BeamMaterial(self, self._plasma, self._atomic_data, list(self._models), self.integrator)
 
     def _generate_geometry(self):
         """
