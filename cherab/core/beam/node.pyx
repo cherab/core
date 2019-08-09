@@ -19,7 +19,9 @@
 # under the Licence.
 
 
-from raysect.primitive import Cylinder
+from raysect.primitive import Cone
+
+from raysect.core cimport translate, rotate_x
 
 from raysect.optical cimport World, AffineMatrix3D, Primitive, Ray, new_vector3d
 from raysect.optical.material cimport Material
@@ -471,11 +473,25 @@ cdef class Beam(Node):
 
     def _generate_geometry(self):
 
-        # todo: switch this for a Cone primitive
-        # the beam bounding envelope is a cylinder aligned with the beam axis, sharing the same coordinate space
-        # the cylinder radius is set to 5 sigma around the widest section of the gaussian beam
-        radius = 5.0 * (self.sigma + self.length * tan(DEGREES_TO_RADIANS * max(self._divergence_x, self._divergence_y)))
-        return Cylinder(radius=radius, height=self.length)
+        # The beam bounding envelope is a cone aligned with the beam axis, sharing the same coordinate space.
+        # The cone radius is set to 5 sigma around the widest section of the gaussian beam
+        # Cone apex is in the negative half-space of the z-axis
+        # z-position of the cone apex is calculated from the larger of the divergences and beam sigma as -1 * sigma/div_max
+        # Cone length is then |apex_z| + beam_length
+
+        # Radii of the cone-base and at the beam focal plane (node's xy plane)
+        radius_end = 5.0 * (self.sigma + self.length * tan(DEGREES_TO_RADIANS * max(self._divergence_x, self._divergence_y)))
+        radius_focus = 5.0 * self.sigma
+        #distance of the cone apex to the node origin
+        distance_apex = radius_focus / tan(DEGREES_TO_RADIANS * max(self._divergence_x, self._divergence_y))
+        #cone height
+        cone_height = self.length + distance_apex
+
+        # cone has to be rotated by 180 deg. around x or y axes
+        # cone has to be shifted by beam length in the +z direction
+        cone_transform = rotate_x(180) * translate(0, 0, self.length)
+
+        return Cone(radius=radius_end, height=cone_height, transform=cone_transform)
 
     def _configure_attenuator(self):
 
