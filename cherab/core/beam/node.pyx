@@ -19,22 +19,20 @@
 # under the Licence.
 
 
-from raysect.primitive import Cone
+from raysect.primitive import Cylinder, Cone, Intersect
 
 from raysect.core cimport translate, rotate_x
 
 from raysect.optical cimport World, AffineMatrix3D, Primitive, Ray, new_vector3d
-from raysect.optical.material cimport Material
 from raysect.optical.material.emitter.inhomogeneous cimport NumericalIntegrator
 
 from cherab.core.beam.model cimport BeamModel
-from cherab.core.beam.material cimport BeamMaterial
 from cherab.core.atomic cimport AtomicData, Element
 from cherab.core.utility import Notifier
 from libc.math cimport tan, M_PI
 
 
-cdef double DEGREES_TO_RADIANS = (M_PI / 180)
+cdef double DEGREES_TO_RADIANS = M_PI / 180
 
 
 cdef class ModelManager:
@@ -142,7 +140,7 @@ cdef class Beam(Node):
       emission models for this beam.
     :ivar Plasma plasma: The plasma instance with which this beam interacts.
     :ivar float power: The total beam power in W.
-    :ivar float sigma: The guassian beam width at the origin in m.
+    :ivar float sigma: The Gaussian beam width at the origin in m.
     :ivar float temperature: The broadening of the beam (eV).
 
     .. code-block:: pycon
@@ -222,6 +220,7 @@ cdef class Beam(Node):
         :return: Beam density in m^-3
         """
 
+        # todo: make z > length return 0 as a non-default toggle. It should throw an error by default to warn users they are requesting data outside the domain.
         if z < 0 or z > self._length:
             return 0
 
@@ -468,30 +467,62 @@ cdef class Beam(Node):
         self._geometry.parent = self
         self._geometry.name = 'Beam Geometry'
 
-        # build plasma material
-        self._geometry.material = BeamMaterial(self, self._plasma, self._atomic_data, list(self._models), self.integrator)
+        # add plasma material
+        # self._geometry.material = BeamMaterial(self, self._plasma, self._atomic_data, list(self._models), self.integrator)
+
+        from raysect.optical.material import UnityVolumeEmitter
+        self._geometry.material = UnityVolumeEmitter()
 
     def _generate_geometry(self):
+        """
+        Generate the bounding geometry for the beam model.
 
-        # The beam bounding envelope is a cone aligned with the beam axis, sharing the same coordinate space.
-        # The cone radius is set to 5 sigma around the widest section of the gaussian beam
-        # Cone apex is in the negative half-space of the z-axis
-        # z-position of the cone apex is calculated from the larger of the divergences and beam sigma as -1 * sigma/div_max
-        # Cone length is then |apex_z| + beam_length
+        Where possible the beam is bound by a cone as this offers the tightest
+        fitting bounding volume. To avoid numerical issues caused by creating
+        extremely long cones in low divergence cases, the geometry is switched
+        to a cylinder where the difference in volume between the cone and a
+        cylinder is less than 10%.
 
-        # Radii of the cone-base and at the beam focal plane (node's xy plane)
-        radius_end = 5.0 * (self.sigma + self.length * tan(DEGREES_TO_RADIANS * max(self._divergence_x, self._divergence_y)))
-        radius_focus = 5.0 * self.sigma
-        #distance of the cone apex to the node origin
-        distance_apex = radius_focus / tan(DEGREES_TO_RADIANS * max(self._divergence_x, self._divergence_y))
-        #cone height
+        :return: Beam geometry Primitive.
+        """
+
+        # number of beam sigma the bounding volume lies from the beam axis
+        NUM_SIGMA = 5.0
+
+        # return Cylinder(NUM_SIGMA * self.sigma, height=self.length)
+
+        # no divergence, use a cylinder
+        if self._divergence_x == 0 and self._divergence_y == 0:
+            return Cylinder(NUM_SIGMA * self.sigma, height=self.length)
+
+        # rate of change of beam radius with z (using largest divergence)
+        drdz = tan(DEGREES_TO_RADIANS * max(self._divergence_x, self._divergence_y))
+
+        # radii of bounds at the beam origin (z=0) and the beam end (z=length)
+        radius_start = NUM_SIGMA * self.sigma
+        radius_end = radius_start + self.length * NUM_SIGMA * drdz
+
+        # distance of the cone apex to the beam origin
+        distance_apex = radius_start / (NUM_SIGMA * drdz)
         cone_height = self.length + distance_apex
 
-        # cone has to be rotated by 180 deg. around x or y axes
-        # cone has to be shifted by beam length in the +z direction
-        cone_transform = rotate_x(180) * translate(0, 0, self.length)
+        # calculate volumes
+        cylinder_volume = self.length * M_PI * radius_end**2
+        cone_volume = M_PI * (cone_height * radius_end**2 - distance_apex * radius_start**2) / 3
+        volume_ratio = cone_volume / cylinder_volume
 
-        return Cone(radius=radius_end, height=cone_height, transform=cone_transform)
+        # if the volume difference is <10%, generate a cylinder
+        if volume_ratio > 0.9:
+            return Cylinder(NUM_SIGMA * self.sigma, height=self.length)
+
+        # cone has to be rotated by 180 deg and shifted by beam length in the +z direction
+        cone_transform = translate(0, 0, self.length) * rotate_x(180)
+
+        # create cone and cut off -z protrusion
+        return Intersect(
+            Cone(radius_end, cone_height, transform=cone_transform),
+            Cylinder(radius_end * 1.01, self.length * 1.01)
+        )
 
     def _configure_attenuator(self):
 
