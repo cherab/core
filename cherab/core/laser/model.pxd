@@ -19,14 +19,9 @@ cdef class ModelManager:
 cdef class LaserModel:
 
     cdef:
-        Plasma _plasma
-        Laser _laser
         Spectrum _laser_spectrum
-        ModelManager _scattering_models
 
     cdef object __weakref__
-
-    cpdef Spectrum emission(self, Point3D laser_point, Point3D plasma_point, Vector3D observation_direction, Spectrum spectrum)
 
     cpdef Vector3D pointing(self, x, y, z)
 
