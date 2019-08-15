@@ -1,10 +1,6 @@
-from raysect.optical.spectrum cimport
-
-Spectrum
-
-from raysect.optical cimport
-
-Vector3D
+from raysect.optical cimport Vector3D
+from raysect.optical.spectrum cimport Spectrum
+cimport cython
 
 cdef double RE_SQUARED
 
