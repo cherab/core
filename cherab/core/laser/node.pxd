@@ -1,12 +1,9 @@
 from raysect.optical cimport Point3D, Vector3D, Node, Spectrum, Primitive
 from raysect.optical.material.emitter.inhomogeneous cimport VolumeIntegrator
 
-from cherab.core.atomic cimport AtomicData, Element
 from cherab.core.plasma cimport Plasma
-from cherab.core.beam.model cimport BeamAttenuator
 from cherab.core.laser.model cimport LaserModel
-
-
+from cherab.core.laser.scattering cimport ScatteringModel
 cdef class ModelManager:
 
     cdef:
@@ -27,7 +24,8 @@ cdef class Laser(Node):
         Vector3D BEAM_AXIS
         double _length, _radius
         Plasma _plasma
-        ModelManager _laser_models
+        LaserModel _laser_model
+        ScatteringModel _scattering_model
         Primitive _geometry
         VolumeIntegrator _integrator
 

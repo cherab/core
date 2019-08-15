@@ -6,6 +6,7 @@ from raysect.optical.material.emitter.inhomogeneous cimport NumericalIntegrator
 
 from cherab.core.laser.model cimport LaserModel
 from cherab.core.laser.material cimport LaserMaterial
+from cherab.core.laser.scattering cimport ScatteringModel
 from cherab.core.atomic cimport AtomicData, Element
 from cherab.core.utility import Notifier
 from libc.math cimport tan, M_PI
@@ -65,9 +66,8 @@ cdef class Laser(Node):
         # external data dependencies
         self._plasma = None
 
-        # setup emission model handler and trigger geometry rebuilding if the models change
-        self._laser_models = ModelManager()
-        self._laser_models.notifier.add(self._configure_geometry)
+        self._laser_model = None
+        self._scattering_model = None
 
         self._integrator = NumericalIntegrator(step=0.001)
 
@@ -128,22 +128,40 @@ cdef class Laser(Node):
         self._geometry.name = 'Laser Beam Geometry'
 
         # build plasma material
-        self._geometry.material = LaserMaterial(self, self._plasma, list(self._laser_models), self._integrator)
+        self._geometry.material = LaserMaterial(self, self._integrator)
 
     @property
-    def laser_models(self):
-        return self._laser_models
+    def laser_model(self):
+        return self._laser_model
 
-    @laser_models.setter
-    def laser_models(self, object values):
+    @laser_model.setter
+    def laser_model(self, object value):
+
+        # setting the emission models causes ModelManager to notify the Beam object to configure geometry
+        # so no need to explicitly rebuild here
+        if not isinstance(value, LaserModel):
+            raise ValueError("Value has to be of tye LaserModel but {0} passed.".format(type(value)))
+
+        self._laser_model = value
+        self._configure_geometry()
+
+    @property
+    def scattering_model(self):
+        return self._scattering_model
+
+    @scattering_model.setter
+    def scattering_model(self, value):
 
         # check necessary data is available
         if not self._plasma:
             raise ValueError('The beam must have a reference to a plasma object to be used with an emission model.')
 
-        # setting the emission models causes ModelManager to notify the Beam object to configure geometry
-        # so no need to explicitly rebuild here
-        self._laser_models.set(values)
+
+        if not isinstance(value, ScatteringModel):
+            raise ValueError("Value has to be of tye ScatteringModel but {0} passed.".format(type(value)))
+
+        self._scattering_model = value
+        self._configure_geometry()
 
     def _generate_geometry(self):
 

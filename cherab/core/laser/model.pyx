@@ -44,21 +44,9 @@ cdef class ModelManager:
 
 cdef class LaserModel:
 
-    def __init__(self, Laser laser=None, Plasma plasma=None):
+    def __init__(self):
 
-        self._laser = laser
-        self._plasma = plasma
         self._laser_spectrum = None
-
-        self._scattering_models = ModelManager()
-
-        # setup property change notifications for plasma
-        if self._plasma:
-            self._plasma.notifier.add(self._change)
-
-            # setup property change notifications for beam
-        if self._laser:
-            self._laser.notifier.add(self._change)
 
     @property
     def laser_spectrum(self):
@@ -71,54 +59,6 @@ cdef class LaserModel:
             raise TypeError("Laser spectrum has to be of type Spectrum, but {0} passed".format(type(value)))
 
         self._laser_spectrum = value
-
-    @property
-    def plasma(self):
-        return self._plasma
-
-    @plasma.setter
-    def plasma(self, value):
-
-        # disconnect from previous plasma's notifications
-        if self._plasma:
-            self._plasma.notifier.remove(self._change)
-
-        # attach to plasma to inform model of changes to plasma properties
-        self._plasma = value
-        self._plasma.notifier.add(self._change)
-
-        # inform model source data has changed
-        self._change()
-
-    @property
-    def laser(self):
-        return self._laser
-
-    @laser.setter
-    def laser(self, value):
-
-        # disconnect from previous beam's notifications
-        if self.laser:
-            self.laser.notifier.remove(self._change)
-
-        # attach to beam to inform model of changes to beam properties
-        self.laser = value
-        self.laser.notifier.add(self._change)
-
-        # inform model source data has changed
-        self._change()
-
-    @property
-    def scattering_models(self):
-        return self._scattering_models
-
-    @scattering_models.setter
-    def scattering_models(self,object values):
-
-        if not self._plasma:
-            raise ValueError('The beam must have a reference to a plasma object to be used with an emission model.')
-
-        self._scattering_models.set(values)
 
     cpdef Vector3D pointing(self, x, y, z):
         """
@@ -173,35 +113,12 @@ cdef class LaserModel:
 
         pass
 
-    cpdef Spectrum emission(self, Point3D laser_point, Point3D plasma_point,
-                           Vector3D observation_direction, Spectrum spectrum):
-
-        cdef:
-            double ne, te, power_density
-            Vector3D pointing_vector, polarization_direction
-
-
-        power_density = self.power_density(laser_point.x, laser_point.y, laser_point.z)
-
-        #skip spectrum calculation if power density is 0
-        ne = self._plasma.get_electron_distribution().density(plasma_point.x, plasma_point.y, plasma_point.z)
-        te = self._plasma.get_electron_distribution().effective_temperature(plasma_point.x, plasma_point.y, plasma_point.z)
-
-        pointing_vector = self.pointing(laser_point.x, laser_point.y, laser_point.z)
-        polarization_direction = self.polarization(laser_point.x, laser_point.y, laser_point.z)
-
-        for model in self._scattering_models:
-            spectrum = model.emission(ne, te, power_density, pointing_vector, polarization_direction,
-                                      observation_direction, self._laser_spectrum, spectrum)
-
-        return spectrum
-
 cdef class UniformCylinderLaser_tester(LaserModel):
 
-    def __init__(self, Laser laser=None, Plasma plasma=None, power_density=0, central_wavelength = 1060,
-                 spectral_sigma = 0.01, wlen_min = 1059.8, wlen_max=1060.2, nbins=100):
+    def __init__(self, power_density=0, central_wavelength = 1060, spectral_sigma = 0.01, wlen_min = 1059.8,
+                 wlen_max=1060.2, nbins=100):
 
-        super().__init__(laser, plasma)
+        super().__init__()
 
         self._power_density = power_density
         self._central_wavelength = central_wavelength
@@ -281,7 +198,7 @@ cdef class GaussianAxisymmetricalConstant(LaserModel):
                  spectral_sigma = 0.01, spectrum_wlen_min = 1059.8, spectrum_wlen_max=1060.2, spectrum_nbins=100,
                  laser_sigma = 0.01):
 
-        super().__init__(laser, plasma)
+        super().__init__()
 
         #laser sigma dependent constants
         self._const_width = 0
