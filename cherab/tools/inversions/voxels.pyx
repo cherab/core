@@ -131,7 +131,7 @@ cdef class AxisymmetricVoxel(Voxel):
     def _build_mesh(self):
         """Build the Voxel out of triangular mesh elements."""
         num_vertices = len(self._vertices)
-        radial_width = self._vertices[:, 0].max() - self._vertices[:, 0].min()
+        radial_width = max(self._vertices[:, 0]) - min(self._vertices[:, 0])
 
         number_segments = int(floor(2 * PI * self.cross_section_centroid.x / radial_width))
         theta_adjusted = 360 / number_segments
@@ -488,14 +488,14 @@ class ToroidalVoxelGrid(VoxelCollection):
             self._voxels.append(voxel)
 
             # Test and set extent values
-            if voxel._vertices[:, 0].min() < self._min_radius:
-                self._min_radius = voxel._vertices[:, 0].min()
-            if voxel._vertices[:, 0].max() > self._max_radius:
-                self._max_radius = voxel._vertices[:, 0].max()
-            if voxel._vertices[:, 1].min() < self._min_height:
-                self._min_height = voxel._vertices[:, 1].min()
-            if voxel._vertices[:, 1].max() > self._max_height:
-                self._max_height = voxel._vertices[:, 1].max()
+            if min(voxel._vertices[:, 0]) < self._min_radius:
+                self._min_radius = min(voxel._vertices[:, 0])
+            if max(voxel._vertices[:, 0]) > self._max_radius:
+                self._max_radius = max(voxel._vertices[:, 0])
+            if min(voxel._vertices[:, 1]) < self._min_height:
+                self._min_height = min(voxel._vertices[:, 1])
+            if max(voxel._vertices[:, 1]) > self._max_height:
+                self._max_height = max(voxel._vertices[:, 1])
 
     @property
     def min_radius(self):
