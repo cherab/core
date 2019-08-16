@@ -85,8 +85,8 @@ cdef class AxisymmetricVoxel(Voxel):
     """
 
     cdef:
-        double[:, ::1] _vertices
-        int[:, ::1] _triangles
+        public double[:, ::1] _vertices
+        public int[:, ::1] _triangles
         object _material
 
     def __init__(self, vertices, parent=None, material=None, primitive_type='csg'):
