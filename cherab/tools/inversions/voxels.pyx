@@ -17,6 +17,7 @@
 # See the Licence for the specific language governing permissions and limitations
 # under the Licence.
 
+cimport cython
 import numpy as np
 cimport numpy as np
 from libc.math cimport abs as cabs, floor
@@ -39,7 +40,7 @@ from raysect.optical.material.emitter.homogeneous cimport HomogeneousVolumeEmitt
 PI = 3.141592653589793
 
 
-class Voxel(Node):
+cdef class Voxel(Node):
     """
     A Voxel base class.
 
@@ -54,7 +55,7 @@ class Voxel(Node):
         raise NotImplementedError()
 
 
-class AxisymmetricVoxel(Voxel):
+cdef class AxisymmetricVoxel(Voxel):
     """
     An axis-symmetric Voxel.
 
@@ -81,9 +82,18 @@ class AxisymmetricVoxel(Voxel):
     :ivar float volume: The geometric volume of this voxel.
     :ivar float cross_sectional_area: The cross sectional area of the voxel in
       the r-z plane.
+    :ivar Point2D cross_section_centroid: The centroid of the voxel in
+      the r-z plane.
     """
 
+    cdef:
+        public double[:, ::1] _vertices
+        public int[:, ::1] _triangles
+        object _material
+
     def __init__(self, vertices, parent=None, material=None, primitive_type='csg'):
+
+        cdef int i
 
         super().__init__(parent=parent)
 
@@ -93,23 +103,21 @@ class AxisymmetricVoxel(Voxel):
         if not num_vertices >= 3:
             raise TypeError('The AxisSymmetricVoxel can only be specified by a polygon with at least 3 Point2D objects.')
 
-        self._vertices = np.zeros((num_vertices, 2))
+        vertex_array = np.zeros((num_vertices, 2))
         for i, vertex in enumerate(vertices):
             if not isinstance(vertex, Point2D):
                 raise TypeError('The AxisSymmetricVoxel can only be specified with a list/tuple of Point2D objects.')
-            self._vertices[i, :] = vertex.x, vertex.y
-
-        if any(self._vertices[:, 0] < 0):
-            raise ValueError('The polygon vertices must be in the r-z plane.')
+            if vertex.x < 0:
+                raise ValueError('The polygon vertices must be in the r-z plane.')
+            vertex_array[i, :] = vertex.x, vertex.y
 
         # Check the polygon is clockwise, if not => reverse it.
-        if not winding2d(self._vertices):
-            self._vertices = self._vertices[::-1]
+        if not winding2d(vertex_array):
+            vertex_array = np.ascontiguousarray(vertex_array[::-1])
 
-        self._triangles = triangulate2d(self._vertices)
+        self._triangles = triangulate2d(vertex_array)
 
-        # Generate summary statistics
-        self.radius = self._vertices[:, 0].sum()/num_vertices
+        self._vertices = vertex_array
 
         if primitive_type == 'mesh':
             self._build_mesh()
@@ -118,16 +126,16 @@ class AxisymmetricVoxel(Voxel):
                 self._build_csg_from_rectangle()
             else:
                 for triangle in self._triangles:
-                    self._build_csg_from_triangle(self._vertices[triangle])
+                    self._build_csg_from_triangle(vertex_array[triangle])
         else:
             raise ValueError("primitive_type should be 'mesh' or 'csg'")
 
     def _build_mesh(self):
         """Build the Voxel out of triangular mesh elements."""
         num_vertices = len(self._vertices)
-        radial_width = self._vertices[:, 0].max() - self._vertices[:, 0].min()
+        radial_width = max(self._vertices[:, 0]) - min(self._vertices[:, 0])
 
-        number_segments = int(floor(2 * PI * self.radius / radial_width))
+        number_segments = int(floor(2 * PI * self.cross_section_centroid.x / radial_width))
         theta_adjusted = 360 / number_segments
 
         # Construct 3D outline of polygon in x-z plane and the rotated plane
@@ -297,23 +305,62 @@ class AxisymmetricVoxel(Voxel):
         # Simple calculation of the polygon area using the shoelace algorithm
         # https://en.wikipedia.org/wiki/Shoelace_formula
 
+        cdef:
+            int num_vertices, i
+            double area
+            double[:] x, y
+
         num_vertices = self._vertices.shape[0]
-
+        x = self._vertices[:, 0]
+        y = self._vertices[:, 1]
         area = 0
-        for i in range(num_vertices - 1):
-            area += self._vertices[i, 0] * self._vertices[i+1, 1]
-        area += self._vertices[num_vertices - 1, 0] * self._vertices[0, 1]
-        for i in range(num_vertices - 1):
-            area -= self._vertices[i, 1] * self._vertices[i+1, 0]
-        area -= self._vertices[num_vertices - 1, 1] * self._vertices[0, 0]
-
+        with cython.boundscheck(False):
+            for i in range(num_vertices - 1):
+                area += x[i] * y[i + 1] - x[i + 1] * y[i]
+            area += x[num_vertices - 1] * y[0] - x[0] * y[num_vertices - 1]
         return abs(area) / 2
+
+    @property
+    def cross_section_centroid(self):
+
+        # Calculation of the centroid of the cross section using the formula
+        # given in "Polygon Area and Centroid", P. Bourke, 1988
+        cdef:
+            int num_vertices, i
+            double cx, cy, area
+            double[:] x, y
+        num_vertices = self._vertices.shape[0]
+        x = self._vertices[:, 0]
+        y = self._vertices[:, 1]
+        cx = 0
+        cy = 0
+        # We need the signed area for this calculation, so can't re-use
+        # self.cross_sectional_area
+        area = 0
+        with cython.boundscheck(False):
+            for i in range(num_vertices - 1):
+                cx += (x[i] + x[i + 1]) * (x[i] * y[i + 1] - x[i + 1] * y[i])
+                cy += (y[i] + y[i + 1]) * (x[i] * y[i + 1] - x[i + 1] * y[i])
+                area += x[i] * y[i + 1] - x[i + 1] * y[i]
+            cx += ((x[num_vertices - 1] + x[0])
+                   * (x[num_vertices - 1] * y[0] - x[0] * y[num_vertices - 1]))
+            cy += ((y[num_vertices - 1] + y[0])
+                   * (x[num_vertices - 1] * y[0] - x[0] * y[num_vertices - 1]))
+            area += x[num_vertices - 1] * y[0] - x[0] * y[num_vertices - 1]
+        area /= 2
+        cx /= (6 * area)
+        cy /= (6 * area)
+        return Point2D(cx, cy)
 
     @property
     def volume(self):
 
         # return approximate cell volume
-        return 2 * PI * self.radius * self.cross_sectional_area
+        try:
+            return 2 * PI * self.cross_section_centroid.x * self.cross_sectional_area
+        except ZeroDivisionError:
+            # Thown in self.cross_section_centroid if cross sectional area is 0
+            return 0
 
 
 class VoxelCollection(Node):
@@ -443,14 +490,14 @@ class ToroidalVoxelGrid(VoxelCollection):
             self._voxels.append(voxel)
 
             # Test and set extent values
-            if voxel._vertices[:, 0].min() < self._min_radius:
-                self._min_radius = voxel._vertices[:, 0].min()
-            if voxel._vertices[:, 0].max() > self._max_radius:
-                self._max_radius = voxel._vertices[:, 0].max()
-            if voxel._vertices[:, 1].min() < self._min_height:
-                self._min_height = voxel._vertices[:, 1].min()
-            if voxel._vertices[:, 1].max() > self._max_height:
-                self._max_height = voxel._vertices[:, 1].max()
+            if min(voxel._vertices[:, 0]) < self._min_radius:
+                self._min_radius = min(voxel._vertices[:, 0])
+            if max(voxel._vertices[:, 0]) > self._max_radius:
+                self._max_radius = max(voxel._vertices[:, 0])
+            if min(voxel._vertices[:, 1]) < self._min_height:
+                self._min_height = min(voxel._vertices[:, 1])
+            if max(voxel._vertices[:, 1]) > self._max_height:
+                self._max_height = max(voxel._vertices[:, 1])
 
     @property
     def min_radius(self):

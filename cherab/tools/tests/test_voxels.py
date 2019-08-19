@@ -167,3 +167,85 @@ class TestCSGVoxels(unittest.TestCase):
     def test_arbitrary_voxels(self):
         self.voxel_matches_polygon(ARBITRARY_VOXEL_COORDS)
 
+
+class TestVoxelPropertyCalculations(unittest.TestCase):
+    """Test cases for voxel properties
+
+    This tests properties such as the area and centroid calculations
+    """
+    def test_triangle_area(self):
+        for triangle in TRIANGLE_VOXEL_COORDS:
+            coords = np.asarray(triangle)
+            voxel_vertex_points = [Point2D(*v) for v in coords]
+            voxel = AxisymmetricVoxel(voxel_vertex_points, parent=None)
+            # Use Heron's formula for the area of a triangle from its vertices
+            sidea = voxel_vertex_points[0].distance_to(voxel_vertex_points[1])
+            sideb = voxel_vertex_points[1].distance_to(voxel_vertex_points[2])
+            sidec = voxel_vertex_points[2].distance_to(voxel_vertex_points[0])
+            semi_perimeter = (sidea + sideb + sidec) / 2
+            expected_area = np.sqrt(
+                semi_perimeter
+                * (semi_perimeter - sidea)
+                * (semi_perimeter - sideb)
+                * (semi_perimeter - sidec)
+            )
+            # Different algorithms have some floating point rounding error
+            self.assertAlmostEqual(voxel.cross_sectional_area, expected_area)
+
+    def test_triangle_centroid(self):
+        for triangle in TRIANGLE_VOXEL_COORDS:
+            coords = np.asarray(triangle)
+            voxel_vertex_points = [Point2D(*v) for v in coords]
+            voxel = AxisymmetricVoxel(voxel_vertex_points, parent=None)
+            # The centroid for a triangle is simply the mean position
+            # of the vertices
+            expected_centroid = Point2D(*coords.mean(axis=0))
+            if voxel.cross_sectional_area == 0:
+                self.assertRaises(ZeroDivisionError, getattr, voxel, "cross_section_centroid")
+            else:
+                self.assertEqual(voxel.cross_section_centroid, expected_centroid)
+
+    def test_rectangle_area(self):
+        for rectangle in RECTANGULAR_VOXEL_COORDS:
+            coords = np.asarray(rectangle)
+            voxel_vertex_points = [Point2D(*v) for v in coords]
+            voxel = AxisymmetricVoxel(voxel_vertex_points, parent=None)
+            dx = coords[:, 0].ptp()
+            dy = coords[:, 1].ptp()
+            expected_area = dx * dy
+            self.assertEqual(voxel.cross_sectional_area, expected_area)
+
+    def test_rectangle_centroid(self):
+        for rectangle in RECTANGULAR_VOXEL_COORDS:
+            coords = np.asarray(rectangle)
+            voxel_vertex_points = [Point2D(*v) for v in coords]
+            voxel = AxisymmetricVoxel(voxel_vertex_points, parent=None)
+            x0, y0 = coords.mean(axis=0)
+            expected_centroid = Point2D(x0, y0)
+            self.assertEqual(voxel.cross_section_centroid, expected_centroid)
+
+    def test_polygon_area(self):
+        for polygon in ARBITRARY_VOXEL_COORDS:
+            coords = np.asarray(polygon)
+            voxel_vertex_points = [Point2D(*v) for v in coords]
+            voxel = AxisymmetricVoxel(voxel_vertex_points, parent=None)
+            # Shoelace formula
+            x = coords[:, 0]
+            y = coords[:, 1]
+            expected_area = abs(np.dot(x, np.roll(y, 1)) - np.dot(y, np.roll(x, 1))) / 2
+            self.assertEqual(voxel.cross_sectional_area, expected_area)
+
+    def test_polygon_centroid(self):
+        for polygon in ARBITRARY_VOXEL_COORDS:
+            coords = np.asarray(polygon)
+            voxel_vertex_points = [Point2D(*v) for v in coords]
+            voxel = AxisymmetricVoxel(voxel_vertex_points, parent=None)
+            x = coords[:, 0]
+            y = coords[:, 1]
+            signed_area = (np.dot(x, np.roll(y, 1)) - np.dot(y, np.roll(x, 1))) / 2
+            xroll = np.roll(x, 1)
+            yroll = np.roll(y, 1)
+            cx = np.sum((x + xroll) * (x * yroll - xroll * y)) / (6 * signed_area)
+            cy = np.sum((y + yroll) * (x * yroll - xroll * y)) / (6 * signed_area)
+            expected_centroid = Point2D(cx, cy)
+            self.assertEqual(voxel.cross_section_centroid, expected_centroid)
