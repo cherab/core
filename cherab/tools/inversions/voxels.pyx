@@ -82,6 +82,8 @@ cdef class AxisymmetricVoxel(Voxel):
     :ivar float volume: The geometric volume of this voxel.
     :ivar float cross_sectional_area: The cross sectional area of the voxel in
       the r-z plane.
+    :ivar Point2D cross_section_centroid: The centroid of the voxel in
+      the r-z plane.
     """
 
     cdef:
