@@ -24,7 +24,17 @@ from matplotlib.path import Path
 import numpy as np
 
 from raysect.core import Point2D, Point3D
+from raysect.core.math import triangulate2d
+from raysect.core.math.random import seed
 from cherab.tools.inversions import AxisymmetricVoxel
+
+try:
+    import quadpy
+except ImportError:
+    HAVE_QUADPY = False
+else:
+    HAVE_QUADPY = True
+
 
 TRIANGLE_VOXEL_COORDS = [
     # Triangles with all vertices having different R and z
@@ -168,27 +178,23 @@ class TestCSGVoxels(unittest.TestCase):
         self.voxel_matches_polygon(ARBITRARY_VOXEL_COORDS)
 
 
-class TestVoxelPropertyCalculations(unittest.TestCase):
-    """Test cases for voxel properties
+class TestVoxelCalculations(unittest.TestCase):
+    """Test cases for voxel calculations
 
-    This tests properties such as the area and centroid calculations
+    This tests properties such as the area and centroid calculations,
+    and also calculations such as the emissivities
     """
     def test_triangle_area(self):
         for triangle in TRIANGLE_VOXEL_COORDS:
             coords = np.asarray(triangle)
             voxel_vertex_points = [Point2D(*v) for v in coords]
             voxel = AxisymmetricVoxel(voxel_vertex_points, parent=None)
-            # Use Heron's formula for the area of a triangle from its vertices
-            sidea = voxel_vertex_points[0].distance_to(voxel_vertex_points[1])
-            sideb = voxel_vertex_points[1].distance_to(voxel_vertex_points[2])
-            sidec = voxel_vertex_points[2].distance_to(voxel_vertex_points[0])
-            semi_perimeter = (sidea + sideb + sidec) / 2
-            expected_area = np.sqrt(
-                semi_perimeter
-                * (semi_perimeter - sidea)
-                * (semi_perimeter - sideb)
-                * (semi_perimeter - sidec)
-            )
+            # Calculate the area with the shoelace formula
+            x1, y1 = coords[0]
+            x2, y2 = coords[1]
+            x3, y3 = coords[2]
+            expected_area = 0.5 * abs(x1 * y2 + x2 * y3 + x3 * y1
+                                      - x2 * y1 - x3 * y2 - x1 * y3)
             # Different algorithms have some floating point rounding error
             self.assertAlmostEqual(voxel.cross_sectional_area, expected_area)
 
@@ -249,3 +255,106 @@ class TestVoxelPropertyCalculations(unittest.TestCase):
             cy = np.sum((y + yroll) * (x * yroll - xroll * y)) / (6 * signed_area)
             expected_centroid = Point2D(cx, cy)
             self.assertEqual(voxel.cross_section_centroid, expected_centroid)
+
+    def test_constant_emissivity(self):
+        def emiss_function(r, phi, z):
+            return 5
+        # Emissivity in the voxel should be the constant value of emiss_function
+        for polygon in TRIANGLE_VOXEL_COORDS + RECTANGULAR_VOXEL_COORDS + ARBITRARY_VOXEL_COORDS:
+            coords = np.asarray(polygon)
+            voxel_vertex_points = [Point2D(*v) for v in coords]
+            voxel = AxisymmetricVoxel(voxel_vertex_points, parent=None)
+            emiss = voxel.emissivity_from_function(emiss_function, 1000)
+            expected_emiss = emiss_function(0, 0, 0)
+            self.assertEqual(emiss, expected_emiss)
+
+    @unittest.skipUnless(HAVE_QUADPY, "Need quadpy package for integration")
+    def test_variable_emissivity_triangular(self):
+        # Use the same seed as Raysect's random tests
+        seed(1234567890)
+
+        def emiss_function(r, phi, z):
+            return r * z
+        # This should be equal to the integrated emissivity divided by the area
+        for polygon in TRIANGLE_VOXEL_COORDS:
+            coords = np.asarray(polygon)
+            voxel_vertex_points = [Point2D(*v) for v in coords]
+            voxel = AxisymmetricVoxel(voxel_vertex_points, parent=None)
+            nsamples = 10000
+            emiss = voxel.emissivity_from_function(emiss_function, nsamples)
+            # TODO: include pre-calculated values of expected emissivity
+            # for when quadpy is not installed
+            # Calculate the expected emissivity analytically
+            x1, y1 = coords[0]
+            x2, y2 = coords[1]
+            x3, y3 = coords[2]
+            triangle_area = 0.5 * abs(x1 * y2 + x2 * y3 + x3 * y1
+                                      - x2 * y1 - x3 * y2 - x1 * y3)
+            # Doesn't make any sense to sample from a <2D cross section area
+            if triangle_area == 0:
+                return
+            expected_emiss = quadpy.triangle.integrate(
+                lambda x: emiss_function(x[0], 0, x[1]), coords, quadpy.triangle.Strang(6)
+            ) / triangle_area
+            max_relative_error = 0.0723  # Measured with seed(1234567890)
+            self.assertAlmostEqual(emiss, expected_emiss, delta=emiss * max_relative_error)
+
+    def test_variable_emissivity_rectangular(self):
+        # Use the same seed as Raysect's random tests
+        seed(1234567890)
+
+        def emiss_function(r, phi, z):
+            return r * z
+        # This should be equal to the integrated emissivity divided by the area
+        # We can calculate the integrated emissivity analytically
+        for polygon in RECTANGULAR_VOXEL_COORDS:
+            coords = np.asarray(polygon)
+            voxel_vertex_points = [Point2D(*v) for v in coords]
+            voxel = AxisymmetricVoxel(voxel_vertex_points, parent=None)
+            nsamples = 10000
+            emiss = voxel.emissivity_from_function(emiss_function, nsamples)
+            rmax = coords[:, 0].max()
+            rmin = coords[:, 0].min()
+            zmax = coords[:, 1].max()
+            zmin = coords[:, 1].min()
+            area = (rmax - rmin) * (zmax - zmin)
+            expected_emiss = (rmax**2 - rmin**2) * (zmax**2 - zmin**2) / 4 / area
+            max_relative_error = 0.0221  # Measured with seed(1234567890)
+            self.assertAlmostEqual(emiss, expected_emiss, delta=emiss * max_relative_error)
+
+    @unittest.skipUnless(HAVE_QUADPY, "Need quadpy package for integration")
+    def test_variable_emissivity_arbitrary(self):
+        # Use the same seed as Raysect's random tests
+        seed(1234567890)
+
+        def emiss_function(r, phi, z):
+            return r * z
+        # This should be equal to the integrated emissivity divided by the area
+        for polygon in ARBITRARY_VOXEL_COORDS:
+            coords = np.asarray(polygon)
+            voxel_vertex_points = [Point2D(*v) for v in coords]
+            voxel = AxisymmetricVoxel(voxel_vertex_points, parent=None)
+            nsamples = 10000
+            emiss = voxel.emissivity_from_function(emiss_function, nsamples)
+            # TODO: include pre-calculated values of expected emissivity
+            # for when quadpy is not installed
+            # Calculate the expected emissivity
+            triangle_indices = triangulate2d(coords)
+            triangles = coords[triangle_indices]
+            expected_emiss = 0
+            polygon_area = 0
+            for triangle in triangles:
+                # Calculate the area with the shoelace formula
+                x1, y1 = triangle[0]
+                x2, y2 = triangle[1]
+                x3, y3 = triangle[2]
+                triangle_area = 0.5 * abs(x1 * y2 + x2 * y3 + x3 * y1
+                                          - x2 * y1 - x3 * y2 - x1 * y3)
+                # Total emissivity is the area-weighted emissivity for each triangle
+                expected_emiss += quadpy.triangle.integrate(
+                    lambda x: emiss_function(x[0], 0, x[1]), triangle, quadpy.triangle.Strang(6)
+                )
+                polygon_area += triangle_area
+            expected_emiss /= polygon_area
+            max_relative_error = 0.0225  # Measured with seed(1234567890)
+            self.assertAlmostEqual(emiss, expected_emiss, delta=emiss * max_relative_error)
