@@ -116,9 +116,12 @@ Active Spectroscopy
    :widths: 28 50 22
    :header-rows: 1
 
-   * - :ref:`Charge Exchange Spectroscopy (CXS) <beam_cxrs>`
-     - Specifying a mono-energetic neutral beam that interacts with a plasma.
-     - .. image:: ./plasmas/beam_into_plasma.png
+   * - Name
+     - Description
+     - Preview
+   * - :ref:`Charge Exchange Spectroscopy (CXS) <beam_cxs>`
+     - A simple CXS model for a beam into a plasma slab.
+     - .. image:: ./active_spectroscopy/CXS_multi_sightlines.png
           :height: 150px
           :width: 150px
    * - :ref:`Beam Emission Spectroscopy <beam_bes>`
