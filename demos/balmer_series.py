@@ -33,9 +33,8 @@ from gaussian_volume import GaussianVolume
 
 # Core and external imports
 from raysect.optical import World, translate, rotate, Vector3D, Point3D, Ray
-from raysect.primitive import Sphere, Cylinder
+from raysect.primitive import Sphere
 from raysect.optical.observer import PinholeCamera
-from raysect.core.workflow import SerialEngine
 from raysect.optical.material.emitter.inhomogeneous import NumericalIntegrator
 
 # tunables
@@ -59,9 +58,10 @@ plasma.integrator = NumericalIntegrator(step=sigma / 5.0)
 d_density = GaussianVolume(0.5 * ion_density, sigma*10000)
 e_density = GaussianVolume(ion_density, sigma*10000)
 temperature = 1 + GaussianVolume(79, sigma)
-bulk_velocity = ConstantVector3D(Vector3D(-1e6, 0, 0))
+bulk_velocity = ConstantVector3D(Vector3D(-1e5, 0, 0))
 
-d_distribution = Maxwellian(d_density, temperature, bulk_velocity, elements.deuterium.atomic_weight * atomic_mass)
+d_mass = elements.deuterium.atomic_weight * atomic_mass
+d_distribution = Maxwellian(d_density, temperature, bulk_velocity, d_mass)
 e_distribution = Maxwellian(e_density, temperature, bulk_velocity, electron_mass)
 
 d0_species = Species(elements.deuterium, 0, d_distribution)
@@ -80,7 +80,7 @@ d_delta = Line(elements.deuterium, 0, (6, 2))
 d_epsilon = Line(elements.deuterium, 0, (7, 2))
 
 plasma.models = [
-    # Bremsstrahlung(),
+    Bremsstrahlung(),
     ExcitationLine(d_alpha),
     ExcitationLine(d_beta),
     ExcitationLine(d_gamma),
@@ -93,28 +93,30 @@ plasma.models = [
     RecombinationLine(d_epsilon)
 ]
 
-# alternate geometry
-# plasma.geometry = Cylinder(sigma * 2.0, sigma * 10.0)
-# plasma.geometry_transform = translate(0, -sigma * 5.0, 0) * rotate(0, 90, 0)
 
 plt.ion()
 
-r = Ray(origin=Point3D(0, 0, -5), direction=Vector3D(0, 0, 1), min_wavelength=100, max_wavelength=1000, bins=1e6)
+r = Ray(origin=Point3D(0, 0, -5), direction=Vector3D(0, 0, 1),
+        min_wavelength=100, max_wavelength=1000, bins=1e6)
 s = r.trace(world)
 plt.plot(s.wavelengths, s.samples)
 
-r = Ray(origin=Point3D(-5, 0, -5), direction=Vector3D(1, 0, 1), min_wavelength=100, max_wavelength=1000, bins=1e6)
+r = Ray(origin=Point3D(-5, 0, -5), direction=Vector3D(1, 0, 1),
+        min_wavelength=100, max_wavelength=1000, bins=1e6)
 s = r.trace(world)
 plt.plot(s.wavelengths, s.samples)
 
-r = Ray(origin=Point3D(-5, 0, 0), direction=Vector3D(1, 0, 0), min_wavelength=100, max_wavelength=1000, bins=1e6)
+r = Ray(origin=Point3D(-5, 0, 0), direction=Vector3D(1, 0, 0),
+        min_wavelength=100, max_wavelength=1000, bins=1e6)
 s = r.trace(world)
 plt.plot(s.wavelengths, s.samples)
 
+plt.xlabel('Wavelength (nm)')
+plt.ylabel('Radiance (W/m^2/str/nm)')
+plt.title('Sampled Balmer Series Spectrum')
 plt.show()
 
 camera = PinholeCamera((128, 128), parent=world, transform=translate(0, 0, -3.5))
-# camera.render_engine = SerialEngine()
 camera.spectral_rays = 1
 camera.spectral_bins = 15
 camera.pixel_samples = 50

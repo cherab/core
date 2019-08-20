@@ -131,6 +131,23 @@ Active Spectroscopy
           :width: 150px
 
 
+Passive Spectroscopy
+====================
+
+.. list-table::
+   :widths: 28 50 22
+   :header-rows: 1
+
+   * - Name
+     - Description
+     - Preview
+   * - :ref:`Impact Excitation and Recombination <impact_recom_lines>`
+     - Modelling background lines due to electron impact excitation and recombination.
+     - .. image:: ./passive_spectroscopy/BalmerSeries_camera.png
+          :height: 150px
+          :width: 150px
+
+
 Code examples gallery
 =====================
 
