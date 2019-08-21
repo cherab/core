@@ -146,6 +146,11 @@ Passive Spectroscopy
      - .. image:: ./passive_spectroscopy/BalmerSeries_camera.png
           :height: 150px
           :width: 150px
+   * - :ref:`Multiplet Line Ratios <multiplet_lines>`
+     - Including experimentally determined multiplet line ratios.
+     - .. image:: ./passive_spectroscopy/multiplet_spectrum.png
+          :height: 150px
+          :width: 150px
 
 
 Code examples gallery

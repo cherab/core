@@ -29,7 +29,7 @@ from cherab.core.math import Constant3D, ConstantVector3D
 # Cherab and raysect imports
 from cherab.core import Species, Maxwellian, Plasma, Line, elements
 from cherab.openadas import OpenADAS
-from gaussian_volume import GaussianVolume
+from cherab.tools.plasmas import GaussianVolume
 
 # Core and external imports
 from raysect.optical import World, translate, rotate, Vector3D, Point3D, Ray
