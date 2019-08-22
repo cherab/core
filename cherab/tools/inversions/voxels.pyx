@@ -519,12 +519,9 @@ class VoxelCollection(Node):
         for voxel in self._voxels:
             voxel.parent = None
 
-    def emissivities_from_function(self, emission_function, grid_samples=10):
+    def emissivities_from_function(self, emission_function, int grid_samples=10):
         """
         Returns an array of sampled emissivities at each voxel location.
-
-        This is a virtual method and must be implemented in the derived
-        VoxelCollection class.
 
         Note that the results will be nonsense if you mix an emission function
         and VoxelCollection with incompatible symmetries.
@@ -533,7 +530,22 @@ class VoxelCollection(Node):
         :param int grid_samples: Number of emission samples to average over.
         :rtype: np.ndarray
         """
-        raise NotImplementedError()
+        cdef:
+            double[::1] emissivities_mv
+            int i
+            Voxel voxel
+
+        emission_function = autowrap_function3d(emission_function)
+
+        emissivities = np.zeros(self.count)
+        emissivities_mv = emissivities
+
+        for i in range(self.count):
+            voxel = self._voxels[i]
+            emissivities_mv[i] = voxel.emissivity_from_function(
+                emission_function, grid_samples
+            )
+        return emissivities
 
 
 class ToroidalVoxelGrid(VoxelCollection):
@@ -683,34 +695,6 @@ class ToroidalVoxelGrid(VoxelCollection):
             title = "Voxel Grid"
         ax.set_title(title)
         return ax
-
-    def emissivities_from_function(self, emission_function, int grid_samples=10):
-        """
-        Returns an array of sampled emissivities at each voxel location.
-
-        Note that the results will be nonsense if you mix an emission function
-        and VoxelCollection with incompatible symmetries.
-
-        :param Function3D emission_function: Emission function to sample over.
-        :param int grid_samples: Number of emission samples to average over.
-        :rtype: np.ndarray
-        """
-        cdef:
-            double[::1] emissivities_mv
-            int i
-            Voxel voxel
-
-        emission_function = autowrap_function3d(emission_function)
-
-        emissivities = np.zeros(self.count)
-        emissivities_mv = emissivities
-
-        for i in range(self.count):
-            voxel = self._voxels[i]
-            emissivities_mv[i] = voxel.emissivity_from_function(
-                emission_function, grid_samples
-            )
-        return emissivities
 
 
 cdef class UnityVoxelEmitter(HomogeneousVolumeEmitter):
