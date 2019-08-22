@@ -151,6 +151,11 @@ Passive Spectroscopy
      - .. image:: ./passive_spectroscopy/multiplet_spectrum.png
           :height: 150px
           :width: 150px
+   * - :ref:`Stark Broadened Lines <stark_broadening>`
+     - Specifying a Stark broadened lineshape instead of Doppler broadening.
+     - .. image:: ./passive_spectroscopy/stark_line_zoomed.png
+          :height: 150px
+          :width: 150px
 
 
 Code examples gallery
