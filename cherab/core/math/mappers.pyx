@@ -31,9 +31,28 @@ cdef class IsoMapper2D(Function2D):
 
     For a given 2D scalar field f(x,y) and 1D function g(x) this object
     returns g(f(x,y)).
-    
-    function2d is the 2D scalar field and function1d the 1D function.
 
+    :param Function2D function2d: the 2D scalar field
+    :param Function1D function1d: the 1D function
+
+    .. code-block:: pycon
+
+       >>> from cherab.core.math import IsoMapper2D, Interpolate1DCubic
+       >>> from cherab.tools.equilibrium import example_equilibrium
+       >>>
+       >>> equilibrium = example_equilibrium()
+       >>>
+       >>> # extract the 2D psi function
+       >>> psi_n = equilibrium.psi_normalised
+       >>> # make a 1D psi profile
+       >>> profile = Interpolate1DCubic([0, 0.5, 0.9, 1.0], [2500, 2000, 1000, 0])
+       >>> # perform the flux function mapping
+       >>> f = IsoMapper2D(psi_n, profile)
+       >>>
+       >>> f(2, 0)
+       2499.97177
+       >>> f(2.2, 0.5)
+       1990.03783
     """
 
     def __init__(self, object function2d, object function1d):
@@ -56,8 +75,29 @@ cdef class IsoMapper3D(Function3D):
 
     For a given 3D scalar field f(x,y,z) and 1D function g(x) this object
     returns g(f(x,y,z)).
-    
-    function3d is the 3D scalar field and function1d the 1D function.
+
+    :param Function3D function3d: the 3D scalar field
+    :param Function1D function1d: the 1D function
+
+    .. code-block:: pycon
+
+       >>> from cherab.core.math import IsoMapper2D, Interpolate1DCubic, AxisymmetricMapper
+       >>> from cherab.tools.equilibrium import example_equilibrium
+       >>>
+       >>> equilibrium = example_equilibrium()
+       >>>
+       >>> # extract the 3D psi function
+       >>> psi_n = equilibrium.psi_normalised
+       >>> psi_n_3d = AxisymmetricMapper(psi_n)
+       >>> # make a 1D psi profile
+       >>> profile = Interpolate1DCubic([0, 0.5, 0.9, 1.0], [2500, 2000, 1000, 0])
+       >>> # perform the flux function mapping
+       >>> f = IsoMapper3D(psi_n_3d, profile)
+       >>>
+       >>> f(2, 0, 0)
+       2499.97177
+       >>> f(0, 2, 0)
+       2499.97177
     """
 
     def __init__(self, object function3d, object function1d):
@@ -77,8 +117,22 @@ cdef class IsoMapper3D(Function3D):
 cdef class Swizzle2D(Function2D):
     """
     Inverts the argument order of the specified function.
-    
-    function2d is the 2D function you want to inverse the arguments.
+
+    :param Function2D function2d: The 2D function you want to inverse the arguments.
+
+    .. code-block:: pycon
+
+       >>> from cherab.core.math import Swizzle2D
+       >>> from raysect.core.math.function.function2d import PythonFunction2D
+       >>>
+       >>> def my_func(r, z):
+       >>>     return r**2 + z
+       >>>
+       >>> f2 = PythonFunction2D(my_func)
+       >>> f2 = Swizzle2D(f2)
+       >>>
+       >>> f2(3, 0)
+       3.0
     """
 
     def __init__(self, object function2d):
@@ -101,16 +155,36 @@ cdef class Swizzle3D(Function3D):
     For instance, a 90 degree rotation of function coordinates can be performed
     by swapping arguments: xyz -> xzy
 
-    function3d is the 3D function you want to reorder the arguments.
-    shape is a tuple of 3 integers from 0,1,2 imposing the order of
+    Shape is a tuple of 3 integers from 0,1,2 imposing the order of
     arguments. 0, 1 and 2 correspond respectively to x, y and z where (
     x,y,z) are the initial arguments.
     For instance:
     shape = (0,2,1) transforms f(x,y,z) in f(x,z,y)
     shape = (1,0,1) transforms f(x,y,z) in f(y,x,y)
+
+    :param Function3D function3d: the 3D function you want to reorder the arguments.
+    :param tuple shape: a tuple of integers imposing the order of the arguments.
+
+    .. code-block:: pycon
+
+       >>> from cherab.core.math import Swizzle3D
+       >>> from raysect.core.math.function.function3d import PythonFunction3D
+       >>>
+       >>> def my_func(x, y, z):
+       >>>     return x**3 + y**2 + z
+       >>>
+       >>> f3 = PythonFunction3D(my_func)
+       >>> f3 = Swizzle3D(f3, (0, 2, 1))
+       >>>
+       >>> f3(3, 2, 1)
+       30.0
     """
 
     def __init__(self, object function3d, shape):
+        """
+
+
+        """
 
         if not callable(function3d):
             raise TypeError("function3d is not callable.")
@@ -158,7 +232,24 @@ cdef class AxisymmetricMapper(Function3D):
     Due to the nature of this mapping, only the positive region of the x range
     of the supplied function is mapped.
     
-    :param function2d: The function to be mapped.
+    :param Function2D function2d: The function to be mapped.
+
+    .. code-block:: pycon
+
+       >>> from numpy import sqrt
+       >>> from cherab.core.math import AxisymmetricMapper
+       >>> from raysect.core.math.function.function2d import PythonFunction2D
+       >>>
+       >>> def my_func(r, z):
+       >>>     return r
+       >>>
+       >>> f2 = PythonFunction2D(my_func)
+       >>> f3 = AxisymmetricMapper(f2)
+       >>>
+       >>> f3(1, 0, 0)
+       1.0
+       >>> f3(1/sqrt(2), 1/sqrt(2), 0)
+       0.99999999
     """
 
     def __init__(self, object function2d):
@@ -186,15 +277,33 @@ cdef class VectorAxisymmetricMapper(VectorFunction3D):
     Due to the nature of this mapping, only the positive region of the x range
     of the supplied function is mapped.
 
-    :param function2d: The vector function to be mapped.
+    :param VectorFunction2D vectorfunction2d: The vector function to be mapped.
+
+    .. code-block:: pycon
+
+       >>> from cherab.core.math import VectorAxisymmetricMapper
+       >>> from cherab.core.math.function.vectorfunction2d import PythonVectorFunction2D
+       >>>
+       >>> def my_func(r, z):
+       >>>     v = Vector3D(1, 0, 0)
+       >>>     v.length = r
+       >>>     return v
+       >>>
+       >>> f2 = PythonVectorFunction2D(my_func)
+       >>> f3 = VectorAxisymmetricMapper(f2)
+       >>>
+       >>> f3(1, 0, 0)
+       Vector3D(1.0, 0.0, 0.0)
+       >>> f3(1/sqrt(2), 1/sqrt(2), 0)
+       Vector3D(0.70710678, 0.70710678, 0.0)
     """
 
-    def __init__(self, object function2d):
+    def __init__(self, object vectorfunction2d):
 
-        if not callable(function2d):
+        if not callable(vectorfunction2d):
             raise TypeError("Function3D is not callable.")
 
-        self.function2d = autowrap_vectorfunction2d(function2d)
+        self.function2d = autowrap_vectorfunction2d(vectorfunction2d)
 
     def __call__(self, double x, double y, double z):
         return self.evaluate(x, y, z)
