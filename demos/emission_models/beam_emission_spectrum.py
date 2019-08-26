@@ -24,6 +24,7 @@ world = World()
 plasma = build_slab_plasma(width=1.0, height=3.0, peak_density=1e18,
                            impurities=[(carbon, 6, 0.005)], parent=world)
 plasma.b_field = ConstantVector3D(Vector3D(0, 1.5, 0))
+plasma.atomic_data = OpenADAS(permit_extrapolation=True)
 
 # add background emission
 d_alpha = Line(hydrogen, 0, (3, 2))
