@@ -92,7 +92,7 @@ plasma.models = [
 
 
 # Ray-trace and plot the results
-plt.ion()
+plt.ioff()
 r = Ray(origin=Point3D(0, 0, -5), direction=Vector3D(0, 0, 1),
         min_wavelength=395, max_wavelength=415, bins=1000)
 s = r.trace(world)
