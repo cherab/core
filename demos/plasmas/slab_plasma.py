@@ -6,12 +6,13 @@ from raysect.optical import World
 from cherab.core.math import sample3d
 from cherab.core.atomic import hydrogen, carbon
 from cherab.tools.plasmas.slab import build_slab_plasma
+from cherab.openadas import OpenADAS
 
 
 # make a slab plasma
 world = World()
 plasma = build_slab_plasma(peak_density=5e19, impurities=[(carbon, 6, 0.005)], parent=world)
-
+plasma.atomic_data = OpenADAS(permit_extrapolation=True)
 
 ####################
 # Visualise Plasma #
