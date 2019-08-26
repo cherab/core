@@ -485,23 +485,23 @@ cdef class Beam(Node):
         """
 
         # number of beam sigma the bounding volume lies from the beam axis
-        NUM_SIGMA = 5.0
+        num_sigma = self._attenuator.clamp_sigma
 
         # return Cylinder(NUM_SIGMA * self.sigma, height=self.length)
 
         # no divergence, use a cylinder
         if self._divergence_x == 0 and self._divergence_y == 0:
-            return Cylinder(NUM_SIGMA * self.sigma, height=self.length)
+            return Cylinder(num_sigma * self.sigma, height=self.length)
 
         # rate of change of beam radius with z (using largest divergence)
         drdz = tan(DEGREES_TO_RADIANS * max(self._divergence_x, self._divergence_y))
 
         # radii of bounds at the beam origin (z=0) and the beam end (z=length)
-        radius_start = NUM_SIGMA * self.sigma
-        radius_end = radius_start + self.length * NUM_SIGMA * drdz
+        radius_start = num_sigma * self.sigma
+        radius_end = radius_start + self.length * num_sigma * drdz
 
         # distance of the cone apex to the beam origin
-        distance_apex = radius_start / (NUM_SIGMA * drdz)
+        distance_apex = radius_start / (num_sigma * drdz)
         cone_height = self.length + distance_apex
 
         # calculate volumes
@@ -511,7 +511,7 @@ cdef class Beam(Node):
 
         # if the volume difference is <10%, generate a cylinder
         if volume_ratio > 0.9:
-            return Cylinder(NUM_SIGMA * self.sigma, height=self.length)
+            return Cylinder(num_sigma * self.sigma, height=self.length)
 
         # cone has to be rotated by 180 deg and shifted by beam length in the +z direction
         cone_transform = translate(0, 0, self.length) * rotate_x(180)
