@@ -118,11 +118,10 @@ cdef class BeamEmissionLine(BeamModel):
 
         # sum radiance contributions from each species [W/m^3/str]
         radiance = 0
-        for species_rates in self._rates_list:
-            distribution, rate_func = species_rates
+        for distribution, rate_func in self._rates_list:
             target_density = distribution.density(x, y, z)
             target_temperature = distribution.effective_temperature(x, y, z)
-            rate = rate_func.evaluate(self._beam.energy, target_density, target_temperature)
+            rate = rate_func.evaluate(self._beam.get_energy(), target_density, target_temperature)
             radiance += target_density * beam_density * rate
         radiance *= RECIP_4_PI
 
