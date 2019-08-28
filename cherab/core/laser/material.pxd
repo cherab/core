@@ -10,8 +10,7 @@ cdef class LaserMaterial(InhomogeneousVolumeEmitter):
     cdef:
         Laser _laser
         Plasma _plasma
-        ScatteringModel _scattering_model
-        LaserModel _laser_model
+        list _scattering_models
         AffineMatrix3D _laser_to_plasma
 
 
