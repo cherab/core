@@ -272,6 +272,8 @@ cdef class Interpolate1DLinear(_Interpolate1DBase):
     """
     Interpolates 1D data using linear interpolation.
 
+    Inherits from Function1D, implements `__call__(x)`.
+
     :param object x: A 1D array-like object of real values.
     :param object f: A 1D array-like object of real values. The length
       of `f_data` must be equal to the length of `x_data`.
@@ -289,6 +291,20 @@ cdef class Interpolate1DLinear(_Interpolate1DBase):
       as inputs. If a single value is supplied, that value will be extrapolated
       over the entire real range. If False (default), supplying a single value
       will result in a ValueError being raised.
+
+    .. code-block:: pycon
+
+       >>> from cherab.core.math import Interpolate1DLinear
+       >>>
+       >>> f1d = Interpolate1DLinear([0, 0.5, 0.9, 1.0], [2500, 2000, 1000, 0])
+       >>>
+       >>> f1d(0.2)
+       2300.0
+       >>> f1d(0.875)
+       1062.5
+       >>> f1d(1.2)
+       ValueError: The specified value (x=1.2) is outside the range of the supplied
+       data and/or extrapolation range: x bounds=(0.0, 1.0)
     """
 
     def __init__(self, object x, object f, bint extrapolate=False, str extrapolation_type='nearest',
@@ -349,6 +365,8 @@ cdef class Interpolate1DCubic(_Interpolate1DBase):
     """
     Interpolates 1D data using cubic interpolation.
 
+    Inherits from Function1D, implements `__call__(x)`.
+
     Data and coordinates are first normalised to the range [0, 1] so as to
     prevent inaccuracy from float numbers. Spline coefficients are cached
     so they have to be calculated at initialisation only.
@@ -377,6 +395,20 @@ cdef class Interpolate1DCubic(_Interpolate1DBase):
       tolerated as inputs. If a single value is supplied, that value
       will be extrapolated over the entire real range. If False (default),
       supplying a single value will result in a ValueError being raised.
+
+    .. code-block:: pycon
+
+       >>> from cherab.core.math import Interpolate1DCubic
+       >>>
+       >>> f1d = Interpolate1DCubic([0, 0.5, 0.9, 1.0], [2500, 2000, 1000, 0])
+       >>>
+       >>> f1d(0.2)
+       2197.4683
+       >>> f1d(0.875)
+       1184.4343
+       >>> f1d(1.2)
+       ValueError: The specified value (x=1.2) is outside the range of the supplied
+       data and/or extrapolation range: x bounds=(0.0, 1.0)
     """
 
     def __init__(self, object x, object f, int continuity_order=2,

@@ -56,6 +56,28 @@ cdef class Caching1D(Function1D):
     :param function_boundaries: Boundaries of the function values for
       normalisation: (min, max). If None, function values are not normalised.
       Default is None.
+
+    .. code-block:: pycon
+
+       >>> from numpy import sqrt
+       >>> from time import sleep
+       >>> from cherab.core.math import Caching1D
+       >>> from raysect.core.math.function.function1d import PythonFunction1D
+       >>>
+       >>> def expensive_sqrt(x):
+       >>>     sleep(5)
+       >>>     return sqrt(x)
+       >>> f1 = PythonFunction1D(expensive_sqrt)
+       >>>
+       >>> f1 = Caching1D(f1, (-5, 5), 0.1)
+       >>>
+       >>> # if you try this, first two executions will be slow, third will be fast
+       >>> f1(2.5)
+       1.5811388
+       >>> f1(2.6)
+       1.6124515
+       >>> f1(2.55)
+       1.5968720
     """
 
     def __init__(self, object function1d, tuple space_area, double resolution, no_boundary_error=False, function_boundaries=None):
