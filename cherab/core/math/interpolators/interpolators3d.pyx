@@ -332,6 +332,8 @@ cdef class Interpolate3DLinear(_Interpolate3DBase):
     """
     Interpolates 3D data using linear interpolation.
 
+    Inherits from Function3D, implements `__call__(x, y, z)`.
+
     :param object x: An array-like object containing real values.
     :param object y: An array-like object containing real values.
     :param object z: An array-like object containing real values.
@@ -350,6 +352,30 @@ cdef class Interpolate3DLinear(_Interpolate3DBase):
       inputs. If a single value is supplied, that value will be extrapolated over
       the entire real range. If False (default), supplying a single value will
       result in a ValueError being raised.
+
+    .. code-block:: pycon
+
+       >>> import numpy as np
+       >>> from cherab.core.math import Interpolate3DLinear
+       >>>
+       >>> # implements x**3 + y**2 + z
+       >>> drange = np.linspace(-2.5, 2.5, 100)
+       >>> values = np.zeros((100, 100, 100))
+       >>> for i in range(100):
+       >>>     for j in range(100):
+       >>>         for k in range(100):
+       >>>             values[i, j, k] = drange[i]**3 + drange[j]**2 + drange[k]
+       >>>
+       >>> f3d = Interpolate3DLinear(drange, drange, drange, values)
+       >>>
+       >>> f3d(0, 0, 0)
+       0.00063769
+       >>> f3d(-2, 1, 1.5)
+       -5.50085102
+       >>> f3d(-3, 1, 0)
+       ValueError: The specified value (x=-3.0, y=1.0, z=0.0) is outside the range
+       of the supplied data and/or extrapolation range: x bounds=(-2.5, 2.5),
+       y bounds=(-2.5, 2.5), z bounds=(-2.5, 2.5)
     """
 
     def __init__(self, object x, object y, object z, object f, bint extrapolate=False, str extrapolation_type='nearest',
@@ -465,6 +491,8 @@ cdef class Interpolate3DCubic(_Interpolate3DBase):
     """
     Interpolates 3D data using cubic interpolation.
 
+    Inherits from Function3D, implements `__call__(x, y, z)`.
+
     Data and coordinates are first normalised to the range [0, 1] so as to
     prevent inaccuracy from float numbers. A local calculation based on
     finite differences is used. The splines coefficients are calculated
@@ -493,6 +521,30 @@ cdef class Interpolate3DCubic(_Interpolate3DBase):
       tolerated as inputs. If a single value is supplied, that value will
       be extrapolated over the entire real range. If False (default),
       supplying a single value will result in a ValueError being raised.
+
+    .. code-block:: pycon
+
+       >>> import numpy as np
+       >>> from cherab.core.math import Interpolate3DCubic
+       >>>
+       >>> # implements x**3 + y**2 + z
+       >>> drange = np.linspace(-2.5, 2.5, 100)
+       >>> values = np.zeros((100, 100, 100))
+       >>> for i in range(100):
+       >>>     for j in range(100):
+       >>>         for k in range(100):
+       >>>             values[i, j, k] = drange[i]**3 + drange[j]**2 + drange[k]
+       >>>
+       >>> f3d = Interpolate3DCubic(drange, drange, drange, values)
+       >>>
+       >>> f3d(0, 0, 0)
+       -1.7763e-14
+       >>> f3d(-2, 1, 1.5)
+       -5.50000927
+       >>> f3d(-3, 1, 0)
+       ValueError: The specified value (x=-3.0, y=1.0, z=0.0) is outside the range
+       of the supplied data and/or extrapolation range: x bounds=(-2.5, 2.5),
+       y bounds=(-2.5, 2.5), z bounds=(-2.5, 2.5)
     """
 
     def __init__(self, object x, object y, object z, object f, bint extrapolate=False, double extrapolation_range=INFINITY,

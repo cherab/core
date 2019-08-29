@@ -108,6 +108,56 @@ Surface Radiation Loads
           :height: 150px
           :width: 150px
 
+
+Active Spectroscopy
+===================
+
+.. list-table::
+   :widths: 28 50 22
+   :header-rows: 1
+
+   * - Name
+     - Description
+     - Preview
+   * - :ref:`Charge Exchange Spectroscopy (CXS) <beam_cxs>`
+     - A simple CXS model for a beam into a plasma slab.
+     - .. image:: ./active_spectroscopy/CXS_multi_sightlines.png
+          :height: 150px
+          :width: 150px
+   * - :ref:`Beam Emission Spectroscopy <beam_bes>`
+     - A simple Beam Emission Spectroscopy (BES) model for a beam into a plasma slab.
+     - .. image:: ./active_spectroscopy/BES_spectrum_zoomed.png
+          :height: 150px
+          :width: 150px
+
+
+Passive Spectroscopy
+====================
+
+.. list-table::
+   :widths: 28 50 22
+   :header-rows: 1
+
+   * - Name
+     - Description
+     - Preview
+   * - :ref:`Impact Excitation and Recombination <impact_recom_lines>`
+     - Modelling background lines due to electron impact excitation and recombination.
+     - .. image:: ./passive_spectroscopy/BalmerSeries_camera.png
+          :height: 150px
+          :width: 150px
+   * - :ref:`Multiplet Line Ratios <multiplet_lines>`
+     - Including experimentally determined multiplet line ratios.
+     - .. image:: ./passive_spectroscopy/multiplet_spectrum.png
+          :height: 150px
+          :width: 150px
+   * - :ref:`Stark Broadened Lines <stark_broadening>`
+     - Specifying a Stark broadened lineshape instead of Doppler broadening.
+     - .. image:: ./passive_spectroscopy/stark_line_zoomed.png
+          :height: 150px
+          :width: 150px
+
+
 Code examples gallery
 =====================
 

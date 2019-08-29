@@ -82,7 +82,7 @@ setup(
         "Programming Language :: Python :: 3",
         "Topic :: Scientific/Engineering :: Physics"
     ],
-    install_requires=['numpy', 'scipy', 'matplotlib', 'raysect>=0.5.5', 'cython>=0.28'],
+    install_requires=['numpy', 'scipy', 'matplotlib', 'raysect>=0.5.6', 'cython>=0.28'],
     packages=find_packages(),
     include_package_data=True,
     zip_safe=False,

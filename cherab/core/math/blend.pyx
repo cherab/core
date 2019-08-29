@@ -37,6 +37,40 @@ cdef class Blend1D(Function1D):
 
     The value of the mask function is clamped to the range [0, 1] if the
     sampled value exceeds the required range.
+
+    :param Function1D f1: the first 1D function.
+    :param Function1D f2: the second 1D function.
+    :param Function1D mask: the masking 1D function.
+
+    .. code-block:: pycon
+
+       >>> from cherab.core.math import Blend1D
+       >>> from raysect.core.math.function.function1d import PythonFunction1D
+       >>>
+       >>> def my_f1(x):
+       >>>     return 0.5
+       >>> f1 = PythonFunction1D(my_f1)
+       >>>
+       >>> def my_f2(x):
+       >>>     return x**3
+       >>> f2 = PythonFunction1D(my_f2)
+       >>>
+       >>> def my_fmask(x):
+       >>>     if x <= 0:
+       >>>         return 0
+       >>>     elif 0< x <= 1:
+       >>>         return x
+       >>>     else:
+       >>>         return 1
+       >>> f_mask = PythonFunction1D(my_fmask)
+       >>>
+       >>> fb = Blend1D(f1, f2, f_mask)
+       >>> fb(-3)
+       0.5
+       >>> fb(0.3)
+       0.3581
+       >>> fb(1.5)
+       3.375
     """
 
     def __init__(self, object f1, object f2, object mask):
@@ -77,6 +111,42 @@ cdef class Blend2D(Function2D):
 
     The value of the mask function is clamped to the range [0, 1] if the
     sampled value exceeds the required range.
+
+    :param Function2D f1: the first 2D function.
+    :param Function2D f2: the second 2D function.
+    :param Function2D mask: the masking 2D function.
+
+    .. code-block:: pycon
+
+       >>> from numpy import sqrt
+       >>> from cherab.core.math import Blend2D
+       >>> from raysect.core.math.function.function2d import PythonFunction2D
+       >>>
+       >>> def my_f1(x, y):
+       >>>     return 0.5
+       >>> f1 = PythonFunction2D(my_f1)
+       >>>
+       >>> def my_f2(x, y):
+       >>>     return x**2 + y
+       >>> f2 = PythonFunction2D(my_f2)
+       >>>
+       >>> def my_fmask(x, y):
+       >>>    radius = sqrt(x**2 + y**2)
+       >>>    if radius <= 1:
+       >>>        return 0
+       >>>    elif 1 < radius <= 2:
+       >>>        return radius - 1
+       >>>    else:
+       >>>        return 1
+       >>> f_mask = PythonFunction2D(my_fmask)
+       >>>
+       >>> fb = Blend2D(f1, f2, f_mask)
+       >>> fb(0, 0)
+       0.5
+       >>> fb(1, 1)
+       1.121320
+       >>> fb(2, 2)
+       6.0
     """
 
     def __init__(self, object f1, object f2, object mask):
@@ -117,6 +187,42 @@ cdef class Blend3D(Function3D):
 
     The value of the mask function is clamped to the range [0, 1] if the
     sampled value exceeds the required range.
+
+    :param Function3D f1: the first 3D function.
+    :param Function3D f2: the second 3D function.
+    :param Function3D mask: the masking 3D function.
+
+    .. code-block:: pycon
+
+       >>> from numpy import sqrt
+       >>> from cherab.core.math import Blend3D
+       >>> from raysect.core.math.function.function3d import PythonFunction3D
+       >>>
+       >>> def my_f1(x, y, z):
+       >>>     return 0.5
+       >>> f1 = PythonFunction3D(my_f1)
+       >>>
+       >>> def my_f2(x, y, z):
+       >>>     return x**3 + y**2 + z
+       >>> f2 = PythonFunction3D(my_f2)
+       >>>
+       >>> def my_fmask(x, y, z):
+       >>>    radius = sqrt(x**2 + y**2 + z**2)
+       >>>    if radius <= 1:
+       >>>        return 0
+       >>>    elif 1 < radius <= 2:
+       >>>        return radius - 1
+       >>>    else:
+       >>>        return 1
+       >>> f_mask = PythonFunction3D(my_fmask)
+       >>>
+       >>> fb = Blend3D(f1, f2, f_mask)
+       >>> fb(0, 0, 0)
+       0.5
+       >>> fb(1, 1, 1)
+       2.3301270189221928
+       >>> fb(2, 2, 2)
+       14.0
     """
 
     def __init__(self, object f1, object f2, object mask):
