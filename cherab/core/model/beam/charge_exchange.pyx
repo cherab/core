@@ -28,7 +28,7 @@ cimport cython
 from raysect.optical.material.emitter.inhomogeneous import NumericalIntegrator
 
 from cherab.core cimport Species, Plasma, Beam, Element, BeamPopulationRate
-from cherab.core.model.lineshape import doppler_shift, thermal_broadening, add_gaussian_line
+from cherab.core.model.lineshape cimport doppler_shift, thermal_broadening, add_gaussian_line
 from cherab.core.utility.constants cimport RECIP_4_PI, ELEMENTARY_CHARGE, ATOMIC_MASS
 
 cdef double RECIP_ELEMENTARY_CHARGE = 1 / ELEMENTARY_CHARGE
@@ -134,7 +134,7 @@ cdef class BeamCXLine(BeamModel):
         receiver_velocity = self._target_species.distribution.bulk_velocity(x, y, z)
         receiver_ion_mass = self._target_species.element.atomic_weight
 
-        donor_velocity = beam_direction.normalise().mul(evamu_to_ms(self._beam.energy))
+        donor_velocity = beam_direction.normalise().mul(evamu_to_ms(self._beam.get_energy()))
 
         interaction_velocity = donor_velocity.sub(receiver_velocity)
         interaction_speed = interaction_velocity.get_length()

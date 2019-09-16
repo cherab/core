@@ -18,7 +18,8 @@
 
 
 cdef class Line:
-    """A class fully specifies an observed spectroscopic emission line.
+    """
+    A class fully specifies an observed spectroscopic emission line.
 
     Note that wavelengths are not arguments to this class. This is because in
     principle the transition has already been fully specified with the other three
@@ -57,3 +58,5 @@ cdef class Line:
         self.charge = charge
         self.transition = transition
 
+    def __repr__(self):
+        return '<Line: {}, {}, {}>'.format(self.element.name, self.charge, self.transition)

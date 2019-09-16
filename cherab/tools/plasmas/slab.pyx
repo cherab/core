@@ -11,7 +11,6 @@ from cherab.core import Species, Maxwellian, Plasma
 from cherab.core.math import Constant3D, ConstantVector3D
 from cherab.core.math.function cimport Function3D
 from cherab.core.atomic import hydrogen
-from cherab.openadas import OpenADAS
 
 
 cdef class NeutralFunction(Function3D):
@@ -113,7 +112,7 @@ cdef class IonFunction(Function3D):
 # TODO - replace with ionisation balance calculations
 def build_slab_plasma(length=5, width=1, height=1, peak_density=1e19, peak_temperature=2500,
                       pedestal_top=1, neutral_temperature=0.5, impurities=None,
-                      parent=None, atomic_data=OpenADAS(permit_extrapolation=True)):
+                      parent=None):
     """
     Constructs a simple slab of plasma.
 
@@ -154,7 +153,6 @@ def build_slab_plasma(length=5, width=1, height=1, peak_density=1e19, peak_tempe
     """
 
     plasma = Plasma(parent=parent)
-    plasma.atomic_data = atomic_data
     plasma.geometry = Box(Point3D(0, -width/2, -height/2), Point3D(length, width/2, height/2))
 
     species = []
