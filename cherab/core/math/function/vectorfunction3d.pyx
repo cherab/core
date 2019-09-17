@@ -67,6 +67,20 @@ cdef class PythonVectorFunction3D(VectorFunction3D):
     use.
 
     See also: autowrap_vectorfunction3d()
+
+    :param object function: the 3d vector function object to wrap.
+
+    .. code-block:: pycon
+
+       >>> from raysect.core import Vector3D
+       >>> from cherab.core.math import PythonVectorFunction3D
+       >>>
+       >>> def vectorfunction3d(x, y, z):
+       >>>     return Vector3D(1, 0, 0)
+       >>>
+       >>> fv3 = PythonVectorFunction3D(vectorfunction3d)
+       >>> fv3(0, 1, 3.5)
+       Vector3D(1.0, 0.0, 0.0)
     """
 
     def __init__(self, object function):
@@ -106,6 +120,23 @@ cdef class ScalarToVectorFunction3D(VectorFunction3D):
 
     The three Function3D objects correspond to the x, y and z components of the
     resulting vector object.
+
+    :param Function3D x_function: the Vx(x, y, z) 3d function.
+    :param Function3D y_function: the Vy(x, y, z) 3d function.
+    :param Function3D z_function: the Vz(x, y, z) 3d function.
+
+    .. code-block:: pycon
+
+       >>> from cherab.core.math import Constant3D
+       >>> from cherab.core.math.function import ScalarToVectorFunction3D
+       >>>
+       >>> vx = Constant3D(1)
+       >>> vy = Constant3D(2)
+       >>> vz = Constant3D(3)
+       >>>
+       >>> fv = ScalarToVectorFunction3D(vx, vy, vz)
+       >>> fv(3.5, 6.2, -2.2)
+       Vector3D(1.0, 2.0, 3.0)
     """
 
     def __init__(self, object x_function, object y_function, object z_function):

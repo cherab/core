@@ -1,5 +1,5 @@
 
-.. _surface_radiation_loads:
+.. _aug_solps_radiation_load:
 
 
 Calculating wall surface radiation loads

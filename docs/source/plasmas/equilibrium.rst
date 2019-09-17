@@ -6,10 +6,11 @@ Plasma equilibrium
 .. autoclass:: cherab.tools.equilibrium.efit.EFITEquilibrium
    :members:
 
+.. autofunction:: cherab.tools.equilibrium.example.example_equilibrium
+
 .. autofunction:: cherab.tools.equilibrium.plot.plot_equilibrium
 
-.. figure:: equilibrium_plot.png
+.. figure:: ../demonstrations/plasmas/equilibrium_surfaces.png
    :align: center
-   :width: 300px
 
 .. autofunction:: cherab.tools.equilibrium.eqdsk.import_eqdsk

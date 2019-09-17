@@ -107,8 +107,8 @@ cdef class SingleRayAttenuator(BeamAttenuator):
             self._calc_attenuation()
 
         # calculate beam width
-        sigma_x = self._beam.sigma + z * self._tanxdiv
-        sigma_y = self._beam.sigma + z * self._tanydiv
+        sigma_x = self._beam.get_sigma() + z * self._tanxdiv
+        sigma_y = self._beam.get_sigma() + z * self._tanydiv
 
         # normalised radius squared
         norm_radius_sqr = ((x / sigma_x)**2 + (y / sigma_y)**2)

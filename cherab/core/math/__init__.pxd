@@ -21,6 +21,7 @@ from cherab.core.math.function cimport *
 from cherab.core.math.interpolators cimport *
 from cherab.core.math.caching cimport *
 from cherab.core.math.blend cimport *
+from cherab.core.math.clamp cimport *
 from cherab.core.math.constant cimport *
 from cherab.core.math.mappers cimport *
 from cherab.core.math.mask cimport *
