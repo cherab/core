@@ -19,7 +19,5 @@
 from raysect.core.math.function import Function1D
 from raysect.core.math.function import Function2D
 from raysect.core.math.function import Function3D
-from .vectorfunction2d import VectorFunction2D, ScalarToVectorFunction2D
-from .vectorfunction3d import VectorFunction3D, ScalarToVectorFunction3D
-
-
+from .vectorfunction2d import VectorFunction2D, PythonVectorFunction2D, ScalarToVectorFunction2D
+from .vectorfunction3d import VectorFunction3D, PythonVectorFunction3D, ScalarToVectorFunction3D

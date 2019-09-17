@@ -19,6 +19,8 @@
 from raysect.optical cimport Point3D, Vector3D, Node, Spectrum, Primitive
 from raysect.optical.material.emitter.inhomogeneous cimport VolumeIntegrator
 
+from raysect.core cimport translate, rotate_x
+
 from cherab.core.atomic cimport AtomicData, Element
 from cherab.core.plasma cimport Plasma
 from cherab.core.beam.model cimport BeamAttenuator
@@ -75,5 +77,7 @@ cdef class Beam(Node):
     cdef double get_length(self)
 
     cdef double get_sigma(self)
+
+    cdef Plasma get_plasma(self)
 
     cdef int _modified(self) except -1

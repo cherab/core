@@ -84,7 +84,9 @@ def plot_equilibrium(equilibrium, detail=False, resolution=0.025):
 
     .. code-block:: pycon
 
-       >>> from cherab.tools.equilibrium import plot_equilibrium
+       >>> from cherab.tools.equilibrium import example_equilibrium, plot_equilibrium
+       >>>
+       >>> equilibrium = example_equilibrium()
        >>> plot_equilibrium(equilibrium, detail=False, resolution=0.001)
     """
 

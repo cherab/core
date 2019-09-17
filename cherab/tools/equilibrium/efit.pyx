@@ -57,8 +57,8 @@ cdef class EFITEquilibrium:
     :param float psi_axis: The psi value at the magnetic axis.
     :param float psi_lcfs: The psi value at the LCFS.
     :param Point2D magnetic_axis: The coordinates of the magnetic axis.
-    :param Point2D x_points: The list of x-points.
-    :param Point2D x_points: The list of strike-points.
+    :param x_points: A list or tuple of x-points.
+    :param strike_points: A list or tuple of strike-points.
     :param f_profile: The current flux profile on psin (2xN array).
     :param q_profile: The safety factor (q) profile on psin (2xN array).
     :param float b_vacuum_radius: Vacuum B-field reference radius (in meters).
@@ -113,6 +113,7 @@ cdef class EFITEquilibrium:
         z = np.array(z, dtype=np.float64)
         psi = np.array(psi_grid, dtype=np.float64)
         f_profile = np.array(f_profile, dtype=np.float64)
+        q_profile = np.array(q_profile, dtype=np.float64)
 
         # store raw data
         self.r_data = r
@@ -120,10 +121,10 @@ cdef class EFITEquilibrium:
         self.psi_data = psi
 
         # interpolate poloidal flux grid data
-        self.psi = Interpolate2DCubic(r, z, psi_grid)
+        self.psi = Interpolate2DCubic(r, z, psi)
         self.psi_axis = psi_axis
         self.psi_lcfs = psi_lcfs
-        self.psi_normalised = Interpolate2DCubic(r, z, (psi_grid - psi_axis) / (psi_lcfs - psi_axis))
+        self.psi_normalised = Interpolate2DCubic(r, z, (psi - psi_axis) / (psi_lcfs - psi_axis))
 
         # store equilibrium attributes
         self.r_range = r.min(), r.max()
@@ -140,7 +141,7 @@ cdef class EFITEquilibrium:
         self._process_polygons(lcfs_polygon, limiter_polygon, self.psi_normalised)
 
         # calculate b-field
-        dpsi_dr, dpsi_dz = self._calculate_differentials(r, z, psi_grid)
+        dpsi_dr, dpsi_dz = self._calculate_differentials(r, z, psi)
         self.b_field = MagneticField(self.psi_normalised, dpsi_dr, dpsi_dz, self._f_profile, b_vacuum_radius, b_vacuum_magnitude, self.inside_lcfs)
 
         # populate flux coordinate attributes
@@ -174,6 +175,7 @@ cdef class EFITEquilibrium:
         # lcfs polygon
         # polygon mask requires an Nx2 array and it must be c contiguous
         # transposing simply swaps the indexing, so need to re-instance
+        lcfs_polygon = np.array(lcfs_polygon, dtype=np.float64)
         lcfs_polygon = np.ascontiguousarray(lcfs_polygon.transpose())
         self.lcfs_polygon = lcfs_polygon
         self.inside_lcfs = EFITLCFSMask(lcfs_polygon, psi_normalised)
@@ -185,6 +187,7 @@ cdef class EFITEquilibrium:
         else:
             # polygon mask requires an Nx2 array and it must be c contiguous
             # transposing simply swaps the indexing, so need to re-instance
+            limiter_polygon = np.array(limiter_polygon, dtype=np.float64)
             limiter_polygon = np.ascontiguousarray(limiter_polygon.transpose())
             self.limiter_polygon = limiter_polygon
             self.inside_limiter = PolygonMask2D(limiter_polygon)

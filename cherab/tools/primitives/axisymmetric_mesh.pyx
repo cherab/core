@@ -23,6 +23,7 @@ cpdef Mesh axisymmetric_mesh_from_polygon(np.ndarray polygon, int num_toroidal_s
 
         >>> from cherab.tools.primitives import axisymmetric_mesh_from_polygon
         >>>
+        >>> # wall_polygon is your (N, 2) ndarray describing the polygon
         >>> mesh = axisymmetric_mesh_from_polygon(wall_polygon)
     """
 

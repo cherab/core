@@ -24,7 +24,7 @@ from raysect.core.math.function cimport autowrap_function2d
 
 cdef class VectorFunction2D:
     """
-    Cython optimised class for representing an arbitrary 3D vector function.
+    Cython optimised class for representing an arbitrary 2D vector function.
 
     Returns a Vector3D for a given 2D coordinate.
 
@@ -65,7 +65,21 @@ cdef class PythonVectorFunction2D(VectorFunction2D):
     VectorFunction3D object it should be wrapped using this class for internal
     use.
 
-    See also: autowrap_vectorfunction3d()
+    See also: autowrap_vectorfunction2d()
+
+    :param object function: the 2d vector function object to wrap.
+
+    .. code-block:: pycon
+
+       >>> from raysect.core import Vector3D
+       >>> from cherab.core.math import PythonVectorFunction2D
+       >>>
+       >>> def vectorfunction2d(r, z):
+       >>>     return Vector3D(1, 0, 0)
+       >>>
+       >>> fv2 = PythonVectorFunction2D(vectorfunction2d)
+       >>> fv2(1, 3.5)
+       Vector3D(1.0, 0.0, 0.0)
     """
 
     def __init__(self, object function):
@@ -105,6 +119,23 @@ cdef class ScalarToVectorFunction2D(VectorFunction2D):
 
     The three Function2D objects correspond to the x, y and z components of the
     resulting vector object.
+
+    :param Function2D x_function: the Vx(x, y) 2d function.
+    :param Function2D y_function: the Vy(x, y) 2d function.
+    :param Function2D z_function: the Vz(x, y) 2d function.
+
+    .. code-block:: pycon
+
+       >>> from cherab.core.math import Constant2D
+       >>> from cherab.core.math.function import ScalarToVectorFunction2D
+       >>>
+       >>> vx = Constant2D(1)
+       >>> vy = Constant2D(2)
+       >>> vz = Constant2D(3)
+       >>>
+       >>> fv = ScalarToVectorFunction2D(vx, vy, vz)
+       >>> fv(3.5, 6.2)
+       Vector3D(1.0, 2.0, 3.0)
     """
 
     def __init__(self, object x_function, object y_function, object z_function):
