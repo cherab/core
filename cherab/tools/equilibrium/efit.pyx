@@ -29,7 +29,7 @@ from cherab.core.math cimport Interpolate1DCubic, Interpolate2DCubic
 from cherab.core.math cimport PolygonMask2D
 from cherab.core.math cimport IsoMapper2D, AxisymmetricMapper, VectorAxisymmetricMapper
 from cherab.core.math cimport Blend2D, Constant2D, ConstantVector2D
-
+from cherab.core.math cimport ClampOutput2D
 
 cdef class EFITEquilibrium:
     """
@@ -108,7 +108,7 @@ cdef class EFITEquilibrium:
         self.psi = Interpolate2DCubic(r, z, psi)
         self.psi_axis = psi_axis
         self.psi_lcfs = psi_lcfs
-        self.psi_normalised = Interpolate2DCubic(r, z, (psi - psi_axis) / (psi_lcfs - psi_axis))
+        self.psi_normalised = ClampOutput2D(Interpolate2DCubic(r, z, (psi - psi_axis) / (psi_lcfs - psi_axis)), min=0)
 
         # store equilibrium attributes
         self.r_range = r.min(), r.max()
