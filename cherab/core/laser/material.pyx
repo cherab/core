@@ -37,7 +37,6 @@ cdef class LaserMaterial(InhomogeneousVolumeEmitter):
             Vector3D pointing_vector, polarization_vector
             double ne, te, laser_power_density
             ScatteringModel scattering_model
-
         # transform points and directions
         position_plasma = point.transform(self._laser_to_plasma)
         for scattering_model in self._scattering_models:

@@ -111,6 +111,9 @@ cdef class Laser(Node):
         self._configure_geometry()
         self._configure_scattering_models()
 
+    def set_importance(self, value):
+        self._geometry.material.importance = value
+
     cdef Plasma get_plasma(self):
         return self._plasma
 

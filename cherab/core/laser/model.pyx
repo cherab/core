@@ -115,7 +115,7 @@ cdef class LaserModel:
 
 cdef class UniformCylinderLaser_tester(LaserModel):
 
-    def __init__(self, power_density=0, Vector3D polarization = Vector3D(0, 1, 0), central_wavelength = 1060, spectral_sigma = 0.01, wlen_min = 1059.8,
+    def __init__(self, power_density=1, Vector3D polarization = Vector3D(0, 1, 0), central_wavelength = 1060, spectral_sigma = 0.01, wlen_min = 1059.8,
                  wlen_max=1060.2, nbins=100):
 
         super().__init__()
@@ -314,7 +314,6 @@ cdef class GaussianBeamAxisymmetric(LaserModel):
     def laser_power(self, value):
         if not value > 0:
             raise ValueError("Laser power has to be larger than 0.")
-
         self._laser_power = value
         self._power_const = 2 * value / pi
 
@@ -440,12 +439,11 @@ cdef class GaussianAxisymmetricalConstant(LaserModel):
                  laser_sigma = 0.01, Vector3D polarisation_vector = Vector3D(0, 1, 0)):
 
         super().__init__()
-
-
+        self._set_defaults()
 
         #laser sigma dependent constants
-        self._const_width = 0
-        self._recip_laser_sigma2 = 0
+        self._const_width = 0.1
+        self._recip_laser_sigma2 = 1
         self.spectrum_min_wavelength = spectrum_wlen_min
         self.spectrum_max_wavelength = spectrum_wlen_max
 
@@ -460,6 +458,12 @@ cdef class GaussianAxisymmetricalConstant(LaserModel):
         self._polarization_vector = polarisation_vector.normalise()
         self._create_laser_spectrum()
 
+    def _set_defaults(self):
+        self._spectral_mu = 1060
+        self._spectrum_min_wavelength = 0
+        self._spectrum_max_wavelength = INF
+        self._spectral_sigma = 0.05
+        self._spectrum_nbins = 1
 
     cpdef Vector3D get_pointing(self, x, y, z):
         """
@@ -597,7 +601,6 @@ cdef class GaussianAxisymmetricalConstant(LaserModel):
 
         self._laser_spectrum = Spectrum(self._spectrum_min_wavelength, self._spectrum_max_wavelength, self._spectrum_nbins)
         wavelengths = self._laser_spectrum.wavelengths
-        print("test")
         samples = np.exp(-1/2 * np.power(wavelengths - self._spectral_mu, 2)/self._spectral_sigma**2) / self._laser_spectrum.delta_wavelength
 
         interpolated = InterpolatedSF(wavelengths, samples, normalise=True)

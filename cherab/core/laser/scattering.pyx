@@ -8,7 +8,7 @@ from cherab.core.laser.model cimport LaserModel
 from cherab.core cimport Plasma
 
 cimport cython
-from libc.math cimport exp, sqrt, sin, cos, M_PI as pi
+from libc.math cimport exp, sqrt, sin, cos, M_PI
 
 cdef double RE_SQUARED = ELECTRON_CLASSICAL_RADIUS ** 2 #cross section for thomson scattering for SeldenMatoba
 cdef double E_TO_NPHOT = 10e-9 / (PLANCK_CONSTANT * SPEED_OF_LIGHT) # N_photons(wlen, E_laser) = E_laser * wlen * E_TO_PHOT in [J, nm]
@@ -79,7 +79,7 @@ cdef class SeldenMatobaThomsonSpectrum(ScatteringModel):
         cdef:
             double c, a, b, bin
 
-        c = sqrt(alpha / pi) * (1 - 15. / (16. * alpha) + 345. / (512. * alpha ** 2))
+        c = sqrt(alpha / M_PI) * (1 - 15. / (16. * alpha) + 345. / (512. * alpha ** 2))
         a = (1 + epsilon) ** 3 * sqrt(2 * (1 - cos_theta) * (1 + epsilon) + epsilon ** 2)
         b = sqrt(1 + epsilon ** 2 / (2 * (1 - cos_theta) * (1 + epsilon))) - 1
 
@@ -127,7 +127,7 @@ cdef class SeldenMatobaThomsonSpectrum(ScatteringModel):
                                              double angle_polarization, double laser_wavelength, Spectrum spectrum):
 
         cdef:
-            double alpha, epsilon, min_wavelength, cos_observation, sin2_polarisation, wavelength
+            double alpha, epsilon, min_wavelength, cos_scatangle, sin2_polarisation, wavelength
             int index
 
         #no scattering contribution cases
@@ -136,7 +136,10 @@ cdef class SeldenMatobaThomsonSpectrum(ScatteringModel):
 
         alpha = self._CONST_ALPHA / te
         nbins = spectrum.bins
-        cos_observation = cos(angle_pointing * DEGREES_TO_RADIANS)
+
+        #scattering angle of the photon = pi - observation_angle
+        cos_scatangle = cos((180 - angle_pointing) * DEGREES_TO_RADIANS)
+
         #todo: verify that angle between observation and polarization influences only cross section of
         # scattering by sin(angle)**2 and does not influence spectrum shape. If yes, calculate sin2_polarisation and
         # multiply photons_persec with it
@@ -150,7 +153,7 @@ cdef class SeldenMatobaThomsonSpectrum(ScatteringModel):
         for index in range(nbins):
             wavelength = (spectrum.min_wavelength + spectrum.delta_wavelength * index)
             epsilon =  (wavelength - laser_wavelength) / laser_wavelength
-            spectrum_norm = self.seldenmatoba_spectral_shape(epsilon, cos_observation, alpha)
+            spectrum_norm = self.seldenmatoba_spectral_shape(epsilon, cos_scatangle, alpha)
 
             spectrum.samples_mv[index] += spectrum_norm * photons_persec / wavelength * NPHOT_TO_E / spectrum.delta_wavelength
 
