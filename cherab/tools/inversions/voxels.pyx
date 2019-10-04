@@ -35,6 +35,7 @@ from raysect.primitive import Mesh, Cylinder, Cone, Intersect, Subtract, Union
 from raysect.optical import UnityVolumeEmitter
 from raysect.optical cimport Spectrum, World, Primitive, Ray
 from raysect.optical.material.emitter.homogeneous cimport HomogeneousVolumeEmitter
+from cherab.tools.primitives.axisymmetric_mesh cimport axisymmetric_mesh_from_polygon
 
 
 PI = 3.141592653589793
@@ -133,54 +134,18 @@ cdef class AxisymmetricVoxel(Voxel):
         else:
             raise ValueError("primitive_type should be 'mesh' or 'csg'")
 
-    def _build_mesh(self):
+    cdef void _build_mesh(self):
         """Build the Voxel out of triangular mesh elements."""
-        cdef int i
-        num_vertices = len(self._vertices)
-        radial_width = max(self._vertices[:, 0]) - min(self._vertices[:, 0])
+        cdef:
+            int number_segments
+            double radial_width
+            Mesh mesh
 
+        radial_width = peak_to_peak(self._vertices[:, 0])
         number_segments = int(floor(2 * PI * self.cross_section_centroid.x / radial_width))
-        theta_adjusted = 360 / number_segments
-
-        # Construct 3D outline of polygon in x-z plane and the rotated plane
-        xz_points = []  # Set of points in x-z plane
-        rotated_points = []  # Set of points rotated away from x-z plane
-        for i in range(num_vertices):
-            xz_point = Point3D(self._vertices[i, 0], 0, self._vertices[i, 1])
-            xz_points.append(xz_point)
-            rotated_point = xz_point.transform(rotate_z(theta_adjusted))
-            rotated_points.append(rotated_point)
-
-        # assemble mesh vertices
-        vertices = []
-        for p in xz_points:
-            vertices.append([p.x, p.y, p.z])
-        for p in rotated_points:
-            vertices.append([p.x, p.y, p.z])
-
-        # assemble mesh triangles
-        triangles = []
-        # front face triangles
-        for i in range(self._triangles.shape[0]):
-            triangles.append([self._triangles[i, 2], self._triangles[i, 1], self._triangles[i, 0]])
-        # rear face triangles
-        for i in range(self._triangles.shape[0]):
-            triangles.append([self._triangles[i, 0]+num_vertices, self._triangles[i, 1]+num_vertices, self._triangles[i, 2]+num_vertices])
-        # Assemble side triangles
-        for i in range(num_vertices):
-            if i == num_vertices-1:
-                triangles.append([i+1, i+num_vertices, i])
-                triangles.append([0, i+1, i])
-            else:
-                triangles.append([i+num_vertices+1, i+num_vertices, i])
-                triangles.append([i, i+1, i+num_vertices+1])
-
-        base_segment = Mesh(vertices=vertices, triangles=triangles, smoothing=False)
-
-        # Construct annulus by duplicating and rotating base segment.
-        for i in range(number_segments):
-            theta_rotation = theta_adjusted * i
-            segment = base_segment.instance(transform=rotate_z(theta_rotation), material=self._material, parent=self)
+        mesh = axisymmetric_mesh_from_polygon(self._vertices.base, number_segments)
+        mesh.parent = self
+        mesh.material = self._material
 
     def _has_rectangular_cross_section(self):
         """

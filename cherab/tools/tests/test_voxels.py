@@ -179,6 +179,71 @@ class TestCSGVoxels(unittest.TestCase):
         self.voxel_matches_polygon(ARBITRARY_VOXEL_COORDS)
 
 
+class TestMeshVoxels(unittest.TestCase):
+    """Test cases for Mesh voxels.
+
+    The basic test is as follows: for a list of voxel vertex coordinates,
+    generate the Mesh representation of that Axisymmetric voxel. Then
+    generate a 2D polygon of the same cross section independently, using
+    Matplotlib. If the voxel has the correct cross section shape, then
+    the set of points (r, 0, z) which lie inside the voxel should be the
+    same as the set of points (r, z) which lie inside the 2D polygon.
+
+    So far, there are tests for triangular, rectangular and pentagonal voxels.
+    In principle, any arbitrary shape could be tested, but if the triangular
+    voxels are working correctly then arbitrary polygons will also work
+    correctly, as arbitrary shapes are implemented as a union of triangles.
+    """
+    def voxel_matches_polygon(self, coordinate_list):
+        for voxel_coords in coordinate_list:
+            voxel_coords = np.asarray(voxel_coords)
+            rmax = voxel_coords[:, 0].max()
+            rmin = voxel_coords[:, 0].min()
+            zmax = voxel_coords[:, 1].max()
+            zmin = voxel_coords[:, 1].min()
+            router = 1.5 * rmax
+            rinner = 0.5 * rmin
+            zupper = 1.5 * zmax if zmax > 0 else 0.5 * zmax
+            zlower = 0.5 * zmin if zmin > 0 else 1.5 * zmin
+            test_rs = np.linspace(rinner, router, int(50 * (router - rinner)))
+            test_zs = np.linspace(zlower, zupper, int(50 * (zupper - zlower)))
+            voxel_vertex_points = [Point2D(*v) for v in voxel_coords]
+            # Test for 0 area: not supported by mesh representation
+            x, y = voxel_coords.T
+            area = 0.5 * np.abs(np.dot(x, np.roll(y, 1)) - np.dot(y, np.roll(x, 1)))
+            if area == 0:
+                continue
+            voxel = AxisymmetricVoxel(voxel_vertex_points, parent=None,
+                                      primitive_type='mesh')
+            polygon = Polygon(voxel_coords, closed=True).get_path()
+            test_verts = list(itertools.product(test_rs, test_zs))
+            inside_poly = polygon.contains_points(test_verts)
+            inside_voxel = [any(child.contains(Point3D(r, 0, z)) for child in voxel.children)
+                            for (r, z) in test_verts]
+            # Due to numerical precision, some points may be inside the
+            # Matplotlib polygon but not the Mesh. Check in this case that the
+            # "failing" points are just very close to the edge of the polygon
+            fails = np.nonzero(np.not_equal(inside_voxel, inside_poly))[0]
+            for fail in fails:
+                if inside_voxel[fail] and not inside_poly[fail]:
+                    # Polygon should be made slightly bigger
+                    inside_poly[fail] = polygon.contains_point(test_verts[fail], radius=-0.01)
+                elif inside_poly[fail] and not inside_voxel[fail]:
+                    # Polygon should be made slightly smaller
+                    inside_poly[fail] = polygon.contains_point(test_verts[fail], radius=0.01)
+            self.assertSequenceEqual(inside_voxel, inside_poly.tolist(),
+                                     "Failed for vertices {}".format(voxel_coords))
+
+    def test_triangular_voxels(self):
+        self.voxel_matches_polygon(TRIANGLE_VOXEL_COORDS)
+
+    def test_rectangular_voxels(self):
+        self.voxel_matches_polygon(RECTANGULAR_VOXEL_COORDS)
+
+    def test_arbitrary_voxels(self):
+        self.voxel_matches_polygon(ARBITRARY_VOXEL_COORDS)
+
+
 class TestVoxelCalculations(unittest.TestCase):
     """Test cases for voxel calculations
 
