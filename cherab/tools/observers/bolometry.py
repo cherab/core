@@ -483,7 +483,7 @@ class BolometerFoil(TargettedPixel):
             raise ValueError("The units argument of BolometerFoil must be one of 'Power' or 'Radiance'.")
 
         los_observer = SightLine(pipelines=[pipeline], pixel_samples=1, quiet=True,
-                                 parent=self, name=self.name, transform=self.transform)
+                                 parent=self, name=self.name)
         los_observer.render_engine = self.render_engine
         los_observer.spectral_bins = self.spectral_bins
         los_observer.min_wavelength = self.min_wavelength
