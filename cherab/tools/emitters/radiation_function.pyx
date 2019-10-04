@@ -18,7 +18,7 @@
 
 from raysect.optical cimport Point3D, Vector3D, Spectrum, World, Ray, Primitive, AffineMatrix3D
 from raysect.optical.material.emitter cimport InhomogeneousVolumeEmitter, NumericalIntegrator
-from raysect.core.math.function cimport Function3D
+from raysect.core.math.function cimport Function3D, autowrap_function3d
 from libc.math cimport M_PI
 import cython
 
@@ -27,15 +27,20 @@ cdef class RadiationFunction(InhomogeneousVolumeEmitter):
     """
     A general purpose radiation material.
 
-    Radiates power over 4 pi according to the supplied 3D radiation function. Note that this model
-    ignores the spectral range of the observer. The power specified will be spread of the entire
-    observable spectral range. Useful for calculating total radiated power loads on reactor wall
-    components.
-    
+    Radiates power over 4 pi according to the supplied 3D radiation
+    function. Note that this model ignores the spectral range of the
+    observer. The power specified will be spread of the entire
+    observable spectral range. Useful for calculating total radiated
+    power loads on reactor wall components.
+
+    Note that the function will be evaluated in the local space of the
+    primitive to which this material is attached. For radiation
+    functions defined in a different coordinate system, consider
+    wrapping this in a VolumeTransform material to ensure the function
+    evaluation takes place in the correct coordinate system.
+
     :param Function3D radiation_function: A 3D radiation function that specifies the amount of radiation
       to be radiated at a given point, :math:`\phi(x, y, z)` [W/m^2].
-    :param float vertical_offset: The vertical offset that will be applied to the radiation function,
-      defaults to 0.
     :param float step: The scale length for integration of the radiation function.
 
     .. code-block:: pycon
@@ -43,18 +48,17 @@ cdef class RadiationFunction(InhomogeneousVolumeEmitter):
        >>> from cherab.tools.emitters import RadiationFunction
        >>>
        >>> # define your own 3D radiation function and insert it into this class
+       >>> def rad_function_3d(x, y, z): return 0
        >>> radiation_emitter = RadiationFunction(rad_function_3d)
     """
 
     cdef:
-        readonly double vertical_offset
         readonly Function3D radiation_function
 
-    def __init__(self, Function3D radiation_function, vertical_offset=0.0, step=0.1):
+    def __init__(self, radiation_function, step=0.1):
 
         super().__init__(NumericalIntegrator(step=step))
-        self.vertical_offset = vertical_offset
-        self.radiation_function = radiation_function
+        self.radiation_function = autowrap_function3d(radiation_function)
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
@@ -63,7 +67,12 @@ cdef class RadiationFunction(InhomogeneousVolumeEmitter):
                                      World world, Ray ray, Primitive primitive,
                                      AffineMatrix3D world_to_local, AffineMatrix3D local_to_world):
 
+        cdef int index
         cdef double wvl_range = ray.max_wavelength - ray.min_wavelength
+        cdef double emission
 
-        spectrum.samples_mv[:] = self.radiation_function(point.x, point.y, point.z + self.vertical_offset) / (4 * M_PI * wvl_range)
+        emission = self.radiation_function.evaluate(point.x, point.y, point.z) / (4 * M_PI * wvl_range)
+
+        for index in range(spectrum.bins):
+            spectrum.samples_mv[index] += emission
         return spectrum

@@ -7,7 +7,7 @@ from raysect.optical import World, Spectrum
 from raysect.primitive import Cylinder
 from raysect.optical.observer import PowerPipeline0D
 from raysect.optical.observer.nonimaging.pixel import Pixel
-from raysect.optical.material import AbsorbingSurface
+from raysect.optical.material import AbsorbingSurface, VolumeTransform
 
 from cherab.core.math import sample2d, AxisymmetricMapper
 from cherab.tools.emitters import RadiationFunction
@@ -64,12 +64,13 @@ def rad_function(r, z):
 
 
 # add radiation source to world
+shift = translate(0, 0, -1)
 rad_function_3d = AxisymmetricMapper(rad_function)
-radiation_emitter = RadiationFunction(rad_function_3d, vertical_offset=-1)
+radiation_emitter = VolumeTransform(RadiationFunction(rad_function_3d), shift.inverse())
 
 world = World()
 geom = Cylinder(CYLINDER_RADIUS, CYLINDER_HEIGHT,
-                transform=translate(0, 0, -1), parent=world, material=radiation_emitter)
+                transform=shift, parent=world, material=radiation_emitter)
 
 
 ############################################
