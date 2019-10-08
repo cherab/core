@@ -202,7 +202,7 @@ cdef class GaussianBeamAxisymmetric(LaserModel):
     def __init__(self, Laser laser = None, Vector3D polarization = Vector3D(0, 1, 0), power=1,
                  central_wavelength = 1060, spectral_sigma = 0.01, spectrum_wlen_min = 1059.8,
                  spectrum_wlen_max=1060.2, spectrum_nbins=100, laser_sigma = 0.01, waist_radius=0.001,
-                 m2 = 1, z_focus=0):
+                 m2 = 1):
 
         super().__init__()
 
@@ -218,7 +218,6 @@ cdef class GaussianBeamAxisymmetric(LaserModel):
         self.polarization = polarization.normalise()
         self.waist_radius = waist_radius
         self.m2 = m2
-        self.z_focus = z_focus
 
     def _set_defaults(self):
         self._waist_radius = 0.1
@@ -284,15 +283,7 @@ cdef class GaussianBeamAxisymmetric(LaserModel):
         return self._polarization_vector
 
     cpdef double get_beam_width2(self, z):
-        return self._waist2 + self._waist_const * (z - self._z_focus) ** 2
-
-    @property
-    def z_focus(self):
-        return self._z_focus
-
-    @z_focus.setter
-    def z_focus(self,value):
-        self._z_focus = value
+        return self._waist2 + self._waist_const * z  ** 2
 
     @property
     def m2 (self):
