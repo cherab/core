@@ -403,9 +403,9 @@ cdef class BeamEmissionMultiplet(BeamLineShapeModel):
         super().__init__(line, wavelength, beam)
 
         self._sigma_to_pi = autowrap_function2d(sigma_to_pi)
-        self._sigma1_to_sigma0 = autowrap_function2d(sigma1_to_sigma0)
-        self._pi2_to_pi3 = autowrap_function2d(pi2_to_pi3)
-        self._pi4_to_pi3 = autowrap_function2d(pi4_to_pi3)
+        self._sigma1_to_sigma0 = autowrap_function1d(sigma1_to_sigma0)
+        self._pi2_to_pi3 = autowrap_function1d(pi2_to_pi3)
+        self._pi4_to_pi3 = autowrap_function1d(pi4_to_pi3)
 
     @cython.cdivision(True)
     cpdef Spectrum add_line(self, double radiance, Point3D beam_point, Point3D plasma_point,
