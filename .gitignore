@@ -19,3 +19,5 @@ docs/build/
 build/
 .idea/
 .nfs*
+.coverage
+htmlcov*
