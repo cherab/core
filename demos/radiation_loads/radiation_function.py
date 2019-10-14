@@ -4,8 +4,9 @@ import matplotlib.pyplot as plt
 
 from raysect.core import Point2D, translate, Vector3D, rotate_basis
 from raysect.primitive import Cylinder
-from raysect.optical import World, Spectrum
+from raysect.optical import World
 from raysect.optical.observer import PinholeCamera, PowerPipeline2D
+from raysect.optical.material import VolumeTransform
 
 from cherab.core.math import sample2d, AxisymmetricMapper
 from cherab.tools.emitters import RadiationFunction
@@ -60,9 +61,13 @@ def rad_function(r, z):
 world = World()
 
 rad_function_3d = AxisymmetricMapper(rad_function)
-radiation_emitter = RadiationFunction(rad_function_3d, vertical_offset=-1)
+# We shift the cylinder containing the emission function relative to the world,
+# so need to apply the opposite shift to the material to ensure the radiation
+# function is evaluated in the correct coordinate system.
+shift = translate(0, 0, -1)
+radiation_emitter = VolumeTransform(RadiationFunction(rad_function_3d), shift.inverse())
 geom = Cylinder(CYLINDER_RADIUS, CYLINDER_HEIGHT,
-                transform=translate(0, 0, -1), parent=world, material=radiation_emitter)
+                transform=shift, parent=world, material=radiation_emitter)
 
 
 ######################
