@@ -2,8 +2,7 @@ from raysect.optical cimport Point3D, Vector3D, Node, Spectrum, Primitive
 from raysect.optical.material.emitter.inhomogeneous cimport VolumeIntegrator
 
 from cherab.core.plasma cimport Plasma
-from cherab.core.laser.model cimport LaserModel
-from cherab.core.laser.scattering cimport ScatteringModel
+from cherab.core.laser.models.model_base cimport LaserModel
 
 cdef class ModelManager:
 

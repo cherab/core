@@ -1,11 +1,9 @@
-from raysect.core.math cimport AffineMatrix3D
-
 from raysect.optical cimport World, Primitive, Ray, Spectrum, SpectralFunction, Point3D, Vector3D, AffineMatrix3D
 from raysect.optical.material.emitter cimport InhomogeneousVolumeEmitter
 from raysect.optical.material.emitter.inhomogeneous cimport VolumeIntegrator
 from cherab.core.laser.node cimport Laser
-from cherab.core.laser.scattering import ScatteringModel
-from cherab.core.utility import Notifier
+from cherab.core.laser.scattering cimport ScatteringModel
+
 cdef class LaserMaterial(InhomogeneousVolumeEmitter):
 
     def __init__(self, Laser laser not None, VolumeIntegrator integrator not None):

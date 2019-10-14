@@ -1,10 +1,12 @@
+from raysect.optical cimport Vector3D, Point3D
 from raysect.optical.spectrum cimport Spectrum
+
 from cherab.core.model.lineshape import add_gaussian_line, thermal_broadening
 from cherab.core.utility.constants cimport DEGREES_TO_RADIANS, ATOMIC_MASS, RECIP_4_PI
 from cherab.core.model.lineshape cimport thermal_broadening, add_gaussian_line
 from cherab.core.utility.constants cimport PLANCK_CONSTANT, SPEED_OF_LIGHT, ELECTRON_CLASSICAL_RADIUS, ELECTRON_REST_MASS, ELEMENTARY_CHARGE
 from cherab.core.laser.node cimport Laser
-from cherab.core.laser.model cimport LaserModel
+from cherab.core.laser.models.model_base cimport LaserModel
 from cherab.core cimport Plasma
 
 cimport cython
@@ -96,12 +98,12 @@ cdef class SeldenMatobaThomsonSpectrum(ScatteringModel):
             double ne, te, laser_power_density, angle_pointing, angle_polarization, laser_wavelength
             Vector3D pointing_vector, polarization_vector
             Spectrum laser_spectrum
+            int index
 
 
         ne = self._plasma.get_electron_distribution().density(position_plasma.x, position_plasma.y, position_plasma.z)
         te = self._plasma.get_electron_distribution().effective_temperature(position_plasma.x, position_plasma.y, position_plasma.z)
 
-        laser_power_density = self._laser_model.get_power_density(position_laser.x, position_laser.y, position_laser.z)
         #Pointing vector and angle between observation and pointing vector
         pointing_vector = self._laser_model.get_pointing(position_laser.x, position_laser.y, position_laser.z)
         angle_pointing = direction_observation.angle(pointing_vector)
@@ -112,10 +114,19 @@ cdef class SeldenMatobaThomsonSpectrum(ScatteringModel):
         #polarization_vector = self._laser_model.get_polarization(position_laser.x, position_laser.y, position_laser.z)
         #angle_polarization = direction_observation.angle(pointing_vector)
 
-        #connected model takes laser spectrum as infinitely thin spectral line with position equivalent to the wavelength of the maximum of the laser spectrum
-        laser_spectrum = self._laser_model.laser_spectrum
-        laser_wavelength = laser_spectrum.wavelengths[laser_spectrum.samples.argmax()]
-        spectrum = self.add_spectral_contribution(ne, te, laser_power_density, angle_pointing, angle_polarization, laser_wavelength, spectrum)
+
+        #no scattering contribution cases
+        if ne <= 0 or te <=0:
+            return spectrum
+
+        laser_spectrum = self._laser_model.get_power_density_spectrum(position_laser.x, position_laser.y, position_laser.z)
+        for index in range(laser_spectrum.bins):
+            laser_wavelength = self._laser_model.laser_spectrum.wavelengths_mv[index]
+
+            laser_power_density = self._laser_model.get_power_density(position_laser.x, position_laser.y, position_laser.z, laser_wavelength)
+            if laser_power_density > 0:
+                spectrum = self.add_spectral_contribution(ne, te, laser_power_density,
+                                                          angle_pointing, angle_polarization, laser_wavelength, spectrum)
 
         return spectrum
 
@@ -123,16 +134,12 @@ cdef class SeldenMatobaThomsonSpectrum(ScatteringModel):
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    cdef Spectrum add_spectral_contribution(self, double ne, double te, double laser_power_density, double angle_pointing,
+    cdef Spectrum add_spectral_contribution(self, double ne, double te, double laser_power, double angle_pointing,
                                              double angle_polarization, double laser_wavelength, Spectrum spectrum):
 
         cdef:
             double alpha, epsilon, min_wavelength, cos_scatangle, sin2_polarisation, wavelength
-            int index
-
-        #no scattering contribution cases
-        if ne <= 0 or te <=0 or laser_power_density <=0 or laser_wavelength <=0:
-            return spectrum
+            int index, nbins
 
         alpha = self._CONST_ALPHA / te
         nbins = spectrum.bins
@@ -149,7 +156,7 @@ cdef class SeldenMatobaThomsonSpectrum(ScatteringModel):
 
         #photon density per second
         #sin2 of angle_polarisation takes into account dipole nature (sin2) of thomson scattering radiation of the scattered wave
-        photons_persec = ne * RE_SQUARED * laser_power_density * laser_wavelength * E_TO_NPHOT
+        photons_persec = ne * RE_SQUARED * laser_power * laser_wavelength * E_TO_NPHOT
         for index in range(nbins):
             wavelength = (spectrum.min_wavelength + spectrum.delta_wavelength * index)
             epsilon =  (wavelength - laser_wavelength) / laser_wavelength
@@ -159,7 +166,7 @@ cdef class SeldenMatobaThomsonSpectrum(ScatteringModel):
 
         return spectrum
 
-    cpdef Spectrum calculate_spectrum(self, double ne, double te, double laser_power_density, double angle_pointing,
+    cpdef Spectrum calculate_spectrum(self, double ne, double te, double laser_power, double angle_pointing,
                                              double angle_polarization, double laser_wavelength, Spectrum spectrum):
         #todo: make this function return spectrum withou the need of plasma and laser model.
         pass

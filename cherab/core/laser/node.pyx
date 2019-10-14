@@ -5,7 +5,7 @@ from raysect.optical.material cimport Material
 from raysect.optical.material.emitter.inhomogeneous cimport NumericalIntegrator
 from raysect.core import translate
 
-from cherab.core.laser.model cimport LaserModel
+from cherab.core.laser.models.model_base cimport LaserModel
 from cherab.core.laser.material cimport LaserMaterial
 from cherab.core.laser.scattering cimport ScatteringModel
 from cherab.core.atomic cimport AtomicData, Element
@@ -185,7 +185,7 @@ cdef class Laser(Node):
 
         # the beam bounding envelope is a cylinder aligned with the beam axis, sharing the same coordinate space
         # the cylinder radius is width, the cylinder length is length
-        return Cylinder(radius=self.radius, height=self.length)
+        return Cylinder(radius=self.radius, height=self.length, transform=translate(0, 0, -0.5 * self.length))
 
     @property
     def integrator(self):
