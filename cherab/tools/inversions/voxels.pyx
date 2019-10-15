@@ -75,8 +75,8 @@ cdef class AxisymmetricVoxel(Voxel):
     matrices including reflection effects.
 
 
-    :param vertices: A list/tuple of Point2D objects specifying the voxel's
-      polygon outline in the r-z plane.
+    :param vertices: An Nx2 array specifying the voxel's polygon outline in the
+      r-z plane.
     :param Node parent: The scenegraph to which this Voxel is attached.
     :param Material material: The emission material of this Voxel, defaults
       to a UnityVolumeEmitter() for weight matrix calculations.
@@ -99,7 +99,6 @@ cdef class AxisymmetricVoxel(Voxel):
 
         cdef:
             int i
-            Point2D vertex
 
         super().__init__(parent=parent)
 
@@ -107,16 +106,16 @@ cdef class AxisymmetricVoxel(Voxel):
 
         num_vertices = len(vertices)
         if not num_vertices >= 3:
-            raise TypeError('The AxisSymmetricVoxel can only be specified by a polygon with at least 3 Point2D objects.')
+            raise TypeError('The AxisymmetricVoxel can only be specified by a polygon with at least 3 vertices.')
 
         self._vertices = np.empty((num_vertices, 2))
         for i, vertex in enumerate(vertices):
-            if not isinstance(vertex, Point2D):
-                raise TypeError('The AxisSymmetricVoxel can only be specified with a list/tuple of Point2D objects.')
-            if vertex.x < 0:
+            if not isinstance(vertex, Point2D) and len(vertex) != 2:
+                raise TypeError('The polygon vertices must be an Nx2 array of coordinates')
+            if vertex[0] < 0:
                 raise ValueError('The polygon vertices must be in the r-z plane.')
-            self._vertices[i, 0] = vertex.x
-            self._vertices[i, 1] = vertex.y
+            self._vertices[i, 0] = vertex[0]
+            self._vertices[i, 1] = vertex[1]
 
         # Check the polygon is clockwise, if not => reverse it.
         if not winding2d(self._vertices):
