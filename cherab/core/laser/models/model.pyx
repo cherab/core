@@ -105,8 +105,7 @@ cdef class UniformPowerDensity(LaserModel):
 cdef class GaussianBeamAxisymmetric(LaserModel):
 
     def __init__(self, Laser laser = None, Vector3D polarization = Vector3D(0, 1, 0), power=1,
-                  laser_sigma = 0.01, waist_radius=0.001,
-                 m2 = 1):
+                  laser_sigma = 0.01, waist_radius=0.001, m2 = 1, focus_z = 0.0):
 
         super().__init__()
 
@@ -117,6 +116,7 @@ cdef class GaussianBeamAxisymmetric(LaserModel):
         self.polarization = polarization.normalise()
         self.waist_radius = waist_radius
         self.m2 = m2
+        self.focus_z = focus_z
 
     def _set_defaults(self):
         self._waist_radius = 0.1
@@ -175,7 +175,7 @@ cdef class GaussianBeamAxisymmetric(LaserModel):
 
         for index in range(spectrum.bins):
             beam_width2 = self.get_beam_width2(z, self._laser_spectrum.wavelengths[index])
-            volumetric_density = self._power_const / beam_width2 *\
+            volumetric1_density = self._power_const / beam_width2 *\
                                  exp(-2 * r2 / beam_width2)
             spectrum.samples_mv[index] *= volumetric_density
 
@@ -200,7 +200,7 @@ cdef class GaussianBeamAxisymmetric(LaserModel):
         return self._polarization_vector
 
     cpdef double get_beam_width2(self, double z, double wavelength):
-        return self._waist2 + wavelength ** 2 * self._waist_const * z  ** 2
+        return self._waist2 + wavelength ** 2 * self._waist_const * (z - self._focus_z)  ** 2
 
     @property
     def m2 (self):
@@ -263,6 +263,14 @@ cdef class GaussianBeamAxisymmetric(LaserModel):
     @laser_spectrum.setter
     def laser_spectrum(self, Spectrum value):
         self._laser_spectrum = value
+
+    @property
+    def focus_z(self):
+        return self._focus_z
+
+    @focus_z.setter
+    def focus_z(self, double value):
+        self._focus_z = value
 
 cdef class GaussianAxisymmetricalConstant(LaserModel):
 

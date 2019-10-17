@@ -114,16 +114,17 @@ cdef class SeldenMatobaThomsonSpectrum(ScatteringModel):
         #polarization_vector = self._laser_model.get_polarization(position_laser.x, position_laser.y, position_laser.z)
         #angle_polarization = direction_observation.angle(pointing_vector)
 
-
         #no scattering contribution cases
         if ne <= 0 or te <=0:
+            #print("ne = {0} or te = {1}".format(ne, te))
             return spectrum
 
         laser_spectrum = self._laser_model.get_power_density_spectrum(position_laser.x, position_laser.y, position_laser.z)
         for index in range(laser_spectrum.bins):
-            laser_wavelength = self._laser_model.laser_spectrum.wavelengths_mv[index]
+            laser_wavelength = self._laser_model.laser_spectrum.wavelengths[index]
 
             laser_power_density = self._laser_model.get_power_density(position_laser.x, position_laser.y, position_laser.z, laser_wavelength)
+
             if laser_power_density > 0:
                 spectrum = self.add_spectral_contribution(ne, te, laser_power_density,
                                                           angle_pointing, angle_polarization, laser_wavelength, spectrum)

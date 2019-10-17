@@ -12,7 +12,7 @@ cdef class UniformPowerDensity(LaserModel):
 cdef class GaussianBeamAxisymmetric(LaserModel):
 
     cdef:
-        double _laser_power, _const_width, _waist_radius, _waist_const, _waist2, _power_const
+        double _laser_power, _const_width, _waist_radius, _waist_const, _waist2, _power_const, focus_z
         double _m2 # laser beam quality
         Vector3D _polarization_vector
 

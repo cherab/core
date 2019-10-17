@@ -185,7 +185,7 @@ cdef class Laser(Node):
 
         # the beam bounding envelope is a cylinder aligned with the beam axis, sharing the same coordinate space
         # the cylinder radius is width, the cylinder length is length
-        return Cylinder(radius=self.radius, height=self.length, transform=translate(0, 0, -0.5 * self.length))
+        return Cylinder(radius=self.radius, height=self.length, transform=translate(0, 0, 0))
 
     @property
     def integrator(self):
