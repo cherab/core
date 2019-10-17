@@ -12,44 +12,33 @@ class SartOpencl:
 
     def __init__(self, geometry_matrix, laplacian_matrix=None, device=None, block_size=256, copy_column_major=True, block_size_row_maj=64,
                  use_atomic=True, steps_per_thread=64):
-        """ This is a GPU version of invert_sart() and invert_constrained_sart() functions from the CHERAB.
-            See documentaion to these functions here: https://cherab.github.io/documentation/tools/tomography.html.
-            The geometry matrix and Laplacian matrix are provided on initialisation because they must be copied
-            to GPU memory, which takes time. Then, inversions may be performed multiple times for different measurement
-            vectors without copying the matrices each time. If required, the Laplacian matrix can be updated
-            by calling update_laplacian_matrix(new_laplacian_matrix) method.
+        """
+        This is a GPU version of invert_sart() and invert_constrained_sart() functions from the CHERAB.
+        See the documentaion to these functions here: https://cherab.github.io/documentation/tools/tomography.html.
+        The geometry matrix and Laplacian matrix are provided on initialisation because they must be copied
+        to GPU memory, which takes time. Then, inversions may be performed multiple times for different measurement
+        vectors without copying the matrices each time. If required, the Laplacian matrix can be updated
+        by calling update_laplacian_matrix(new_laplacian_matrix) method.
 
-            Parameters
-            ----------
-            geometry_matrix : numpy.ndarray
-                The sensitivity matrix describing the coupling between the detectors and the voxels.
-                Must be an array with shape (Nd, Ns).
-            laplacian_matrix : numpy.ndarray, optional
-                The laplacian regularisation matrix of shape (Ns, Ns).
-                If not provided, the unconstrained SART inversion will be performed. Default: None
-            device : pyopencl device instance
-                OpenCL device which will be used for computations. Default: None (autoselect).
-            block_size : int, optional
-                Number of GPU threads per block. Must be the power of 2.
-                For the best performance try from 256 to 1024 for Nvidia (use 1024 on high-end GPUs),
-                from 64 to 256 for AMD and from 16 to 64 for Intel GPUs. Default: 256.
-            copy_column_major : bool, optional
-                If True, the two copies of geometry matrix will be stored in the GPU memory.
-                One in row-major order and the other one in column-major order.
-                This provides much better performance of the inversions but requires twice as much GPU memory.
-                Set this to False if there is not enough GPU memory or if the SART inversion will be called only once. Default: True.
-            block_size_row_maj : int, optional
-                If copy_column_major is set to False, this parameter defines the number of GPU threads per block
-                in mat_vec_mult_row_maj() kernel used to calculate y_hat. Must be lower than block_size.
-                Default: 64 (optimal value for Nvidia GPUs).
-            use_atomic : bool, optional
-                If True, increases the number of thread blocks that can run in parallel with the help of atomic
-                operations(custom atomic add on floats). Set this to False, if the atomic operations are running slow
-                on your device (Nvidia GPUs before Kepler, some AMD APUs, some Intel GPUs). Default: True.
-            steps_per_thread : int, optional
-                steps_per_thread : int, optional
-                If use_atomic is set to True, this parameters defines the maximum number of loop steps performed
-                by the parallel threads in a single thread block. Default: 64 (optimal for Nvidia GPUs).
+        :param np.ndarray geometry_matrix: The sensitivity matrix describing the coupling between the detectors
+            and the voxels. Must be an array with shape :math:`(N_d, N_s)`.
+        :param np.ndarray laplacian_matrix:  The laplacian regularisation matrix of shape :math:`(N_s, N_s)`.
+            Default value: `laplacian_matrix=None`.
+        :param pyopencl.Device device: OpenCL device which will be used for computations. Default value: `device=None` (autoselect).
+        :param int block_size: Number of GPU threads per block. Must be the power of 2.
+            For the best performance try from 256 to 1024 for Nvidia (use 1024 on high-end GPUs),
+            from 64 to 256 for AMD and from 16 to 64 for Intel GPUs. Default value: `block_size=256`.
+        :param bool copy_column_major: If True, the two copies of geometry matrix will be stored in the GPU memory.
+            One in row-major order and the other one in column-major order. This provides much better performance of the
+            inversions but requires twice as much GPU memory. Default value: `copy_column_major=True`.
+        :param int block_size_row_maj: If `copy_column_major` is set to False, this parameter defines the number of GPU threads per block
+            in mat_vec_mult_row_maj() kernel used to calculate y_hat. Must be lower than block_size.
+            Default value: `block_size_row_maj=64` (optimal value for Nvidia GPUs).
+        :param bool use_atomic: If True, increases the number of thread blocks that can run in parallel with the help of atomic
+            operations(custom atomic add on floats). Set this to False, if the atomic operations are running slow
+            on your device (Nvidia GPUs before Kepler, some AMD APUs, some Intel GPUs). Default value: `use_atomic=True`.
+        :param int steps_per_thread: If `use_atomic` is set to True, this parameters defines the maximum number of loop steps performed
+            by the parallel threads in a single thread block. Default value: `steps_per_thread=64` (optimal for Nvidia GPUs).
         """
         if geometry_matrix.dtype != np.float32:  # converting geometry_matrix to float32 if needed
             geometry_matrix = geometry_matrix.astype(np.float32)
@@ -141,7 +130,11 @@ class SartOpencl:
         self.clean()
 
     def update_laplacian_matrix(self, laplacian_matrix):
-        """ Updates the Laplacian matrix in GPU memory"""
+        """
+        Updates the Laplacian matrix in GPU memory
+
+        :param np.ndarray laplacian_matrix:  The laplacian regularisation matrix of shape :math:`(N_s, N_s)`.
+        """
         if self.laplacian_matrix_device is not None:
             laplacian_matrix = laplacian_matrix.flatten(order='F').astype(np.float32)
             queue = cl.CommandQueue(self.cl_context)
@@ -149,37 +142,25 @@ class SartOpencl:
 
     def __call__(self, measurement_vector, initial_guess=None, max_iterations=250, relaxation=1.0,
                  beta_laplace=0.01, conv_tol=1.e-4, time_limit=None):
-        """ Performs the inversion for a given measurement vector.
+        """
+        Performs the inversion for a given measurement vector.
 
-            Parameters
-            ----------
-            measurement_vector : numpy.ndarray
-                The measured power/radiance vector with shape (Nd).
-            initial_guess : numpy.ndarray or float, optional
-                An optional initial guess, can be an array of shape (Ns) or a constant value that will be used to seed the algorithm.
-                When processing the series of measurements consecutive over time, use the solution found for the previous time moment
-                as the initial guess for the next time moment. Default: None.
-            max_iterations : int, optional
-                The maximum number of iterations to run the SART algorithm before returning a result. Default: 250.
-            relaxation : float, optional
-                The relaxation hyperparameter. Default: 1.
-                See: A. Andersen and A. Kak, Ultrasonic imaging 6, 81 (1984) for more information on this hyperparameter.
-            beta_laplace : float, optional
-                The regularisation hyperparameter in the range [0, 1]. Used only if the Laplacian matrix was provided on initialisation.
-                Default: 0.01.
-            conv_tol : float, optional
-                The convergence limit at which the algorithm will be terminated, unless the maximum number of iterations has been reached.
-                The convergence is calculated as the normalised squared difference between the measurement and solution vectors.
-                Default: 1.e-4.
-            time_limit : float, optional
-                If set, the iterations will stop after this time limit (in seconds) is reached.
-            Returns
-            -------
-            (solution, convergence)
-            solution : numpy.ndarray
-                The inverted solution vector of shape (Ns).
-            convergence : list
-                The convergence achieved after each iteration.
+        :param np.ndarray measurement_vector: The measured power/radiance vector with shape :math:`(N_d)`.
+        :param initial_guess: An optional initial guess, can be an array of shape :math:`(N_s)` or a constant
+            value that will be used to seed the algorithm.
+        :param int max_iterations: The maximum number of iterations to run the SART algorithm before returning
+            a result, defaults to `max_iterations=250`.
+        :param float relaxation: The relaxation hyperparameter, defaults to `relaxation=1`. Consult the reference
+            papers for more information on this hyperparameter.
+        :param float beta_laplace: The regularisation hyperparameter in the range [0, 1]. Defaults to `beta_laplace=0.01`.
+        :param float conv_tol: The convergence limit at which the algorithm will be terminated, unless the maximum
+            number of iterations has been reached. The convergence is calculated as the normalised squared difference
+            between the measurement and solution vectors.
+        :param float time_limit: If set, the iterations will stop after this time limit (in seconds) is reached.
+            Default value: `time_limit=None`.
+
+        :return: A tuple with the inverted solution vector :math:`\mathbf{x}` as an ndarray with shape :math:`(N_s)`,
+            and the list of convergence values achieved after each iteration step.
         """
         time_start = timer()
         time_limit = time_limit or 1.e7
