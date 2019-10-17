@@ -175,7 +175,7 @@ cdef class GaussianBeamAxisymmetric(LaserModel):
 
         for index in range(spectrum.bins):
             beam_width2 = self.get_beam_width2(z, self._laser_spectrum.wavelengths[index])
-            volumetric1_density = self._power_const / beam_width2 *\
+            volumetric_density = self._power_const / beam_width2 *\
                                  exp(-2 * r2 / beam_width2)
             spectrum.samples_mv[index] *= volumetric_density
 
