@@ -29,7 +29,7 @@ cdef class SeldenMatobaThomsonSpectrum(ScatteringModel):
 
     cpdef Spectrum emission(self, Point3D position_plasma, Point3D position_laser, Vector3D direction_observation, Spectrum spectrum)
 
-    cdef double seldenmatoba_spectral_shape(self, epsilon, cos_theta, alpha)
+    cdef double seldenmatoba_spectral_shape(self, double epsilon, double cos_theta, double alpha)
 
     cdef Spectrum add_spectral_contribution(self, double ne, double te, double laser_power, double angle_pointing,
                                              double angle_polarization, double laser_wavelength, Spectrum spectrum)

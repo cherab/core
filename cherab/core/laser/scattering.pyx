@@ -1,16 +1,14 @@
 from raysect.optical cimport Vector3D, Point3D
 from raysect.optical.spectrum cimport Spectrum
 
-from cherab.core.model.lineshape import add_gaussian_line, thermal_broadening
 from cherab.core.utility.constants cimport DEGREES_TO_RADIANS, ATOMIC_MASS, RECIP_4_PI
-from cherab.core.model.lineshape cimport thermal_broadening, add_gaussian_line
 from cherab.core.utility.constants cimport PLANCK_CONSTANT, SPEED_OF_LIGHT, ELECTRON_CLASSICAL_RADIUS, ELECTRON_REST_MASS, ELEMENTARY_CHARGE
 from cherab.core.laser.node cimport Laser
 from cherab.core.laser.models.model_base cimport LaserModel
 from cherab.core cimport Plasma
 
 cimport cython
-from libc.math cimport exp, sqrt, sin, cos, M_PI
+from libc.math cimport exp, sqrt, cos, M_PI
 
 cdef double RE_SQUARED = ELECTRON_CLASSICAL_RADIUS ** 2 #cross section for thomson scattering for SeldenMatoba
 cdef double E_TO_NPHOT = 10e-9 / (PLANCK_CONSTANT * SPEED_OF_LIGHT) # N_photons(wlen, E_laser) = E_laser * wlen * E_TO_PHOT in [J, nm]
@@ -76,7 +74,7 @@ cdef class SeldenMatobaThomsonSpectrum(ScatteringModel):
         self._laser_model = value
 
     @cython.cdivision(True)
-    cdef double seldenmatoba_spectral_shape(self, epsilon, cos_theta, alpha):
+    cdef double seldenmatoba_spectral_shape(self, double epsilon, double cos_theta, double alpha):
 
         cdef:
             double c, a, b, bin
@@ -135,6 +133,7 @@ cdef class SeldenMatobaThomsonSpectrum(ScatteringModel):
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
+    @cython.cdivision(True)
     cdef Spectrum add_spectral_contribution(self, double ne, double te, double laser_power, double angle_pointing,
                                              double angle_polarization, double laser_wavelength, Spectrum spectrum):
 
@@ -169,7 +168,8 @@ cdef class SeldenMatobaThomsonSpectrum(ScatteringModel):
 
     cpdef Spectrum calculate_spectrum(self, double ne, double te, double laser_power, double angle_pointing,
                                              double angle_polarization, double laser_wavelength, Spectrum spectrum):
-        #todo: make this function return spectrum withou the need of plasma and laser model.
+        #todo: make this function return spectrum without the need of plasma and laser model.
+        #check for nonzero laser power, ne, te, wavelength
         pass
 
     def _laser_changed(self):
