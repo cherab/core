@@ -2,7 +2,12 @@
 # Created by Vladislav Neverov (NRC "Kurchatov Institute") for CHERAB Spectroscopy Modelling Framework
 from __future__ import print_function
 import warnings
-import pyopencl as cl
+try:
+    import pyopencl as cl
+except ImportError:
+    _has_pyopencl = False
+else:
+    _has_pyopencl = True
 
 
 def get_flops(device, verbose=True):
@@ -15,6 +20,8 @@ def get_flops(device, verbose=True):
 
     :return: Theoretical peak performance in GFLOPs.
     """
+    if not _has_pyopencl:
+        raise RuntimeError("The pyopencl module is required to run get_flops() function.")
     comp_units = device.get_info(cl.device_info.MAX_COMPUTE_UNITS)
     gpu_clock = device.get_info(cl.device_info.MAX_CLOCK_FREQUENCY)
     vendor = device.get_info(cl.device_info.VENDOR).lower()
@@ -57,17 +64,20 @@ def get_flops(device, verbose=True):
     return gflops
 
 
-def get_best_gpu(platforms=None, device_type=cl.device_type.GPU | cl.device_type.ACCELERATOR, verbose=True):
+def get_best_gpu(platforms=None, device_type=None, verbose=True):
     """
     Finds the fastest (in terms of theoretical peak performance) GPU and/or accelerator available in specified OpenCL platforms
 
     :param list platforms: List of pyopencl.Platform instances. Default value: `platforms=None` (all available OpenCL platfroms).
     :param pyopencl.device_type device_type: OpenCL device type (GPU, ACCELERATOR, or both).
-        Default value: `device_type=pyopencl.device_type.GPU | pyopencl.device_type.ACCELERATOR`.
+        Default value: `device_type=None` (GPU or accelerator).
     :param bool verbose: Verbose output, defaults to `verbose=True`.
 
     :return: The pyopencl.Device instance corresponding to the fastest GPU or accelerator available in the specified OpenCL platforms.
     """
+    if not _has_pyopencl:
+        raise RuntimeError("The pyopencl module is required to run get_best_gpu() function.")
+    device_type = device_type or cl.device_type.GPU | cl.device_type.ACCELERATOR
     if device_type == cl.device_type.DEFAULT:
         device_type = cl.device_type.GPU | cl.device_type.ACCELERATOR
     if not (cl.device_type.GPU | cl.device_type.ACCELERATOR) & device_type:
@@ -96,17 +106,20 @@ def get_best_gpu(platforms=None, device_type=cl.device_type.GPU | cl.device_type
     return device_best
 
 
-def get_first_device(platforms=None, device_type=cl.device_type.GPU | cl.device_type.ACCELERATOR, verbose=True):
+def get_first_device(platforms=None, device_type=None, verbose=True):
     """
     Returns the first OpenCL device of specified type available in specified OpenCL platforms
 
     :param list platforms: List of pyopencl.Platform instances. Default value: `platforms=None` (all available OpenCL platfroms).
     :param pyopencl.device_type device_type: OpenCL device type (GPU, ACCELERATOR, or both).
-        Default value: `device_type=pyopencl.device_type.GPU | pyopencl.device_type.ACCELERATOR`.
+        Default value: `device_type=None` (GPU or accelerator).
     :param bool verbose: Verbose output, defaults to `verbose=True`.
 
     :return: The pyopencl.Device instance corresponding to the first device available in the specified OpenCL platforms.
     """
+    if not _has_pyopencl:
+        raise RuntimeError("The pyopencl module is required to run get_first_device() function.")
+    device_type = device_type or cl.device_type.GPU | cl.device_type.ACCELERATOR
     if platforms is None:
         platforms = cl.get_platforms()
     for platform in platforms:
@@ -121,7 +134,7 @@ def get_first_device(platforms=None, device_type=cl.device_type.GPU | cl.device_
     return None
 
 
-def device_select(platfrom_id=None, device_id=None, device_type=cl.device_type.GPU | cl.device_type.ACCELERATOR, verbose=True):
+def device_select(platfrom_id=None, device_id=None, device_type=None, verbose=True):
     """
     OpenCL device selector. Returns the most powerfull OpenCL device availabe if device_type is GPU or accelerator
     or the first OpenCL device available if device_type is CPU.
@@ -129,11 +142,14 @@ def device_select(platfrom_id=None, device_id=None, device_type=cl.device_type.G
     :param int platfrom_id: OpenCL platform ID, defaults to `platfrom_id=None`.
     :param int device_id: OpenCL device ID (in the selected OpenCL platform), defaults to `device_id=None`.
     :param pyopencl.device_type device_type: OpenCL device type (GPU, ACCELERATOR, etc.).
-        Default value: `device_type=pyopencl.device_type.GPU | pyopencl.device_type.ACCELERATOR`.
+        Default value: `device_type=None` (GPU or accelerator).
     :param bool verbose: Verbose output, defaults to `verbose=True`.
 
     :return: The pyopencl.Device instance corresponding to the selected OpenCL device.
     """
+    if not _has_pyopencl:
+        raise RuntimeError("The pyopencl module is required to run device_select() function.")
+    device_type = device_type or cl.device_type.GPU | cl.device_type.ACCELERATOR
     platforms = cl.get_platforms()
     n_platforms = len(platforms)
     if device_type == cl.device_type.DEFAULT:
@@ -167,7 +183,3 @@ def device_select(platfrom_id=None, device_id=None, device_type=cl.device_type.G
         return get_first_device(platforms, device_type, verbose)
 
     return get_best_gpu(platforms, device_type, verbose)
-
-
-if __name__ == "__main__":
-    device_select(platfrom_id=None, device_id=None, verbose=True)

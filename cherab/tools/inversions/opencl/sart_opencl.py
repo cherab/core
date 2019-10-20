@@ -3,9 +3,14 @@
 from __future__ import print_function
 import os
 import numpy as np
-import pyopencl as cl
 from timeit import default_timer as timer
 from .opencl_utils import device_select
+try:
+    import pyopencl as cl
+except ImportError:
+    _has_pyopencl = False
+else:
+    _has_pyopencl = True
 
 
 class SartOpencl:
@@ -40,6 +45,8 @@ class SartOpencl:
         :param int steps_per_thread: If `use_atomic` is set to True, this parameters defines the maximum number of loop steps performed
             by the parallel threads in a single thread block. Default value: `steps_per_thread=64` (optimal for Nvidia GPUs).
         """
+        if not _has_pyopencl:
+            raise RuntimeError("The pyopencl module is required to use the SartOpencl() inversion class.")
         if geometry_matrix.dtype != np.float32:  # converting geometry_matrix to float32 if needed
             geometry_matrix = geometry_matrix.astype(np.float32)
         self.m_detectors, self.n_sources = geometry_matrix.shape
@@ -250,7 +257,3 @@ class SartOpencl:
         if self.use_atomic:
             self.cl_prog.zero_negative(queue, self.global_work_size['trivial_sources'], self.local_work_size['default'],
                                        self.solution_device, np.uint32(self.n_sources))
-
-
-if __name__ == "__main__":
-    pass
