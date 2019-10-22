@@ -18,6 +18,7 @@
 # under the Licence.
 
 from .sart import invert_sart, invert_constrained_sart
+from .opencl import SartOpencl
 from .nnls import invert_regularised_nnls
 from .lstsq import invert_regularised_lstsq
 from .svd import invert_svd

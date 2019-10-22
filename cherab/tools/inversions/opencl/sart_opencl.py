@@ -1,5 +1,25 @@
 # -*- coding: utf-8 -*-
-# Created by Vladislav Neverov (NRC "Kurchatov Institute") for CHERAB Spectroscopy Modelling Framework
+#
+# Copyright 2016-2018 Euratom
+# Copyright 2016-2018 United Kingdom Atomic Energy Authority
+# Copyright 2016-2018 Centro de Investigaciones Energéticas, Medioambientales y Tecnológicas
+#
+# Licensed under the EUPL, Version 1.1 or – as soon they will be approved by the
+# European Commission - subsequent versions of the EUPL (the "Licence");
+# You may not use this work except in compliance with the Licence.
+# You may obtain a copy of the Licence at:
+#
+# https://joinup.ec.europa.eu/software/page/eupl5
+#
+# Unless required by applicable law or agreed to in writing, software distributed
+# under the Licence is distributed on an "AS IS" basis, WITHOUT WARRANTIES OR
+# CONDITIONS OF ANY KIND, either express or implied.
+#
+# See the Licence for the specific language governing permissions and limitations
+# under the Licence.
+#
+# The following code is created by Vladislav Neverov (NRC "Kurchatov Institute") for CHERAB Spectroscopy Modelling Framework
+
 from __future__ import print_function
 import os
 import numpy as np
@@ -14,37 +34,36 @@ else:
 
 
 class SartOpencl:
+    """
+    A GPU-accelerated version of SART inversion.
+    The geometry matrix and Laplacian matrix are provided on initialisation because they must be copied
+    to GPU memory, which takes time. Inversions may be performed multiple times for different measurement
+    vectors without copying the matrices each time. If required, the Laplacian matrix can be updated
+    by calling `update_laplacian_matrix(new_laplacian_matrix)` method.
+
+    :param np.ndarray geometry_matrix: The sensitivity matrix describing the coupling between the detectors
+        and the voxels. Must be an array with shape :math:`(N_d, N_s)`.
+    :param np.ndarray laplacian_matrix:  The laplacian regularisation matrix of shape :math:`(N_s, N_s)`.
+        Default value: `laplacian_matrix=None`.
+    :param pyopencl.Device device: OpenCL device which will be used for computations. Default value: `device=None` (autoselect).
+    :param int block_size: Number of GPU threads per block. Must be the power of 2.
+        For the best performance try from 256 to 1024 for Nvidia (use 1024 on high-end GPUs),
+        from 64 to 256 for AMD and from 16 to 64 for Intel GPUs. Default value: `block_size=256`.
+    :param bool copy_column_major: If True, the two copies of geometry matrix will be stored in the GPU memory.
+        One in row-major order and the other one in column-major order. This provides much better performance of the
+        inversions but requires twice as much GPU memory. Default value: `copy_column_major=True`.
+    :param int block_size_row_maj: If `copy_column_major` is set to False, this parameter defines the number of GPU threads per block
+        in mat_vec_mult_row_maj() kernel used to calculate y_hat. Must be lower than `block_size`.
+        Default value: `block_size_row_maj=64` (optimal value for Nvidia GPUs).
+    :param bool use_atomic: If True, increases the number of thread blocks that can run in parallel with the help of atomic
+        operations (custom atomic add on floats). Set this to False, if the atomic operations are running slow
+        on your device (Nvidia GPUs before Kepler, some AMD APUs, some Intel GPUs). Default value: `use_atomic=True`.
+    :param int steps_per_thread: If `use_atomic` is set to True, this parameters defines the maximum number of loop steps performed
+        by the parallel threads in a single thread block. Default value: `steps_per_thread=64` (optimal for Nvidia GPUs).
+    """
 
     def __init__(self, geometry_matrix, laplacian_matrix=None, device=None, block_size=256, copy_column_major=True, block_size_row_maj=64,
                  use_atomic=True, steps_per_thread=64):
-        """
-        This is a GPU version of invert_sart() and invert_constrained_sart() functions from the CHERAB.
-        See the documentaion to these functions here: https://cherab.github.io/documentation/tools/tomography.html.
-        The geometry matrix and Laplacian matrix are provided on initialisation because they must be copied
-        to GPU memory, which takes time. Then, inversions may be performed multiple times for different measurement
-        vectors without copying the matrices each time. If required, the Laplacian matrix can be updated
-        by calling update_laplacian_matrix(new_laplacian_matrix) method.
-
-        :param np.ndarray geometry_matrix: The sensitivity matrix describing the coupling between the detectors
-            and the voxels. Must be an array with shape :math:`(N_d, N_s)`.
-        :param np.ndarray laplacian_matrix:  The laplacian regularisation matrix of shape :math:`(N_s, N_s)`.
-            Default value: `laplacian_matrix=None`.
-        :param pyopencl.Device device: OpenCL device which will be used for computations. Default value: `device=None` (autoselect).
-        :param int block_size: Number of GPU threads per block. Must be the power of 2.
-            For the best performance try from 256 to 1024 for Nvidia (use 1024 on high-end GPUs),
-            from 64 to 256 for AMD and from 16 to 64 for Intel GPUs. Default value: `block_size=256`.
-        :param bool copy_column_major: If True, the two copies of geometry matrix will be stored in the GPU memory.
-            One in row-major order and the other one in column-major order. This provides much better performance of the
-            inversions but requires twice as much GPU memory. Default value: `copy_column_major=True`.
-        :param int block_size_row_maj: If `copy_column_major` is set to False, this parameter defines the number of GPU threads per block
-            in mat_vec_mult_row_maj() kernel used to calculate y_hat. Must be lower than block_size.
-            Default value: `block_size_row_maj=64` (optimal value for Nvidia GPUs).
-        :param bool use_atomic: If True, increases the number of thread blocks that can run in parallel with the help of atomic
-            operations(custom atomic add on floats). Set this to False, if the atomic operations are running slow
-            on your device (Nvidia GPUs before Kepler, some AMD APUs, some Intel GPUs). Default value: `use_atomic=True`.
-        :param int steps_per_thread: If `use_atomic` is set to True, this parameters defines the maximum number of loop steps performed
-            by the parallel threads in a single thread block. Default value: `steps_per_thread=64` (optimal for Nvidia GPUs).
-        """
         if not _has_pyopencl:
             raise RuntimeError("The pyopencl module is required to use the SartOpencl() inversion class.")
         if geometry_matrix.dtype != np.float32:  # converting geometry_matrix to float32 if needed
@@ -176,14 +195,14 @@ class SartOpencl:
         elif isinstance(initial_guess, (float, int)):
             solution = np.zeros(self.n_sources, dtype=np.float32) + initial_guess
         else:
-            solution = initial_guess.astype(np.float32)  # making a copy even if initial_guess is float32 already
+            solution = initial_guess.astype(np.float32)  # making a copy even if initial_guess is in float32 already
         if measurement_vector.dtype != np.float32:  # converting measurement_vector to float32 if needed
             measurement_vector = measurement_vector.astype(np.float32)
         measurement_squared = np.dot(measurement_vector, measurement_vector)
         y_hat_vector = np.empty_like(measurement_vector)  # host y_hat
         queue = cl.CommandQueue(self.cl_context)
 
-        # copying initial guess and measurement_vector to divice
+        # copying initial guess and measurement_vector to device
         cl.enqueue_copy(queue, self.solution_device, solution)
         cl.enqueue_copy(queue, self.detectors_device, measurement_vector)
 
@@ -242,8 +261,9 @@ class SartOpencl:
 
     def _make_iteration(self, queue, relaxation, beta_laplace):
         if self.laplacian_matrix_device is not None:
-            self.cl_prog.zero_all(queue, self.global_work_size['trivial_sources'], self.local_work_size['default'],
-                                  self.grad_penalty_device, np.uint32(self.n_sources))
+            if self.use_atomic:
+                self.cl_prog.zero_all(queue, self.global_work_size['trivial_sources'], self.local_work_size['default'],
+                                      self.grad_penalty_device, np.uint32(self.n_sources))
             self.cl_prog.mat_vec_mult_col_major(queue, self.global_work_size['grad'], self.local_work_size['default'],
                                                 self.laplacian_matrix_device, self.solution_device, self.grad_penalty_device,
                                                 np.uint32(self.n_sources), np.uint32(self.n_sources))

@@ -1,4 +1,23 @@
-// Created by Vladislav Neverov (NRC "Kurchatov Institute") for CHERAB Spectroscopy Modelling Framework
+// Copyright 2016-2018 Euratom
+// Copyright 2016-2018 United Kingdom Atomic Energy Authority
+// Copyright 2016-2018 Centro de Investigaciones Energéticas, Medioambientales y Tecnológicas
+//
+// Licensed under the EUPL, Version 1.1 or – as soon they will be approved by the
+// European Commission - subsequent versions of the EUPL (the "Licence");
+// You may not use this work except in compliance with the Licence.
+// You may obtain a copy of the Licence at:
+//
+// https://joinup.ec.europa.eu/software/page/eupl5
+//
+// Unless required by applicable law or agreed to in writing, software distributed
+// under the Licence is distributed on an "AS IS" basis, WITHOUT WARRANTIES OR
+// CONDITIONS OF ANY KIND, either express or implied.
+//
+// See the Licence for the specific language governing permissions and limitations
+// under the Licence.
+//
+// The following code is created by Vladislav Neverov (NRC "Kurchatov Institute") for CHERAB Spectroscopy Modelling Framework
+
 #ifndef BLOCK_SIZE
 #define BLOCK_SIZE 256
 #endif
@@ -122,7 +141,7 @@ __kernel void sart_iteration(__global float * const restrict geometry_matrix, __
     const unsigned int tid = get_local_id(0);
     const unsigned int isource = get_group_id(0) * BLOCK_SIZE + tid;
     const unsigned int idet_first = get_group_id(1) * STEPS_PER_THREAD;
-    const float cell_ray_density = cell_ray_densities[isource];
+    const float cell_ray_density = (isource < n_sources) ? cell_ray_densities[isource] : 0;
     __local float inv_ray_lengths[STEPS_PER_THREAD];
     __local float diff_det[STEPS_PER_THREAD];
     float obs_diff = 0;
@@ -156,6 +175,6 @@ __kernel void sart_iteration(__global float * const restrict geometry_matrix, __
         else atomicAdd_g_f(&solution[isource], solution_add);
         
     }
-	else if (!get_group_id(1)) atomicAdd_g_f(&solution[isource], -grad_penalty[isource]);
+	else if ((isource < n_sources) && (!get_group_id(1))) atomicAdd_g_f(&solution[isource], -grad_penalty[isource]);
 }
 
