@@ -1,16 +1,14 @@
-from raysect.primitive import Cylinder
+from raysect.primitive cimport Cylinder
 
 from raysect.optical cimport World, AffineMatrix3D, Primitive, Ray, new_vector3d
-from raysect.optical.material cimport Material
 from raysect.optical.material.emitter.inhomogeneous cimport NumericalIntegrator
-from raysect.core import translate
+from raysect.core cimport translate
 
 from cherab.core.laser.models.model_base cimport LaserModel
 from cherab.core.laser.material cimport LaserMaterial
 from cherab.core.laser.scattering cimport ScatteringModel
-from cherab.core.atomic cimport AtomicData, Element
 from cherab.core.utility import Notifier
-from libc.math cimport tan, M_PI
+from libc.math cimport M_PI
 
 
 cdef double DEGREES_TO_RADIANS = (M_PI / 180)

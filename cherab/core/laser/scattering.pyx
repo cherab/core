@@ -166,11 +166,26 @@ cdef class SeldenMatobaThomsonSpectrum(ScatteringModel):
 
         return spectrum
 
-    cpdef Spectrum calculate_spectrum(self, double ne, double te, double laser_power, double angle_pointing,
-                                             double angle_polarization, double laser_wavelength, Spectrum spectrum):
+    cpdef Spectrum calculate_spectrum(self, double ne, double te, double laser_power_density, double angle_pointing,
+                                             double angle_polarization, Spectrum laser_spectrum, Spectrum spectrum):
         #todo: make this function return spectrum without the need of plasma and laser model.
         #check for nonzero laser power, ne, te, wavelength
-        pass
+
+        if not ne > 0 or not te > 0 or not laser_power_density > 0:
+            return spectrum
+
+        cdef double laser_wavelength
+
+        for index in range(laser_spectrum.bins):
+            laser_wavelength = self._laser_model.laser_spectrum.wavelengths[index]
+
+            if laser_power_density > 0:
+                spectrum = self.add_spectral_contribution(ne, te, laser_power_density,
+                                                          angle_pointing, angle_polarization, laser_wavelength, spectrum)
+
+        return spectrum
+
+
 
     def _laser_changed(self):
 

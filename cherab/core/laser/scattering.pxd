@@ -34,5 +34,5 @@ cdef class SeldenMatobaThomsonSpectrum(ScatteringModel):
     cdef Spectrum add_spectral_contribution(self, double ne, double te, double laser_power, double angle_pointing,
                                              double angle_polarization, double laser_wavelength, Spectrum spectrum)
 
-    cpdef Spectrum calculate_spectrum(self, double ne, double te, double laser_power, double angle_pointing,
-                                             double angle_polarization, double laser_wavelength, Spectrum spectrum)
+    cpdef Spectrum calculate_spectrum(self, double ne, double te, double laser_power_density, double angle_pointing,
+                                             double angle_polarization, Spectrum laser_spectrum, Spectrum spectrum)

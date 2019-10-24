@@ -6,7 +6,7 @@ from cherab.core.laser.models.model_base cimport LaserModel
 from cherab.core cimport Plasma
 
 
-from libc.math cimport INFINITY as INF, M_PI, sqrt, exp
+from libc.math cimport M_PI, sqrt, exp
 
 cdef class UniformPowerDensity(LaserModel):
 
