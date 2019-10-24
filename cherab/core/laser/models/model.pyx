@@ -1,18 +1,16 @@
-from raysect.optical cimport SpectralFunction, Spectrum, InterpolatedSF, Point3D, Vector3D
 from raysect.core.math.cython.utility cimport find_index
+from raysect.optical cimport Spectrum, Vector3D
 
+from cherab.core cimport Plasma
 from cherab.core.laser.node cimport Laser
 from cherab.core.laser.models.model_base cimport LaserModel
-from cherab.core cimport Plasma
-
 
 from libc.math cimport M_PI, sqrt, exp
 
 cdef class UniformPowerDensity(LaserModel):
-
-    def __init__(self, power_density=1, Vector3D polarization = Vector3D(0, 1, 0), central_wavelength = 1060, spectral_sigma = 0.01, wlen_min = 1059.8,
+    def __init__(self, power_density=1, Vector3D polarization = Vector3D(0, 1, 0), central_wavelength = 1060,
+                 spectral_sigma = 0.01, wlen_min = 1059.8,
                  wlen_max=1060.2, nbins=100):
-
         super().__init__()
 
         self._power_density = power_density
@@ -24,7 +22,6 @@ cdef class UniformPowerDensity(LaserModel):
         self._polarization_vector = Vector3D(0, 1, 0)
 
         self._gaussian_spectrum()
-
 
     cpdef Vector3D get_pointing(self, double x, double y, double z):
         """
@@ -69,7 +66,6 @@ cdef class UniformPowerDensity(LaserModel):
 
         return self._polarization_vector
 
-
     cpdef double get_laser_spectrum(self):
         """
         Retruns ratio of the power enclosed in the specified wavelength range
@@ -87,15 +83,12 @@ cdef class UniformPowerDensity(LaserModel):
 
     @polarization.setter
     def polarization(self, Vector3D vector):
-
         if vector.length < 0:
             raise ValueError("Vector of 0 length is not allowed.")
 
         self._polarization_vector = vector.normalise()
 
     def _gaussian_spectrum(self):
-
-
         self._spectrum = Spectrum(self._wlen_min, self._wlen_max, self._nbins)
 
         spectrum_delta = self._spectrum.delta_wavelength
@@ -103,13 +96,11 @@ cdef class UniformPowerDensity(LaserModel):
 #            self._spectrum.samples_mv[index] = np.exp(-1/2 * power(wlen - self._central_wavelength, 2)/self._spectral_sigma**2) / spectrum.delta_wavelength
 
 cdef class GaussianBeamAxisymmetric(LaserModel):
-
     def __init__(self, Laser laser = None, Vector3D polarization = Vector3D(0, 1, 0), power=1,
-                  laser_sigma = 0.01, waist_radius=0.001, m2 = 1, focus_z = 0.0):
+                 laser_sigma = 0.01, waist_radius=0.001, m2 = 1, focus_z = 0.0):
 
         super().__init__()
 
-        self._set_defaults()
         #laser sigma dependent constants
         #set laser constants
         self.laser_power = power
@@ -117,11 +108,6 @@ cdef class GaussianBeamAxisymmetric(LaserModel):
         self.waist_radius = waist_radius
         self.m2 = m2
         self.focus_z = focus_z
-
-    def _set_defaults(self):
-        self._waist_radius = 0.1
-        self._waist2 = 0.001
-        self._m2 = 1
 
     cpdef Vector3D get_pointing(self, double x, double y, double z):
         """
@@ -139,7 +125,7 @@ cdef class GaussianBeamAxisymmetric(LaserModel):
 
     cpdef double get_power_density(self, double x, double y, double z, double wavelength):
         """
-        Returns the power density of the light at the specified point.
+        Returns the power density of the light at the specified point for the specified wavelength.
         
         The point is specified in the laser beam space.
         
@@ -159,9 +145,7 @@ cdef class GaussianBeamAxisymmetric(LaserModel):
         power = power_axis * exp(-2 * r2 / width2)
         return power
 
-
     cpdef Spectrum get_power_density_spectrum(self, double x, double y, double z):
-
 
         cdef:
             double r2, volumetric_density, spectral_density, beam_width2
@@ -170,17 +154,14 @@ cdef class GaussianBeamAxisymmetric(LaserModel):
 
         r2 = x ** 2 + y ** 2
 
-
         spectrum = self._laser_spectrum.copy()
 
         for index in range(spectrum.bins):
             beam_width2 = self.get_beam_width2(z, self._laser_spectrum.wavelengths[index])
-            volumetric_density = self._power_const / beam_width2 *\
-                                 exp(-2 * r2 / beam_width2)
+            volumetric_density = self._power_const / beam_width2 * exp(-2 * r2 / beam_width2)
             spectrum.samples_mv[index] *= volumetric_density
 
         return spectrum
-
 
     cpdef double get_power_axis(self, double z, double wavelength):
         return self._power_const / self.get_beam_width(z, wavelength) ** 2
@@ -200,10 +181,10 @@ cdef class GaussianBeamAxisymmetric(LaserModel):
         return self._polarization_vector
 
     cpdef double get_beam_width2(self, double z, double wavelength):
-        return self._waist2 + wavelength ** 2 * self._waist_const * (z - self._focus_z)  ** 2
+        return self._waist2 + wavelength ** 2 * self._waist_const * (z - self._focus_z) ** 2
 
     @property
-    def m2 (self):
+    def m2(self):
         return self._m2
     @m2.setter
     def m2(self, value):
@@ -242,7 +223,7 @@ cdef class GaussianBeamAxisymmetric(LaserModel):
         return self._waist_radius
 
     @waist_radius.setter
-    def waist_radius(self,double value):
+    def waist_radius(self, double value):
 
         if not value > 0:
             raise ValueError("Value has to be larger than 0.")
@@ -250,11 +231,6 @@ cdef class GaussianBeamAxisymmetric(LaserModel):
         self._waist_radius = value
         self._waist2 = value ** 2
         self._change_waist_const()
-
-
-    def _change_waist_const(self):
-        self._waist_const = (1e-9 * self._m2 / (M_PI * self._waist_radius)) ** 2
-
 
     @property
     def laser_spectrum(self):
@@ -272,8 +248,10 @@ cdef class GaussianBeamAxisymmetric(LaserModel):
     def focus_z(self, double value):
         self._focus_z = value
 
-cdef class GaussianCylindricalConstant(LaserModel):
+    def _change_waist_const(self):
+        self._waist_const = (1e-9 * self._m2 / (M_PI * self._waist_radius)) ** 2
 
+cdef class GaussianCylindricalConstant(LaserModel):
     def __init__(self, Laser laser=None, Plasma plasma=None, power=0, central_wavelength = 1060,
                  spectral_sigma = 0.01, spectrum_wlen_min = 1059.8, spectrum_wlen_max=1060.2, spectrum_nbins=100,
                  laser_sigma = 0.01, Vector3D polarisation_vector = Vector3D(0, 1, 0)):
@@ -336,9 +314,7 @@ cdef class GaussianCylindricalConstant(LaserModel):
 
         return self._laser_power * volumetric_density * spectral_density
 
-
     cpdef Spectrum get_power_density_spectrum(self, double x, double y, double z):
-
 
         cdef:
             double r2, volumetric_density, spectral_density
@@ -400,7 +376,7 @@ cdef class GaussianCylindricalConstant(LaserModel):
 
     @spectral_mu.setter
     def spectral_mu(self, value):
-        if value <=0:
+        if value <= 0:
             raise ValueError("Central wavelength of the laser has to be larger than 0.")
 
         self._spectral_mu = value
@@ -431,7 +407,6 @@ cdef class GaussianCylindricalConstant(LaserModel):
     def spectrum_min_wavelength(self):
         return self._spectrum_min_wavelength
 
-
     @spectrum_min_wavelength.setter
     def spectrum_min_wavelength(self, value):
 
@@ -444,7 +419,6 @@ cdef class GaussianCylindricalConstant(LaserModel):
     def spectrum_max_wavelength(self):
         return self._spectrum_max_wavelength
 
-
     @spectrum_max_wavelength.setter
     def spectrum_max_wavelength(self, value):
 
@@ -455,7 +429,8 @@ cdef class GaussianCylindricalConstant(LaserModel):
 
     def _create_laser_spectrum(self):
 
-        self._laser_spectrum = Spectrum(self._spectrum_min_wavelength, self._spectrum_max_wavelength, self._spectrum_nbins)
+        self._laser_spectrum = Spectrum(self._spectrum_min_wavelength, self._spectrum_max_wavelength,
+                                        self._spectrum_nbins)
         wavelengths = self._laser_spectrum.wavelengths
         #samples = np.exp(-1/2 * np.power(wavelengths - self._spectral_mu, 2)/self._spectral_sigma**2) / self._laser_spectrum.delta_wavelength
 
@@ -464,7 +439,6 @@ cdef class GaussianCylindricalConstant(LaserModel):
         #    self._laser_spectrum.samples_mv[index] = interpolated(value)
 
         self._laser_spectrum = self._laser_spectrum
-
 
     @property
     def laser_sigma(self):
@@ -486,8 +460,7 @@ cdef class GaussianCylindricalConstant(LaserModel):
 
     @laser_power.setter
     def laser_power(self, value):
-        if value <=0:
+        if value <= 0:
             raise ValueError("Laser power has to be larger than 0.")
 
         self._laser_power = value
-
