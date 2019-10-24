@@ -82,7 +82,8 @@ class SartOpencl:
         # reading and compiling OpenCL kernels
         kernels_filename = 'sart_kernels_atomic.cl' if use_atomic else 'sart_kernels.cl'
         kernel_source_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), kernels_filename)
-        kernel_source = open(kernel_source_file).read()
+        with open(kernel_source_file) as f_kernel:
+            kernel_source = f_kernel.read()
         compile_options = ['-DBLOCK_SIZE=%d' % block_size, '-DSTEPS_PER_THREAD=%d' % steps_per_thread,
                            '-DSTEPS_PER_THREAD_ROW_MAJ=%d' % steps_per_thread_row_maj,
                            '-DBLOCK_SIZE_ROW_MAJ=%d' % block_size_row_maj, '-cl-fast-relaxed-math']
