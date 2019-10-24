@@ -272,7 +272,7 @@ cdef class GaussianBeamAxisymmetric(LaserModel):
     def focus_z(self, double value):
         self._focus_z = value
 
-cdef class GaussianAxisymmetricalConstant(LaserModel):
+cdef class GaussianCylindricalConstant(LaserModel):
 
     def __init__(self, Laser laser=None, Plasma plasma=None, power=0, central_wavelength = 1060,
                  spectral_sigma = 0.01, spectrum_wlen_min = 1059.8, spectrum_wlen_max=1060.2, spectrum_nbins=100,

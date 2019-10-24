@@ -21,7 +21,7 @@ cdef class GaussianBeamAxisymmetric(LaserModel):
     cpdef double get_power_axis(self, double z, double wavelength)
 
 
-cdef class GaussianAxisymmetricalConstant(LaserModel):
+cdef class GaussianCylindricalConstant(LaserModel):
 
     cdef:
         double _laser_power, _spectral_mu, _spectral_sigma, _spectrum_min_wavelength, _spectrum_max_wavelength, _laser_sigma, _recip_laser_sigma2, _const_width
