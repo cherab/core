@@ -504,20 +504,22 @@ class BolometerFoil(TargettedPixel):
         if not isinstance(self.root, World):
             raise ValueError("This BolometerFoil is not connected to a valid World scenegraph object.")
 
-        centre_point = self.centre_point
+        origin = self.centre_point
+        direction = self.sightline_vector
 
         while True:
 
             # Find the next intersection point of the ray with the world
-            intersection = self.root.hit(CoreRay(centre_point, self.sightline_vector))
+            intersection = self.root.hit(CoreRay(origin, direction))
 
             if intersection is None:
                 raise RuntimeError("No material intersection was found for this sightline.")
 
             elif isinstance(intersection.primitive.material, NullMaterial):
                 # apply a small displacement to avoid infinite self collisions due to numerics
+                hit_point = intersection.hit_point.transform(intersection.primitive_to_world)
                 ray_displacement = min(self.x_width, self.y_width) / 100
-                centre_point += self.sightline_vector * ray_displacement
+                origin = hit_point + direction * ray_displacement
                 continue
 
             else:
