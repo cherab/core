@@ -17,7 +17,9 @@
 # under the Licence.
 
 
+from raysect.core.math.function cimport Function3D
 from raysect.optical cimport Spectrum, Point3D, Vector3D
+
 from cherab.core cimport Plasma, AtomicData
 from cherab.core.utility.constants cimport RECIP_4_PI
 
@@ -108,3 +110,46 @@ cdef class TotalRadiatedPower(PlasmaModel):
         self._recom_species = None
         self._plt_rate = None
         self._prb_rate = None
+
+cdef class ArbitraryTotalRadiatedPower(PlasmaModel):
+    """
+    This model calculates total radiated power provided by a Function3D. This is handy in case of the
+    total radiated power density in W*m^-3 taken from an external source (e.g. transport code).
+    :param radiation_function : Function3D object returning total radiated power in W*m^-3
+    """
+    def __init__(self, radiation_function: Function3D):
+
+        super().__init__()
+
+        self.radiated_power = radiation_function
+
+    @property
+    def radiated_power(self):
+        return self._radiated_power
+
+    @radiated_power.setter
+    def radiated_power(self, function: Function3D):
+        self._radiated_power = function
+
+    cpdef Spectrum emission(self, Point3D point, Vector3D direction, Spectrum spectrum):
+        """
+        Evaluates the radiated power function and renormalizes it to spectral radiance to have correct units. The radiated
+        power is added to the spectrum as a constant function. Sum over all spectral bins gives the radiance from the requested point.
+        :param point: Pont3D with cartesian coordinates in the plasma reference frame to calculate the spectral contribution for.
+        :param direction: Not used in this case.
+        :param spectrum: Spectrum to add the contribution to.
+        :return: Spectrum with contribution of the total radiated power.
+        """
+        cdef:
+            double radiance
+        #spectral radiance
+        radiance = RECIP_4_PI * self._radiated_power.evaluate(point.x, point.y, point.z) / (
+                    spectrum.max_wavelength - spectrum.min_wavelength)
+
+        if radiance == 0:
+            return spectrum
+
+        for i in range(spectrum.bins):
+            spectrum.samples_mv[i] += radiance
+
+        return spectrum

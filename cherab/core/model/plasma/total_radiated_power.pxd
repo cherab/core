@@ -17,6 +17,9 @@
 # under the Licence.
 
 
+from raysect.core.math.function cimport Function3D
+from raysect.optical cimport Spectrum, Point3D, Vector3D
+
 from cherab.core.atomic.elements cimport Element
 from cherab.core.atomic.rates cimport LineRadiationPower, ContinuumPower
 from cherab.core.plasma cimport PlasmaModel
@@ -34,3 +37,10 @@ cdef class TotalRadiatedPower(PlasmaModel):
         ContinuumPower _prb_rate
 
     cdef int _populate_cache(self) except -1
+
+cdef class ArbitraryTotalRadiatedPower(PlasmaModel):
+
+    cdef:
+        Function3D _radiated_power
+
+    cpdef Spectrum emission(self, Point3D point, Vector3D direction, Spectrum spectrum)
