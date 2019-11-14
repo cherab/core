@@ -18,7 +18,7 @@
 # See the Licence for the specific language governing permissions and limitations
 # under the Licence.
 
-from raysect.core.math.interpolators cimport Discrete2DMesh
+from raysect.core.math.function cimport Discrete2DMesh
 from cherab.core.math cimport Function2D
 
 
