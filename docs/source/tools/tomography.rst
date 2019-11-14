@@ -38,6 +38,9 @@ Inversion Methods
 
 .. autofunction:: cherab.tools.inversions.sart.invert_constrained_sart
 
+.. autoclass:: cherab.tools.inversions.opencl.sart_opencl.SartOpencl
+   :members: __call__, clean, update_laplacian_matrix
+
 .. autofunction:: cherab.tools.inversions.nnls.invert_regularised_nnls
 
 .. autofunction:: cherab.tools.inversions.svd.invert_svd

@@ -1,4 +1,4 @@
-
+# -*- coding: utf-8 -*-
 # Copyright 2016-2018 Euratom
 # Copyright 2016-2018 United Kingdom Atomic Energy Authority
 # Copyright 2016-2018 Centro de Investigaciones Energéticas, Medioambientales y Tecnológicas
@@ -17,10 +17,5 @@
 # See the Licence for the specific language governing permissions and limitations
 # under the Licence.
 
-from .sart import invert_sart, invert_constrained_sart
-from .opencl import SartOpencl
-from .nnls import invert_regularised_nnls
-from .lstsq import invert_regularised_lstsq
-from .svd import invert_svd
-from .voxels import Voxel, AxisymmetricVoxel, VoxelCollection, ToroidalVoxelGrid, UnityVoxelEmitter
-from .admt_utils import generate_derivative_operators, calculate_admt
+from .sart_opencl import SartOpencl
+from .opencl_utils import *
