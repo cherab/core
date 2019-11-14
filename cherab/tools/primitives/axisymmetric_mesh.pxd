@@ -1,4 +1,3 @@
-# cython: language_level=3
 
 # Copyright 2016-2018 Euratom
 # Copyright 2016-2018 United Kingdom Atomic Energy Authority
@@ -18,9 +17,7 @@
 # See the Licence for the specific language governing permissions and limitations
 # under the Licence.
 
-from raysect.core.math.function cimport Function2D, Discrete2DMesh
+cimport numpy as np
+from raysect.primitive.mesh cimport Mesh
 
-
-cdef class PolygonMask2D(Function2D):
-
-    cdef Discrete2DMesh _mesh
+cpdef Mesh axisymmetric_mesh_from_polygon(np.ndarray polygon, int num_toroidal_segments=*)

@@ -504,20 +504,22 @@ class BolometerFoil(TargettedPixel):
         if not isinstance(self.root, World):
             raise ValueError("This BolometerFoil is not connected to a valid World scenegraph object.")
 
-        centre_point = self.centre_point
+        origin = self.centre_point
+        direction = self.sightline_vector
 
         while True:
 
             # Find the next intersection point of the ray with the world
-            intersection = self.root.hit(CoreRay(centre_point, self.sightline_vector))
+            intersection = self.root.hit(CoreRay(origin, direction))
 
             if intersection is None:
                 raise RuntimeError("No material intersection was found for this sightline.")
 
             elif isinstance(intersection.primitive.material, NullMaterial):
                 # apply a small displacement to avoid infinite self collisions due to numerics
+                hit_point = intersection.hit_point.transform(intersection.primitive_to_world)
                 ray_displacement = min(self.x_width, self.y_width) / 100
-                centre_point += self.sightline_vector * ray_displacement
+                origin = hit_point + direction * ray_displacement
                 continue
 
             else:
@@ -573,18 +575,19 @@ class BolometerFoil(TargettedPixel):
 
         return pipeline.samples.mean
 
-    def calculate_etendue(self, ray_count=10000, batches=10):
+    def calculate_etendue(self, ray_count=10000, batches=10, max_distance=1e999):
         """
         Calculates the etendue of this detector.
 
-        This function calculates the detectors etendue by evaluating the ratio of rays that
-        pass un-impeded through the detector's aperture. For this method to work, the detector
-        and its aperture structures should be the only primitives present in the scene. If any
-        other primitives are present, the results may be misleading.
+        This function calculates the detectors etendue by evaluating the fraction of rays that
+        pass un-impeded through the detector's aperture.
 
         :param int ray_count: The number of rays used per batch.
-        :param int batches: The number of batches used to estimate the error on the etendue
-          calculation.
+        :param int batches: The number of batches used to estimate the error on the etendue calculation.
+        :param float max_distance: The maximum distance from the detector to consider intersections.
+            If a ray makes it further than this, it is assumed to have passed through the aperture,
+            regardless of what it hits. Use this if there are other primitives present in the scene
+            which do not form the aperture.
         """
 
         if batches < 5:
@@ -621,7 +624,7 @@ class BolometerFoil(TargettedPixel):
                 while True:
 
                     # Find the next intersection point of the ray with the world
-                    intersection = world.hit(CoreRay(origin, direction))
+                    intersection = world.hit(CoreRay(origin, direction, max_distance))
 
                     if intersection is None:
                         passed += 1 * path_weight
