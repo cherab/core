@@ -75,7 +75,7 @@ and `RayTransferCylinder` class for cylindrical grids (3D or axisymmetrical).
 Performance tips:
 
 * The best performance is achieved when Ray Transfer Objects are used with special pipelines and optimised materials (currently only rough metals are optimised, see the demos).
-* When the number of individual light sources and respective bins in the spectral array is higher than ~50-70 thousands, the lack of CPU cache memory becomes a serious factor affecting performance. Therefore, it is not recomended to use hyperthreading when calculating geometry matrices for a large number of light sources. It is also recomended to divide the calculation into several parts and to calculate partial geometry matrices for not more than ~50-70 thousands of light sources in a single run. Partial geometry matrices can easily be combined into one when all computations are complete.
+* When the number of individual light sources and respective bins in the spectral array is higher than ~50-70 thousands, the lack of CPU cache memory becomes a serious factor affecting performance. Therefore, it is not recommended to use hyper-threading when calculating geometry matrices for a large number of light sources. It is also recommended to divide the calculation into several parts and to calculate partial geometry matrices for not more than ~50-70 thousands of light sources in a single run. Partial geometry matrices can easily be combined into one when all computations are complete.
 
 .. autoclass:: cherab.tools.raytransfer.raytransfer.RayTransferBox
    :members: invert_voxel_map
