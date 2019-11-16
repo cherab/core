@@ -62,3 +62,29 @@ Voxels
    :members:
 
 
+Ray Transfer Objects
+--------------------
+
+Ray transfer objects accelerate the calculation of geometry matrices (or Ray Transfer Matrices as they were called 
+in `S. Kajita, et al. Contrib. Plasma Phys., 2016, 1-9 <https://onlinelibrary.wiley.com/doi/abs/10.1002/ctpp.201500124>`_) 
+in the case of regular spatial grids. As in the case of Voxels, the spectral array is used to store the data 
+for individual light sources (in this case the grid cells or their unions), however no voxels are created at all. 
+Instead, a custom integration along the ray is implemented. Use `RayTransferBox` class for Cartesian grids 
+and `RayTransferCylinder` class for cylindrical grids (3D or axisymmetrical).
+
+Performance tips:
+
+* The best performance is achieved when Ray Transfer Objects are used with special pipelines and optimised materials (currently only rough metals are optimised, see the demos).
+* When the number of individual light sources and respective bins in the spectral array is higher than ~50-70 thousands, the lack of CPU cache memory becomes a serious factor affecting performance. Therefore, it is not recomended to use hyperthreading when calculating geometry matrices for a large number of light sources. It is also recomended to divide the calculation into several parts and to calculate partial geometry matrices for not more than ~50-70 thousands of light sources in a single run. Partial geometry matrices can easily be combined into one when all computations are complete.
+
+.. autoclass:: cherab.tools.raytransfer.raytransfer.RayTransferBox
+   :members: invert_voxel_map
+
+.. autoclass:: cherab.tools.raytransfer.raytransfer.RayTransferCylinder
+   :members: invert_voxel_map
+
+.. autoclass:: cherab.tools.raytransfer.pipelines.RayTransferPipeline0D
+
+.. autoclass:: cherab.tools.raytransfer.pipelines.RayTransferPipeline1D
+
+.. autoclass:: cherab.tools.raytransfer.pipelines.RayTransferPipeline2D

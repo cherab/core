@@ -158,6 +158,37 @@ Passive Spectroscopy
           :width: 150px
 
 
+Geometry Matrices
+=================
+.. list-table::
+   :widths: 28 50 22
+   :header-rows: 1
+
+   * - Name
+     - Description
+     - Preview
+   * - :ref:`Rectangular regular grid <ray_transfer_box>`
+     - Calculating the geometry matrix for a rectangular emitter defined on a regular grid.
+     - .. image:: ./ray_transfer/ray_transfer_box_demo.png
+          :height: 150px
+          :width: 150px
+   * - :ref:`Cylindrical regular grid <ray_transfer_cylinder>`
+     - Calculating the geometry matrix for a cylindrical emitter defined on a regular grid.
+     - .. image:: ./ray_transfer/ray_transfer_cylinder_demo.gif
+          :height: 150px
+          :width: 150px
+   * - :ref:`Axisymmetrical (toroidal) regular grid <ray_transfer_mask>`
+     - Calculating the geometry matrix for an axisymmetrical toroidal emitter defined on a regular grid. Applying a mask to filter out extra grid cells.
+     - .. image:: ./ray_transfer/ray_transfer_mask_demo.gif
+          :height: 150px
+          :width: 150px
+   * - :ref:`Axisymmetrical (toroidal) regular grid with custom mapping of light sources <ray_transfer_map>`
+     - Mapping multiple grid cells into a single light source.
+     - .. image:: ./ray_transfer/ray_transfer_map_demo.gif
+          :height: 150px
+          :width: 150px
+
+
 Code examples gallery
 =====================
 

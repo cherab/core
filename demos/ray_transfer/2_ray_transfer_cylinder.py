@@ -18,12 +18,13 @@
 
 """
 RayTransferCylinder Demonstration
--------------------------------------
+---------------------------------
 
 This file will demonstrate how to:
 
- * calculate ray transfer matrix (geometry matrix) for a cylindrical periodic emitter defined on a regular grid
- * constract an image with ray transfer matrix and various emission profiles without additional ray-tracing simulations
+ * calculate ray transfer matrix (geometry matrix) for a cylindrical periodic emitter defined
+   on a regular grid,
+ * obtain images by collapsing calculated ray transfer matrix with various emission profiles.
 
 """
 import os
@@ -42,10 +43,12 @@ world = World()
 # creating the scene, two cylinders act like a wall here
 cylinder_inner = Cylinder(radius=100., height=200.)
 cylinder_outer = Cylinder(radius=300., height=200.)
-wall = Subtract(cylinder_outer, cylinder_inner, material=RoughNickel(0.1), parent=world, transform=translate(0, 0, -100.))
+wall = Subtract(cylinder_outer, cylinder_inner, material=RoughNickel(0.1), parent=world,
+                transform=translate(0, 0, -100.))
 
-# creating ray transfer cylinder with 260 (m) outer radius, 140 (m) inner radius, 160 (m) height and 60 deg peroid
-# for cylindrical periodic emission profile defined on a 12 x 16 x 16 (R, Phi, Z) gird
+# creating ray transfer cylinder with 260 (m) outer radius, 140 (m) inner radius,
+# 160 (m) height and 60 deg peroid for cylindrical periodic emission profile defined
+# on a 12 x 16 x 16 (R, Phi, Z) gird
 rtc = RayTransferCylinder(260., 160., 12, 16, radius_inner=140., n_polar=16, period=60.)
 rtc.parent = world
 rtc.transform = translate(0, 0, -80.)
@@ -57,8 +60,9 @@ rtc.step = 0.2
 pipeline = RayTransferPipeline2D()
 
 # setting up the camera
-camera = PinholeCamera((256, 256), transform=translate(258.9415, 149.5, 0) * rotate(90., -30., -90.), pipelines=[pipeline],
-                       frame_sampler=FullFrameSampler2D(), parent=world)
+camera = PinholeCamera((256, 256), pipelines=[pipeline], frame_sampler=FullFrameSampler2D(),
+                       transform=translate(258.9415, 149.5, 0) * rotate(90., -30., -90.),
+                       parent=world)
 camera.fov = 90
 camera.pixel_samples = 500
 camera.min_wavelength = 500.
@@ -110,8 +114,8 @@ rz_profiles = [np.array([[0, 0, 1, 1, 0, 0, 0, 1, 1, 0, 0, 0],
                          [0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0],
                          [0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0]], dtype=np.float64).T]
 
-# making 3d profiles from 2d profiles (RZ plane) and obtaining 16 different images for each profile
-# by collapsing the ray transfer matrix with emission profiles
+# making 3d profiles from 2d profiles (RZ plane) and obtaining 16 different images
+# for each profile by collapsing the ray transfer matrix with emission profiles
 vmax = 0
 images = []
 for profile in rz_profiles:
@@ -138,7 +142,7 @@ for i in range(16):
         ax.imshow(images[j][i].T, cmap='gray', vmax=0.15 * vmax)
         ax.tick_params(labelbottom=False, labelleft=False, bottom=False, left=False)
     fig.subplots_adjust(left=0., right=1., bottom=0., top=1., wspace=0.01, hspace=0.01)
-    fig.savefig('images/ray_transfer_cylinder_demo_%02d.png' % i, dpi=300)
+    fig.savefig('images/ray_transfer_cylinder_demo_%02d.png' % i, dpi=180)
     plt.pause(0.2)
 
 # creating gif animation with ImageMagick

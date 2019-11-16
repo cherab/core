@@ -18,12 +18,13 @@
 
 """
 RayTransferBox Demonstration
--------------------------------------
+----------------------------
 
 This file will demonstrate how to:
 
- * calculate ray transfer matrix (geometry matrix) for a rectangular emitter defined on a regular grid
- * constract an image with ray transfer matrix and various emission profiles without additional ray-tracing simulations
+ * calculate ray transfer matrix (geometry matrix) for a rectangular emitter defined
+   on a regular grid,
+ * obtain images by collapsing calculated ray transfer matrix with various emission profiles.
 
 """
 import os
@@ -35,7 +36,8 @@ from raysect.optical import World, translate, rotate, Point3D
 from raysect.optical.observer import PinholeCamera, FullFrameSampler2D
 
 # RayTransferPipeline2D is optimised for calculation of ray transfer matrices.
-# It's also possible to use SpectralRadiancePipeline2D but for the matrices with >1000 elements the performance will be lower.
+# It's also possible to use SpectralRadiancePipeline2D but for the matrices with >1000 elements
+# the performance will be lower.
 from cherab.tools.raytransfer import RayTransferPipeline2D, RayTransferBox
 
 # Here we use special materials optimised for calculation of ray transfer matrices.
@@ -46,12 +48,17 @@ from cherab.tools.raytransfer import RoughNickel
 world = World()
 
 # creating the scene
-ground = Box(lower=Point3D(-150, -14.2, -100), upper=Point3D(150, -14.1, 150), material=RoughNickel(0.1), parent=world)
-wall = Box(lower=Point3D(-150, -150, 44.1), upper=Point3D(150, 150, 44.2), material=RoughNickel(0.1), parent=world)
+ground = Box(lower=Point3D(-150, -14.2, -100), upper=Point3D(150, -14.1, 150),
+             material=RoughNickel(0.1), parent=world)
+wall = Box(lower=Point3D(-150, -150, 44.1), upper=Point3D(150, 150, 44.2),
+           material=RoughNickel(0.1), parent=world)
 
-# creating ray transfer box with size of 120 (m) x 80 (m) x 10 (m) for emission profile defined on a 12 x 8 x 1 gird
+# creating ray transfer box with size of 120 (m) x 80 (m) x 10 (m) for emission profile
+# defined on a 12 x 8 x 1 gird
 rtb = RayTransferBox(120., 80., 10., 12, 8, 1, transform=translate(-60., 0, 0), parent=world)
-# like any primitive, the box can be connected to scenegraph or transformed at any moment, not only at initialisation
+# like any primitive, the box can be connected to scenegraph or transformed at any moment,
+# not only at initialisation
+
 # rtb.parent = world
 # rtb.transform = translate(-60., 0, 0)
 
@@ -62,8 +69,8 @@ rtb.step = 0.2
 pipeline = RayTransferPipeline2D()
 
 # setting up the camera
-camera = PinholeCamera((256, 256), transform=rotate(-15., -35, 0) * translate(-10, 50, -250), pipelines=[pipeline],
-                       frame_sampler=FullFrameSampler2D(), parent=world)
+camera = PinholeCamera((256, 256), pipelines=[pipeline], frame_sampler=FullFrameSampler2D(),
+                       transform=rotate(-15., -35, 0) * translate(-10, 50, -250), parent=world)
 camera.fov = 45
 camera.pixel_samples = 1000
 camera.min_wavelength = 500.
@@ -130,5 +137,5 @@ for i in range(4):
     ax.imshow(images[i].T, cmap='gray')
     ax.tick_params(labelbottom=False, labelleft=False, bottom=False, left=False)
 fig.subplots_adjust(left=0.05, right=0.95, bottom=0.05, top=0.95, wspace=0.05, hspace=0.05)
-fig.savefig('images/ray_transfer_box_demo.png', dpi=300)
+fig.savefig('images/ray_transfer_box_demo.png', dpi=180)
 plt.show()

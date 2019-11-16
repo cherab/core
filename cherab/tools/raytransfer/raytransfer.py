@@ -91,7 +91,7 @@ class RayTransferBase:
 class RayTransferCylinder(RayTransferBase):
     """
     Ray transfer object for cylindrical emitter defined on a regular 2D (RZ plane) or 3D :math:`(R, \phi, Z)` grid.
-    In case of 3D grid this emitter is periodic in :math: `\phi` direction.
+    In case of 3D grid this emitter is periodic in :math:`\phi` direction.
     The base of the cylinder is located at `Z = 0` plane. Use `transform` parameter to move it.
 
     :param float radius_outer: Radius of the outer cylinder and the upper bound of grid in `R` direction (in meters).
@@ -100,8 +100,10 @@ class RayTransferCylinder(RayTransferBase):
     :param int n_height: Number of grid points in `Z` direction.
     :param float radius_inner: Radius of the inner cylinder and the lower bound of grid in `R` direction (in meters),
         defaults to `radius_inner=0`.
-    :param int n_polar: Number of grid points in :math: `\phi` direction, defaults to n_polar=0 (2D grid).
-    :param float period: A period in :math: `\phi` direction (in degree). Used only if `n_polar > 0`, defaults to `period=360`.
+    :param int n_polar: Number of grid points in :math:`\phi` direction, defaults to n_polar=0 (2D grid).
+    :param float period: A period in :math:`\phi` direction (in degree). Used only if `n_polar > 0`, defaults to `period=360`.
+    :param float step: The step of integration along the ray (in meters),
+        defaults to `step = 0.1 * min((radius_outer - radius_inner) / n_radius, height / n_height)`.
     :param np.ndarray voxel_map: An array with shape `(n_radius, n_height)` (2D case) or `(n_radius, n_polar, n_height)` (3D case)
         containing the indeces of the light sources. This array maps the cells in :math:`(R, \phi, Z)` space to
         the respective voxels (light sources). The cells with identical indeces in voxel_map array form a single voxel (light source).
@@ -114,6 +116,8 @@ class RayTransferCylinder(RayTransferBase):
     :param Node parent: Scene-graph parent node or None (default = None).
     :param AffineMatrix3D transform: An AffineMatrix3D defining the local co-ordinate system relative to
         the scene-graph parent (default = identity matrix).
+
+    :ivar bins: Number of light sources (the size of spectral array must be equal to this value).
     .. code-block:: pycon
 
         >>> from raysect.optical import World, translate
@@ -122,6 +126,8 @@ class RayTransferCylinder(RayTransferBase):
         >>> rtc = RayTransferCylinder(radius_outer=8., height=10., n_radius=400, n_height=1000, radius_inner=4.)
         >>> rtc.parent = world
         >>> rtc.transform = translate(0, 0, -5.)
+        ...
+        >>> camera.spectral_bins = rtc.bins
     """
 
     def __init__(self, radius_outer, height, n_radius, n_height, radius_inner=0, n_polar=0, period=360., step=None, voxel_map=None, mask=None,
@@ -155,6 +161,7 @@ class RayTransferBox(RayTransferBase):
     :param int nx: Number of grid points in `X` direction.
     :param int ny: Number of grid points in `Y` direction.
     :param int nz: Number of grid points in `Z` direction.
+    :param float step: The step of integration along the ray (in meters), defaults to `step = 0.1 * min(xmax / nx, ymax / ny, zmax / nz)`.
     :param np.ndarray voxel_map: An array with shape `(nx, ny, nz)`
         containing the indeces of the light sources. This array maps the cells in :math:`(R, \phi, Z)` space to
         the respective voxels (light sources). The cells with identical indeces in voxel_map array form a single voxel (light source).
@@ -167,6 +174,8 @@ class RayTransferBox(RayTransferBase):
     :param Node parent: Scene-graph parent node or None (default = None).
     :param AffineMatrix3D transform: An AffineMatrix3D defining the local co-ordinate system relative to
         the scene-graph parent (default = identity matrix).
+
+    :ivar bins: Number of light sources (the size of spectral array must be equal to this value).
     .. code-block:: pycon
 
         >>> from raysect.optical import World, translate
@@ -180,6 +189,8 @@ class RayTransferBox(RayTransferBase):
         >>> xsqr = x * x
         >>> mask = xsqr[:, None, None] + xsqr[None, :, None] + xsqr[None, None, :] < 0.25  # mask is a bollean array of shape (100, 100, 100)
         >>> rtb.mask = mask  # all cells outside this sphere are excluded
+        ...
+        >>> camera.spectral_bins = rtb.bins
     """
 
     def __init__(self, xmax, ymax, zmax, nx, ny, nz, step=None, voxel_map=None, mask=None,

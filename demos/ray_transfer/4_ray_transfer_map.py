@@ -18,12 +18,13 @@
 
 """
 Demonstration of RayTransferCylinder in axisymmetrical case and applied voxel map
--------------------------------------
+---------------------------------------------------------------------------------
 
 This file will demonstrate how to:
 
- * calculate ray transfer matrix (geometry matrix) for axisymmetrical cylindrical emitter defined on a regular grid
- * map multiple grid cells into a single light source by applying a voxel map
+ * calculate ray transfer matrix (geometry matrix) for axisymmetrical cylindrical emitter defined
+   on a regular grid
+ * map multiple grid cells to a single light source by applying a voxel map
 
 """
 import os
@@ -42,15 +43,18 @@ world = World()
 # creating the scene
 cylinder_inner = Cylinder(radius=80., height=140.)
 cylinder_outer = Cylinder(radius=220., height=140.)
-wall = Subtract(cylinder_outer, cylinder_inner, material=RoughNickel(0.1), parent=world, transform=translate(0, 0, -70.))
+wall = Subtract(cylinder_outer, cylinder_inner, material=RoughNickel(0.1), parent=world,
+                transform=translate(0, 0, -70.))
 
 # creating ray transfer cylinder with 200 (m) outer radius, 100 (m) inner radius, 140 (m) height
 # for axisymmetric cylindrical emission profile defined on a 100 x 100 (R, Z) gird
-rtc = RayTransferCylinder(200., 100., 100, 100, radius_inner=100.)  # n_polar=0 by default (axisymmetric case)
+rtc = RayTransferCylinder(200., 100., 100, 100, radius_inner=100.)
+# n_polar=0 by default (axisymmetric case)
 rtc.parent = world
 rtc.transform = translate(0, 0, -50.)
 
-# unlike the demo with a mask, here we not only cut out a circle but also create 50 ring-shaped light sources using the voxel map
+# unlike the demo with a mask, here we not only cut out a circle but also
+# create 50 ring-shaped light sources using the voxel map
 rad_circle = 50.
 xsqr = np.linspace(-49.5, 49.5, 100) ** 2
 rad = np.sqrt(xsqr[:, None] + xsqr[None, :])
@@ -61,15 +65,12 @@ for i in range(50):
 rtc.voxel_map = voxel_map  # applying a voxel map
 # now we have only 50 light sources
 
-# setting the integration step
-rtc.step = 0.2
-
 # creating ray transfer pipeline
 pipeline = RayTransferPipeline2D()
 
 # setting up the camera
-camera = PinholeCamera((256, 256), transform=translate(219., 0, 0) * rotate(90., 0., -90.), pipelines=[pipeline],
-                       frame_sampler=FullFrameSampler2D(), parent=world)
+camera = PinholeCamera((256, 256), pipelines=[pipeline], frame_sampler=FullFrameSampler2D(),
+                       transform=translate(219., 0, 0) * rotate(90., 0., -90.), parent=world)
 camera.fov = 90
 camera.pixel_samples = 500
 camera.min_wavelength = 500.
@@ -90,7 +91,8 @@ vmax = 0
 rad_inside = np.linspace(0.5, 49.5, 50)  # we have only 50 light sources now
 shifts = np.linspace(0, 2. / 3., 30, endpoint=False)
 for shift in shifts:
-    profile = (1. + np.cos(3. * np.pi * (rad_inside / rad_circle - shift))) * np.exp(-rad_inside / rad_circle)
+    profile = ((1. + np.cos(3. * np.pi * (rad_inside / rad_circle - shift))) *
+               np.exp(-rad_inside / rad_circle))
     image = np.dot(pipeline.matrix, profile)
     vmax = max(vmax, image.max())
     images.append(image)
@@ -107,7 +109,7 @@ for i in range(30):
     ax.cla()
     ax.imshow(images[i].T, cmap='gray', vmax=0.75 * vmax)
     ax.tick_params(labelbottom=False, labelleft=False, bottom=False, left=False)
-    fig.savefig('images/ray_transfer_map_demo_%02d.png' % i, dpi=300)
+    fig.savefig('images/ray_transfer_map_demo_%02d.png' % i, dpi=180)
     plt.pause(0.1)
 
 # creating gif animation with ImageMagick

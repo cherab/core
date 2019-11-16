@@ -18,11 +18,12 @@
 
 """
 Demonstration of RayTransferCylinder in axisymmetrical case and applied mask
--------------------------------------
+----------------------------------------------------------------------------
 
 This file will demonstrate how to:
 
- * calculate ray transfer matrix (geometry matrix) for axisymmetrical cylindrical emitter defined on a regular grid
+ * calculate ray transfer matrix (geometry matrix) for axisymmetrical cylindrical emitter defined
+   on a regular grid
  * filter out extra grid cells by applying a mask
 
 """
@@ -42,11 +43,13 @@ world = World()
 # creating the scene
 cylinder_inner = Cylinder(radius=80., height=140.)
 cylinder_outer = Cylinder(radius=220., height=140.)
-wall = Subtract(cylinder_outer, cylinder_inner, material=RoughNickel(0.1), parent=world, transform=translate(0, 0, -70.))
+wall = Subtract(cylinder_outer, cylinder_inner, material=RoughNickel(0.1), parent=world,
+                transform=translate(0, 0, -70.))
 
 # creating ray transfer cylinder with 200 (m) outer radius, 100 (m) inner radius, 140 (m) height
 # for axisymmetric cylindrical emission profile defined on a 100 x 100 (R, Z) gird
-rtc = RayTransferCylinder(200., 100., 100, 100, radius_inner=100.)  # n_polar=0 by default (axisymmetric case)
+rtc = RayTransferCylinder(200., 100., 100, 100, radius_inner=100.)
+# n_polar=0 by default (axisymmetric case)
 rtc.parent = world
 rtc.transform = translate(0, 0, -50.)
 
@@ -57,15 +60,12 @@ rad = np.sqrt(xsqr[:, None] + xsqr[None, :])
 mask = rad < rad_circle  # a boolean array 100x100 (True inside the circle, False - outside)
 rtc.mask = mask
 
-# setting the integration step
-rtc.step = 0.2
-
 # creating ray transfer pipeline
 pipeline = RayTransferPipeline2D()
 
 # setting up the camera
-camera = PinholeCamera((256, 256), transform=translate(219., 0, 0) * rotate(90., 0., -90.), pipelines=[pipeline],
-                       frame_sampler=FullFrameSampler2D(), parent=world)
+camera = PinholeCamera((256, 256), pipelines=[pipeline], frame_sampler=FullFrameSampler2D(),
+                       transform=translate(219., 0, 0) * rotate(90., 0., -90.), parent=world)
 camera.fov = 90
 camera.pixel_samples = 500
 camera.min_wavelength = 500.
@@ -86,7 +86,8 @@ vmax = 0
 rad_inside = rad[mask]  # removing the cells that are outside the circle
 shifts = np.linspace(0, 2. / 3., 30, endpoint=False)
 for shift in shifts:
-    profile = (1. + np.cos(3. * np.pi * (rad_inside / rad_circle - shift))) * np.exp(-rad_inside / rad_circle)
+    profile = ((1. + np.cos(3. * np.pi * (rad_inside / rad_circle - shift))) *
+               np.exp(-rad_inside / rad_circle))
     image = np.dot(pipeline.matrix, profile)
     vmax = max(vmax, image.max())
     images.append(image)
@@ -103,7 +104,7 @@ for i in range(30):
     ax.cla()
     ax.imshow(images[i].T, cmap='gray', vmax=0.75 * vmax)
     ax.tick_params(labelbottom=False, labelleft=False, bottom=False, left=False)
-    fig.savefig('images/ray_transfer_mask_demo_%02d.png' % i, dpi=300)
+    fig.savefig('images/ray_transfer_mask_demo_%02d.png' % i, dpi=180)
     plt.pause(0.1)
 
 # creating gif animation with ImageMagick

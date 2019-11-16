@@ -34,7 +34,9 @@ from raysect.optical.observer.base import Pipeline0D, Pipeline1D, Pipeline2D, Pi
 class RayTransferPipeline0D(Pipeline0D):
     """
     Simple 0D pipeline for ray transfer matrix (geometry matrix) calculation.
-    The ray transfer matrix is accessed at self.matrix, which is a 1D array of size :math:`N_{bin}` in case of 0D pipeline.
+
+    :ivar matrix: Ray transfer matrix, a 1D array of size :math:`N_{bin}`.
+
     .. code-block:: pycon
 
        >>> from cherab.tools.raytransfer import RayTransferPipeline0D
@@ -71,7 +73,9 @@ class RayTransferPipeline0D(Pipeline0D):
 class RayTransferPipeline1D(Pipeline1D):
     """
     Simple 1D pipeline for ray transfer matrix (geometry matrix) calculation.
-    The ray transfer matrix is accessed at self.matrix, which is a 3D array of shape :math:`(N_{pixel}, N_{bin})` in case of 1D pipeline.
+
+    :ivar matrix: Ray transfer matrix, a 2D array of shape :math:`(N_{pixel}, N_{bin})`.
+
     .. code-block:: pycon
 
        >>> from cherab.tools.raytransfer import RayTransferPipeline1D
@@ -109,7 +113,9 @@ class RayTransferPipeline1D(Pipeline1D):
 class RayTransferPipeline2D(Pipeline2D):
     """
     Simple 2D pipeline for ray transfer matrix (geometry matrix) calculation.
-    The ray transfer matrix is accessed at self.matrix, which is a 3D array of shape :math:`(N_x, N_y, N_{bin})` in case of 2D pipeline.
+
+    :ivar matrix: Ray transfer matrix, a 3D array of shape :math:`(N_x, N_y, N_{bin})`.
+
     .. code-block:: pycon
 
        >>> from cherab.tools.raytransfer import RayTransferPipeline2D
