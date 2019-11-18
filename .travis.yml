@@ -3,7 +3,7 @@ python:
   - "3.6"
 install:
   - pip install cython>=0.28
-  - pip install numpy scipy matplotlib raysect>=0.5.6
+  - pip install numpy scipy matplotlib raysect>=0.6.0
   - dev/build.sh
 # command to run tests
 script: dev/test.sh

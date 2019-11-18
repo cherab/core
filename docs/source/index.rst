@@ -18,6 +18,7 @@ become stable until we have finished moving the source code to github.
 
    welcome
    licence
+   governance
    installation_and_structure
    available_modules
    atomic/atomic_data
