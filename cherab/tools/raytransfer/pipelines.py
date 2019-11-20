@@ -20,15 +20,18 @@
 #
 # The following code is created by Vladislav Neverov (NRC "Kurchatov Institute") for CHERAB Spectroscopy Modelling Framework
 
+"""
+Very simple but fast pipelines for ray transfer matrix (geometry matrix) calculation.
+When calculating the ray transfer matrix, the spectral array is used to store the radiance
+from individual unit light sources and not the actual spectrum. In this case the spectral
+array may contain ~ 10,000 spectral bins but the wavelengths for all of them are equal.
+Spectral pipelines from Raysect still can be used, but they are slower compared to ray
+transfer pipelines. Standard error is not calculated in these pipelines, only the mean value.
+Dispersive rendering and adaptive sampling features are removed to improve the performance.
+"""
+
 import numpy as np
 from raysect.optical.observer.base import Pipeline0D, Pipeline1D, Pipeline2D, PixelProcessor
-
-# Very simple but fast pipelines for ray transfer matrix (geometry matrix) calculation.
-# When calculating the ray transfer matrix, the spectral array is used to store the radiance from individual unit light sources
-# and not the actual spectrum. In this case the spectral array may contain ~ 10,000 spectral bins but the wavelengths
-# for all of them are equal. Spectral pipelines from Raysect still can be used, but they are slower compared to ray transfer pipelines.
-# Standard error is not calculated in these pipelines, only the mean value.
-# Dispersive rendering and adaptive sampling features are removed to improve the performance.
 
 
 class RayTransferPipeline0D(Pipeline0D):

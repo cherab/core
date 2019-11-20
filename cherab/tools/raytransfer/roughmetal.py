@@ -21,6 +21,7 @@
 """
 This is almost a copy of the raysect/optical/library/metal/roughmetal.py file.
 The only difference is that RoughConductor class is replaces with RtmOptimisedRoughConductor class.
+
 The data used to define the following metal materials was sourced from http://refractiveindex.info.
 This data is licensed as public domain (CC0 1.0 - https://creativecommons.org/publicdomain/zero/1.0/).
 """

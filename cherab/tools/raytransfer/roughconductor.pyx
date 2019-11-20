@@ -18,7 +18,6 @@
 # under the Licence.
 #
 
-from numpy cimport ndarray
 from raysect.optical cimport Point3D, Vector3D, AffineMatrix3D, World, Ray, Spectrum, new_vector3d
 from libc.math cimport M_PI, sqrt
 from raysect.optical.material cimport RoughConductor
