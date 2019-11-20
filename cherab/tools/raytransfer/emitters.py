@@ -38,6 +38,9 @@ class RayTransferIntegrator(VolumeIntegrator):
     :param float step: Integration step (in meters), defaults to `step=0.001`.
     :param int min_samples: The minimum number of samples to use over integration range,
         defaults to `min_samples=2`.
+
+    :ivar step: Integration step.
+    :ivar min_samples: The minimum number of samples to use over integration range.
     """
 
     def __init__(self, step=0.001, min_samples=2):
@@ -71,7 +74,7 @@ class CylindricalRayTransferIntegrator(RayTransferIntegrator):
     in cylindrical coordinate system: :math:`(R, \phi, Z)`. This integrator is used
     with the `CylindricalRayTransferEmitter` material class to calculate ray transfer matrices
     (geometry matrices). The value for each voxel is stored in respective bin of the spectral
-    array. It is assumed that the emitter is periodic in :math:`\phi`direction with a period
+    array. It is assumed that the emitter is periodic in :math:`\phi` direction with a period
     equal to `material.period`. The distances traveled by the ray through the voxel is calculated
     approximately and the accuracy depends on the integration step.
     """
@@ -168,6 +171,10 @@ class RayTransferEmitter(InhomogeneousVolumeEmitter):
     :param raysect.optical.material.VolumeIntegrator integrator: Volume integrator,
         defaults to `integrator=NumericalVolumeIntegrator()`
 
+    :ivar grid_shape: The shape of regular grid.
+    :ivar grid_steps: The sizes of grid cells along each direction.
+    :ivar voxel_map: An array containing the indices of the light sources.
+    :ivar mask: A boolean mask array showing active (True) and inactive (False) gird cells.
     :ivar bins: Number of light sources (the size of spectral array must be equal to this value).
     """
 
@@ -268,6 +275,8 @@ class CylindricalRayTransferEmitter(RayTransferEmitter):
     :param float period: A period in :math:`\phi` direction (in degree).
         Used only in 3D case, defaults to `period=360`.
 
+    :ivar period: The period in :math:`\phi` direction in 3D case or `None` in axisymmetric case.
+    :ivar rmin: Lower bound of grid in `R` direction.
     :ivar dr: The size of grid cell in `R` direction (equals to `grid_shape[0]`).
     :ivar dz: The size of grid cell in `Z` direction (equals to `grid_shape[-1]`).
     :ivar dphi: The size of grid cell in :math:`\phi` direction
