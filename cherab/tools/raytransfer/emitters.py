@@ -83,10 +83,10 @@ class CylindricalRayTransferIntegrator(RayTransferIntegrator):
         end = end_point.transform(world_to_primitive)  # end point in local coordinates
         direction = start.vector_to(end)  # direction of integration
         length = direction.length  # integration length
-        if length < 0.1 * self._step:  # return if ray's path is too short
+        if length < 0.1 * self.step:  # return if ray's path is too short
             return spectrum
         direction = direction.normalise()  # normalized direction
-        n = max(self._min_samples, int(length / self._step))  # number of points along ray's trajectory
+        n = max(self.min_samples, int(length / self.step))  # number of points along ray's trajectory
         t, dt = np.linspace(0, length, n, retstep=True)  # regulary scattered points along ray's trajectory and integration step
         t = t[:-1] + 0.5 * dt  # moving them into the centers of the intervals (and removing the last point)
         x = start.x + direction.x * t  # x coordinates of the points
@@ -126,10 +126,10 @@ class CartesianRayTransferIntegrator(RayTransferIntegrator):
         end = end_point.transform(world_to_primitive)  # end point in local coordinates
         direction = start.vector_to(end)  # direction of integration
         length = direction.length  # integration length
-        if length < 0.1 * self._step:  # return if ray's path is too short
+        if length < 0.1 * self.step:  # return if ray's path is too short
             return spectrum
         direction = direction.normalise()  # normalized direction
-        n = max(self._min_samples, int(length / self._step))  # number of points along ray's trajectory
+        n = max(self.min_samples, int(length / self.step))  # number of points along ray's trajectory
         t, dt = np.linspace(0, length, n, retstep=True)  # regulary scattered points along ray's trajectory and integration step
         t = t[:-1] + 0.5 * dt  # moving them into the centers of the intervals (and removing the last point)
         x = start.x + direction.x * t  # x coordinates of the points
@@ -284,9 +284,9 @@ class CylindricalRayTransferEmitter(RayTransferEmitter):
         super().__init__(grid_shape, grid_steps, voxel_map=voxel_map, mask=mask, integrator=integrator)
         self.period = period
         self.rmin = rmin
-        self._dr = self._grid_steps[0]
-        self._dphi = self._grid_steps[1] if len(self._grid_steps) == 3 else None
-        self._dz = self._grid_steps[-1]
+        self._dr = self.grid_steps[0]
+        self._dphi = self.grid_steps[1] if len(self.grid_steps) == 3 else None
+        self._dz = self.grid_steps[-1]
 
     @property
     def rmin(self):
@@ -327,15 +327,15 @@ class CylindricalRayTransferEmitter(RayTransferEmitter):
         iz = int(point.z / self._dz)  # Z-index of grid cell, in which the point is located
         r = np.sqrt(point.x * point.x + point.y * point.y)  # R coordinates of the points
         ir = int((r - self._rmin) / self._dr)  # R-index of grid cell, in which the points is located
-        if self._voxel_map.ndim > 2:  # 3D grid
+        if self.voxel_map.ndim > 2:  # 3D grid
             phi = (180. / np.pi) * np.arctan2(point.y, point.x)  # phi coordinate of the point (in degrees)
             if phi < 0:
                 phi += 360.  # moving to [0, 360) interval
             phi = phi % self._period  # moving into the [0, period) sector (periodic emitter)
             iphi = int(phi / self._dphi)  # phi-index of grid cell, in which the point is located
-            i = self._voxel_map[ir, iphi, iz]  # index of the light source in spectral array
+            i = self.voxel_map[ir, iphi, iz]  # index of the light source in spectral array
         else:  # 2D grid (RZ-plane)
-            i = self._voxel_map[ir, iz]  # index of the light source in spectral array
+            i = self.voxel_map[ir, iz]  # index of the light source in spectral array
         if i < 0:  # grid cell is not mapped to any light source
             return spectrum
         spectrum.samples[i] += 1.  # unit emissivity
@@ -379,9 +379,9 @@ class CartesianRayTransferEmitter(RayTransferEmitter):
         def_integration_step = 0.1 * min(grid_steps)
         integrator = integrator or CartesianRayTransferIntegrator(def_integration_step)
         super().__init__(grid_shape, grid_steps, voxel_map=voxel_map, mask=mask, integrator=integrator)
-        self._dx = self._grid_steps[0]
-        self._dy = self._grid_steps[1]
-        self._dz = self._grid_steps[2]
+        self._dx = self.grid_steps[0]
+        self._dy = self.grid_steps[1]
+        self._dz = self.grid_steps[2]
 
     @property
     def dx(self):
@@ -399,7 +399,7 @@ class CartesianRayTransferEmitter(RayTransferEmitter):
         ix = int(point.x / self._dx)  # X-index of grid cell, in which the point is located
         iy = int(point.y / self._dy)  # Y-index of grid cell, in which the point is located
         iz = int(point.z / self._dz)  # Z-index of grid cell, in which the point is located
-        i = self._voxel_map[ix, iy, iz]  # index of the light source in spectral array
+        i = self.voxel_map[ix, iy, iz]  # index of the light source in spectral array
         if i < 0:  # grid cell is not mapped to any light source
             return spectrum
         spectrum.samples[i] += 1.  # unit emissivity
