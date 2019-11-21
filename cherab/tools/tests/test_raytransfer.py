@@ -18,7 +18,10 @@
 
 import unittest
 import numpy as np
-from cherab.tools.raytransfer import RayTransferBox, RayTransferCylinder
+from raysect.optical import World, Ray, Point3D, Point2D, Vector3D, NumericalIntegrator
+from raysect.primitive import Box, Cylinder, Subtract
+from cherab.tools.raytransfer import RayTransferBox, RayTransferCylinder, CartesianRayTransferEmitter, CylindricalRayTransferEmitter
+from cherab.tools.inversions import ToroidalVoxelGrid
 
 
 class TestRayTransferCylinder(unittest.TestCase):
@@ -82,6 +85,35 @@ class TestRayTransferCylinder(unittest.TestCase):
                         (np.array([2, 2, 2, 2]), np.array([5, 5, 6, 6]), np.array([5, 6, 5, 6]))]
         self.assertTrue(np.all(mask_ref == rtc.mask) and np.all(np.array(inv_vmap_ref) == np.array(rtc.invert_voxel_map())) and rtc.bins == 8)
 
+    def test_integration_2d(self):
+        """ Testing against ToroidalVoxelGrid"""
+        world = World()
+        rtc = RayTransferCylinder(radius_outer=4., height=2., n_radius=2, n_height=2, radius_inner=2., parent=world)
+        rtc.step = 0.001 * rtc.step
+        ray = Ray(origin=Point3D(4., 1., 2.), direction=Vector3D(-4., -1., -2.) / np.sqrt(21.),
+                  min_wavelength=500., max_wavelength=501., bins=rtc.bins)
+        spectrum = ray.trace(world)
+        world = World()
+        vertices = []
+        for rv in [2., 3.]:
+            for zv in [0., 1.]:
+                vertices.append([Point2D(rv, zv + 1.), Point2D(rv + 1., zv + 1.), Point2D(rv + 1., zv), Point2D(rv, zv)])
+        tvg = ToroidalVoxelGrid(vertices, parent=world, primitive_type='csg', active='all')
+        tvg.set_active('all')
+        spectrum_test = ray.trace(world)
+        self.assertTrue(np.allclose(spectrum_test.samples, spectrum.samples, atol=0.001))
+
+    def test_integration_3d(self):
+        world = World()
+        rtc = RayTransferCylinder(radius_outer=2., height=2., n_radius=2, n_height=2, n_polar=3, period=90., parent=world)
+        rtc.step = 0.001 * rtc.step
+        ray = Ray(origin=Point3D(np.sqrt(2.), np.sqrt(2.), 2.), direction=Vector3D(-1., -1., -np.sqrt(2.)) / 2.,
+                  min_wavelength=500., max_wavelength=501., bins=rtc.bins)
+        spectrum = ray.trace(world)
+        spectrum_test = np.zeros(rtc.bins)
+        spectrum_test[2] = spectrum_test[9] = np.sqrt(2.)
+        self.assertTrue(np.allclose(spectrum_test, spectrum.samples, atol=0.001))
+
 
 class TestRayTransferBox(unittest.TestCase):
     """
@@ -127,3 +159,81 @@ class TestRayTransferBox(unittest.TestCase):
                         (np.array([8, 8, 8, 8, 9, 9, 9, 9]), np.array([8, 8, 9, 9, 8, 8, 9, 9]), np.array([0, 1, 0, 1, 0, 1, 0, 1])),
                         (np.array([8, 8, 8, 8, 9, 9, 9, 9]), np.array([8, 8, 9, 9, 8, 8, 9, 9]), np.array([8, 9, 8, 9, 8, 9, 8, 9]))]
         self.assertTrue(np.all(mask_ref == rtb.mask) and np.all(np.array(inv_vmap_ref) == np.array(rtb.invert_voxel_map())) and rtb.bins == 8)
+
+    def test_integration(self):
+        world = World()
+        rtb = RayTransferBox(xmax=3., ymax=3., zmax=3., nx=3, ny=3, nz=3, parent=world)
+        rtb.step = 0.01 * rtb.step
+        ray = Ray(origin=Point3D(4., 4., 4.), direction=Vector3D(-1., -1., -1.) / np.sqrt(3),
+                  min_wavelength=500., max_wavelength=501., bins=rtb.bins)
+        spectrum = ray.trace(world)
+        spectrum_test = np.zeros(rtb.bins)
+        spectrum_test[0] = spectrum_test[13] = spectrum_test[26] = np.sqrt(3.)
+        self.assertTrue(np.allclose(spectrum_test, spectrum.samples, atol=0.001))
+
+
+class TestCartesianRayTransferEmitter(unittest.TestCase):
+    """
+    Test cases for CartesianRayTransferEmitter class.
+    """
+
+    def test_evaluate_function(self):
+        """
+        Unlike test_integration() in TestRayTransferBox here we test how
+        CartesianRayTransferEmitter works with NumericalIntegrator.
+        """
+        world = World()
+        material = CartesianRayTransferEmitter((3, 3, 3), (1., 1., 1.), integrator=NumericalIntegrator(0.0001))
+        box = Box(lower=Point3D(0, 0, 0), upper=Point3D(2.99999, 2.99999, 2.99999),
+                  material=material, parent=world)
+        ray = Ray(origin=Point3D(4., 4., 4.), direction=Vector3D(-1., -1., -1.) / np.sqrt(3),
+                  min_wavelength=500., max_wavelength=501., bins=material.bins)
+        spectrum = ray.trace(world)
+        spectrum_test = np.zeros(material.bins)
+        spectrum_test[0] = spectrum_test[13] = spectrum_test[26] = np.sqrt(3.)
+        self.assertTrue(np.allclose(spectrum_test, spectrum.samples, atol=0.001))
+
+
+class TestCylindricalRayTransferEmitter(unittest.TestCase):
+    """
+    Test cases for CylindricalRayTransferEmitter class.
+    """
+
+    def test_evaluate_function_2d(self):
+        """
+        Unlike test_integration_2d() in TestRayTransferCylinder here we test how
+        CylindricalRayTransferEmitter works with NumericalIntegrator in axysimmetric case.
+        Testing against ToroidalVoxelGrid.
+        """
+        world = World()
+        material = CylindricalRayTransferEmitter((2, 2), (1., 1.), rmin=2., integrator=NumericalIntegrator(0.0001))
+        primitive = Subtract(Cylinder(3.999999, 1.999999), Cylinder(2.0, 1.999999),
+                             material=material, parent=world)
+        ray = Ray(origin=Point3D(4., 1., 2.), direction=Vector3D(-4., -1., -2.) / np.sqrt(21.),
+                  min_wavelength=500., max_wavelength=501., bins=4)
+        spectrum = ray.trace(world)
+        world = World()
+        vertices = []
+        for rv in [2., 3.]:
+            for zv in [0., 1.]:
+                vertices.append([Point2D(rv, zv + 1.), Point2D(rv + 1., zv + 1.), Point2D(rv + 1., zv), Point2D(rv, zv)])
+        tvg = ToroidalVoxelGrid(vertices, parent=world, primitive_type='csg', active='all')
+        tvg.set_active('all')
+        spectrum_test = ray.trace(world)
+        self.assertTrue(np.allclose(spectrum_test.samples, spectrum.samples, atol=0.001))
+
+    def test_evaluate_function_3d(self):
+        """
+        Unlike test_integration_3d() in TestRayTransferCylinder here we test how
+        CylindricalRayTransferEmitter works with NumericalIntegrator in 3D case.
+        """
+        world = World()
+        material = CylindricalRayTransferEmitter((2, 3, 2), (1., 30., 1.), period=90., integrator=NumericalIntegrator(0.0001))
+        primitive = Subtract(Cylinder(1.999999, 1.999999), Cylinder(0.000001, 1.999999),
+                             material=material, parent=world)
+        ray = Ray(origin=Point3D(np.sqrt(2.), np.sqrt(2.), 2.), direction=Vector3D(-1., -1., -np.sqrt(2.)) / 2.,
+                  min_wavelength=500., max_wavelength=501., bins=12)
+        spectrum = ray.trace(world)
+        spectrum_test = np.zeros(12)
+        spectrum_test[2] = spectrum_test[9] = np.sqrt(2.)
+        self.assertTrue(np.allclose(spectrum_test, spectrum.samples, atol=0.001))
