@@ -55,13 +55,13 @@ class RayTransferObject:
     """
     Basic class for ray transfer objects.
 
-    :ivar voxel_map: An array containing the indices of the light sources.
-    :ivar mask: A boolean mask array showing active (True) and inactive (False) gird cells.
-    :ivar parent: Scene-graph parent node.
-    :ivar transform: An AffineMatrix3D defining the local co-ordinate system
+    :ivar np.ndarray voxel_map: An array containing the indices of the light sources.
+    :ivar np.ndarray ~.mask: A boolean mask array showing active (True) and inactive (False) gird cells.
+    :ivar Node parent: Scene-graph parent node.
+    :ivar AffineMatrix3D transform: An AffineMatrix3D defining the local co-ordinate system
         relative to the scene-graph parent.
-    :ivar step: Integration step of volume integrator.
-    :ivar bins: Number of light sources (the size of spectral array must be equal to this value).
+    :ivar float step: Integration step of volume integrator.
+    :ivar int bins: Number of light sources (the size of spectral array must be equal to this value).
     """
 
     def __init__(self, primitive):

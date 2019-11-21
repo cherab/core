@@ -39,8 +39,8 @@ class RayTransferIntegrator(VolumeIntegrator):
     :param int min_samples: The minimum number of samples to use over integration range,
         defaults to `min_samples=2`.
 
-    :ivar step: Integration step.
-    :ivar min_samples: The minimum number of samples to use over integration range.
+    :ivar float step: Integration step.
+    :ivar int min_samples: The minimum number of samples to use over integration range.
     """
 
     def __init__(self, step=0.001, min_samples=2):
@@ -171,11 +171,12 @@ class RayTransferEmitter(InhomogeneousVolumeEmitter):
     :param raysect.optical.material.VolumeIntegrator integrator: Volume integrator,
         defaults to `integrator=NumericalVolumeIntegrator()`
 
-    :ivar grid_shape: The shape of regular grid.
-    :ivar grid_steps: The sizes of grid cells along each direction.
-    :ivar voxel_map: An array containing the indices of the light sources.
-    :ivar mask: A boolean mask array showing active (True) and inactive (False) gird cells.
-    :ivar bins: Number of light sources (the size of spectral array must be equal to this value).
+    :ivar tuple grid_shape: The shape of regular grid.
+    :ivar tuple grid_steps: The sizes of grid cells along each direction.
+    :ivar np.ndarray voxel_map: An array containing the indices of the light sources.
+    :ivar np.ndarray ~.mask: A boolean mask array showing active (True) and inactive
+        (False) gird cells.
+    :ivar int bins: Number of light sources (the size of spectral array must be equal to this value).
     """
 
     def __init__(self, grid_shape, grid_steps, voxel_map=None, mask=None, integrator=None):
@@ -251,6 +252,9 @@ class CylindricalRayTransferEmitter(RayTransferEmitter):
     A unit emitter defined on a regular 2D (RZ plane) or 3D :math:`(R, \phi, Z)` grid, which
     can be used to calculate ray transfer matrices (geometry matrices).
     In case of 3D grid this emitter is periodic in :math:`\phi` direction.
+    Note that for performance reason there are no boundary checks in `emission_function()`,
+    or in `CylindricalRayTranferIntegrator`, so this emitter must be placed between a couple
+    of coaxial cylinders that act like a bounding box.
 
     :param tuple grid_shape: The shape of regular :math:`(R, \phi, Z)` (3D case)
         or :math:`(R, Z)` (axisymmetric case) grid.
@@ -275,12 +279,33 @@ class CylindricalRayTransferEmitter(RayTransferEmitter):
     :param float period: A period in :math:`\phi` direction (in degree).
         Used only in 3D case, defaults to `period=360`.
 
-    :ivar period: The period in :math:`\phi` direction in 3D case or `None` in axisymmetric case.
-    :ivar rmin: Lower bound of grid in `R` direction.
-    :ivar dr: The size of grid cell in `R` direction (equals to `grid_shape[0]`).
-    :ivar dz: The size of grid cell in `Z` direction (equals to `grid_shape[-1]`).
-    :ivar dphi: The size of grid cell in :math:`\phi` direction
+    :ivar float period: The period in :math:`\phi` direction in 3D case or `None` in
+        axisymmetric case.
+    :ivar float rmin: Lower bound of grid in `R` direction.
+    :ivar float dr: The size of grid cell in `R` direction (equals to `grid_shape[0]`).
+    :ivar float dz: The size of grid cell in `Z` direction (equals to `grid_shape[-1]`).
+    :ivar float dphi: The size of grid cell in :math:`\phi` direction
         (equals to None in axisymmetric case or to `grid_shape[1]` in 3D case).
+
+    .. code-block:: pycon
+
+        >>> from raysect.optical import World, translate
+        >>> from raysect.primitive import Cylinder, Subtract
+        >>> from cherab.tools.raytransfer import CylindricalRayTransferEmitter
+        >>> world = World()
+        >>> grid_shape = (10, 10)
+        >>> grid_steps = (0.5, 0.5)
+        >>> rmin = 2.5
+        >>> material = CylindricalRayTransferEmitter(grid_shape, grid_steps, rmin=rmin)
+        >>> eps = 1.e-6  # ray must never leave the grid when passing through the volume
+        >>> radius_outer = grid_shape[0] * grid_steps[0] - eps
+        >>> height = grid_shape[1] * grid_steps[1] - eps
+        >>> radius_inner = rmin + eps
+        >>> bounding_box = Subtract(Cylinder(radius_outer, height), Cylinder(radius_inner, height),
+                                    material=material, parent=world)  # bounding primitive
+        >>> bounding_box.transform = translate(0, 0, -2.5)
+        ...
+        >>> camera.spectral_bins = material.bins
     """
 
     def __init__(self, grid_shape, grid_steps, voxel_map=None, mask=None, integrator=None, rmin=0, period=360.):
@@ -355,6 +380,8 @@ class CartesianRayTransferEmitter(RayTransferEmitter):
     """
     A unit emitter defined on a regular 3D :math:`(X, Y, Z)` grid, which can be used
     to calculate ray transfer matrices (geometry matrices).
+    Note that for performance reason there are no boundary checks in `emission_function()`,
+    or in `CartesianRayTranferIntegrator`, so this emitter must be placed inside a bounding box.
 
     :param tuple grid_shape: The shape of regular :math:`(X, Y, Z)` grid.
         The number of points in `X`, `Y` and `Z` directions.
@@ -375,9 +402,28 @@ class CartesianRayTransferEmitter(RayTransferEmitter):
     :param raysect.optical.material.VolumeIntegrator integrator: Volume integrator,
         defaults to `integrator=CartesianRayTransferIntegrator(step=0.1 * min(grid_steps))`
 
-    :ivar dx: The size of grid cell in `X` direction (equals to `grid_shape[0]`).
-    :ivar dy: The size of grid cell in `Y` direction (equals to `grid_shape[1]`).
-    :ivar dz: The size of grid cell in `Z` direction (equals to `grid_shape[2]`).
+    :ivar float dx: The size of grid cell in `X` direction (equals to `grid_shape[0]`).
+    :ivar float dy: The size of grid cell in `Y` direction (equals to `grid_shape[1]`).
+    :ivar float dz: The size of grid cell in `Z` direction (equals to `grid_shape[2]`).
+
+     .. code-block:: pycon
+
+        >>> from raysect.optical import World, translate, Point3D
+        >>> from raysect.primitive import Box
+        >>> from cherab.tools.raytransfer import CartesianRayTransferEmitter
+        >>> world = World()
+        >>> grid_shape = (10, 10, 10)
+        >>> grid_steps = (0.5, 0.5, 0.5)
+        >>> material = CartesianRayTransferEmitter(grid_shape, grid_steps)
+        >>> eps = 1.e-6  # ray must never leave the grid when passing through the volume
+        >>> upper = Point3D(grid_shape[0] * grid_steps[0] - eps,
+                            grid_shape[1] * grid_steps[1] - eps,
+                            grid_shape[2] * grid_steps[2] - eps)
+        >>> bounding_box = Box(lower=Point3D(0, 0, 0), upper=upper, material=material,
+                               parent=world)
+        >>> bounding_box.transform = translate(-2.5, -2.5, -2.5)
+        ...
+        >>> camera.spectral_bins = material.bins
     """
 
     def __init__(self, grid_shape, grid_steps, voxel_map=None, mask=None, integrator=None):

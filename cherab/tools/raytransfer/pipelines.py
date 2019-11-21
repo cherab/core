@@ -38,7 +38,7 @@ class RayTransferPipeline0D(Pipeline0D):
     """
     Simple 0D pipeline for ray transfer matrix (geometry matrix) calculation.
 
-    :ivar matrix: Ray transfer matrix, a 1D array of size :math:`N_{bin}`.
+    :ivar np.ndarray matrix: Ray transfer matrix, a 1D array of size :math:`N_{bin}`.
 
     .. code-block:: pycon
 
@@ -77,7 +77,7 @@ class RayTransferPipeline1D(Pipeline1D):
     """
     Simple 1D pipeline for ray transfer matrix (geometry matrix) calculation.
 
-    :ivar matrix: Ray transfer matrix, a 2D array of shape :math:`(N_{pixel}, N_{bin})`.
+    :ivar np.ndarray matrix: Ray transfer matrix, a 2D array of shape :math:`(N_{pixel}, N_{bin})`.
 
     .. code-block:: pycon
 
@@ -117,7 +117,7 @@ class RayTransferPipeline2D(Pipeline2D):
     """
     Simple 2D pipeline for ray transfer matrix (geometry matrix) calculation.
 
-    :ivar matrix: Ray transfer matrix, a 3D array of shape :math:`(N_x, N_y, N_{bin})`.
+    :ivar np.ndarray matrix: Ray transfer matrix, a 3D array of shape :math:`(N_x, N_y, N_{bin})`.
 
     .. code-block:: pycon
 
