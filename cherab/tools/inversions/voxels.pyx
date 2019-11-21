@@ -595,11 +595,9 @@ class ToroidalVoxelGrid(VoxelCollection):
         max_height = -1E999
 
         self._voxels = []
-        for i, voxel_vertices in enumerate(voxel_coordinates):
+        for voxel_vertices in voxel_coordinates:
 
             voxel = AxisymmetricVoxel(voxel_vertices, primitive_type=primitive_type)
-            if active == "all" or active == i:
-                voxel.parent = parent
             self._voxels.append(voxel)
 
             # Test and set extent values
@@ -616,6 +614,8 @@ class ToroidalVoxelGrid(VoxelCollection):
         self._max_radius = max_radius
         self._min_height = min_height
         self._max_height = max_height
+
+        self.set_active(active)
 
     @property
     def min_radius(self):
