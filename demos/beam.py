@@ -33,7 +33,7 @@ from cherab.core.math import Constant3D, ConstantVector3D
 from cherab.core.atomic import elements, Line
 from cherab.openadas import OpenADAS
 from cherab.core.model import SingleRayAttenuator, BeamCXLine
-from gaussian_volume import GaussianVolume
+from cherab.tools.plasmas import GaussianVolume
 
 integration_step = 0.02
 
