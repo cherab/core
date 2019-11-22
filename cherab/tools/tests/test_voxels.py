@@ -17,16 +17,21 @@
 # under the Licence.
 
 import itertools
+import os
 import unittest
 
 from matplotlib.patches import Polygon
 from matplotlib.path import Path
+import matplotlib.pyplot as plt
 import numpy as np
 
 from raysect.core import Point2D, Point3D
 from raysect.core.math import triangulate2d
 from raysect.core.math.random import seed
-from cherab.tools.inversions import AxisymmetricVoxel
+from raysect.optical.material import UnityVolumeEmitter
+from raysect.primitive import Mesh
+from raysect.primitive.csg import CSGPrimitive
+from cherab.tools.inversions import AxisymmetricVoxel, ToroidalVoxelGrid, UnityVoxelEmitter
 
 try:
     import quadpy
@@ -519,3 +524,177 @@ class TestVoxelInputs(unittest.TestCase):
         voxel_coords = np.asarray(RECTANGULAR_VOXEL_COORDS[0])
         with self.assertRaises(ValueError, msg="Calling with bogus primitive type didn't error"):
             AxisymmetricVoxel(voxel_coords, primitive_type="nonexistant")
+
+
+class TestToroidalVoxelGrid(unittest.TestCase):
+    """Test methods on Toroidal voxel grid"""
+    def setUp(self):
+        self.nr = 10
+        self.nz = 20
+        voxel_centre_rs, dr = np.linspace(1, 2, self.nr, False, True)
+        voxel_centre_zs, dz = np.linspace(-1, 1, self.nz, False, True)
+        self.dr = dr
+        self.dz = dz
+        self.voxel_centre_rs, self.voxel_centre_zs = np.meshgrid(voxel_centre_rs, voxel_centre_zs)
+        self.voxel_vertex_rs = (self.voxel_centre_rs[..., None]
+                                + np.array([-1, -1, 1, 1]) * self.dr / 2)
+        self.voxel_vertex_zs = (self.voxel_centre_zs[..., None]
+                                + np.array([-1, 1, 1, -1]) * self.dz / 2)
+        self.voxel_grid_coords = np.stack((self.voxel_vertex_rs, self.voxel_vertex_zs),
+                                          axis=-1).reshape((-1, 4, 2))
+
+    def test_init_all_active(self):
+        grid = ToroidalVoxelGrid(self.voxel_grid_coords, active="all")
+        for voxel in grid:
+            self.assertEqual(
+                voxel.parent, grid,
+                msg="Voxel wasn't parented to grid when initialised with active='all'"
+            )
+            self.assertIsInstance(
+                voxel.material, UnityVoxelEmitter,
+                msg="Voxel's material is not UnityVoxelEmitter when initialised with active='all'"
+                )
+
+    def test_init_one_active(self):
+        active_index = 10
+        grid = ToroidalVoxelGrid(self.voxel_grid_coords, active=active_index)
+        for i, voxel in enumerate(grid):
+            if i == active_index:
+                self.assertEqual(
+                    voxel.parent, grid,
+                    msg="Voxel wasn't parented to grid when index equals active index"
+                )
+                self.assertIsInstance(
+                    voxel.material, UnityVolumeEmitter,
+                    msg="Active voxel's material is not UnityVolumeEmitter"
+                )
+            else:
+                self.assertEqual(voxel.parent, None,
+                                 msg="Inactive voxel has a non-None parent")
+
+    def test_set_active(self):
+        grid = ToroidalVoxelGrid(self.voxel_grid_coords)
+        grid.set_active("all")
+        for voxel in grid:
+            self.assertEqual(voxel.parent, grid,
+                             msg="Voxel in set_active('all') not parented to grid")
+            self.assertIsInstance(
+                voxel.material, UnityVoxelEmitter,
+                msg="Voxel's material is not UnityVoxelEmitter after set_active='all'"
+                )
+        active_index = grid.count // 2
+        grid.set_active(active_index)
+        for i, voxel in enumerate(grid):
+            if i == active_index:
+                self.assertEqual(
+                    voxel.parent, grid,
+                    msg="Voxel wasn't parented to grid when index equals active index"
+                )
+                self.assertIsInstance(
+                    voxel.material, UnityVolumeEmitter,
+                    msg="Active voxel's material is not UnityVolumeEmitter"
+                )
+            else:
+                self.assertEqual(voxel.parent, None,
+                                 msg="Inactive voxel has a non-None parent")
+        with self.assertRaises(IndexError, msg="Negative index did not raise IndexError"):
+            grid.set_active(-2)
+        with self.assertRaises(IndexError, msg="Out of bounds did not raise IndexError"):
+            grid.set_active(grid.count + 5)
+        with self.assertRaises(ValueError, msg="Non-index voxel ID did not raise ValueError"):
+            grid.set_active("blah")
+
+    def test_csg_type(self):
+        grid = ToroidalVoxelGrid(self.voxel_grid_coords, primitive_type="csg")
+        for voxel in grid:
+            for child in voxel.children:
+                self.assertIsInstance(child, CSGPrimitive,
+                                      msg="CSG voxel is not made of CSG primitives")
+
+    def test_mesh_type(self):
+        grid = ToroidalVoxelGrid(self.voxel_grid_coords, primitive_type="mesh")
+        for voxel in grid:
+            for child in voxel.children:
+                self.assertIsInstance(child, Mesh,
+                                      msg="Mesh voxel is not made of Mesh primitives")
+
+    def test_collection_extents(self):
+        grid = ToroidalVoxelGrid(self.voxel_grid_coords)
+        self.assertEqual(grid.min_radius, self.voxel_grid_coords[..., 0].min(),
+                         msg="Min radius not correct")
+        self.assertEqual(grid.max_radius, self.voxel_grid_coords[..., 0].max(),
+                         msg="Max radius not correct")
+        self.assertEqual(grid.min_height, self.voxel_grid_coords[..., 1].min(),
+                         msg="Min height not correct")
+        self.assertEqual(grid.max_height, self.voxel_grid_coords[..., 1].max(),
+                         msg="Max height not correct")
+
+    def test_total_volume(self):
+        grid = ToroidalVoxelGrid(self.voxel_grid_coords)
+        expected_volume = (self.dr * self.dz * 2 * np.pi * self.voxel_centre_rs).sum()
+        self.assertAlmostEqual(grid.total_volume, expected_volume,
+                               msg="Total volume is incorrect")
+
+    def test_number_of_voxels(self):
+        grid = ToroidalVoxelGrid(self.voxel_grid_coords)
+        self.assertEqual(len(grid), self.voxel_grid_coords.shape[0],
+                         msg="len(grid) doesn't match number of voxels")
+        self.assertEqual(grid.count, self.voxel_grid_coords.shape[0],
+                         msg="grid.count doesn't match number of voxels")
+
+    def test_voxel_indexing(self):
+        grid = ToroidalVoxelGrid(self.voxel_grid_coords)
+        nvoxels = self.voxel_grid_coords.shape[0]
+        with self.assertRaises(IndexError, msg="Negative index did not raise IndexError"):
+            grid[-2]
+        with self.assertRaises(IndexError, msg="index > length did not raise IndexError"):
+            grid[nvoxels + 3]
+        with self.assertRaises(TypeError, msg="String index did not raise TypeError"):
+            grid["blah"]
+        # Check the correct voxel is returned, by looking at its vertices
+        for i in range(grid.count):
+            self.assertSequenceEqual(
+                grid[i].vertices, [Point2D(r, z) for r, z in self.voxel_grid_coords[i]],
+                msg="Wrong voxel returned for index {}".format(i)
+            )
+
+    def test_parenting(self):
+        grid = ToroidalVoxelGrid(self.voxel_grid_coords)
+        grid.parent_all_voxels()
+        for voxel in grid:
+            self.assertEqual(voxel.parent, grid,
+                             msg="Voxel not in scenegraph after parent_all_voxels()")
+        grid.unparent_all_voxels()
+        for voxel in grid:
+            self.assertEqual(voxel.parent, None,
+                             msg="Voxel not removed from scenegraph after unparent_all_voxels()")
+
+    def test_plotting(self):
+        # Note: by default, only checks that the plot method runs without error.
+        # To actually see the plots, set the environment variable
+        # SHOW_VOXEL_TEST_PLOTS before running the tests
+        SHOW_PLOT = bool(os.getenv("SHOW_VOXEL_TEST_PLOTS"))
+        grid = ToroidalVoxelGrid(self.voxel_grid_coords)
+        # Test plotting with no existing axis
+        grid.plot(title="No existing axis")
+        if SHOW_PLOT:
+            plt.show()
+        # Test plotting with existing axis
+        fig, ax = plt.subplots()
+        grid.plot(ax=ax)
+        if SHOW_PLOT:
+            plt.show()
+        # Test plotting with grid name
+        grid.name = "Test grid"
+        grid.plot()
+        if SHOW_PLOT:
+            plt.show()
+        # Test plotting some given voxel values
+        grid.plot(voxel_values=np.arange(grid.count))
+        if SHOW_PLOT:
+            plt.show()
+        # Test invalid voxel values
+        with self.assertRaises(TypeError, msg="plot erroneously accepted a string for voxel_values"):
+            grid.plot(voxel_values="blah")
+        with self.assertRaises(TypeError, msg="plot erroneously accepted wrong length for voxel_values"):
+            grid.plot(voxel_values=np.arange(grid.count + 10))
