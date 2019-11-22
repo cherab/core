@@ -9,6 +9,7 @@ use_cython = True
 force = False
 profile = False
 line_profile = False
+install_rates = True
 
 if "--skip-cython" in sys.argv:
     use_cython = False
@@ -25,6 +26,10 @@ if "--profile" in sys.argv:
 if "--line-profile" in sys.argv:
     line_profile = True
     del sys.argv[sys.argv.index("--line-profile")]
+
+if "--skip-rates-install" in sys.argv:
+    install_rates = False
+    del sys.argv[sys.argv.index("--skip-rates-install")]
 
 source_paths = ['cherab', 'demos']
 compilation_includes = [".", numpy.get_include()]
@@ -98,3 +103,11 @@ setup(
     zip_safe=False,
     ext_modules=extensions
 )
+
+# setup a rate repository with common rates
+if install_rates:
+    try:
+        from cherab.openadas import repository
+        repository.populate()
+    except ImportError:
+        pass
