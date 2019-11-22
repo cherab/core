@@ -69,7 +69,8 @@ Ray transfer objects accelerate the calculation of geometry matrices (or Ray Tra
 in `S. Kajita, et al. Contrib. Plasma Phys., 2016, 1-9 <https://onlinelibrary.wiley.com/doi/abs/10.1002/ctpp.201500124>`_) 
 in the case of regular spatial grids. As in the case of Voxels, the spectral array is used to store the data 
 for individual light sources (in this case the grid cells or their unions), however no voxels are created at all. 
-Instead, a custom integration along the ray is implemented. Use `RayTransferBox` class for Cartesian grids 
+Instead, a custom integration along the ray is implemented. Ray transfer objects allow to calculate geometry
+matrices for a single value of wavelength. Use `RayTransferBox` class for Cartesian grids 
 and `RayTransferCylinder` class for cylindrical grids (3D or axisymmetrical).
 
 Performance tips:

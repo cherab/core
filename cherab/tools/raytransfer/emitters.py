@@ -151,7 +151,8 @@ class CartesianRayTransferIntegrator(RayTransferIntegrator):
 class RayTransferEmitter(InhomogeneousVolumeEmitter):
     """
     Basic class for ray transfer emitters defined on a regular grid. Ray transfer emitters
-    are used to calculate ray transfer matrices (geometry matrices).
+    are used to calculate ray transfer matrices (geometry matrices) for a single value
+    of wavelength.
 
     :param tuple grid_shape: The shape of regular grid (the number of grid cells
         along each direction).
@@ -250,7 +251,8 @@ class RayTransferEmitter(InhomogeneousVolumeEmitter):
 class CylindricalRayTransferEmitter(RayTransferEmitter):
     """
     A unit emitter defined on a regular 2D (RZ plane) or 3D :math:`(R, \phi, Z)` grid, which
-    can be used to calculate ray transfer matrices (geometry matrices).
+    can be used to calculate ray transfer matrices (geometry matrices) for a single value
+    of wavelength.
     In case of 3D grid this emitter is periodic in :math:`\phi` direction.
     Note that for performance reason there are no boundary checks in `emission_function()`,
     or in `CylindricalRayTranferIntegrator`, so this emitter must be placed between a couple
@@ -306,6 +308,9 @@ class CylindricalRayTransferEmitter(RayTransferEmitter):
         >>> bounding_box.transform = translate(0, 0, -2.5)
         ...
         >>> camera.spectral_bins = material.bins
+        >>> # ray transfer matrix will be calculated for 600.5 nm
+        >>> camera.min_wavelength = 600.
+        >>> camera.max_wavelength = 601.
     """
 
     def __init__(self, grid_shape, grid_steps, voxel_map=None, mask=None, integrator=None, rmin=0, period=360.):
@@ -424,6 +429,9 @@ class CartesianRayTransferEmitter(RayTransferEmitter):
         >>> bounding_box.transform = translate(-2.5, -2.5, -2.5)
         ...
         >>> camera.spectral_bins = material.bins
+        >>> # ray transfer matrix will be calculated for 600.5 nm
+        >>> camera.min_wavelength = 600.
+        >>> camera.max_wavelength = 601.
     """
 
     def __init__(self, grid_shape, grid_steps, voxel_map=None, mask=None, integrator=None):

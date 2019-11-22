@@ -65,6 +65,10 @@ cdef class RToptimisedRoughConductor(RoughConductor):
         reflected = ray.spawn_daughter(w_reflection_origin, s_outgoing.transform(surface_to_world))
         spectrum = reflected.trace(world)
 
+        # checking if the wavelength range is narrow enough to consider Fresnel indices as constants
+        if spectrum.max_wavelength - spectrum.min_wavelength > 5.:  # 5nm is narrow enough
+            raise ValueError("RToptimisedRoughConductor can be used only if wavelength range does not exceed 5 nm.")
+
         # evaluate lighting with Cook-Torrance bsdf (optimised)
         wavelength = 0.5 * (spectrum.min_wavelength + spectrum.max_wavelength)
         n = self.index.evaluate(wavelength)
@@ -72,36 +76,3 @@ cdef class RToptimisedRoughConductor(RoughConductor):
         ci = s_half.dot(s_outgoing)
         spectrum.mul_scalar(self._d(s_half) * self._g(s_incoming, s_outgoing) * self._fresnel_conductor(ci, n, k) / (4 * s_incoming.z))
         return spectrum
-
-    @cython.cdivision(True)
-    cdef double _d(self, Vector3D s_half):
-
-        cdef double r2, h2, k
-
-        # ggx distribution
-        r2 = self._roughness * self._roughness
-        h2 = s_half.z * s_half.z
-        k = h2 * (r2 - 1) + 1
-        return r2 / (M_PI * k * k)
-
-    cdef double _g(self, Vector3D s_incoming, Vector3D s_outgoing):
-        # Smith's geometric shadowing model
-        return self._g1(s_incoming) * self._g1(s_outgoing)
-
-    @cython.cdivision(True)
-    cdef double _g1(self, Vector3D v):
-        # Smith's geometric component (G1) for GGX distribution
-        cdef double r2 = self._roughness * self._roughness
-        return 2 * v.z / (v.z + sqrt(r2 + (1 - r2) * (v.z * v.z)))
-
-    @cython.cdivision(True)
-    cdef double _fresnel_conductor(self, double ci, double n, double k) nogil:
-
-        cdef double c12, k0, k1, k2, k3
-
-        ci2 = ci * ci
-        k0 = n * n + k * k
-        k1 = k0 * ci2 + 1
-        k2 = 2 * n * ci
-        k3 = k0 + ci2
-        return 0.5 * ((k1 - k2) / (k1 + k2) + (k3 - k2) / (k3 + k2))

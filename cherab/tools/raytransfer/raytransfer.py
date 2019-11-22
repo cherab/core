@@ -27,6 +27,7 @@ they were called in `S. Kajita, et al. Contrib. Plasma Phys., 2016, 1-9
 in the case of regular spatial grids. As in the case of Voxels, the spectral array is used to store
 the data for individual light sources (in this case the grid cells or their unions), however
 no voxels are created at all. Instead, a custom integration along the ray is implemented.
+Ray transfer objects allow to calculate geometry matrices for a single value of wavelength.
 
 Use `RayTransferBox` class for Cartesian grids and `RayTransferCylinder` class for cylindrical grids
 (3D or axisymmetrical).
@@ -176,6 +177,9 @@ class RayTransferCylinder(RayTransferObject):
         >>> rtc.transform = translate(0, 0, -5.)
         ...
         >>> camera.spectral_bins = rtc.bins
+        >>> # ray transfer matrix will be calculated for 600.5 nm
+        >>> camera.min_wavelength = 600.
+        >>> camera.max_wavelength = 601.
     """
 
     def __init__(self, radius_outer, height, n_radius, n_height, radius_inner=0, n_polar=0, period=360., step=None, voxel_map=None, mask=None,
@@ -243,6 +247,9 @@ class RayTransferBox(RayTransferObject):
         >>> rtb.mask = mask  # all cells outside this sphere are excluded
         ...
         >>> camera.spectral_bins = rtb.bins
+        >>> # ray transfer matrix will be calculated for 600.5 nm
+        >>> camera.min_wavelength = 600.
+        >>> camera.max_wavelength = 601.
     """
 
     def __init__(self, xmax, ymax, zmax, nx, ny, nz, step=None, voxel_map=None, mask=None,
