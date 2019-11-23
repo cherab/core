@@ -1,8 +1,26 @@
 Project Changelog
 =================
 
-Release 1.2.0 (TBD)
---------------------------
+Release 1.2.0 (23 Nov 2019)
+---------------------------
+
+API changes:
+* AxisymmetricVoxel vertices initialisation switched to Nx2 numpy array.
+* Raysect VolumeTransforms used to handle shifts in coordinate systems rather than material specific offsets.
+
+New:
+* Merged cherab-openadas package into the core cherab package to simplify installation.
+* Beam object uses a cone primitive instead of a cylinder for the bounding volume of divergent beams. 
+* Added Clamp functions.
+* Added ThermalCXRate.
+* Added optimised ray transfer grid calculation tools.
+* Added opencl optimised SART inversion to tools.
+* Numerous improvements to bolometry tool chain (see commit history).
+
+Bug fixes:
+* Equilibrium psi normalised clamped to prevent negative values (occasionally caused by numerical precision issues at the core).
+* trace_sightline() bug that cause repeated reintersection has been fixed.
+* Numerous samller issues addressed throughout the framework (see commit history).
 
 
 Release 1.1.0 (6 Mar 2019)
