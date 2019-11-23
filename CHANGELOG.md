@@ -7,6 +7,7 @@ Release 1.2.0 (23 Nov 2019)
 API changes:
 * AxisymmetricVoxel vertices initialisation switched to Nx2 numpy array.
 * Raysect VolumeTransforms used to handle shifts in coordinate systems rather than material specific offsets.
+* Numerous minor changes (see commit history).
 
 New:
 * Merged cherab-openadas package into the core cherab package to simplify installation.
@@ -18,8 +19,8 @@ New:
 * Numerous improvements to bolometry tool chain (see commit history).
 
 Bug fixes:
-* Equilibrium psi normalised clamped to prevent negative values (occasionally caused by numerical precision issues at the core).
-* trace_sightline() bug that cause repeated reintersection has been fixed.
+* Equilibrium normalised psi clamped to prevent negative values (occasionally caused by numerical precision issues at the core).
+* trace_sightline() bug that caused repeated reintersection has been fixed.
 * Numerous samller issues addressed throughout the framework (see commit history).
 
 
