@@ -9,7 +9,7 @@ use_cython = True
 force = False
 profile = False
 line_profile = False
-install_rates = True
+install_rates = False
 
 if "--skip-cython" in sys.argv:
     use_cython = False
@@ -27,9 +27,9 @@ if "--line-profile" in sys.argv:
     line_profile = True
     del sys.argv[sys.argv.index("--line-profile")]
 
-if "--skip-rates-install" in sys.argv:
-    install_rates = False
-    del sys.argv[sys.argv.index("--skip-rates-install")]
+if "--install-rates" in sys.argv:
+    install_rates = True
+    del sys.argv[sys.argv.index("--install-rates")]
 
 source_paths = ['cherab', 'demos']
 compilation_includes = [".", numpy.get_include()]
