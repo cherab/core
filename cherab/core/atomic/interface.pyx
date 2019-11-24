@@ -25,53 +25,68 @@ cdef class AtomicData:
     atomic data.
     """
 
-    cpdef double wavelength(self, Element ion, int ionisation, tuple transition):
+    cpdef double wavelength(self, Element ion, int charge, tuple transition):
         """
         Returns the natural wavelength of the specified transition in nm.
         """
 
         raise NotImplementedError("The wavelength() virtual method is not implemented for this atomic data source.")
 
-    cpdef list beam_cx_rate(self, Element donor_ion, Element receiver_ion, int receiver_ionisation, tuple transition):
+    cpdef IonisationRate ionisation_rate(self, Element ion, int charge):
+        raise NotImplementedError("The ionisation_rate() virtual method is not implemented for this atomic data source.")
+
+    cpdef RecombinationRate recombination_rate(self, Element ion, int charge):
+        raise NotImplementedError("The recombination_rate() virtual method is not implemented for this atomic data source.")
+
+    cpdef ThermalCXRate thermal_cx_rate(self, Element donor_ion, int donor_charge, Element receiver_ion, int receiver_charge):
+        raise NotImplementedError("The thermal_cx_rate() virtual method is not implemented for this atomic data source.")
+
+    cpdef list beam_cx_pec(self, Element donor_ion, Element receiver_ion, int receiver_charge, tuple transition):
         """
         Returns a list of applicable charge exchange emission rates in W.m^3.
         """
 
         raise NotImplementedError("The cxs_rates() virtual method is not implemented for this atomic data source.")
 
-    cpdef BeamStoppingRate beam_stopping_rate(self, Element beam_ion, Element plasma_ion, int ionisation):
+    cpdef BeamStoppingRate beam_stopping_rate(self, Element beam_ion, Element plasma_ion, int charge):
         """
-        Returns a list of applicable beam stopping/emission coefficients in m^3/s.
+        Returns a list of applicable beam stopping coefficients in m^3/s.
         """
 
         raise NotImplementedError("The beam_stopping() virtual method is not implemented for this atomic data source.")
 
-    cpdef BeamPopulationRate beam_population_rate(self, Element beam_ion, int metastable, Element plasma_ion, int ionisation):
+    cpdef BeamPopulationRate beam_population_rate(self, Element beam_ion, int metastable, Element plasma_ion, int charge):
         """
-        Returns a list of applicable beam stopping/emission coefficients in m^3/s.
+        Returns a list of applicable beam population coefficients in m^3/s.
         """
 
         raise NotImplementedError("The beam_population() virtual method is not implemented for this atomic data source.")
 
-    cpdef BeamEmissionRate beam_emission_rate(self, Element beam_ion, Element plasma_ion, int ionisation, tuple transition):
+    cpdef BeamEmissionPEC beam_emission_pec(self, Element beam_ion, Element plasma_ion, int charge, tuple transition):
         """
-        Returns a list of applicable beam stopping/emission coefficients in m^3/s.
+        Returns a list of applicable beam emission coefficients in W.m^3.
         """
 
         raise NotImplementedError("The beam_emission() virtual method is not implemented for this atomic data source.")
 
-    cpdef ImpactExcitationRate impact_excitation_rate(self, Element ion, int ionisation, tuple transition):
+    cpdef ImpactExcitationPEC impact_excitation_pec(self, Element ion, int charge, tuple transition):
         raise NotImplementedError("The impact_excitation() virtual method is not implemented for this atomic data source.")
 
-    cpdef RecombinationRate recombination_rate(self, Element ion, int ionisation, tuple transition):
+    cpdef RecombinationPEC recombination_pec(self, Element ion, int charge, tuple transition):
         raise NotImplementedError("The recombination() virtual method is not implemented for this atomic data source.")
 
-    cpdef RadiatedPower radiated_power_rate(self, Element element, str radiation_type):
-        raise NotImplementedError("The radiated_power() virtual method is not implemented for this atomic data source.")
+    cpdef TotalRadiatedPower total_radiated_power(self, Element element):
+        raise NotImplementedError("The total_radiated_power() virtual method is not implemented for this atomic data source.")
 
-    cpdef StageResolvedLineRadiation stage_resolved_line_radiation_rate(self, Element ion, int ionisation):
-        raise NotImplementedError("The stage_resolved_line_radiation() virtual method is not implemented for this atomic data source.")
+    cpdef LineRadiationPower line_radiated_power_rate(self, Element element, int charge):
+        raise NotImplementedError("The line_radiated_power_rate() virtual method is not implemented for this atomic data source.")
 
-    cpdef FractionalAbundance fractional_abundance(self, Element ion, int ionisation):
+    cpdef ContinuumPower continuum_radiated_power_rate(self, Element element, int charge):
+        raise NotImplementedError("The continuum_radiated_power_rate() virtual method is not implemented for this atomic data source.")
+
+    cpdef CXRadiationPower cx_radiated_power_rate(self, Element element, int charge):
+        raise NotImplementedError("The cx_radiated_power_rate() virtual method is not implemented for this atomic data source.")
+
+    cpdef FractionalAbundance fractional_abundance(self, Element ion, int charge):
         raise NotImplementedError("The fractional_abundance() virtual method is not implemented for this atomic data source.")
 

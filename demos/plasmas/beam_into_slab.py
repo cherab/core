@@ -19,8 +19,8 @@ from cherab.openadas import OpenADAS
 
 world = World()
 
-plasma = build_slab_plasma(peak_density=5e19, impurities=[(carbon, 6, 0.005)], world=world)
-
+plasma = build_slab_plasma(peak_density=5e19, impurities=[(carbon, 6, 0.005)], parent=world)
+plasma.atomic_data = OpenADAS(permit_extrapolation=True)
 
 ####################
 # Visualise Plasma #

@@ -18,7 +18,8 @@
 
 
 cdef class Line:
-    """A class fully specifies an observed spectroscopic emission line.
+    """
+    A class fully specifies an observed spectroscopic emission line.
 
     Note that wavelengths are not arguments to this class. This is because in
     principle the transition has already been fully specified with the other three
@@ -26,7 +27,7 @@ cdef class Line:
     atomic data provider.
 
     :param Element element: The atomic element/isotope to which this emission line belongs.
-    :param int ionisation: The ionisation state of the element/isotope that emits this line.
+    :param int charge: The charge state of the element/isotope that emits this line.
     :param tuple transition: A two element tuple that defines the upper and lower electron
       configuration states of the transition. For hydrogen-like ions it may be enough to
       specify the n-levels with integers (e.g. (3,2)). For all other ions the full spectroscopic
@@ -45,15 +46,17 @@ cdef class Line:
         >>> ciii_465 = Line(carbon, 2, ('2s1 3p1 3P4.0', '2s1 3s1 3S1.0'))
     """
 
-    def __init__(self, Element element, int ionisation, tuple transition):
+    def __init__(self, Element element, int charge, tuple transition):
 
-        if ionisation > element.atomic_number - 1:
-            raise ValueError("Ionisation level cannot be larger than one less than the atomic number.")
+        if charge > element.atomic_number - 1:
+            raise ValueError("Charge state cannot be larger than one less than the atomic number.")
 
-        if ionisation < 0:
-            raise ValueError("Ionisation level cannot be less than zero.")
+        if charge < 0:
+            raise ValueError("Charge state cannot be less than zero.")
 
         self.element = element
-        self.ionisation = ionisation
+        self.charge = charge
         self.transition = transition
 
+    def __repr__(self):
+        return '<Line: {}, {}, {}>'.format(self.element.name, self.charge, self.transition)

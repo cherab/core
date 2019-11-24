@@ -18,13 +18,13 @@ them after they have been instantiated.
 Photon Emissivity Coefficients
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. autoclass:: cherab.core.atomic.rates.ImpactExcitationRate
+.. autoclass:: cherab.core.atomic.rates.ImpactExcitationPEC
 
-.. autoclass:: cherab.core.atomic.rates.RecombinationRate
+.. autoclass:: cherab.core.atomic.rates.RecombinationPEC
 
-.. autoclass:: cherab.core.atomic.rates.ThermalCXRate
+.. autoclass:: cherab.core.atomic.rates.ThermalCXPEC
 
-The PEC `ImpactExcitationRate`, `RecombinationRate` and `ThermalCXRate` classes all share
+The `ImpactExcitationPEC`, `RecombinationPEC` and `ThermalCXPEC` classes all share
 the same call signatures.
 
 .. function:: __call__(density, temperature)
@@ -41,7 +41,7 @@ the same call signatures.
 
    :param float temperature: Receiver ion temperature in eV.
    :param float density: Receiver ion density in m^-3
-   :return: The effective PEC rate in W/m^3.
+   :return: The effective PEC rate [Wm^3].
 
 Some example code for requesting PEC objects and sampling them with the __call__()
 method.
@@ -57,9 +57,9 @@ method.
    >>> adas = OpenADAS()
    >>>
    >>> # request d-alpha instance of ImpactExcitationRate
-   >>> dalpha_excit = adas.impact_excitation_rate(deuterium, 0, (3, 2))
+   >>> dalpha_excit = adas.impact_excitation_pec(deuterium, 0, (3, 2))
    >>> # request d-alpha instance of RecombinationRate
-   >>> dalpha_recom = adas.recombination_rate(deuterium, 0, (3, 2))
+   >>> dalpha_recom = adas.recombination_pec(deuterium, 0, (3, 2))
    >>>
    >>> # evaluate D-alpha ImpactExcitationRate PEC at n_e = 1E19 m^-3 and t_e = 2 eV
    >>> dalpha_excit(1E19, 2)
@@ -77,9 +77,9 @@ Beam-Plasma Interaction Rates
 
 .. autoclass:: cherab.core.atomic.rates.BeamPopulationRate
 
-.. autoclass:: cherab.core.atomic.rates.BeamEmissionRate
+.. autoclass:: cherab.core.atomic.rates.BeamEmissionPEC
 
-The `BeamStoppingRate`, `BeamPopulationRate` and `BeamEmissionRate` classes all share
+The `BeamStoppingRate`, `BeamPopulationRate` and `BeamEmissionPEC` classes all share
 the same call signatures.
 
 .. function:: __call__(energy, density, temperature)
@@ -119,7 +119,7 @@ method.
    7.599066e-10
    >>>
    >>> # Sample the beam emission rate
-   >>> bme = adas.beam_emission_rate(deuterium, deuterium, 1, (3, 2))
+   >>> bme = adas.beam_emission_pec(deuterium, deuterium, 1, (3, 2))
    >>> bme(50000, 1E19, 1)
    8.651598e-34
 

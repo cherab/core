@@ -17,29 +17,31 @@
 # See the Licence for the specific language governing permissions and limitations
 # under the Licence.
 
+cimport cython
 import numpy as np
 cimport numpy as np
-from libc.math cimport abs as cabs, floor
+from libc.math cimport floor
 import matplotlib.pyplot as plt
 from matplotlib.patches import Polygon
 from matplotlib.collections import PatchCollection
 
-from raysect.core cimport (Node, Point2D, Vector2D, Point3D, Vector3D,
-                           rotate_z, AffineMatrix3D, new_point3d)
-from raysect.core.math cimport triangulate2d, translate, rotate_basis
-from raysect.core.math.function cimport Function3D
-from raysect.core.math.cython.utility cimport winding2d, find_index
+from raysect.core cimport (Node, Point2D, Vector2D, Point3D, Vector3D, Primitive,
+                           rotate_z, AffineMatrix3D, new_point2d, new_point3d,
+                           new_vector2d, new_vector3d)
+from raysect.core.math cimport triangulate2d, translate, rotate_basis, AffineMatrix3D
+from raysect.core.math.function cimport Function3D, autowrap_function3d
+from raysect.core.math.cython.utility cimport winding2d, find_index, maximum, minimum, peak_to_peak
 from raysect.core.math.random cimport uniform, point_triangle
-from raysect.primitive import Mesh, Cylinder, Cone, Intersect, Subtract, Union
-from raysect.optical import UnityVolumeEmitter
+from raysect.primitive cimport Mesh, Cylinder, Cone, Intersect, Subtract, Union
+from raysect.optical.material cimport UnityVolumeEmitter, HomogeneousVolumeEmitter, Material
 from raysect.optical cimport Spectrum, World, Primitive, Ray
-from raysect.optical.material.emitter.homogeneous cimport HomogeneousVolumeEmitter
+from cherab.tools.primitives.axisymmetric_mesh cimport axisymmetric_mesh_from_polygon
 
 
-PI = 3.141592653589793
+cdef double PI = 3.141592653589793
 
 
-class Voxel(Node):
+cdef class Voxel(Node):
     """
     A Voxel base class.
 
@@ -53,8 +55,11 @@ class Voxel(Node):
     def volume(self):
         raise NotImplementedError()
 
+    cpdef double emissivity_from_function(self, emission_function, int grid_samples=10):
+        raise NotImplementedError()
 
-class AxisymmetricVoxel(Voxel):
+
+cdef class AxisymmetricVoxel(Voxel):
     """
     An axis-symmetric Voxel.
 
@@ -70,20 +75,30 @@ class AxisymmetricVoxel(Voxel):
     matrices including reflection effects.
 
 
-    :param vertices: A list/tuple of Point2D objects specifying the voxel's
-      polygon outline in the r-z plane.
+    :param vertices: An Nx2 array specifying the voxel's polygon outline in the
+      r-z plane.
     :param Node parent: The scenegraph to which this Voxel is attached.
     :param Material material: The emission material of this Voxel, defaults
       to a UnityVolumeEmitter() for weight matrix calculations.
     :param str primitive_type: Specifies the primitive type, can be either
-      'mesh' or 'csg'. Defaults to the mesh representation.
+      'mesh' or 'csg'. Defaults to the CSG representation.
 
     :ivar float volume: The geometric volume of this voxel.
     :ivar float cross_sectional_area: The cross sectional area of the voxel in
       the r-z plane.
+    :ivar Point2D cross_section_centroid: The centroid of the voxel in
+      the r-z plane.
     """
 
-    def __init__(self, vertices, parent=None, material=None, primitive_type='mesh'):
+    cdef:
+        double[:, ::1] _vertices
+        int[:, ::1] _triangles
+        Material _material
+
+    def __init__(self, vertices, parent=None, material=None, primitive_type='csg'):
+
+        cdef:
+            int i
 
         super().__init__(parent=parent)
 
@@ -91,25 +106,22 @@ class AxisymmetricVoxel(Voxel):
 
         num_vertices = len(vertices)
         if not num_vertices >= 3:
-            raise TypeError('The AxisSymmetricVoxel can only be specified by a polygon with at least 3 Point2D objects.')
+            raise TypeError('The AxisymmetricVoxel can only be specified by a polygon with at least 3 vertices.')
 
-        self._vertices = np.zeros((num_vertices, 2))
+        self._vertices = np.empty((num_vertices, 2))
         for i, vertex in enumerate(vertices):
-            if not isinstance(vertex, Point2D):
-                raise TypeError('The AxisSymmetricVoxel can only be specified with a list/tuple of Point2D objects.')
-            self._vertices[i, :] = vertex.x, vertex.y
-
-        if any(self._vertices[:, 0] < 0):
-            raise ValueError('The polygon vertices must be in the r-z plane.')
+            if not isinstance(vertex, Point2D) and len(vertex) != 2:
+                raise TypeError('The polygon vertices must be an Nx2 array of coordinates')
+            if vertex[0] < 0:
+                raise ValueError('The polygon vertices must be in the r-z plane.')
+            self._vertices[i, 0] = vertex[0]
+            self._vertices[i, 1] = vertex[1]
 
         # Check the polygon is clockwise, if not => reverse it.
         if not winding2d(self._vertices):
-            self._vertices = self._vertices[::-1]
+            self._vertices[:] = self._vertices[::-1]
 
-        self._triangles = triangulate2d(self._vertices)
-
-        # Generate summary statistics
-        self.radius = self._vertices[:, 0].sum()/num_vertices
+        self._triangles = triangulate2d(self._vertices.base)
 
         if primitive_type == 'mesh':
             self._build_mesh()
@@ -118,93 +130,82 @@ class AxisymmetricVoxel(Voxel):
                 self._build_csg_from_rectangle()
             else:
                 for triangle in self._triangles:
-                    self._build_csg_from_triangle(self._vertices[triangle])
+                    self._build_csg_from_triangle(self._vertices.base[triangle])
         else:
             raise ValueError("primitive_type should be 'mesh' or 'csg'")
 
-    def _build_mesh(self):
+    cdef void _build_mesh(self):
         """Build the Voxel out of triangular mesh elements."""
-        num_vertices = len(self._vertices)
-        radial_width = self._vertices[:, 0].max() - self._vertices[:, 0].min()
+        cdef:
+            int number_segments
+            double radial_width
+            Mesh mesh
 
-        number_segments = int(floor(2 * PI * self.radius / radial_width))
-        theta_adjusted = 360 / number_segments
+        radial_width = peak_to_peak(self._vertices[:, 0])
+        number_segments = int(floor(2 * PI * self.cross_section_centroid.x / radial_width))
+        mesh = axisymmetric_mesh_from_polygon(self._vertices.base, number_segments)
+        mesh.parent = self
+        mesh.material = self._material
 
-        # Construct 3D outline of polygon in x-z plane and the rotated plane
-        xz_points = []  # Set of points in x-z plane
-        rotated_points = []  # Set of points rotated away from x-z plane
-        for i in range(num_vertices):
-            xz_point = Point3D(self._vertices[i, 0], 0, self._vertices[i, 1])
-            xz_points.append(xz_point)
-            rotated_point = xz_point.transform(rotate_z(theta_adjusted))
-            rotated_points.append(rotated_point)
-
-        # assemble mesh vertices
-        vertices = []
-        for p in xz_points:
-            vertices.append([p.x, p.y, p.z])
-        for p in rotated_points:
-            vertices.append([p.x, p.y, p.z])
-
-        # assemble mesh triangles
-        triangles = []
-        # front face triangles
-        for i in range(self._triangles.shape[0]):
-            triangles.append([self._triangles[i, 2], self._triangles[i, 1], self._triangles[i, 0]])
-        # rear face triangles
-        for i in range(self._triangles.shape[0]):
-            triangles.append([self._triangles[i, 0]+num_vertices, self._triangles[i, 1]+num_vertices, self._triangles[i, 2]+num_vertices])
-        # Assemble side triangles
-        for i in range(num_vertices):
-            if i == num_vertices-1:
-                triangles.append([i+1, i+num_vertices, i])
-                triangles.append([0, i+1, i])
-            else:
-                triangles.append([i+num_vertices+1, i+num_vertices, i])
-                triangles.append([i, i+1, i+num_vertices+1])
-
-        base_segment = Mesh(vertices=vertices, triangles=triangles, smoothing=False)
-
-        # Construct annulus by duplicating and rotating base segment.
-        for i in range(number_segments):
-            theta_rotation = theta_adjusted * i
-            segment = base_segment.instance(transform=rotate_z(theta_rotation), material=self._material, parent=self)
-
-    def _has_rectangular_cross_section(self):
+    cdef bint _has_rectangular_cross_section(self):
         """
         Test if the voxel has a rectangular cross section, and is aligned with
         the coordinate axes.
         """
-        if len(self.vertices) != 4:
+        cdef:
+            double distance_13, distance_24
+            Vector2D side_12, xaxis, yaxis
+            Point2D v1, v2, v3, v4
+
+        if self._vertices.shape[0] != 4:
             return False
         # A rectangle (including a square, which is considered to have a
         # rectangular cross section too) is defined by having equal length
         # diagonals.
-        distance_13 = self.vertices[0].distance_to(self.vertices[2])
-        distance_24 = self.vertices[1].distance_to(self.vertices[3])
+        v1, v2, v3, v4 = self.vertices
+        distance_13 = v1.distance_to(v3)
+        distance_24 = v2.distance_to(v4)
         if distance_13 != distance_24:
             return False
         # The rectangle should be aligned with the coordinate axes, i.e. the
         # edge from vertex 1 to 2 should be parallel to either the x or z axes.
-        side_12 = self.vertices[0].vector_to(self.vertices[1])
-        if side_12.dot(Vector2D(1, 0)) != 0 and side_12.dot(Vector2D(0, 1)) != 0:
+        side_12 = v1.vector_to(v2)
+        xaxis = new_vector2d(1, 0)
+        yaxis = new_vector2d(0, 1)
+        if side_12.dot(xaxis) != 0 and side_12.dot(yaxis) != 0:
             return False
         return True
 
-    def _build_csg_from_triangle(self, vertices):
+    @cython.boundscheck(False)
+    cdef void _build_csg_from_triangle(self, vertices):
+        cdef:
+            double box_rmax, box_rmin, box_zmax, box_zmin, cylinder_height
+            double r1, r2, r3, z1, z2, z3
+            Primitive outer_cylinder, inner_cylinder, bounding_ring
+            Primitive cone13, cone12, cone23, voxel_element
+            double[:, :] vs
+            double[:] vertex_rs, vertex_zs
+
         if vertices.shape != (3, 2):
             raise ValueError("Vertices must be an array of 3 (x, z) coordinates")
         # Sort the vertices of the triangle in decreasing x
         # Vertex 1 is at largest x, vertex 2 is middle x, vertex 3 is smallest x
-        sort_inds = np.argsort(vertices[:, 0])[::-1]
-        vertices = vertices[sort_inds]
-        vertex_rs = vertices[:, 0]
-        vertex_zs = vertices[:, 1]
+        vs = vertices.copy()
+        # Need an additional copy when swapping memoryviews which take a reference
+        # N. B. Using <= rather than < reproduces the numpy.argsort result, but is faster
+        if vs[0, 0] <= vs[1, 0]:
+            vs[0], vs[1] = vs[1], vs[0].copy()
+        if vs[0, 0] <= vs[2, 0]:
+            vs[0], vs[2] = vs[2], vs[0].copy()
+        if vs[1, 0] <= vs[2, 0]:
+            vs[1], vs[2] = vs[2], vs[1].copy()
+        vertex_rs = vs[:, 0]
+        vertex_zs = vs[:, 1]
         # Create a bounding ring around the vertices, with rectangular cross section
-        box_rmax = max(vertex_rs)
-        box_rmin = min(vertex_rs)
-        box_zmax = max(vertex_zs)
-        box_zmin = min(vertex_zs)
+        box_rmax = maximum(vertex_rs)
+        box_rmin = minimum(vertex_rs)
+        box_zmax = maximum(vertex_zs)
+        box_zmin = minimum(vertex_zs)
         cylinder_height = box_zmax - box_zmin
         outer_cylinder = Cylinder(radius=box_rmax, height=cylinder_height,
                                   transform=translate(0, 0, box_zmin))
@@ -212,7 +213,14 @@ class AxisymmetricVoxel(Voxel):
                                   transform=translate(0, 0, box_zmin))
         bounding_ring = Subtract(outer_cylinder, inner_cylinder)
 
-        def create_cone(rx, zx, ry, zy):
+        @cython.cdivision(True)
+        def create_cone(double rx, double zx, double ry, double zy):
+            cdef:
+                AffineMatrix3D transform
+                double rcone, hcone
+                Primitive cone
+                Vector3D minusz_axis, y_axis
+
             if zx == zy:
                 return None
             if rx == ry:
@@ -221,8 +229,9 @@ class AxisymmetricVoxel(Voxel):
             if rx < ry:
                 raise ValueError('rx must be larger than ry')
             if zx > zy:
-                transform = translate(0, 0, zx) * rotate_basis(Vector3D(0, 0, -1),
-                                                               Vector3D(0, 1, 0))
+                minusz_axis = new_vector3d(0, 0, -1)
+                y_axis = new_vector3d(0, 1, 0)
+                transform = translate(0, 0, zx) * rotate_basis(minusz_axis, y_axis)
             else:
                 transform = translate(0, 0, zx)
             rcone = rx
@@ -230,8 +239,12 @@ class AxisymmetricVoxel(Voxel):
             cone = Cone(radius=rcone, height=hcone, transform=transform)
             return cone
 
-        r1, r2, r3 = vertex_rs
-        z1, z2, z3 = vertex_zs
+        r1 = vertex_rs[0]
+        r2 = vertex_rs[1]
+        r3 = vertex_rs[2]
+        z1 = vertex_zs[0]
+        z2 = vertex_zs[1]
+        z3 = vertex_zs[2]
         cone13 = create_cone(r1, z1, r3, z3)
         cone12 = create_cone(r1, z1, r2, z2)
         cone23 = create_cone(r2, z2, r3, z3)
@@ -257,11 +270,17 @@ class AxisymmetricVoxel(Voxel):
         voxel_element.parent = self
         voxel_element.material = self._material
 
-    def _build_csg_from_rectangle(self):
-        rmax = max(self._vertices[:, 0])
-        rmin = min(self._vertices[:, 0])
-        zmax = max(self._vertices[:, 1])
-        zmin = min(self._vertices[:, 1])
+    @cython.boundscheck(False)
+    cdef void _build_csg_from_rectangle(self):
+        cdef:
+            double rmax, rmin, zmax, zmin, cylinder_height
+            AffineMatrix3D cylinder_transform
+            Primitive outer_cylinder, inner_cylinder, voxel
+
+        rmax = maximum(self._vertices[:, 0])
+        rmin = minimum(self._vertices[:, 0])
+        zmax = maximum(self._vertices[:, 1])
+        zmin = minimum(self._vertices[:, 1])
         cylinder_height = zmax - zmin
         cylinder_transform = translate(0, 0, zmin)
         outer_cylinder = Cylinder(radius=rmax, height=cylinder_height,
@@ -287,7 +306,7 @@ class AxisymmetricVoxel(Voxel):
 
         vertices = []
         for i in range(self._vertices.shape[0]):
-            vertices.append(Point2D(self._vertices[i, 0], self._vertices[i, 1]))
+            vertices.append(new_point2d(self._vertices[i, 0], self._vertices[i, 1]))
 
         return vertices
 
@@ -297,23 +316,148 @@ class AxisymmetricVoxel(Voxel):
         # Simple calculation of the polygon area using the shoelace algorithm
         # https://en.wikipedia.org/wiki/Shoelace_formula
 
+        cdef:
+            int num_vertices, i
+            double area
+            double[:] x, y
+
         num_vertices = self._vertices.shape[0]
-
+        x = self._vertices[:, 0]
+        y = self._vertices[:, 1]
         area = 0
-        for i in range(num_vertices - 1):
-            area += self._vertices[i, 0] * self._vertices[i+1, 1]
-        area += self._vertices[num_vertices - 1, 0] * self._vertices[0, 1]
-        for i in range(num_vertices - 1):
-            area -= self._vertices[i, 1] * self._vertices[i+1, 0]
-        area -= self._vertices[num_vertices - 1, 1] * self._vertices[0, 0]
-
+        with cython.boundscheck(False):
+            for i in range(num_vertices - 1):
+                area += x[i] * y[i + 1] - x[i + 1] * y[i]
+            area += x[num_vertices - 1] * y[0] - x[0] * y[num_vertices - 1]
         return abs(area) / 2
+
+    @property
+    def cross_section_centroid(self):
+
+        # Calculation of the centroid of the cross section using the formula
+        # given in "Polygon Area and Centroid", P. Bourke, 1988
+        cdef:
+            int num_vertices, i
+            double cx, cy, area
+            double[:] x, y
+        num_vertices = self._vertices.shape[0]
+        x = self._vertices[:, 0]
+        y = self._vertices[:, 1]
+        cx = 0
+        cy = 0
+        # We need the signed area for this calculation, so can't re-use
+        # self.cross_sectional_area
+        area = 0
+        with cython.boundscheck(False):
+            for i in range(num_vertices - 1):
+                cx += (x[i] + x[i + 1]) * (x[i] * y[i + 1] - x[i + 1] * y[i])
+                cy += (y[i] + y[i + 1]) * (x[i] * y[i + 1] - x[i + 1] * y[i])
+                area += x[i] * y[i + 1] - x[i + 1] * y[i]
+            cx += ((x[num_vertices - 1] + x[0])
+                   * (x[num_vertices - 1] * y[0] - x[0] * y[num_vertices - 1]))
+            cy += ((y[num_vertices - 1] + y[0])
+                   * (x[num_vertices - 1] * y[0] - x[0] * y[num_vertices - 1]))
+            area += x[num_vertices - 1] * y[0] - x[0] * y[num_vertices - 1]
+        area /= 2
+        cx /= (6 * area)
+        cy /= (6 * area)
+        return new_point2d(cx, cy)
 
     @property
     def volume(self):
 
         # return approximate cell volume
-        return 2 * PI * self.radius * self.cross_sectional_area
+        try:
+            return 2 * PI * self.cross_section_centroid.x * self.cross_sectional_area
+        except ZeroDivisionError:
+            # Thown in self.cross_section_centroid if cross sectional area is 0
+            return 0
+
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    @cython.initializedcheck(False)
+    cpdef double emissivity_from_function(self, emission_function, int grid_samples=10):
+        """
+        Calculate the average emissivity in the voxel.
+
+        :param callable emission_function: a function defining the emissivity
+            in (r, ϕ, z) space
+        :param int grid_samples: the number of samples of the emissivitiy to use
+            to calculate the average
+
+        :return float emissivity: the average emissivity in the voxel cross section
+
+        Note that while the emissivity function is a 3D function, for
+        Axisymmetric voxels the return value should be independent of
+        toroidal angle ϕ.
+        """
+        cdef:
+            double[::1] cumulative_areas
+            double x1, y1, x2, y2, x3, y3, triangle_area, total_area, emissivity
+            int num_triangles, triangle_j, v1_i, v2_i, v3_i, tri_index
+            Point3D v1_p, v2_p, v3_p, sample_point
+            Function3D emiss_function
+
+        emiss_function = autowrap_function3d(emission_function)
+
+        # Sample uniformly over the cross section.
+        # Raysect already allows us to uniformly sample over a triangle,
+        # but not an arbitrary cross section, so split the shape into
+        # triangles and sample over these. In order to uniformly sample
+        # over the entire voxel cross section, the number of samples in
+        # each triangle must be weighted according to the fraction of the
+        # total cross sectional area it occupies.
+
+        num_triangles = self._triangles.shape[0]
+        total_area = self.cross_sectional_area
+
+        # Get the area of each triangle in the polygon using the Shoelace formula
+        cumulative_areas = np.empty(num_triangles)
+        for triangle_j in range(num_triangles):
+            v1_i = self._triangles[triangle_j, 0]
+            v2_i = self._triangles[triangle_j, 1]
+            v3_i = self._triangles[triangle_j, 2]
+            x1 = self._vertices[v1_i, 0]
+            y1 = self._vertices[v1_i, 1]
+            x2 = self._vertices[v2_i, 0]
+            y2 = self._vertices[v2_i, 1]
+            x3 = self._vertices[v3_i, 0]
+            y3 = self._vertices[v3_i, 1]
+            triangle_area = 0.5 * abs(x1 * y2 + x2 * y3 + x3 * y1
+                                      - x2 * y1 - x3 * y2 - x1 * y3)
+            if triangle_j == 0:
+                cumulative_areas[triangle_j] = triangle_area
+            else:
+                cumulative_areas[triangle_j] = (cumulative_areas[triangle_j - 1] + triangle_area)
+
+        emissivity = 0
+        for _ in range(grid_samples):
+
+            # Sample a random triangle, with the probability of picking each
+            # triangle weighted by its area
+            if num_triangles > 1:
+                # find_index returns the left index in the interval. Since we
+                # always have cumulative_areas < total_area (apart from the final
+                # element), we want the index one up from the left index
+                tri_index = find_index(cumulative_areas, total_area * uniform()) + 1
+            else:
+                tri_index = 0
+
+            # Sample at a random point within the triangle
+            v1_i = self._triangles[tri_index, 0]
+            v1_p = new_point3d(self._vertices[v1_i, 0], 0.0, self._vertices[v1_i, 1])
+            v2_i = self._triangles[tri_index, 1]
+            v2_p = new_point3d(self._vertices[v2_i, 0], 0.0, self._vertices[v2_i, 1])
+            v3_i = self._triangles[tri_index, 2]
+            v3_p = new_point3d(self._vertices[v3_i, 0], 0.0, self._vertices[v3_i, 1])
+
+            sample_point = point_triangle(v1_p, v2_p, v3_p)
+
+            emissivity += emiss_function.evaluate(sample_point.x, 0, sample_point.z)
+
+        emissivity /= grid_samples
+
+        return emissivity
 
 
 class VoxelCollection(Node):
@@ -384,12 +528,9 @@ class VoxelCollection(Node):
         for voxel in self._voxels:
             voxel.parent = None
 
-    def emissivities_from_function(self, emission_function, grid_samples=10):
+    def emissivities_from_function(self, emission_function, int grid_samples=10):
         """
         Returns an array of sampled emissivities at each voxel location.
-
-        This is a virtual method and must be implemented in the derived
-        VoxelCollection class.
 
         Note that the results will be nonsense if you mix an emission function
         and VoxelCollection with incompatible symmetries.
@@ -398,7 +539,22 @@ class VoxelCollection(Node):
         :param int grid_samples: Number of emission samples to average over.
         :rtype: np.ndarray
         """
-        raise NotImplementedError()
+        cdef:
+            double[::1] emissivities_mv
+            int i
+            Voxel voxel
+
+        emission_function = autowrap_function3d(emission_function)
+
+        emissivities = np.zeros(self.count)
+        emissivities_mv = emissivities
+
+        for i in range(self.count):
+            voxel = self._voxels[i]
+            emissivities_mv[i] = voxel.emissivity_from_function(
+                emission_function, grid_samples
+            )
+        return emissivities
 
 
 class ToroidalVoxelGrid(VoxelCollection):
@@ -421,36 +577,45 @@ class ToroidalVoxelGrid(VoxelCollection):
       active emitters.
     :param str primitive_type: The geometry type to use for the AxisymmetricVoxel
       instances, can be ['mesh', 'csg']. See their documentation for more information.
-      Defaults to `primitive_type='mesh'`.
+      Defaults to `primitive_type='csg'`.
     """
 
     def __init__(self, voxel_coordinates, name='', parent=None, transform=None,
-                 active="all", primitive_type='mesh'):
+                 active="all", primitive_type='csg'):
+
+        cdef:
+            AxisymmetricVoxel voxel
+            double min_radius, max_radius, min_height, max_height
 
         super().__init__(name=name, parent=parent, transform=transform)
 
-        self._min_radius = 1E999
-        self._max_radius = 0
-        self._min_height = 1E999
-        self._max_height = -1E999
+        min_radius = 1E999
+        max_radius = 0
+        min_height = 1E999
+        max_height = -1E999
 
         self._voxels = []
-        for i, voxel_vertices in enumerate(voxel_coordinates):
+        for voxel_vertices in voxel_coordinates:
 
             voxel = AxisymmetricVoxel(voxel_vertices, primitive_type=primitive_type)
-            if active == "all" or active == i:
-                voxel.parent = parent
             self._voxels.append(voxel)
 
             # Test and set extent values
-            if voxel._vertices[:, 0].min() < self._min_radius:
-                self._min_radius = voxel._vertices[:, 0].min()
-            if voxel._vertices[:, 0].max() > self._max_radius:
-                self._max_radius = voxel._vertices[:, 0].max()
-            if voxel._vertices[:, 1].min() < self._min_height:
-                self._min_height = voxel._vertices[:, 1].min()
-            if voxel._vertices[:, 1].max() > self._max_height:
-                self._max_height = voxel._vertices[:, 1].max()
+            if minimum(voxel._vertices[:, 0]) < min_radius:
+                min_radius = minimum(voxel._vertices[:, 0])
+            if maximum(voxel._vertices[:, 0]) > max_radius:
+                max_radius = maximum(voxel._vertices[:, 0])
+            if minimum(voxel._vertices[:, 1]) < min_height:
+                min_height = minimum(voxel._vertices[:, 1])
+            if maximum(voxel._vertices[:, 1]) > max_height:
+                max_height = maximum(voxel._vertices[:, 1])
+
+        self._min_radius = min_radius
+        self._max_radius = max_radius
+        self._min_height = min_height
+        self._max_height = max_height
+
+        self.set_active(active)
 
     @property
     def min_radius(self):
@@ -516,8 +681,8 @@ class ToroidalVoxelGrid(VoxelCollection):
                                 "equal to the number of voxels.")
 
         patches = []
-        for i in range(self.count):
-            polygon = Polygon(self._voxels[i]._vertices, True)
+        for voxel in self:
+            polygon = Polygon([(v.x, v.y) for v in voxel.vertices], True)
             patches.append(polygon)
 
         p = PatchCollection(patches, cmap=cmap)
@@ -535,7 +700,7 @@ class ToroidalVoxelGrid(VoxelCollection):
             fig, ax = plt.subplots()
         ax.add_collection(p)
         fig = plt.gcf()
-        if voxel_values:
+        if p.get_array() is not None:
             fig.colorbar(p, ax=ax)
         ax.set_xlim(self.min_radius, self.max_radius)
         ax.set_ylim(self.min_height, self.max_height)
@@ -548,66 +713,6 @@ class ToroidalVoxelGrid(VoxelCollection):
             title = "Voxel Grid"
         ax.set_title(title)
         return ax
-
-    def emissivities_from_function(self, emission_function, grid_samples=10):
-        """
-        Returns an array of sampled emissivities at each voxel location.
-
-        Note that the results will be nonsense if you mix an emission function
-        and VoxelCollection with incompatible symmetries.
-
-        :param Function3D emission_function: Emission function to sample over.
-        :param int grid_samples: Number of emission samples to average over.
-        :rtype: np.ndarray
-        """
-
-        if not isinstance(emission_function, Function3D):
-            raise TypeError("The emission_function argument must be of type Function2D.")
-
-        emissivities = np.zeros(self.count)
-
-        for i in range(self.count):
-
-            voxel = self._voxels[i]
-            num_triangles = voxel._triangles.shape[0]
-            total_area = voxel.cross_sectional_area
-
-            cumulative_areas = np.zeros(num_triangles)
-            for triangle_j in range(num_triangles):
-                u1 = voxel._vertices[1, 0] - voxel._vertices[0, 0]
-                u2 = voxel._vertices[2, 0] - voxel._vertices[0, 0]
-                v1 = voxel._vertices[1, 1] - voxel._vertices[0, 1]
-                v2 = voxel._vertices[2, 1] - voxel._vertices[0, 1]
-                triangle_area = cabs(u1*v2 - u2*v1)
-                if triangle_j == 0:
-                    cumulative_areas[triangle_j] = triangle_area
-                else:
-                    cumulative_areas[triangle_j] = cumulative_areas[triangle_j - 1] + triangle_area
-            cumulative_areas /= total_area
-
-            samples = 0
-            for j in range(grid_samples):
-
-                if num_triangles > 1:
-                    tri_index = np.searchsorted(cumulative_areas, uniform())
-                else:
-                    tri_index = 0
-
-                v1_i = voxel._triangles[tri_index, 0]
-                v1 = new_point3d(voxel._vertices[v1_i, 0], 0.0, voxel._vertices[v1_i, 1])
-                v2_i = voxel._triangles[tri_index, 1]
-                v2 = new_point3d(voxel._vertices[v2_i, 0], 0.0, voxel._vertices[v2_i, 1])
-                v3_i = voxel._triangles[tri_index, 2]
-                v3 = new_point3d(voxel._vertices[v3_i, 0], 0.0, voxel._vertices[v3_i, 1])
-
-                sample_point = point_triangle(v1, v2, v3)
-
-                samples += emission_function(sample_point.x, 0, sample_point.z)
-
-            samples /= grid_samples
-            emissivities[i] = samples
-
-        return emissivities
 
 
 cdef class UnityVoxelEmitter(HomogeneousVolumeEmitter):
@@ -624,4 +729,3 @@ cdef class UnityVoxelEmitter(HomogeneousVolumeEmitter):
         spectrum.samples_mv[:] = 0.0
         spectrum.samples_mv[self.voxel_id] = 1.0
         return spectrum
-

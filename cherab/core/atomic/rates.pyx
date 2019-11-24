@@ -20,6 +20,72 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
+cdef class IonisationRate:
+    """
+    Effective ionisation rate for a given ion.
+    """
+
+    def __call__(self, double density, double temperature):
+        """Returns an effective ionisation rate coefficient at the specified plasma conditions.
+
+        This function just wraps the cython evaluate() method.
+        """
+        return self.evaluate(density, temperature)
+
+    cpdef double evaluate(self, double density, double temperature) except? -1e999:
+        """Returns an effective ionisation rate coefficient at the specified plasma conditions.
+
+        :param temperature: Electron temperature in eV.
+        :param density: Electron density in m^-3
+        :return: The effective ionisation rate in m^-3.
+        """
+        raise NotImplementedError("The evaluate() virtual method must be implemented.")
+
+
+cdef class RecombinationRate:
+    """
+    Effective recombination rate for a given ion.
+    """
+
+    def __call__(self, double density, double temperature):
+        """Returns an effective recombination rate coefficient at the specified plasma conditions.
+
+        This function just wraps the cython evaluate() method.
+        """
+        return self.evaluate(density, temperature)
+
+    cpdef double evaluate(self, double density, double temperature) except? -1e999:
+        """Returns an effective recombination rate coefficient at the specified plasma conditions.
+
+        :param temperature: Electron temperature in eV.
+        :param density: Electron density in m^-3
+        :return: The effective ionisation rate in m^-3.
+        """
+        raise NotImplementedError("The evaluate() virtual method must be implemented.")
+
+
+cdef class ThermalCXRate:
+    """
+    Effective charge exchange rate between two ions.
+    """
+
+    def __call__(self, double density, double temperature):
+        """Returns an effective charge exchange rate coefficient at the specified plasma conditions.
+
+        This function just wraps the cython evaluate() method.
+        """
+        return self.evaluate(density, temperature)
+
+    cpdef double evaluate(self, double density, double temperature) except? -1e999:
+        """Returns an effective charge exchange rate coefficient at the specified plasma conditions.
+
+        :param temperature: Electron temperature in eV.
+        :param density: Electron density in m^-3
+        :return: The effective charge exchange rate in m^-3.
+        """
+        raise NotImplementedError("The evaluate() virtual method must be implemented.")
+
+
 cdef class _PECRate:
     """
     Photon emissivity coefficient base class.
@@ -50,28 +116,28 @@ cdef class _PECRate:
         plt.ylabel("PEC")
 
 
-cdef class ImpactExcitationRate(_PECRate):
+cdef class ImpactExcitationPEC(_PECRate):
     """
     Impact excitation rate coefficient.
     """
     pass
 
 
-cdef class RecombinationRate(_PECRate):
+cdef class RecombinationPEC(_PECRate):
     """
     Recombination rate coefficient.
     """
     pass
 
 
-cdef class ThermalCXRate(_PECRate):
+cdef class ThermalCXPEC(_PECRate):
     """
     Thermal charge exchange rate coefficient.
     """
     pass
 
 
-cdef class BeamCXRate:
+cdef class BeamCXPEC:
     """:math:`q^{eff}_{n\rightarrow n'}` [:math:`W.m^{3}.s^{-1}.str^{-1}`]
 
     Effective emission coefficient (or rate) for a charge-exchange line corresponding to a
@@ -143,7 +209,7 @@ cdef class BeamPopulationRate(_BeamRate):
     pass
 
 
-cdef class BeamEmissionRate(_BeamRate):
+cdef class BeamEmissionPEC(_BeamRate):
     """:math:`bme(X^0(m_i))` [dimensionless]
 
     Relative beam population of excited state :math:`m_i` over ground state for atom :math:`X^0`, :math:`bme(X^0(m_i))`.
@@ -154,96 +220,65 @@ cdef class BeamEmissionRate(_BeamRate):
     pass
 
 
-cdef class RadiatedPower:
-    """
-    Total radiated power for a given species and radiation type.
+cdef class _RadiatedPower:
+    """Base class for radiated powers."""
 
-    Radiation type can be:
-    - 'total' (line + recombination + bremsstrahlung + charge exchange)
-    - 'line' radiation
-    - 'continuum' (recombination + bremsstrahlung)
-    - 'cx' charge exchange
+    def __init__(self, Element element, int charge):
 
-    :param Element element: the radiating element
-    :param str radiation_type: selects the type of radiation to be included in the total rate.
-    :param str name: optional label identifying this rate
-    """
-
-    def __init__(self, element, radiation_type, name=''):
-
-        self.name = name
         self.element = element
-
-        if radiation_type not in ['total', 'line', 'continuum', 'cx']:
-            raise ValueError("RadiatedPower() radiation type must be one of ['total', 'line', 'continuum', 'cx'].")
-        self.radiation_type = radiation_type
-
-    cdef double evaluate(self, double electron_density, double electron_temperature) except? -1e999:
-        """
-        Evaluate the total radiated power at given plasma conditions.
-
-        :param float electron_density: electron density in m^-3
-        :param float electron_temperature: electron temperature in eV
-        """
-        raise NotImplementedError("The evaluate() virtual method must be implemented.")
+        self.charge = charge
 
     def __call__(self, double electron_density, double electron_temperature):
         """
-        Evaluate the total radiated power of this species at the given plasma conditions.
+        Evaluate the radiated power rate at the given plasma conditions.
+
+        Calls the cython evaluate() method under the hood.
 
         :param float electron_density: electron density in m^-3
         :param float electron_temperature: electron temperature in eV
         """
         return self.evaluate(electron_density, electron_temperature)
 
-    def plot_temperature(self, temp_low=1, temp_high=1000, num_points=100, dens=1E19, species_dens=1E19):
-
-        temp = [10**x for x in np.linspace(np.log10(temp_low), np.log10(temp_high), num=num_points)]
-        radiation = [self.evaluate(dens, te) * species_dens for te in temp]
-        plt.loglog(temp, radiation, '.-', label='{} - {}'.format(self.element.symbol, self.radiation_type))
-
-
-cdef class StageResolvedLineRadiation:
-    """
-    Total ionisation state resolved line radiated power rate.
-
-    :param Element element: the radiating element
-    :param int ionisation: the integer charge state for this ionisation stage
-    :param str name: optional label identifying this rate
-    """
-
-    def __init__(self, element, ionisation, name=''):
-
-        if ionisation < 0:
-            raise ValueError("Charge state must be neutral or positive.")
-        self.ionisation = ionisation
-
-        self.name = name
-        self.element = element
-
     cdef double evaluate(self, double electron_density, double electron_temperature) except? -1e999:
         """
-        Evaluate the total radiated power at given plasma conditions.
+        Evaluate the radiated power at the given plasma conditions.
 
         :param float electron_density: electron density in m^-3
         :param float electron_temperature: electron temperature in eV
         """
         raise NotImplementedError("The evaluate() virtual method must be implemented.")
 
-    def __call__(self, double electron_density, double electron_temperature):
-        """
-        Evaluate the total radiated power of this species at the given plasma conditions.
 
-        :param float electron_density: electron density in m^-3
-        :param float electron_temperature: electron temperature in eV
-        """
-        return self.evaluate(electron_density, electron_temperature)
+cdef class TotalRadiatedPower(_RadiatedPower):
+    """The total radiated power in equilibrium conditions."""
+    pass
 
-    def plot_temperature(self, temp_low=1, temp_high=1000, num_points=100, dens=1E19, species_dens=1E19):
 
-        temp = [10**x for x in np.linspace(np.log10(temp_low), np.log10(temp_high), num=num_points)]
-        radiation = [self.evaluate(dens, te) * species_dens for te in temp]
-        plt.loglog(temp, radiation, '.-', label='{}{}'.format(self.element.symbol, self.ionisation))
+cdef class LineRadiationPower(_RadiatedPower):
+    """
+    The total line radiation power driven by excitation.
+
+    Equivalent to the `ADF11 PLT <http://open.adas.ac.uk/adf11>`_ coefficient.
+    """
+    pass
+
+
+cdef class ContinuumPower(_RadiatedPower):
+    """
+    The power radiated from continuum, line power driven by recombination and Bremsstrahlung.
+
+    Equivalent to the `ADF11 PRB <http://open.adas.ac.uk/adf11>`_ coefficient.
+    """
+    pass
+
+
+cdef class CXRadiationPower(_RadiatedPower):
+    """
+    Total line power radiated due to charge transfer from thermal neutral hydrogen.
+
+    Equivalent to the `ADF11 PRC <http://open.adas.ac.uk/adf11>`_ coefficient.
+    """
+    pass
 
 
 cdef class FractionalAbundance:
@@ -251,18 +286,18 @@ cdef class FractionalAbundance:
     Rate provider for fractional abundances in thermodynamic equilibrium.
 
     :param Element element: the radiating element
-    :param int ionisation: the integer charge state for this ionisation stage
+    :param int charge: the integer charge state for this ionisation stage
     :param str name: optional label identifying this rate
     """
 
-    def __init__(self, element, ionisation, name=''):
+    def __init__(self, element, charge, name=''):
 
         self.name = name
         self.element = element
 
-        if ionisation < 0:
+        if charge < 0:
             raise ValueError("Charge state must be neutral or positive.")
-        self.ionisation = ionisation
+        self.charge = charge
 
     cdef double evaluate(self, double electron_density, double electron_temperature) except? -1e999:
         """
@@ -286,4 +321,4 @@ cdef class FractionalAbundance:
 
         temp = [10**x for x in np.linspace(np.log10(temp_low), np.log10(temp_high), num=num_points)]
         abundances = [self.evaluate(dens, te) for te in temp]
-        plt.semilogx(temp, abundances, '.-', label='{}{}'.format(self.element.symbol, self.ionisation))
+        plt.semilogx(temp, abundances, '.-', label='{}{}'.format(self.element.symbol, self.charge))

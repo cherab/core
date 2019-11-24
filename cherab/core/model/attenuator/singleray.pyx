@@ -107,8 +107,8 @@ cdef class SingleRayAttenuator(BeamAttenuator):
             self._calc_attenuation()
 
         # calculate beam width
-        sigma_x = self._beam.sigma + z * self._tanxdiv
-        sigma_y = self._beam.sigma + z * self._tanydiv
+        sigma_x = self._beam.get_sigma() + z * self._tanxdiv
+        sigma_y = self._beam.get_sigma() + z * self._tanydiv
 
         # normalised radius squared
         norm_radius_sqr = ((x / sigma_x)**2 + (y / sigma_y)**2)
@@ -293,7 +293,7 @@ cdef class SingleRayAttenuator(BeamAttenuator):
 
         self._stopping_data = []
         for species in self._plasma.composition:
-            stopping_coeff = self._atomic_data.beam_stopping_rate(self._beam.element, species.element, species.ionisation)
+            stopping_coeff = self._atomic_data.beam_stopping_rate(self._beam.element, species.element, species.charge)
             self._stopping_data.append((species, stopping_coeff))
 
     def _change(self):

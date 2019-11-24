@@ -58,7 +58,7 @@ method.
    >>> plt.legend()
    >>>
    >>> # Sample the beam emission rates
-   >>> bme = adas.beam_emission_rate(deuterium, deuterium, 1, (3, 2))
+   >>> bme = adas.beam_emission_pec(deuterium, deuterium, 1, (3, 2))
    >>> bme_rates_1 = [bme(x, 1E19, 1) for x in beam_energies]
    >>> bme_rates_2 = [bme(x, 1E19, 100) for x in beam_energies]
    >>> bme_rates_3 = [bme(x, 1E19, 1000) for x in beam_energies]

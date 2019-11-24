@@ -29,7 +29,7 @@ from cherab.core.math cimport Interpolate1DCubic, Interpolate2DCubic
 from cherab.core.math cimport PolygonMask2D
 from cherab.core.math cimport IsoMapper2D, AxisymmetricMapper, VectorAxisymmetricMapper
 from cherab.core.math cimport Blend2D, Constant2D, ConstantVector2D
-
+from cherab.core.math cimport ClampOutput2D
 
 cdef class EFITEquilibrium:
     """
@@ -57,8 +57,8 @@ cdef class EFITEquilibrium:
     :param float psi_axis: The psi value at the magnetic axis.
     :param float psi_lcfs: The psi value at the LCFS.
     :param Point2D magnetic_axis: The coordinates of the magnetic axis.
-    :param Point2D x_points: The list of x-points.
-    :param Point2D x_points: The list of strike-points.
+    :param x_points: A list or tuple of x-points.
+    :param strike_points: A list or tuple of strike-points.
     :param f_profile: The current flux profile on psin (2xN array).
     :param q_profile: The safety factor (q) profile on psin (2xN array).
     :param float b_vacuum_radius: Vacuum B-field reference radius (in meters).
@@ -83,22 +83,6 @@ cdef class EFITEquilibrium:
       lies inside the limit polygon. A value of 0.0 is returned outside the polygon.
     """
 
-    cdef:
-        readonly Function2D psi, psi_normalised
-        readonly double psi_axis, psi_lcfs
-        readonly tuple r_range, z_range
-        readonly Point2D magnetic_axis
-        readonly tuple x_points, strike_points
-        readonly VectorFunction2D b_field, toroidal_vector, poloidal_vector, surface_normal
-        readonly Function2D inside_lcfs, inside_limiter
-        readonly Function1D psin_to_r
-        readonly double time
-        readonly np.ndarray lcfs_polygon, limiter_polygon
-        readonly np.ndarray psi_data, r_data, z_data
-        readonly Function1D q
-        double _b_vacuum_magnitude, _b_vacuum_radius
-        Function1D _f_profile
-        Function2D _dpsidr, _dpsidz
 
     def __init__(self, object r, object z, object psi_grid, double psi_axis, double psi_lcfs,
                  Point2D magnetic_axis not None, object x_points, object strike_points,
@@ -113,6 +97,7 @@ cdef class EFITEquilibrium:
         z = np.array(z, dtype=np.float64)
         psi = np.array(psi_grid, dtype=np.float64)
         f_profile = np.array(f_profile, dtype=np.float64)
+        q_profile = np.array(q_profile, dtype=np.float64)
 
         # store raw data
         self.r_data = r
@@ -120,10 +105,10 @@ cdef class EFITEquilibrium:
         self.psi_data = psi
 
         # interpolate poloidal flux grid data
-        self.psi = Interpolate2DCubic(r, z, psi_grid)
+        self.psi = Interpolate2DCubic(r, z, psi)
         self.psi_axis = psi_axis
         self.psi_lcfs = psi_lcfs
-        self.psi_normalised = Interpolate2DCubic(r, z, (psi_grid - psi_axis) / (psi_lcfs - psi_axis))
+        self.psi_normalised = ClampOutput2D(Interpolate2DCubic(r, z, (psi - psi_axis) / (psi_lcfs - psi_axis)), min=0)
 
         # store equilibrium attributes
         self.r_range = r.min(), r.max()
@@ -140,7 +125,7 @@ cdef class EFITEquilibrium:
         self._process_polygons(lcfs_polygon, limiter_polygon, self.psi_normalised)
 
         # calculate b-field
-        dpsi_dr, dpsi_dz = self._calculate_differentials(r, z, psi_grid)
+        dpsi_dr, dpsi_dz = self._calculate_differentials(r, z, psi)
         self.b_field = MagneticField(self.psi_normalised, dpsi_dr, dpsi_dz, self._f_profile, b_vacuum_radius, b_vacuum_magnitude, self.inside_lcfs)
 
         # populate flux coordinate attributes
@@ -174,6 +159,7 @@ cdef class EFITEquilibrium:
         # lcfs polygon
         # polygon mask requires an Nx2 array and it must be c contiguous
         # transposing simply swaps the indexing, so need to re-instance
+        lcfs_polygon = np.array(lcfs_polygon, dtype=np.float64)
         lcfs_polygon = np.ascontiguousarray(lcfs_polygon.transpose())
         self.lcfs_polygon = lcfs_polygon
         self.inside_lcfs = EFITLCFSMask(lcfs_polygon, psi_normalised)
@@ -185,6 +171,7 @@ cdef class EFITEquilibrium:
         else:
             # polygon mask requires an Nx2 array and it must be c contiguous
             # transposing simply swaps the indexing, so need to re-instance
+            limiter_polygon = np.array(limiter_polygon, dtype=np.float64)
             limiter_polygon = np.ascontiguousarray(limiter_polygon.transpose())
             self.limiter_polygon = limiter_polygon
             self.inside_limiter = PolygonMask2D(limiter_polygon)
@@ -396,9 +383,7 @@ cdef class EFITLCFSMask(Function2D):
     :param psi_normalised: A 2D function of normalised poloidal flux.
     """
 
-    cdef:
-        PolygonMask2D _lcfs_polygon
-        Function2D _psi_normalised
+
 
     def __init__(self, object lcfs_polygon, object psi_normalised):
 
@@ -425,11 +410,6 @@ cdef class MagneticField(VectorFunction2D):
     :param b_vacuum_magnitude: Vacuum B-Field magnitude at the reference radius.
     :param inside_lcfs: A 2D mask function returning 1 if inside the LCFS and 0 otherwise.
     """
-
-    cdef:
-        Function2D _psi_normalised, _dpsi_dr, _dpsi_dz, _inside_lcfs
-        Function1D _f_profile
-        double _b_vacuum_radius, _b_vacuum_magnitude
 
     def __init__(self, object psi_normalised, object dpsi_dr, object dpsi_dz, object f_profile, double b_vacuum_radius, double b_vacuum_magnitude, object inside_lcfs):
 
@@ -474,8 +454,6 @@ cdef class PoloidalFieldVector(VectorFunction2D):
 
     """
 
-    cdef VectorFunction2D _field
-
     def __init__(self, object field):
         self._field = autowrap_vectorfunction2d(field)
 
@@ -497,8 +475,6 @@ cdef class FluxSurfaceNormal(VectorFunction2D):
 
     """
 
-    cdef VectorFunction2D _field
-
     def __init__(self, object field):
         self._field = autowrap_vectorfunction2d(field)
 
@@ -519,12 +495,6 @@ cdef class FluxCoordToCartesian(VectorFunction2D):
     """
 
     """
-
-    cdef:
-        VectorFunction2D _field
-        Function1D _toroidal, _poloidal, _normal
-        Function2D _psin
-        Vector3D _value_outside_lcfs
 
     def __init__(self, object field, object psi_normalised, object toroidal, object poloidal, object normal,
                  Vector3D value_outside_lcfs=Vector3D(0, 0, 0)):

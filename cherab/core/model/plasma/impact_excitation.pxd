@@ -16,7 +16,7 @@
 # See the Licence for the specific language governing permissions and limitations
 # under the Licence.
 
-from cherab.core.atomic cimport Line, ImpactExcitationRate
+from cherab.core.atomic cimport Line, ImpactExcitationPEC
 from cherab.core.plasma cimport PlasmaModel
 from cherab.core.species cimport Species
 from cherab.core.model.lineshape cimport LineShapeModel
@@ -28,7 +28,7 @@ cdef class ExcitationLine(PlasmaModel):
         Line _line
         double _wavelength
         Species _target_species
-        ImpactExcitationRate _rates
+        ImpactExcitationPEC _rates
         LineShapeModel _lineshape
         object _lineshape_class, _lineshape_args, _lineshape_kwargs
 

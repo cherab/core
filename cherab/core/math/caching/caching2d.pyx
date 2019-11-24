@@ -34,28 +34,50 @@ EPSILON = 1.e-7
 
 cdef class Caching2D(Function2D):
     """
-    Precalculate and cache a 2D function on a finite space area. The function
-    is sampled and a cubic interpolation is then used to calculate a cubic
-    spline approximation of the function. As the spline has a constant cost of
-    evaluation, this decreases the evaluation time of functions which are very
-    often used.
+    Precalculate and cache a 2D function on a finite space area.
+
+    The function is sampled and a cubic interpolation is then used to calculate
+    a cubic spline approximation of the function. As the spline has a constant
+    cost of evaluation, this decreases the evaluation time of functions which
+    are very often used.
+
     The sampling and interpolation are done locally and on demand, so that the
-    caching is done progressively when the function is evaluated.
-    Coordinates are normalised to the range [0, 1] to avoid float accuracy
-    troubles. The values of the function are normalised if their boundaries
-    are given.
+    caching is done progressively when the function is evaluated. Coordinates
+    are normalised to the range [0, 1] to avoid float accuracy troubles. The
+    values of the function are normalised if their boundaries are given.
 
     :param object function2d: 2D function to be cached.
     :param tuple space_area: space area where the function has to be cached:
-    (minx, maxx, miny, maxy)
-    :param tuple resolution: resolution of the sampling:
-    (resolutionx, resolutiony)
+      (minx, maxx, miny, maxy).
+    :param tuple resolution: resolution of the sampling: (resolutionx, resolutiony).
     :param no_boundary_error: Behaviour when evaluated outside the caching area.
-    When False a ValueError is raised. When True the function is directly
-    evaluated (without caching). Default is False.
+      When False a ValueError is raised. When True the function is directly
+      evaluated (without caching). Default is False.
     :param function_boundaries: Boundaries of the function values for
-    normalisation: (min, max). If None, function values are not normalised.
-    Default is None.
+      normalisation: (min, max). If None, function values are not normalised.
+      Default is None.
+
+    .. code-block:: pycon
+
+       >>> from numpy import sqrt
+       >>> from time import sleep
+       >>> from cherab.core.math import Caching2D
+       >>> from raysect.core.math.function.function2d import PythonFunction2D
+       >>>
+       >>> def expensive_radius(x, y):
+       >>>     sleep(5)
+       >>>     return sqrt(x**2 + y**2)
+       >>> f2 = PythonFunction2D(expensive_radius)
+       >>>
+       >>> f2 = Caching2D(f2, (-5, 5, -5, 5), (0.1, 0.1))
+       >>>
+       >>> # if you try this, first two executions will be slow, third will be fast
+       >>> f2(1.5, 1.5)
+       2.121320343595476
+       >>> f2(1.6, 1.5)
+       2.19317121996626
+       >>> f2(1.55, 1.5)
+       2.156964925578382
     """
 
     def __init__(self, object function2d, tuple space_area, tuple resolution, no_boundary_error=False, function_boundaries=None):

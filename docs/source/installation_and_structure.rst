@@ -7,8 +7,7 @@ Prerequisites
 ~~~~~~~~~~~~~
 
 The CHERAB package requires Python 3.5+, numpy, scipy, matplotlib and `Raysect <https://www.raysect.org>`_.
-Scipy version 0.13 or higher is recommended. Currently support for Python 2 is not planned. IPython is
-recommended for interactive use.
+Scipy version 0.13 or higher is recommended. IPython is recommended for interactive use.
 
 Project Structure
 ~~~~~~~~~~~~~~~~~
@@ -16,7 +15,7 @@ Project Structure
 CHERAB is a large code framework consisting of a main core package and many smaller feature
 packages. The overall structure of the framework is best visualised as onion shells. The full
 project structure is most relevant for researchers in fusion plasma physics. Researchers in other
-areas such as industrial plasmas and astrophysics will only require layers 1, 2 and 3a for their
+areas such as industrial plasmas and astrophysics will only require layers 1, 2 for their
 applications.
 
 .. figure:: figures/CHERAB_structure.png
@@ -30,7 +29,7 @@ ray-tracing functionality, mesh handling, etc. `Raysect <https://www.raysect.org
 the only ray-tracing engine supported, but the framework has been designed such that this
 component is interchangeable. Support for other ray-tracers may be added in the future.
 
-**2. Core API Module:** The `cherab-core <https://pypi.org/project/cherab>`_ package defines
+**2. Core API Module:** The `cherab <https://pypi.org/project/cherab>`_ package defines
 all the API interfaces for the whole framework. It defines all the core functionality such
 as: how plasmas are defined and the properties that can be computed from them; the types of
 atomic data that can be used in spectroscopic calculations; and the types of plasma emission
@@ -39,11 +38,10 @@ that CHERAB can calculate. This package is strictly managed by the CHERAB develo
 **3a. Atomic Data Providers:** Almost all of the plasma emission models implemented in CHERAB
 require some type of atomic data for their calculations. The base types of reaction rates and
 photon emissivity coefficients are defined in the Core API Module,
-`cherab-core <https://pypi.org/project/cherab>`_. A default atomic data source module has been
-written based on the `OpenADAS project <http://open.adas.ac.uk/>`_, available as the
-`cherab-openadas <https://github.com/cherab/openadas>`_ package. In future other atomic data
-sources, such as the ALADDIN database for example, could be made available through additional
-packages.
+`cherab <https://pypi.org/project/cherab>`_. A default atomic data source module based on
+ the `OpenADAS project <http://open.adas.ac.uk/>`_, is included in the package. In future
+other atomic data sources, such as the ALADDIN database for example, could be made available
+through additional packages.
 
 **3b. Machine Specific Packages:** These components are for functionality associated with
 a specific fusion experiment. For example, each experiment tends to have its own systems
@@ -62,12 +60,10 @@ Installation
 
 Users will generally just install the core package and the specific feature packages they
 need for their work. For example, users working on the JET tokamak will require the
-`cherab-core <https://pypi.org/project/cherab>`_ package, the
-`cherab-jet <https://github.com/cherab/jet>`_ package and an atomic data source such as
-`cherab-openadas <https://github.com/cherab/openadas>`_. The main ``cherab-core`` and
-``cherab-openadas`` packages for spectroscopic plasma simulations are available through pip.
-The additional fusion specific packages offering extra functionality should be cloned from
-their respective repositories.
+`cherab <https://pypi.org/project/cherab>`_ package and the `cherab-jet <https://github.com/cherab/jet>`_
+package. The core ``cherab`` package is available through pip. The additional fusion specific
+packages, offering extra functionality, should be cloned from their respective repositories.
+
 
 Installing through Pip
 ^^^^^^^^^^^^^^^^^^^^^^
@@ -78,11 +74,12 @@ packages available through pypi.
 
 The easiest way to install CHERAB with OpenADAS is using `pip <https://pip.pypa.io/en/stable/>`_::
 
-    pip install cherab, cherab-openadas
+    pip install cherab
 
-This will compile the CHERAB cython extensions and install both packages. If you don't have
-administrator access to install the packages, add the ``--user`` flag to the above line
-to install the packages under your own user account.
+This will either install a binary package or build CHERAB from source (which may take some time).
+If you don't have administrator access to install the packages, add the ``--user`` flag to the above
+line to install the packages under your own user account.
+
 
 Installing from source
 ^^^^^^^^^^^^^^^^^^^^^^
@@ -101,30 +98,31 @@ When developing cherab it is usually preferred that the packages be installed in
 
     python setup.py develop
 
-
 This will cause the original installation folder to be added to the site-package path. Modifications to
 the code will therefore be visible to python next time the code is imported. The ``--user`` flag should be
 used if you do not have administrative permission for your python installation.
 
-As all the CHERAB packages are dependent on the ``cherab-core`` package, this package must be installed first.
+As all the CHERAB packages are dependent on the core ``cherab`` package, this package must be installed first.
 Note that other packages may have their own inter-dependencies, see the specific package documentation for
 more information.
 
-When developing new features for cherab, the development branch should be used as the base.
+When developing new features for CHERAB, the development branch should be used as the base.
+
 
 Configuring Atomic Data
 ~~~~~~~~~~~~~~~~~~~~~~~
 
 Regardless of the method you used to install CHERAB, you will need a valid atomic data source for your
-calculations. CHERAB provides a default atomic data source through the OpenADAS module. If you wish
-to use this data source, the appropriate data needs to be downloaded from the OpenADAS web archive
-and stored in a suitable local repository. This procedure can be performed with the following python
-commands once your ``cherab-core`` and ``cherab-openadas`` packages have been successfully installed.
+calculations. CHERAB provides a default atomic data source through the OpenADAS module. To use this module
+it is necessary to obtain the atomic data files from the OpenADAS web archive. An automated download script
+is provided to download and install the most common atomic data files. This data is required to run many of
+the demos supplied with CHERAB. To run the script please enter the following commands in a python terminal:
 
 .. code-block:: pycon
 
     >>> from cherab.openadas.repository import populate
     >>> populate()
+
 
 Testing
 ~~~~~~~

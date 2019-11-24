@@ -28,7 +28,7 @@ cimport cython
 from raysect.optical.material.emitter.inhomogeneous import NumericalIntegrator
 
 from cherab.core cimport Species, Plasma, Beam, Element, BeamPopulationRate
-from cherab.core.model.lineshape import doppler_shift, thermal_broadening, add_gaussian_line
+from cherab.core.model.lineshape cimport doppler_shift, thermal_broadening, add_gaussian_line
 from cherab.core.utility.constants cimport RECIP_4_PI, ELEMENTARY_CHARGE, ATOMIC_MASS
 
 cdef double RECIP_ELEMENTARY_CHARGE = 1 / ELEMENTARY_CHARGE
@@ -134,7 +134,7 @@ cdef class BeamCXLine(BeamModel):
         receiver_velocity = self._target_species.distribution.bulk_velocity(x, y, z)
         receiver_ion_mass = self._target_species.element.atomic_weight
 
-        donor_velocity = beam_direction.normalise().mul(evamu_to_ms(self._beam.energy))
+        donor_velocity = beam_direction.normalise().mul(evamu_to_ms(self._beam.get_energy()))
 
         interaction_velocity = donor_velocity.sub(receiver_velocity)
         interaction_speed = interaction_velocity.get_length()
@@ -181,7 +181,7 @@ cdef class BeamCXLine(BeamModel):
 
         cdef:
             double z_effective, b_field, rate, total_population, population, effective_rate
-            BeamCXRate cx_rate
+            BeamCXPEC cx_rate
             list population_data
 
         # calculate z_effective and the B-field magnitude
@@ -278,11 +278,11 @@ cdef class BeamCXLine(BeamModel):
 
         cdef:
             Element receiver_element, donor_element
-            int receiver_ionisation
+            int receiver_charge
             tuple transition
             Species species
             list rates, population_data
-            BeamCXRate rate
+            BeamCXPEC rate
             BeamPopulationRate coeff
 
         # sanity checks
@@ -293,22 +293,22 @@ cdef class BeamCXLine(BeamModel):
             raise RuntimeError("The emission line has not been set.")
 
         receiver_element = self._line.element
-        receiver_ionisation = self._line.ionisation + 1
+        receiver_charge = self._line.charge + 1
         donor_element = self._beam.element
         transition = self._line.transition
 
         # locate target species
         try:
-            self._target_species = self._plasma.composition.get(receiver_element, receiver_ionisation)
+            self._target_species = self._plasma.composition.get(receiver_element, receiver_charge)
         except ValueError:
             raise RuntimeError("The plasma object does not contain the ion species for the specified cx line "
-                               "(element={}, ionisation={}).".format(receiver_element.symbol, receiver_ionisation))
+                               "(element={}, ionisation={}).".format(receiver_element.symbol, receiver_charge))
 
         # obtain wavelength for specified line
-        self._wavelength = self._atomic_data.wavelength(receiver_element, receiver_ionisation - 1, transition)
+        self._wavelength = self._atomic_data.wavelength(receiver_element, receiver_charge - 1, transition)
 
         # obtain cx rates
-        rates = self._atomic_data.beam_cx_rate(donor_element, receiver_element, receiver_ionisation, transition)
+        rates = self._atomic_data.beam_cx_pec(donor_element, receiver_element, receiver_charge, transition)
 
         # obtain beam population coefficients for each rate and assemble data
         # the data is assembled to make access efficient by linking the relevant rates and coefficients together:
@@ -335,7 +335,7 @@ cdef class BeamCXLine(BeamModel):
 
                     # bundle coefficient with its species
                     coeff = self._atomic_data.beam_population_rate(donor_element, rate.donor_metastable,
-                                                                   species.element, species.ionisation)
+                                                                   species.element, species.charge)
                     population_data.append((species, coeff))
 
                 # link each rate with its population data
