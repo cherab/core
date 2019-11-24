@@ -80,6 +80,7 @@ This will either install a binary package or build CHERAB from source (which may
 If you don't have administrator access to install the packages, add the ``--user`` flag to the above
 line to install the packages under your own user account.
 
+
 Installing from source
 ^^^^^^^^^^^^^^^^^^^^^^
 
@@ -107,20 +108,21 @@ more information.
 
 When developing new features for CHERAB, the development branch should be used as the base.
 
+
 Configuring Atomic Data
 ~~~~~~~~~~~~~~~~~~~~~~~
 
 Regardless of the method you used to install CHERAB, you will need a valid atomic data source for your
 calculations. CHERAB provides a default atomic data source through the OpenADAS module. To use this module
 it is necessary to obtain the atomic data files from the OpenADAS web archive. An automated download script
-is provided to automatically download and install the most common atomic data files. This data is required
-to run many of the demos supplied with CHERAB. To run the script please enter the following commands in a
-python terminal:
+is provided to download and install the most common atomic data files. This data is required to run many of
+the demos supplied with CHERAB. To run the script please enter the following commands in a python terminal:
 
 .. code-block:: pycon
 
     >>> from cherab.openadas.repository import populate
     >>> populate()
+
 
 Testing
 ~~~~~~~
