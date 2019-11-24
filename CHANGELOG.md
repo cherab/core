@@ -1,7 +1,7 @@
 Project Changelog
 =================
 
-Release 1.2.0 (23 Nov 2019)
+Release 1.2.0 (24 Nov 2019)
 ---------------------------
 
 API changes:
