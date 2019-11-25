@@ -19,7 +19,8 @@
 
 
 import os
-import urllib
+import urllib.parse
+import urllib.request
 
 from cherab.openadas import repository
 from cherab.openadas.parse import *
