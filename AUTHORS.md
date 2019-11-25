@@ -1,26 +1,25 @@
-The following authors have contributed to the project:
-
-Current Development Team
-------------------------
+Core Team
+---------
 
 * Matthew Carr (Core Developer)
+* Jack Lovell (Developer)
 * Alex Meakins (Architect/Core Developer)
-* Alfonso Baciero (Model development)
-* Carine Giroud (JET Project Management)
+* Matej Tomes (Developer)
 
 
 Contributors
 ------------
 
-* Joseph Allcock (Code)
-* Corentin Bertrand (Code)
-* Andrea Callarelli (Code)
-* Ephrem Delabie (Physics)
-* James Harrison (Code)
-* Nick Hawkes (Physics)
-* Jack Lovell (Code)
-* Andy Meigs (Physics)
-* Matej Tomes (Code)
+* Joseph Allcock
+* Alfonso Baciero
+* Corentin Bertrand
+* Andrea Callarelli
+* Ephrem Delabie
+* Carine Giroud
+* James Harrison
+* Nick Hawkes
+* Andy Meigs
+* vsnever
 
 
 Project History
