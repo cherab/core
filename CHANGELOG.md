@@ -1,6 +1,13 @@
 Project Changelog
 =================
 
+Release 1.2.1 (TBD)
+-------------------
+
+Bug fixes:
+* Fixed OpenADAS repository populate() method failing with the pure python interpreter but working in ipython. 
+
+
 Release 1.2.0 (24 Nov 2019)
 ---------------------------
 
