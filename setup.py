@@ -9,6 +9,7 @@ use_cython = True
 force = False
 profile = False
 line_profile = False
+install_rates = False
 
 if "--skip-cython" in sys.argv:
     use_cython = False
@@ -25,6 +26,10 @@ if "--profile" in sys.argv:
 if "--line-profile" in sys.argv:
     line_profile = True
     del sys.argv[sys.argv.index("--line-profile")]
+
+if "--install-rates" in sys.argv:
+    install_rates = True
+    del sys.argv[sys.argv.index("--install-rates")]
 
 source_paths = ['cherab', 'demos']
 compilation_includes = [".", numpy.get_include()]
@@ -92,9 +97,17 @@ setup(
         "Programming Language :: Python :: 3",
         "Topic :: Scientific/Engineering :: Physics"
     ],
-    install_requires=['numpy', 'scipy', 'matplotlib', 'raysect>=0.6.0', 'cython>=0.28'],
+    install_requires=['numpy', 'scipy', 'matplotlib', 'raysect==0.6.0', 'cython>=0.28'],
     packages=find_packages(),
     include_package_data=True,
     zip_safe=False,
     ext_modules=extensions
 )
+
+# setup a rate repository with common rates
+if install_rates:
+    try:
+        from cherab.openadas import repository
+        repository.populate()
+    except ImportError:
+        pass

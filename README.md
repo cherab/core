@@ -1,5 +1,4 @@
-
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.1206142.svg)](https://doi.org/10.5281/zenodo.1206142)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.1206141.svg)](https://doi.org/10.5281/zenodo.1206141)
 [![Build Status](https://travis-ci.com/cherab/core.svg?branch=master)](https://travis-ci.com/cherab/core)
 
 CHERAB
@@ -16,8 +15,8 @@ Installation
 CHERAB is a large code framework consisting of a core package and feature  
 packages. Users will generally install the core package and the specific  
 feature packages they need for their work. For example, users working on the  
-JET tokamak will require the ``cherab-core`` package, the ``cherab-jet``  
-package and an atomic data source such as ``cherab-openadas``.
+JET tokamak will require the ``cherab-core`` package, and the ``cherab-jet``  
+package.
 
 Unless developing new code for a cherab package, most users should clone the 
 master branch. When developing new features for cherab, the development branch 
@@ -27,7 +26,7 @@ All cherab packages are standard python packages and basic installation is
 achieved with:
 
 ```
-  python setup.py install
+python setup.py install
 ```
 
 This will compile the CHERAB cython extensions and install the package. If you 
@@ -38,7 +37,7 @@ When developing cherab it is usually preferred that the packages be installed
 in "develop" mode:
 
 ```
-  python setup.py develop
+python setup.py develop
 ```
 
 This will cause the original installation folder to be added to the 
