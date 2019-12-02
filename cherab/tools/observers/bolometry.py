@@ -488,6 +488,10 @@ class BolometerFoil(TargettedPixel):
         los_observer.spectral_bins = self.spectral_bins
         los_observer.min_wavelength = self.min_wavelength
         los_observer.max_wavelength = self.max_wavelength
+        # The observer's Z axis should be aligned along the line of sight vector
+        los_observer.transform = rotate_basis(
+            self.sightline_vector.transform(self.to_local()), self.basis_y
+        )
 
         return los_observer
 
