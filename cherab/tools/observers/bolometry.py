@@ -23,11 +23,10 @@ import numpy as np
 from raysect.core import Node, translate, rotate_basis, Point3D, Vector3D, Ray as CoreRay, Primitive, World
 from raysect.core.math.sampler import TargettedHemisphereSampler, RectangleSampler3D
 from raysect.primitive import Box, Cylinder, Subtract, Intersect, Union
-from raysect.optical import ConstantSF
 from raysect.optical.observer import PowerPipeline0D, RadiancePipeline0D, \
     SpectralPowerPipeline0D, SpectralRadiancePipeline0D, SightLine, TargettedPixel
 from raysect.optical.material.material import NullMaterial
-from raysect.optical.material import AbsorbingSurface, UniformVolumeEmitter
+from raysect.optical.material import AbsorbingSurface
 
 from cherab.tools.inversions.voxels import VoxelCollection
 
@@ -414,23 +413,18 @@ class BolometerFoil(TargettedPixel):
         self._slit = slit
         self._foil_to_slit_vec = self._centre_point.vector_to(self._slit.centre_point).normalise()
         self._curvature_radius = curvature_radius
-        self.units = units
+        self._accumulate = accumulate
 
         # setup root bolometer foil transform
         translation = translate(self._centre_point.x, self._centre_point.y, self._centre_point.z)
         rotation = rotate_basis(self._normal_vec, self._basis_y)
 
-        if self.units == "Power":
-            pipeline = PowerPipeline0D(accumulate=accumulate)
-        elif self.units == "Radiance":
-            pipeline = RadiancePipeline0D(accumulate=accumulate)
-        else:
-            raise ValueError("The units argument of BolometerFoil must be one of 'Power' or 'Radiance'.")
-
         super().__init__([slit.target], targetted_path_prob=1.0,
-                         pipelines=[pipeline],
                          pixel_samples=1000, x_width=dx, y_width=dy, spectral_bins=1, quiet=True,
                          parent=parent, transform=translation * rotation, name=detector_id)
+
+        # Update pipeline based on units
+        self.units = units
 
         # round off the detector corners, if applicable
         if self._curvature_radius > 0:
@@ -468,6 +462,32 @@ class BolometerFoil(TargettedPixel):
     def curvature_radius(self):
         return self._curvature_radius
 
+    @property
+    def units(self):
+        return self._units
+
+    @units.setter
+    def units(self, units):
+        if units == "Power":
+            pipeline = PowerPipeline0D(accumulate=self.accumulate)
+        elif units == "Radiance":
+            pipeline = RadiancePipeline0D(accumulate=self.accumulate)
+        else:
+            raise ValueError("The units property of BolometerFoil must be one of 'Power' or 'Radiance'.")
+        self._units = units
+        self.pipelines = [pipeline]
+
+    @property
+    def accumulate(self):
+        return self._accumulate
+
+    @accumulate.setter
+    def accumulate(self, value):
+        for pipeline in self.pipelines:
+            pipeline.accumulate = value
+            # Discard any samples from previous accumulate behaviour
+            pipeline.value.clear()
+
     def as_sightline(self):
         """
         Constructs a SightLine observer for this bolometer.
@@ -488,6 +508,10 @@ class BolometerFoil(TargettedPixel):
         los_observer.spectral_bins = self.spectral_bins
         los_observer.min_wavelength = self.min_wavelength
         los_observer.max_wavelength = self.max_wavelength
+        # The observer's Z axis should be aligned along the line of sight vector
+        los_observer.transform = rotate_basis(
+            self.sightline_vector.transform(self.to_local()), self.basis_y
+        )
 
         return los_observer
 
