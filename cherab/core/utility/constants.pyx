@@ -25,5 +25,5 @@ cdef:
     double DEGREES_TO_RADIANS = M_PI / 180
     double RADIANS_TO_DEGREES = 180 / M_PI
     double PLANCK_CONSTANT = 6.6260700400e-34
-    double ELECTRON_CLASSICAL_RADIUS = 2.8179403227e-15 # m
-    double ELECTRON_REST_MASS = 9.10938356e-31 #kg
+    double ELECTRON_CLASSICAL_RADIUS = 2.8179403262 #[m], NIST, CODATA 2018: https://physics.nist.gov/cgi-bin/cuu/Value?re|search_for=electron+radius
+    double ELECTRON_REST_MASS = 9.1093837015 #[kg], NIST, CODATA 2018: https://physics.nist.gov/cgi-bin/cuu/Value?me
