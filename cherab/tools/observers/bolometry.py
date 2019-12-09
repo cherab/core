@@ -625,49 +625,40 @@ class BolometerFoil(TargettedPixel):
         # generate bounding sphere and convert to local coordinate system
         sphere = target.bounding_sphere()
         spheres = [(sphere.centre.transform(self.to_local()), sphere.radius, 1.0)]
-        # instance targetted pixel sampler
+        # instance targetted pixel sampler to sample directions
         targetted_sampler = TargettedHemisphereSampler(spheres)
+        # instance rectangle pixel sampler to sample origins
+        point_sampler = RectangleSampler3D(width=self.x_width, height=self.y_width)
 
-        etendues = []
-        for i in range(batches):
-
-            # sample pixel origins
-            point_sampler = RectangleSampler3D(width=self.x_width, height=self.y_width)
+        def etendue_single_run(_):
+            """Worker function to calculate the etendue: will be run <batches> times"""
             origins = point_sampler(samples=ray_count)
-
             passed = 0.0
             for origin in origins:
-
                 # obtain targetted vector sample
                 direction, pdf = targetted_sampler(origin, pdf=True)
-                path_weight = R_2_PI * direction.z/pdf
-
+                path_weight = R_2_PI * direction.z / pdf
+                # Transform to world space
                 origin = origin.transform(detector_transform)
                 direction = direction.transform(detector_transform)
-
                 while True:
-
                     # Find the next intersection point of the ray with the world
                     intersection = world.hit(CoreRay(origin, direction, max_distance))
-
                     if intersection is None:
                         passed += 1 * path_weight
                         break
-
-                    elif isinstance(intersection.primitive.material, NullMaterial):
+                    if isinstance(intersection.primitive.material, NullMaterial):
                         hit_point = intersection.hit_point.transform(intersection.primitive_to_world)
                         # apply a small displacement to avoid infinite self collisions due to numerics
                         ray_displacement = min(self.x_width, self.y_width) / 100
                         origin = hit_point + direction * ray_displacement
                         continue
+                    break
+            etendue = (passed / ray_count) * self.sensitivity
+            return etendue
 
-                    else:
-                        break
-
-            etendue_fraction = passed / ray_count
-
-            etendues.append(self.sensitivity * etendue_fraction)
-
+        etendues = []
+        self.render_engine.run(list(range(batches)), etendue_single_run, etendues.append)
         etendue = np.mean(etendues)
         etendue_error = np.std(etendues)
 
