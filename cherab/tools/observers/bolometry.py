@@ -22,7 +22,7 @@ import numpy as np
 
 from raysect.core import Node, translate, rotate_basis, Point3D, Vector3D, Ray as CoreRay, Primitive, World
 from raysect.core.math.sampler import TargettedHemisphereSampler, RectangleSampler3D
-from raysect.primitive import Box, Cylinder, Subtract, Intersect, Union
+from raysect.primitive import Box, Cylinder, Subtract, Union
 from raysect.optical.observer import PowerPipeline0D, RadiancePipeline0D, \
     SpectralPowerPipeline0D, SpectralRadiancePipeline0D, SightLine, TargettedPixel
 from raysect.optical.material.material import NullMaterial
@@ -679,18 +679,15 @@ def mask_corners(element):
     Support detectors with rounded corners, by producing a mask to cover
     the corners.
 
-    The mask is produced by placing thin rectangles of side
-    element.curvature_radius at each corner, and then cylinders of
-    radius element.curvature_radius centred on the inner vertex of
-    those rectangles. Then each corner of the mask is the part of the
-    rectangle not covered by the cylinder.
+    The mask is produced by cutting a rounded rectangle, formed of the
+    union of two smaller perpendicular rectangles and four cylinders,
+    from a rectangle the same size as the detector.
 
     The curvature radius should be given in units of metres.
     """
-    # Make the mask very (but not infinitely) thin, so that raysect
-    # can actually detect that it's there. We'll work in the local
-    # coordinate system of the element, with dx=width, dy=height,
-    # dz=depth.
+    # Make the mask very (but not infinitely) thin, so that raysect can actually
+    # detect that it's there. Work in the local coordinate system of the
+    # element, with dx=width, dy=height, dz=depth.
     dz = 1e-6
     rc = element.curvature_radius  # Shorthand
     try:
@@ -700,50 +697,27 @@ def mask_corners(element):
         dx = element.dx
         dy = element.dy
 
-    # Create a box and a cylinder of the appropriate size.
-    # Then position copies of these at each corner.
-    box_template = Box(Point3D(0, 0, 0), Point3D(rc, rc, dz))
-    cylinder_template = Cylinder(rc, dz)
+    # Make the elements to cut out from the cover slightly thicker than the
+    # cover, to guard against rounding errors
+    long_box = Box(lower=Point3D(-dx/2 + rc, -dy/2, -0.5 * dz),
+                   upper=Point3D(dx/2 - rc, dy/2, 1.5 * dz))
+    shot_box = Box(lower=Point3D(-dx/2, -dy/2 + rc, -0.5 * dz),
+                   upper=Point3D(dx/2, dy/2 - rc, 1.5 * dz))
+    cylinder_template = Cylinder(radius=rc, height=2 * dz)
+    top_left_cylinder = cylinder_template.instance()
+    top_left_cylinder.transform = translate(-dx/2 + rc, dy/2 - rc, -dz/2)
+    top_right_cylinder = cylinder_template.instance()
+    top_right_cylinder.transform = translate(dx/2 - rc, dy/2 - rc, -dz/2)
+    bottom_right_cylinder = cylinder_template.instance()
+    bottom_right_cylinder.transform = translate(dx/2 - rc, -dy/2 + rc, -dz/2)
+    bottom_left_cylinder = cylinder_template.instance()
+    bottom_left_cylinder.transform = translate(-dx/2 + rc, -dy/2 + rc, -dz/2)
+    cutout = functools.reduce(Union, (long_box, shot_box, top_left_cylinder,
+                                      top_right_cylinder, bottom_right_cylinder,
+                                      bottom_left_cylinder))
+    cover = Box(lower=Point3D(-dx/2, -dy/2, 0), upper=Point3D(dx/2, dy/2, dz))
+    mask = Subtract(cover, cutout)
 
-    top_left_box = box_template.instance(
-        transform=translate(-dx / 2, dy / 2 - rc, 0),
-    )
-    top_left_cylinder = cylinder_template.instance(
-        transform=translate(-dx / 2 + rc, dy / 2 - rc, 0),
-    )
-    top_left_mask = Subtract(top_left_box,
-                             Intersect(top_left_box, top_left_cylinder))
-
-    top_right_box = box_template.instance(
-        transform=translate(dx / 2 - rc, dy / 2 - rc, 0),
-    )
-    top_right_cylinder = cylinder_template.instance(
-        transform=translate(dx / 2 - rc, dy / 2 - rc, 0),
-    )
-    top_right_mask = Subtract(top_right_box,
-                              Intersect(top_right_box, top_right_cylinder))
-
-    bottom_right_box = box_template.instance(
-        transform=translate(dx / 2 - rc, -dy / 2, 0),
-    )
-    bottom_right_cylinder = cylinder_template.instance(
-        transform=translate(dx / 2 - rc, -dy / 2 + rc, 0),
-    )
-    bottom_right_mask = Subtract(bottom_right_box,
-                                 Intersect(bottom_right_box, bottom_right_cylinder))
-
-    bottom_left_box = box_template.instance(
-        transform=translate(-dx / 2, -dy / 2, 0),
-    )
-    bottom_left_cylinder = cylinder_template.instance(
-        transform=translate(-dx / 2 + rc, -dy / 2 + rc, 0),
-    )
-    bottom_left_mask = Subtract(bottom_left_box,
-                                Intersect(bottom_left_box, bottom_left_cylinder))
-
-    # The foil mask is the sum of all 4 of these corner shapes
-    mask = functools.reduce(Union, (top_left_mask, top_right_mask,
-                                    bottom_right_mask, bottom_left_mask))
     mask.material = AbsorbingSurface()
     mask.transform = translate(0, 0, dz)
     mask.name = element.name + ' - rounded edges mask'
