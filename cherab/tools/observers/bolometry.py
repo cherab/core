@@ -582,7 +582,10 @@ class BolometerFoil(TargettedPixel):
         :return: A 1D array of sensitivities with length equal to the number of voxels
           in the collection.
         """
-
+        # This method exploits ToroidalVoxelCollection.set_active("all"), which
+        # makes each voxel emit a different wavelength of light. By observing
+        # the voxel collection with a spectral pipeline we can thus distinguish
+        # the amount of emission from each individual voxel.
         if not isinstance(voxel_collection, VoxelCollection):
             raise TypeError("voxel_collection must be of type VoxelCollection")
 
