@@ -5,6 +5,8 @@ The BolometerFoil object has a calculate_etendue method which we can
 use to return the etendue. This requires the correct camera geometry
 to be loaded, but nothing else present.
 """
+import matplotlib.pyplot as plt
+
 from raysect.core import Point3D, Vector3D, Node, translate
 from raysect.primitive import Box, Subtract
 from raysect.optical import World
@@ -85,6 +87,9 @@ for i, shift in enumerate([-1.5, -0.5, 0.5, 1.5]):
 # Calculate the etendue of each bolometer
 ########################################################################
 
+raytraced_etendues = []
+raytraced_errors = []
+analytic_etendues = []
 for foil in bolometer_camera:
     raytraced_etendue, raytraced_error = foil.calculate_etendue(ray_count=100000)
     Adet = foil.x_width * foil.y_width
@@ -95,3 +100,20 @@ for foil in bolometer_camera:
     analytic_etendue = Adet * Aslit * costhetadet * costhetaslit / distance**2
     print("{} raytraced etendue: {:.4g} +- {:.1g} analytic: {:.4g}".format(
         foil.name, raytraced_etendue, raytraced_error, analytic_etendue))
+    raytraced_etendues.append(raytraced_etendue)
+    raytraced_errors.append(raytraced_error)
+    analytic_etendues.append(analytic_etendue)
+
+
+########################################################################
+# Plot the raytraced and analytic etendues
+########################################################################
+
+fig, ax = plt.subplots()
+foil_number = list(range(1, len(bolometer_camera) + 1))
+ax.plot(foil_number, analytic_etendues, label="Analytic")
+ax.errorbar(x=foil_number, y=raytraced_etendues, yerr=raytraced_errors, label="Ray-traced")
+ax.legend()
+ax.set_xlabel("Foil number")
+ax.set_ylabel("Etendue / m$^2$sr")
+plt.show()

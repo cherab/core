@@ -259,12 +259,16 @@ phantom_image = ax1.imshow(
 )
 fig.colorbar(phantom_image, ax=ax1)
 ax1.set_title("Phantom")
+ax1.set_xlabel("r")
+ax1.set_ylabel("z")
 inversion_image = ax2.imshow(
     inversion_2d.T, interpolation="none", origin="lower",
     extent=(rsampled.min(), rsampled.max(), zsampled.min(), zsampled.max())
 )
 fig.colorbar(inversion_image, ax=ax2)
 ax2.set_title("Inversion")
+ax2.set_xlabel("r")
+ax2.set_ylabel("z")
 fig.tight_layout()
 
 ################################################################################
@@ -285,6 +289,8 @@ fig, ax = plt.subplots()
 ax.plot(observations, linestyle="-", label="Ray-traced measurements")
 ax.plot(phantom_measurements, linestyle="--", label="Raytransfer-based measurements")
 ax.plot(back_calculated_measurements, linestyle="--", label="Back-calculated from inversion")
+ax.set_xlabel("Foil")
+ax.set_ylabel("Power / W")
 ax.legend()
 
 print("Phantom total power: {:.4g}W".format(total_phantom_power))

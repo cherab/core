@@ -147,6 +147,8 @@ ax.add_patch(Rectangle((centre_column_radius, 0), edgecolor='k', facecolor='none
                        height=vessel_height,))
 ax.axis('equal')
 ax.set_title("Bolometer camera lines of sight")
+ax.set_xlabel("r")
+ax.set_ylabel("z")
 plt.show()
 
 ########################################################################
@@ -331,6 +333,14 @@ for camera in cameras:
         print("Calculating sensitivity for {}...".format(foil.name))
         sensitivity_matrix.append(foil.calculate_sensitivity(voxel_grid))
 sensitivity_matrix = np.asarray(sensitivity_matrix)
+
+# Plot the sensitivity matrix, summed over all foils
+fig, ax = plt.subplots()
+voxel_grid.plot(ax=ax, title="Total sensitivity [m³sr]",
+                voxel_values=sensitivity_matrix.sum(axis=0))
+ax.set_xlabel("r")
+ax.set_ylabel("z")
+plt.show()
 
 # Save the voxel grid information and the geometry matrix for use in other demos
 voxel_grid_data = {'voxel_data': voxel_data, 'laplacian': grid_laplacian,

@@ -158,6 +158,58 @@ Passive Spectroscopy
           :width: 150px
 
 
+Bolometry
+=========
+
+.. list-table::
+   :widths: 28 50 22
+   :header-rows: 1
+
+   * - Name
+     - Description
+     - Preview
+   * - :ref:`Camera From Primitives <bolometer_from_primitives>`
+     - Designing a simple bolometer camera using raysect primitives
+     - .. image:: ./bolometry/camera_from_primitives.svg
+          :height: 150px
+          :width: 150px
+   * - :ref:`Camera From Mesh and Coordinates <bolometer_from_mesh>`
+     - Designing a simple bolometer camera using a mesh file and vertex coordinates
+     - .. image:: ./bolometry/camera_from_mesh_and_coordinates.svg
+          :height: 150px
+          :width: 150px
+   * - :ref:`Observing a Radiation Function <bolometer_observing_radiation>`
+     - Calculating the measured power and radiance on bolometer from a 3D radiation function
+     - .. image:: ./bolometry/bolometer_and_radiation_function.png
+          :height: 150px
+          :width: 150px
+   * - :ref:`Calculating the Etendue <bolometer_etendue>`
+     - Calculating the etendue of a bolometer detector
+     - .. image:: ./bolometry/bolometer_etendues.svg
+          :height: 150px
+          :width: 150px
+   * - :ref:`Geometry Matrix Calculation Using Voxels <bolometer_geometry_voxels>`
+     - Calculating the geometry matrix for a bolometer system using the voxel framework
+     - .. image:: ./bolometry/bolometer_voxel_sensitivities.png
+          :height: 150px
+          :width: 150px
+   * - :ref:`Bolometer Inversions Using Voxels <bolometer_voxel_inversion>`
+     - Performing inversions using geometry matrices and the voxel framework
+     - .. image:: ./bolometry/inversion_with_voxels_profile.png
+          :height: 150px
+          :width: 150px
+   * - :ref:`Geometry Matrix Calculation Using Ray Transfer Objects <bolometer_geometry_raytransfer>`
+     - Calculating the geometry matrix for a bolometer system using ray transfer objects
+     - .. image:: ./bolometry/bolometer_raytransfer_sensitivities.png
+          :height: 150px
+          :width: 150px
+   * - :ref:`Bolometer Inversions Using Ray Transfer Objects <bolometer_raytransfer_inversion>`
+     - Performing inversions using geometry matrices from a ray transfer object
+     - .. image:: ./bolometry/inversion_with_raytransfer_profile.png
+          :height: 150px
+          :width: 150px
+
+
 Geometry Matrices
 =================
 .. list-table::

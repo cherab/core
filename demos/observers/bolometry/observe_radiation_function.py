@@ -20,13 +20,14 @@ observer we need to renormalise to the fractional solid angle subtended
 by the foil-slit system.
 """
 import math
+import matplotlib.pyplot as plt
 
 from raysect.core import Node, Point2D, Point3D, Vector3D, rotate_basis, translate
 from raysect.optical import World
 from raysect.optical.material import AbsorbingSurface, VolumeTransform
 from raysect.primitive import Box, Cylinder, Subtract
 
-from cherab.core.math import AxisymmetricMapper
+from cherab.core.math import AxisymmetricMapper, sample2d
 from cherab.tools.emitters import RadiationFunction
 from cherab.tools.observers.bolometry import BolometerCamera, BolometerSlit, BolometerFoil
 
@@ -49,16 +50,6 @@ SLIT_SENSOR_SEPARATION = 0.1
 FOIL_SEPARATION = 0.00508  # 0.2 inch between foils
 
 world = World()
-
-
-def _point3d_to_rz(point):
-    """
-    Convert a Point3D from (x, y, z) to a Point2D in the (r, z) plane.
-    """
-    r = math.hypot(point.x, point.y)
-    z = point.z
-    return Point2D(r, z)
-
 
 ########################################################################
 # Build a simple bolometer camera.
@@ -130,12 +121,46 @@ emission_function_3d = AxisymmetricMapper(emission_function)
 emitting_material = VolumeTransform(RadiationFunction(emission_function_3d),
                                     transform=emitter.transform.inverse())
 emitter.material = emitting_material
-emitter.parent = world
+
+########################################################################
+# Plot the bolometer lines of sight and the radiation function
+########################################################################
+floor = Box(lower=Point3D(-10, -10, -1.26), upper=Point3D(10, 10, -1.25), parent=world,
+            material=AbsorbingSurface(), name="Z=-1.25 plane")
+
+
+def _point3d_to_rz(point):
+    return Point2D(math.hypot(point.x, point.y), point.z)
+
+
+fig, ax = plt.subplots()
+for foil in bolometer_camera:
+    slit_centre = foil.slit.centre_point
+    slit_centre_rz = _point3d_to_rz(slit_centre)
+    ax.plot(slit_centre_rz[0], slit_centre_rz[1], 'ko')
+    origin, hit, _ = foil.trace_sightline()
+    centre_rz = _point3d_to_rz(foil.centre_point)
+    ax.plot(centre_rz[0], centre_rz[1], 'kx')
+    origin_rz = _point3d_to_rz(origin)
+    hit_rz = _point3d_to_rz(hit)
+    ax.plot([origin_rz[0], hit_rz[0]], [origin_rz[1], hit_rz[1]], 'k')
+
+r, z, emiss_sampled = sample2d(
+    emission_function, (0.25, 1.75, 150), (-1.25, 0.25, 150)
+)
+image = ax.imshow(emiss_sampled.T, origin="lower", zorder=-10,
+                  extent=(r.min(), r.max(), z.min(), z.max()))
+fig.colorbar(image)
+ax.set_xlabel("r")
+ax.set_ylabel("z")
+plt.show()
 
 
 ########################################################################
 # Measure the radiation with the bolometers
 ########################################################################
+
+emitter.parent = world
 
 for foil in bolometer_camera:
     # Ensure reasonable sampling statistics
@@ -154,6 +179,7 @@ for foil in bolometer_camera:
     print("Sightline radiance for {}:\t\t{:.03g} W/m2/sr".format(sightline.name, sightline_radiance))
     # Calculate the incident radiance from the power
     emitter.parent = None  # No other objects should be in the scene for etendue calculation
+    floor.parent = None
     etendue, etendue_error = foil.calculate_etendue()
     radiance_from_power = power / etendue
     radiance_from_power_error = (math.hypot(power_error / power, etendue_error / etendue)

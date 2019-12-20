@@ -102,11 +102,11 @@ for i, foil_geom in enumerate(FOIL_CORNERS):
 
 ########################################################################
 # Show the lines of sight of this camera, tracing them from the foils to a
-# plane at z=0
+# plane at z=0.4
 ########################################################################
 
-Box(lower=Point3D(-10, -10, -0.1), upper=Point3D(10, 10, 0), parent=world,
-    material=AbsorbingSurface(), name="Z=0 plane")
+Box(lower=Point3D(-10, -10, 0.39), upper=Point3D(10, 10, 0.4), parent=world,
+    material=AbsorbingSurface(), name="Z=0.4 plane")
 
 
 def _point3d_to_rz(point):
@@ -124,5 +124,7 @@ for foil in bolometer_camera:
     origin_rz = _point3d_to_rz(origin)
     hit_rz = _point3d_to_rz(hit)
     ax.plot([origin_rz[0], hit_rz[0]], [origin_rz[1], hit_rz[1]], 'k')
+ax.set_xlabel("r")
+ax.set_ylabel("z")
 ax.axis('equal')
 plt.show()
