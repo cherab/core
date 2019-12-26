@@ -489,7 +489,7 @@ cdef class CylindricalRayTransferEmitter(RayTransferEmitter):
             iphi = <int>(phi / self._dphi)  # phi-index of grid cell, in which the point is located
             icell = self._voxel_map.shape[1] * self._voxel_map.shape[2] * ir + self._voxel_map.shape[2] * iphi + iz
         else:
-            icell = self._voxel_map.shape[2] * ir + iz
+            icell = self._voxel_map.shape[1] * ir + iz
         isource = self.voxel_map_mv[icell]  # index of the light source in spectral array
         if isource < 0:  # grid cell is not mapped to any light source
             return spectrum
