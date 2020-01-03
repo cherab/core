@@ -149,7 +149,6 @@ ax.axis('equal')
 ax.set_title("Bolometer camera lines of sight")
 ax.set_xlabel("r")
 ax.set_ylabel("z")
-plt.show()
 
 ########################################################################
 # Define the region of interest for the inversions
@@ -340,7 +339,6 @@ voxel_grid.plot(ax=ax, title="Total sensitivity [m³sr]",
                 voxel_values=sensitivity_matrix.sum(axis=0))
 ax.set_xlabel("r")
 ax.set_ylabel("z")
-plt.show()
 
 # Save the voxel grid information and the geometry matrix for use in other demos
 voxel_grid_data = {'voxel_data': voxel_data, 'laplacian': grid_laplacian,
@@ -351,3 +349,5 @@ voxel_grid_data = {'voxel_data': voxel_data, 'laplacian': grid_laplacian,
 script_dir = Path(__file__).parent
 with open(script_dir / "voxel_grid_data.pickle", "wb") as f:
     pickle.dump(voxel_grid_data, f)
+
+plt.show()

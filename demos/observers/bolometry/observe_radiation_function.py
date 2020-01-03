@@ -153,7 +153,6 @@ image = ax.imshow(emiss_sampled.T, origin="lower", zorder=-10,
 fig.colorbar(image)
 ax.set_xlabel("r")
 ax.set_ylabel("z")
-plt.show()
 
 
 ########################################################################
@@ -205,3 +204,5 @@ for foil in bolometer_camera:
     print("Calculated brightness for {}:\t{:.03g} +- {:.1g} W/m2".format(
         foil.name, brightness, brightness_error))
     print()
+
+plt.show()

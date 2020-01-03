@@ -244,7 +244,9 @@ rsampled, zsampled, phantom_samples = sample2d(
 
 # Convert the 1D emissivity vector from the inversion into a 2D array
 # This method is general enough to handle an arbitrary voxel map, with different
-# numbers of grid cells inside each voxel (although we don't need it here)
+# numbers of grid cells inside each voxel (although we don't need it here). See
+# the geometry_matrix_with_raytransfer.py demo for a shorter, faster method using
+# the grid mask when there is a 1-to-1 mapping of grid cells to voxels.
 inversion_2d = np.full_like(phantom_samples, np.nan)
 for indices, emission in zip(inverse_voxel_map, inverted_emission):
     inversion_2d[tuple(np.squeeze(indices).T)] = emission

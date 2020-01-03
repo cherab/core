@@ -149,183 +149,80 @@ ax.axis('equal')
 ax.set_title("Bolometer camera lines of sight")
 ax.set_xlabel("r")
 ax.set_ylabel("z")
-plt.show()
-
-########################################################################
-# Define the region of interest for the inversions
-########################################################################
-
-# The inversions will be performed on the emission profile used in the
-# radiation_function.py demo, so we'll trim the voxel grid down to the
-# emitting region
-PLASMA_AXIS = Point2D(1.5, 1.5)
-LCFS_RADIUS = 1
-
-# distance of the virtual inner wall from LCFS
-WALL_LCFS_OFFSET = 0.1
-
-# Build a mask, only including cells within the wall
-# We'll use raysect's function framework for this
-radius_squared = ((Arg2D('x') - PLASMA_AXIS.x)**2 + (Arg2D('y') - PLASMA_AXIS.y)**2)
-mask = radius_squared <= (WALL_LCFS_OFFSET + LCFS_RADIUS)**2
 
 ########################################################################
 # Produce a voxel grid
 ########################################################################
 print("Producing the voxel grid...")
-# We'll use a grid of rectangular voxels here, all of which are the same
-# size. Neither the shape nor the uniform size are required for using the
-# voxels, but it makes this example a bit simpler.
-
 # Define the centres of each voxel, as an (nx, ny, 2) array
 nx = 40
 ny = 60
-cell_centres = np.meshgrid(np.linspace(1, 3, nx), np.linspace(0, 3, ny))
-cell_r = np.linspace(1, 3, nx)
-cell_z = np.linspace(0, 3, ny)
+cell_r, cell_dx = np.linspace(1, 3, nx, retstep=True)
+cell_z, cell_dz = np.linspace(0, 3, ny, retstep=True)
 cell_r_grid, cell_z_grid = np.broadcast_arrays(cell_r[:, None], cell_z[None, :])
 cell_centres = np.stack((cell_r_grid, cell_z_grid), axis=-1)  # (nx, ny, 2) array
-cell_dx = cell_centres[1, 0] - cell_centres[0, 0]
-cell_dy = cell_centres[0, 1] - cell_centres[0, 0]
 
-# Define the positions of the vertices of the voxels, as an (nx, ny, 4, 2) array
-cell_vertex_displacements = np.asarray([-0.5 * cell_dx - 0.5 * cell_dy,
-                                        -0.5 * cell_dx + 0.5 * cell_dy,
-                                        0.5 * cell_dx + 0.5 * cell_dy,
-                                        0.5 * cell_dx - 0.5 * cell_dy])
-all_cell_vertices = np.swapaxes(cell_centres[..., None], -2, -1) + cell_vertex_displacements
+# Define the positions of the vertices of the voxels
+cell_vertices_r = np.linspace(cell_r[0] - 0.5 * cell_dx, cell_r[-1] + 0.5 * cell_dx, nx + 1)
+cell_vertices_z = np.linspace(cell_z[0] - 0.5 * cell_dz, cell_z[-1] + 0.5 * cell_dz, ny + 1)
 
-# Produce a (ncells, nvertices, 2) array of coordinates to initialise the
-# ToroidalVoxelCollection. Here, ncells = number of cells inside mask,
-# nvertices = 4. The ToroidalVoxelGrid expects a flat list of (nvertices, 2)
-# arrays to define voxels, since there is no implicit assumption that the voxels
-# lie on a grid.
-enclosed_cells = []
-grid_mask = np.empty((nx, ny), dtype=bool)
-grid_index_2D_to_1D_map = {}
-grid_index_1D_to_2D_map = {}
+# Build a mask, only including cells within the wall
+# The inversions will be performed on the emission profile used in the
+# radiation_function.py demo, so we'll trim the voxel grid down to the
+# emitting region
+PLASMA_AXIS = Point2D(1.5, 1.5)
+LCFS_RADIUS = 1
+WALL_LCFS_OFFSET = 0.1  # distance of the virtual inner wall from LCFS
 
-# Identify the cells that are enclosed by the polygon,
-# simultaneously write out grid mask and grid map.
-unwrapped_cell_index = 0
-for ix in range(nx):
-    for iy in range(ny):
-        # p1, p2, p3, p4 = cell_vertices[ix][iy]
-        vertices = all_cell_vertices[ix, iy]
+vertex_radius_squared = ((cell_vertices_r[:, None] - PLASMA_AXIS.x)**2
+                         + (cell_vertices_z[None, :] - PLASMA_AXIS.y)**2)
+vertex_mask = vertex_radius_squared <= (WALL_LCFS_OFFSET + LCFS_RADIUS)**2
+# Cell is included if at least one vertex is within the wall
+grid_mask = (vertex_mask[1:, :-1] + vertex_mask[:-1, :-1]
+             + vertex_mask[1:, 1:] + vertex_mask[:-1, 1:])
 
-        # if any points are inside the polygon, retain this cell
-        if any(mask(p[0], p[1]) for p in vertices):
-            grid_mask[ix, iy] = True
-            # We'll need these maps for generating the regularisation operator
-            # The same information can be extracted from the ray transfer object's
-            # voxel_map and invert_voxel_map(), but we use dictionaries here for
-            # consistency with the voxel demo.
-            grid_index_2D_to_1D_map[(ix, iy)] = unwrapped_cell_index
-            grid_index_1D_to_2D_map[unwrapped_cell_index] = (ix, iy)
-            enclosed_cells.append(vertices)
-            unwrapped_cell_index += 1
-        else:
-            grid_mask[ix, iy] = False
-
-
-num_cells = len(enclosed_cells)
-
-
-voxel_data = np.empty((num_cells, 4, 2))  # (number of cells, 4 coordinates, x and y values)
-for i, row in enumerate(enclosed_cells):
-    p1, p2, p3, p4 = row
-    voxel_data[i, 0, :] = p1
-    voxel_data[i, 1, :] = p2
-    voxel_data[i, 2, :] = p3
-    voxel_data[i, 3, :] = p4
+num_cells = grid_mask.sum()
 
 ray_transfer_grid = RayTransferCylinder(
-    radius_outer=all_cell_vertices.take(0, -1).max(),
-    radius_inner=all_cell_vertices.take(0, -1).min(),
-    height=all_cell_vertices.take(1, -1).max(),
+    radius_outer=cell_vertices_r[-1],
+    radius_inner=cell_vertices_r[0],
+    height=cell_vertices_z[-1] - cell_vertices_z[0],
     n_radius=nx, n_height=ny, mask=grid_mask, n_polar=0,
+    transform=translate(0, 0, cell_vertices_z[0])
 )
-
 
 ########################################################################
 # Produce a regularisation operator for inversions
 ########################################################################
 # We'll use simple isotropic smoothing here, in which case an ND second
-# derivative operator (the laplacian operator) is appropriate
+# derivative operator (the laplacian operator) is appropriate. This can be
+# produced in the same way as in the geometry matrix with voxels demo, but we
+# show a faster vectorised method here.
+
+# Pad the voxel map with a 1-cell-wide border.
+voxel_map_with_borders = - np.ones((nx + 2, ny + 2), dtype=int)
+voxel_map_with_borders[1:-1, 1:-1] = ray_transfer_grid.voxel_map
+inverted_voxel_map = ray_transfer_grid.invert_voxel_map()
 grid_laplacian = np.zeros((num_cells, num_cells))
+
 
 for ith_cell in range(num_cells):
 
     # get the 2D mesh coordinates of this cell
-    ix, iy = grid_index_1D_to_2D_map[ith_cell]
+    ix, iy = inverted_voxel_map[ith_cell]
+    # we didn't map multiple cells into the same light source,
+    # so ix and iy are single-element arrays
+    ix = ix[0]
+    iy = iy[0]
 
-    neighbours = 0
+    neighbours_2d = ([ix, ix, ix, ix + 1, ix + 1, ix + 2, ix + 2, ix + 2],
+                     [iy, iy + 1, iy + 2, iy, iy + 2, iy, iy + 1, iy + 2])
 
-    try:
-        n1 = grid_index_2D_to_1D_map[ix - 1, iy]  # neighbour 1
-    except KeyError:
-        pass
-    else:
-        grid_laplacian[ith_cell, n1] = -1
-        neighbours += 1
+    neighbours_1d = voxel_map_with_borders[neighbours_2d]
+    neighbours_1d = neighbours_1d[neighbours_1d > -1]
 
-    try:
-        n2 = grid_index_2D_to_1D_map[ix - 1, iy + 1]  # neighbour 2
-    except KeyError:
-        pass
-    else:
-        grid_laplacian[ith_cell, n2] = -1
-        neighbours += 1
-
-    try:
-        n3 = grid_index_2D_to_1D_map[ix, iy + 1]  # neighbour 3
-    except KeyError:
-        pass
-    else:
-        grid_laplacian[ith_cell, n3] = -1
-        neighbours += 1
-
-    try:
-        n4 = grid_index_2D_to_1D_map[ix + 1, iy + 1]  # neighbour 4
-    except KeyError:
-        pass
-    else:
-        grid_laplacian[ith_cell, n4] = -1
-        neighbours += 1
-
-    try:
-        n5 = grid_index_2D_to_1D_map[ix + 1, iy]  # neighbour 5
-    except KeyError:
-        pass
-    else:
-        grid_laplacian[ith_cell, n5] = -1
-        neighbours += 1
-
-    try:
-        n6 = grid_index_2D_to_1D_map[ix + 1, iy - 1]  # neighbour 6
-    except KeyError:
-        pass
-    else:
-        grid_laplacian[ith_cell, n6] = -1
-        neighbours += 1
-
-    try:
-        n7 = grid_index_2D_to_1D_map[ix, iy - 1]  # neighbour 7
-    except KeyError:
-        pass
-    else:
-        grid_laplacian[ith_cell, n7] = -1
-        neighbours += 1
-
-    try:
-        n8 = grid_index_2D_to_1D_map[ix - 1, iy - 1]  # neighbour 8
-    except KeyError:
-        pass
-    else:
-        grid_laplacian[ith_cell, n8] = -1
-        neighbours += 1
-
-    grid_laplacian[ith_cell, ith_cell] = neighbours
+    grid_laplacian[ith_cell, neighbours_1d] = -1
+    grid_laplacian[ith_cell, ith_cell] = neighbours_1d.size
 
 
 ########################################################################
@@ -351,10 +248,12 @@ for camera in cameras:
 sensitivity_matrix = np.asarray(sensitivity_matrix)
 
 # Plot the sensitivity matrix, summed over all foils
+# We used a mask to construct the ray transfer grid, so have a 1-to-1 mapping of
+# grid cells to voxels. We can thus use the mask the map the voxel data back to
+# the 2D grid. A more general method which works if multiple cells are mapped to
+# a single voxel can be seen in the inversion_with_raytransfer.py demo.
 sensitivity_2d = np.full((nx, ny), np.nan)
-summed_sensitivity = sensitivity_matrix.sum(axis=0)
-for indices, sensitivity in zip(ray_transfer_grid.invert_voxel_map(), summed_sensitivity):
-    sensitivity_2d[tuple(np.squeeze(indices).T)] = sensitivity
+sensitivity_2d[ray_transfer_grid.mask] = sensitivity_matrix.sum(axis=0)
 
 fig, ax = plt.subplots()
 image = ax.imshow(sensitivity_2d.T, origin="lower", interpolation="none",
@@ -363,7 +262,6 @@ fig.colorbar(image)
 ax.set_title("Total sensitivity [m³sr]")
 ax.set_xlabel("r")
 ax.set_ylabel("z")
-plt.show()
 
 # Save the voxel grid information and the geometry matrix for use in other demos
 ray_transfer_grid_data = {
@@ -371,9 +269,12 @@ ray_transfer_grid_data = {
     'voxel_map': ray_transfer_grid.voxel_map,
     'inverse_voxel_map': ray_transfer_grid.invert_voxel_map(),
     'laplacian': grid_laplacian,
+    'mask': ray_transfer_grid.mask,
     'sensitivity_matrix': sensitivity_matrix
 }
 
 script_dir = Path(__file__).parent
 with open(script_dir / "raytransfer_grid_data.pickle", "wb") as f:
     pickle.dump(ray_transfer_grid_data, f)
+
+plt.show()
