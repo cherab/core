@@ -17,8 +17,6 @@
 #
 # See the Licence for the specific language governing permissions and limitations
 # under the Licence.
-#
-# The following code is created by Vladislav Neverov (NRC "Kurchatov Institute") for CHERAB Spectroscopy Modelling Framework
 
 """
 The following emitters and integrators are used in ray transfer objects.
@@ -107,7 +105,7 @@ cdef class CylindricalRayTransferIntegrator(RayTransferIntegrator):
         start = start_point.transform(world_to_primitive)  # start point in local coordinates
         end = end_point.transform(world_to_primitive)  # end point in local coordinates
         direction = start.vector_to(end)  # direction of integration
-        length = direction.length  # integration length
+        length = direction.get_length()  # integration length
         if length < 0.1 * self._step:  # return if ray's path is too short
             return spectrum
         direction = direction.normalise()  # normalized direction
@@ -179,7 +177,7 @@ cdef class CartesianRayTransferIntegrator(RayTransferIntegrator):
         cdef:
             Point3D start, end
             Vector3D direction
-            int isource, isource_current, it, ix, iy, iz, ix_current, iy_current, iz_current
+            int isource, isource_current, it, ix, iy, iz, ix_current, iy_current, iz_current, n
             double length, t, dt, x, y, z, dx, dy, dz, res
             int[:, :, ::1] voxel_map_mv
 
@@ -188,7 +186,7 @@ cdef class CartesianRayTransferIntegrator(RayTransferIntegrator):
         start = start_point.transform(world_to_primitive)  # start point in local coordinates
         end = end_point.transform(world_to_primitive)  # end point in local coordinates
         direction = start.vector_to(end)  # direction of integration
-        length = direction.length  # integration length
+        length = direction.get_length()  # integration length
         if length < 0.1 * self._step:  # return if ray's path is too short
             return spectrum
         direction = direction.normalise()  # normalized direction
@@ -263,7 +261,8 @@ cdef class RayTransferEmitter(InhomogeneousVolumeEmitter):
     """
 
     cdef:
-        tuple _grid_shape, _grid_steps
+        int[3] _grid_shape
+        double[3] _grid_steps
         int _bins
         np.ndarray _voxel_map
         public:
@@ -296,23 +295,24 @@ cdef class RayTransferEmitter(InhomogeneousVolumeEmitter):
 
     @property
     def grid_shape(self):
-        return self._grid_shape
+        return <tuple>self._grid_shape
 
     @property
     def grid_steps(self):
-        return self._grid_steps
+         return <tuple>self._grid_steps
 
     cdef np.ndarray _map_from_mask(self, mask):
 
         cdef:
+            int i
             np.ndarray voxel_map
 
         if mask is not None:
-            if mask.shape != self._grid_shape:
+            if mask.shape != self.grid_shape:
                 raise ValueError('Mask array must be of shape: %s.' % (' '.join(['%d' % i for i in self._grid_shape])))
             mask = mask.astype(np.bool)
         else:
-            mask = np.ones(self._grid_shape, dtype=np.bool)
+            mask = np.ones(self.grid_shape, dtype=np.bool)
         voxel_map = -1 * np.ones(mask.shape, dtype=np.int32)
         voxel_map[mask] = np.arange(mask.sum(), dtype=np.int32)
 
@@ -328,7 +328,11 @@ cdef class RayTransferEmitter(InhomogeneousVolumeEmitter):
 
     @voxel_map.setter
     def voxel_map(self, value):
-        if value.shape != self._grid_shape:
+
+        cdef:
+            int i
+
+        if value.shape != self.grid_shape:
             raise ValueError('Voxel_map array must be of shape: %s.' % (' '.join(['%d' % i for i in self._grid_shape])))
         self._voxel_map = value.astype(np.int32)
         self.voxel_map_mv = self._voxel_map
@@ -543,10 +547,6 @@ cdef class CartesianRayTransferEmitter(RayTransferEmitter):
         cdef:
             double def_integration_step
 
-        if len(grid_shape) != 3:
-            raise ValueError("Attribute 'grid_shape must contain 3 elements.")
-        if len(grid_steps) != 3:
-            raise ValueError("Attribute 'grid_steps' must contain 3 elements.")
         def_integration_step = 0.1 * min(grid_steps)
         integrator = integrator or CartesianRayTransferIntegrator(def_integration_step)
         super().__init__(grid_shape, grid_steps, voxel_map=voxel_map, mask=mask, integrator=integrator)

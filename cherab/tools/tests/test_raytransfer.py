@@ -51,7 +51,7 @@ class TestRayTransferCylinder(unittest.TestCase):
         inv_vmap_ref = [(np.array([1, 1]), np.array([3, 4])), (np.array([2, 2]), np.array([3, 4])),
                         (np.array([1, 1]), np.array([5, 6])), (np.array([2, 2]), np.array([5, 6]))]
         self.assertTrue(np.all(mask_ref == rtc.mask[:, 0, :]) and
-                        np.all(np.array(inv_vmap_ref) == np.array(rtc.invert_voxel_map(axisymmetric=True))) and
+                        np.all(np.array(inv_vmap_ref) == np.array(rtc.invert_voxel_map())[:, ::2, :]) and
                         rtc.bins == 4)
 
     def test_mask_3d(self):

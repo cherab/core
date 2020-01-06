@@ -84,7 +84,6 @@ Performance tips:
 .. autoclass:: cherab.tools.raytransfer.raytransfer.RayTransferBox
 
 .. autoclass:: cherab.tools.raytransfer.raytransfer.RayTransferCylinder
-   :members: invert_voxel_map
 
 **Emitters and integrators**
 

@@ -17,8 +17,6 @@
 #
 # See the Licence for the specific language governing permissions and limitations
 # under the Licence.
-#
-# The following code is created by Vladislav Neverov (NRC "Kurchatov Institute") for CHERAB Spectroscopy Modelling Framework
 
 """
 Ray transfer objects accelerate the calculation of geometry matrices (or Ray Transfer Matrices as
@@ -199,24 +197,6 @@ class RayTransferCylinder(RayTransferObject):
         primitive = Subtract(Cylinder(radius_outer - eps_r, height - eps_z), Cylinder(radius_inner + eps_r, height - eps_z),
                              material=material, parent=parent, transform=transform)
         super().__init__(primitive)
-
-    def invert_voxel_map(self, axisymmetric=False):
-        """
-        Returns a list of arrays of cell indices belonging to each light source.
-        This list is an inversion of `voxel_map` array.
-
-        :param bool axisymmetric: If set to True, returns inverted voxel map as 2D indices
-            (RZ-plane) if `voxel_map.shape[1] == 1`, defaults to `axisymmetric=False`.
-        """
-        inverted_voxel_map = []
-        if axisymmetric and self._primitive.material.voxel_map.shape[1] == 1:
-            for i in range(self._primitive.material.bins):
-                inverted_voxel_map.append(np.where(self._primitive.material.voxel_map == i)[::2])
-        else:
-            for i in range(self._primitive.material.bins):
-                inverted_voxel_map.append(np.where(self._primitive.material.voxel_map == i))
-
-        return inverted_voxel_map
 
 
 class RayTransferBox(RayTransferObject):
