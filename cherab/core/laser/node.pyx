@@ -6,56 +6,17 @@ from raysect.core cimport translate
 
 from cherab.core.laser.models.model_base cimport LaserModel
 from cherab.core.laser.material cimport LaserMaterial
-from cherab.core.laser.scattering cimport ScatteringModel
+from cherab.core.laser.scattering cimport ScatteringModel_base
+from cherab.core.laser.models.laserspectrum_base import LaserSpectrum_base
 from cherab.core.utility import Notifier
 from libc.math cimport M_PI
 
 
 cdef double DEGREES_TO_RADIANS = (M_PI / 180)
 
-
-cdef class ModelManager:
-
-    def __init__(self, type):
-        self._models = []
-        self.notifier = Notifier()
-        self._object_type = type
-
-    def __iter__(self):
-        return iter(self._models)
-
-    cpdef object set(self, object models):
-
-        # copy models and test it is an iterable
-        models = list(models)
-
-        # check contents of list are beam models
-        for model in models:
-            if not isinstance(model, self._object_type):
-                raise TypeError("Model has to be of type {0} but {1} passed.".format(self._object_type, type(model)))
-
-        self._models = models
-        self.notifier.notify()
-
-    cpdef object add(self, object model):
-
-        if not model:
-            raise ValueError('Model must not be None type.')
-
-        if not isinstance(model, self._object_type):
-            raise TypeError("Model has to be of type {0} but {1} passed.".format(self._object_type, type(model)))
-
-        self._models.append(model)
-        self.notifier.notify()
-
-    cpdef object clear(self):
-        self._models = []
-        self.notifier.notify()
-
 cdef class Laser(Node):
 
-    def __init__(self, object parent=None, AffineMatrix3D transform=None, str name=None):
-
+    def __init__(self, object parent=None, AffineMatrix3D transform=None, str name=None): 
         super().__init__(parent, transform, name)
 
         # change reporting and tracking
@@ -70,7 +31,6 @@ cdef class Laser(Node):
         self._plasma = None
 
         self._laser_model = None
-        self._scattering_models = ModelManager(ScatteringModel)
 
         self._integrator = NumericalIntegrator(step=0.001)
 
@@ -107,7 +67,8 @@ cdef class Laser(Node):
     def plasma(self, Plasma value not None):
         self._plasma = value
         self._configure_geometry()
-        self._configure_scattering_models()
+
+        self._plasma_changed()
 
     def set_importance(self, value):
         self._geometry.material.importance = value
@@ -139,27 +100,33 @@ cdef class Laser(Node):
         self._geometry.material = LaserMaterial(self, self._integrator)
 
     @property
+    def laser_spectrum(self):
+        return self._laser_spectrum
+
+    @laser_spectrum.setter
+    def laser_spectrum(self, LaserSpectrum_base value):
+        self._laser_spectrum = value
+        self._laser_spectrum_changed()
+        
+
+    @property
     def laser_model(self):
         return self._laser_model
 
     @laser_model.setter
     def laser_model(self, object value):
 
-        # setting the emission models causes ModelManager to notify the Beam object to configure geometry
-        # so no need to explicitly rebuild here
-
-        if not isinstance(value, LaserModel):
-            raise TypeError("Value has to be of type LaserModel but {0} passed.".format(type(value)))
 
         self._laser_model = value
-        self._configure_scattering_models()
+
+        self._laser_model_changed()
 
     @property
-    def scattering_models(self):
-        return self._scattering_models
+    def scattering_model(self):
+        return self._scattering_model
 
-    @scattering_models.setter
-    def scattering_models(self, value):
+    @scattering_model.setter
+    def scattering_model(self, ScatteringModel_base value):
 
         # check necessary data is available
         if not self._plasma:
@@ -168,16 +135,35 @@ cdef class Laser(Node):
         if not self._laser_model:
             raise ValueError('The laser must have a reference to have laser models specified to be used with a scattering model.')
 
-        self._scattering_models.set(value)
+        if not self._laser_spectrum:
+            raise ValueError('The laser must have a reference to have laser spectrum specified to be used with a scattering model.')
+
+        self._scattering_model = value
         self._configure_geometry()
-        self._configure_scattering_models()
 
-    def _configure_scattering_models(self):
+        self._scattering_changed()
 
-        for scattering_model in self._scattering_models:
-            scattering_model.plasma = self._plasma
-            scattering_model.laser_model = self._laser_model
+    def _laser_model_changed(self):
+        if self._scattering_model is not None:
+            self._scattering_model.laser_model = self._laser_model
+    
+    def _laser_spectrum_changed(self):
+        if self._scattering_model is not None:
+            self._scattering_model.set_laser_spectrum(self._laser_spectrum)
+    
+    def _scattering_changed(self):
+        if self._plasma is not None:
+            self._scattering_model.plasma = self._plasma
+        if self._laser_model is not None:
+            self._scattering_model.laser_model = self._laser_model
+        if self._laser_spectrum is not None:
+            self._scattering_model.set_laser_spectrum(self._laser_spectrum)
 
+    def _plasma_changed(self):
+        self._configure_geometry()
+        if self._scattering_model is not None:
+            self._scattering_model.plasma = self._plasma
+        
 
     def _generate_geometry(self):
 
