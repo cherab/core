@@ -99,7 +99,7 @@ class TestMaxwellian(unittest.TestCase):
                     for vx in self.vx[::2]:
                         for vy in self.vy[::2]:
                             for vz in self.vz[::2]:
-                                self.assertAlmostEqual(maxwellian(x, y, z, vx, vy, vz), phase_space_density(x, y, z, vx, vy, vz), delta=1e-10,
+                                self.assertAlmostEqual(maxwellian(x, y, z, vx, vy, vz), phase_space_density(x, y, z, vx, vy, vz), delta=1e-6,
                                                        msg='call method gives a wrong phase space density at ({}, {}, {}, {}, {}, {}).'.format(x, y, z, vx, vy, vz))
 
 
