@@ -5,6 +5,7 @@ from cherab.core.utility.constants cimport DEGREES_TO_RADIANS, ATOMIC_MASS, RECI
 from cherab.core.utility.constants cimport PLANCK_CONSTANT, SPEED_OF_LIGHT, ELECTRON_CLASSICAL_RADIUS, ELECTRON_REST_MASS, ELEMENTARY_CHARGE
 from cherab.core.laser.node cimport Laser
 from cherab.core.laser.models.model_base cimport LaserModel
+from cherab.core.laser.models.laserspectrum_base cimport LaserSpectrum_base
 from cherab.core cimport Plasma
 
 cimport cython
@@ -15,26 +16,11 @@ cdef double E_TO_NPHOT = 10e-9 / (PLANCK_CONSTANT * SPEED_OF_LIGHT) # N_photons(
 cdef double NPHOT_TO_E = 1/ E_TO_NPHOT # E(wlen, N_photons) = n_photons/wlen * NPHOT_TO_E in [nm, J]
 
 
-cdef class ScatteringModel:
+cdef class ScatteringModel_base:
 
     cpdef Spectrum emission(self, Point3D position_plasma, Point3D position_laser, Vector3D direction_observation, Spectrum spectrum):
 
         raise NotImplementedError('Virtual method must be implemented in a sub-class.')
-
-cdef class SeldenMatobaThomsonSpectrum(ScatteringModel):
-
-    def __init__(self, Laser laser=None, LaserModel laser_models=None, Plasma plasma=None):
-        # from article: 2 * alpha = m_e * c **2 /(k * T_e), here rewritten for Te in eV
-        self._CONST_ALPHA = ELECTRON_REST_MASS * SPEED_OF_LIGHT ** 2 / ( 2 * ELEMENTARY_CHARGE)
-
-        if laser is not None:
-            self.laser = laser
-        else:
-            if laser_models is not None:
-                self.laser_model = laser_models
-            if plasma is not None:
-                self.plasma = plasma
-
 
     @property
     def laser(self):
@@ -73,19 +59,45 @@ cdef class SeldenMatobaThomsonSpectrum(ScatteringModel):
 
         self._laser_model = value
 
+    def set_laser_spectrum(self, LaserSpectrum_base value):
+        #unregister callback
+        if self._laser_spectrum is not None:
+            self._laser_spectrum._notifier.remove(self._laser_spectrum_changed)
+
+        self._laser_spectrum = value
+        self._laser_spectrum._notifier.add(self._laser_spectrum_changed)
+        self._laser_spectrum_changed()
+
+    def _laser_spectrum_changed(self):
+        self._laser_bins = self._laser_spectrum._bins
+        self._laser_wavelength_mv = self._laser_spectrum._wavelengths_mv
+        self._laser_power_mv = self._laser_spectrum._power_mv
+        
+cdef class SeldenMatobaThomsonSpectrum(ScatteringModel_base):
+
+    def __init__(self, Laser laser=None, LaserModel laser_models=None, Plasma plasma=None):
+        # from article: 2 * alpha = m_e * c **2 /(k * T_e), here rewritten for Te in eV
+        self._CONST_ALPHA = ELECTRON_REST_MASS * SPEED_OF_LIGHT ** 2 / ( 2 * ELEMENTARY_CHARGE)
+        if laser is not None:
+            self.laser = laser
+        else:
+            if laser_models is not None:
+                self.laser_model = laser_models
+            if plasma is not None:
+                self.plasma = plasma
+
+
+
     @cython.cdivision(True)
     cdef double seldenmatoba_spectral_shape(self, double epsilon, double cos_theta, double alpha):
 
         cdef:
-            double c, a, b, bin
+            double c, a, b
 
         c = sqrt(alpha / M_PI) * (1 - 15. / (16. * alpha) + 345. / (512. * alpha ** 2))
         a = (1 + epsilon) ** 3 * sqrt(2 * (1 - cos_theta) * (1 + epsilon) + epsilon ** 2)
         b = sqrt(1 + epsilon ** 2 / (2 * (1 - cos_theta) * (1 + epsilon))) - 1
-
-        bin = c / a * exp(-2 * alpha * b)
-
-        return bin
+        return c / a * exp(-2 * alpha * b)
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
@@ -96,9 +108,8 @@ cdef class SeldenMatobaThomsonSpectrum(ScatteringModel):
             double ne, te, laser_power_density, angle_pointing, angle_polarization, laser_wavelength
             Vector3D pointing_vector, polarization_vector
             Spectrum laser_spectrum
-            int index
-
-
+            Py_ssize_t index
+        
         ne = self._plasma.get_electron_distribution().density(position_plasma.x, position_plasma.y, position_plasma.z)
         te = self._plasma.get_electron_distribution().effective_temperature(position_plasma.x, position_plasma.y, position_plasma.z)
 
@@ -116,16 +127,12 @@ cdef class SeldenMatobaThomsonSpectrum(ScatteringModel):
         if ne <= 0 or te <=0:
             #print("ne = {0} or te = {1}".format(ne, te))
             return spectrum
-
-        laser_spectrum = self._laser_model.get_power_density_spectrum(position_laser.x, position_laser.y, position_laser.z)
-        for index in range(laser_spectrum.bins):
-            laser_wavelength = self._laser_model.laser_spectrum.wavelengths[index]
-
-            laser_power_density = self._laser_model.get_power_density(position_laser.x, position_laser.y, position_laser.z, laser_wavelength)
+        for index in range(self._laser_bins):
+            laser_power_density = self._laser_power_mv[index] * self._laser_model.get_power_density(position_laser.x, position_laser.y, position_laser.z)
 
             if laser_power_density > 0:
                 spectrum = self.add_spectral_contribution(ne, te, laser_power_density,
-                                                          angle_pointing, angle_polarization, laser_wavelength, spectrum)
+                                                          angle_pointing, angle_polarization, self._laser_wavelength_mv[index], spectrum)
 
         return spectrum
 
@@ -138,7 +145,7 @@ cdef class SeldenMatobaThomsonSpectrum(ScatteringModel):
                                              double angle_polarization, double laser_wavelength, Spectrum spectrum):
 
         cdef:
-            double alpha, epsilon, min_wavelength, cos_scatangle, sin2_polarisation, wavelength
+            double alpha, epsilon, min_wavelength, cos_scatangle, sin2_polarisation, wavelength, photons_persec
             int index, nbins
 
         alpha = self._CONST_ALPHA / te
@@ -161,7 +168,7 @@ cdef class SeldenMatobaThomsonSpectrum(ScatteringModel):
             wavelength = (spectrum.min_wavelength + spectrum.delta_wavelength * index)
             epsilon =  (wavelength - laser_wavelength) / laser_wavelength
             spectrum_norm = self.seldenmatoba_spectral_shape(epsilon, cos_scatangle, alpha)
-
+            #print("spectrum norm = {}, epsilon={}".format(spectrum_norm, epsilon))
             spectrum.samples_mv[index] += spectrum_norm * photons_persec / wavelength * NPHOT_TO_E / spectrum.delta_wavelength
 
         return spectrum
