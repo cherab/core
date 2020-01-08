@@ -1,54 +1,17 @@
-from raysect.core.math.function cimport Function1D
+from raysect.core.math.function cimport Function3D
 from raysect.optical cimport Spectrum
 from raysect.core.math.cython.utility cimport find_index
 
 from libc.math cimport sqrt, exp, pi as PI
 
 
-cdef class MathFunction(Function1D):
+cdef class AxisymmetricGaussian3D(Function3D):
 
-    def __init__(self):
-        super().__init__()
-
-    cpdef Spectrum spectrum(self, double min_wavelength, double max_wavelength, int nbins, bint zero_edges = 1):
-
-        cdef:
-            Spectrum spectrum
-            double delta_wavelength, recip_delta_wavelength, wlen
-            int index
-
-        spectrum = Spectrum(min_wavelength, max_wavelength, nbins)
-
-        recip_delta_wavelength = 1 / spectrum.delta_wavelength
-        for index, wlen in enumerate(spectrum.wavelengths):
-            spectrum.samples[index] = self.evaluate(wlen)
-
-        if zero_edges:
-            spectrum.samples[0] = 0
-            if spectrum.bins > 1:
-                    spectrum.samples[-1] = 0
-
-        spectrum.samples_mv = spectrum.samples
-
-        return spectrum
-
-cdef class Normal(MathFunction):
-
-    def __init__(self, mean = None, sigma = None):
+    def __init__(self, sigma = None):
 
         super().__init__()
 
-        self.mean = mean
         self.sigma = sigma
-
-    @property
-    def mean(self):
-        return self._mean
-
-    @mean.setter
-    def mean(self, value):
-
-        self._mean = value
 
     @property
     def sigma(self):
@@ -62,86 +25,77 @@ cdef class Normal(MathFunction):
         self._recip_negative_2sigma2 = -1 / (2 * value ** 2)
         self._recip_sqrt_2pisigma2 = 1 / sqrt(2 * PI * value ** 2)
 
-    cdef double evaluate(self, double x) except? -1e999:
+    cdef double evaluate(self, double x, double y, double z) except? -1e999:
+        cdef:
+            double r2
 
-        return self._recip_sqrt_2pisigma2 * exp(((x - self._mean) ** 2) * self._recip_negative_2sigma2)
+        r2 = x ** 2 + y ** 2
+        return self._recip_sqrt_2pisigma2 * exp(r2 * self._recip_negative_2sigma2)
 
-cdef class BellShape(MathFunction):
 
-    def __init__(self, mean = None, sigma = None):
+cdef class GaussianBeamModel(Function3D):
 
-        super().__init__()
+    def __init__(self, double wavelength, double z_focus, double focus_width, double m2=1):
 
-        self.mean = mean
-        self.sigma = sigma
-
-    @property
-    def mean(self):
-        return self._mean
-
-    @mean.setter
-    def mean(self, value):
-
-        self._mean = value
+        self.wavelength = wavelength
+        self.z_focus = z_focus
+        self.focus_width = focus_width
+        self.m2 = m2
 
     @property
-    def sigma(self):
+    def wavelength (self):
+        return self._wavelength
 
-        return self._sigma
-
-    @sigma.setter
-    def sigma(self, value):
-
-        self._sigma = value
-        self._recip_negative_2sigma2 = -1 / (2 * value ** 2)
-
-    cdef double evaluate(self, double x) except? -1e999:
-
-        return exp(((x - self._mean) ** 2) * self._recip_negative_2sigma2)
-
-cdef class Delta(MathFunction):
-
-    def __init__(self, position = None):
-
-        super().__init__()
-
-        self.position = position
+    @wavelength.setter
+    def wavelength(self, double value):
+        if not value > 0:
+            raise ValueError("Value has to be larger than 0, but {0} passed.".format(value))
+        
+        self._wavelength = value
+        self._cache_constants()
 
     @property
-    def position(self):
-        return self._position
+    def z_focus (self):
+        return self._z_focus
 
-    @position.setter
-    def position(self, value):
+    @z_focus.setter
+    def z_focus(self, double value):
+        self._z_focus = value
+        self._cache_constants()
+    
+    @property
+    def focus_width(self):
+        return self._focus_width
 
-        self._position = value
+    @focus_width.setter
+    def focus_width(self, double value):
+        if not value > 0:
+            raise ValueError("Value has to be larger than 0, but {0} passed.".format(value))
+    
+        self._focus_width = value
+    
+    @property
+    def m2(self):
+        return self._m2
 
-    cdef double evaluate(self, double x) except? -1e999:
+    @m2.setter
+    def m2(self, double value):
+        if not value > 0:
+            raise ValueError("Value has to be larger than 0, but {0} passed.".format(value))
+        
+        self._m2 = value
+        self._cache_constants(self)
 
-        if x == self._position:
-            return 1
-        else:
-            return 0
+    def _cache_constants(self):
+        self._wavelengthm_div_pi = (self._wavelength * sqrt(self._m2)) / PI
+        self._focus_width2m = self._focus_width ** 2 * sqrt(self._m2)
 
-    cpdef Spectrum spectrum(self, double min_wavelength, double max_wavelength, int nbins, bint zero_edges = 1):
+    cdef double evaluate(self, double x, double y, double z) except? -1e999:
 
         cdef:
-            Spectrum spectrum
-            double delta_wavelength, recip_delta_wavelength, wlen
-            int index
+            double r2, w2_z
 
-        spectrum = Spectrum(min_wavelength, max_wavelength, nbins)
+        r2 = x ** 2 + y ** 2
+        w2_z = self._focus_width2m + self._wavelengthm_div_pi * (z - self._focus_z) 
 
-        index = find_index(spectrum.wavelengths, self._position)
-        spectrum.samples[index] = 1
-        if spectrum.bins > 1:
-            spectrum.samples[index] /= spectrum.delta_wavelength
-            #edges cant be zeros if number of bins is 1
-            if zero_edges:
-                    spectrum.samples[0] = 0
-                    spectrum.samples[-1] = 0
-
-        spectrum.samples_mv = spectrum.samples
-        print(spectrum.samples)
-
-        return spectrum
+        return 1 - exp(-2 * r2 / w2_z)
