@@ -17,8 +17,6 @@
 #
 # See the Licence for the specific language governing permissions and limitations
 # under the Licence.
-#
-# The following code is created by Vladislav Neverov (NRC "Kurchatov Institute") for CHERAB Spectroscopy Modelling Framework
 
 """
 Ray transfer objects accelerate the calculation of geometry matrices (or Ray Transfer Matrices as
@@ -130,9 +128,9 @@ class RayTransferObject:
 
 class RayTransferCylinder(RayTransferObject):
     """
-    Ray transfer object for cylindrical emitter defined on a regular 2D (RZ plane) or
-    3D :math:`(R, \phi, Z)` grid. In case of 3D grid this emitter is periodic in :math:`\phi`
-    direction. The base of the cylinder is located at `Z = 0` plane. Use `transform`
+    Ray transfer object for cylindrical emitter defined on a regular 3D :math:`(R, \phi, Z)` grid.
+    This emitter is periodic in :math:`\phi` direction.
+    The base of the cylinder is located at `Z = 0` plane. Use `transform`
     parameter to move it.
 
     :param float radius_outer: Radius of the outer cylinder and the upper bound of grid in
@@ -144,24 +142,24 @@ class RayTransferCylinder(RayTransferObject):
     :param float radius_inner: Radius of the inner cylinder and the lower bound of grid in
         `R` direction (in meters), defaults to `radius_inner=0`.
     :param int n_polar: Number of grid points in :math:`\phi` direction, defaults to
-        `n_polar=0` (2D grid).
-    :param float period: A period in :math:`\phi` direction (in degree). Used only if
-        `n_polar > 0`, defaults to `period=360`.
+        `n_polar=1` (axisymmetric case).
+    :param float period: A period in :math:`\phi` direction (in degree), defaults to `period=360`.
     :param float step: The step of integration along the ray (in meters),
         defaults to `step = 0.1 * min((radius_outer - radius_inner)/n_radius, height/n_height)`.
-    :param np.ndarray voxel_map: An array with shape `(n_radius, n_height)` (axisymmetric case)
-        or `(n_radius, n_polar, n_height)` (3D case) containing the indices of the light sources.
+    :param np.ndarray voxel_map: An array with shape `(n_radius, n_polar, n_height)`
+        containing the indices of the light sources.
         This array maps the cells in :math:`(R, \phi, Z)` space to the respective voxels
         (light sources). The cells with identical indices in `voxel_map` array form a single voxel
         (light source). If `voxel_map[ir, iphi, iz] == -1`, the cell with index `(ir, iphi, iz)`
         will not be mapped to any light source. This parameters allows to apply a custom geometry
         (pixelated though) to the light sources. Default value: `voxel_map=None`.
-    :param np.ndarray mask: A boolean mask array with shape `(n_radius, n_height)`
-        (axisymmetric case) or `(n_radius, n_polar, n_height)` (3D case). Allows to include
-        (`mask[ir, iphi, iz] == True`) or exclude (`mask[ir, iphi, iz] == False`) the cells
-        from the calculation. The ray tranfer matrix will be calculated only for those cells for
-        which mask is True. This parameter is ignored if `voxel_map` is provided, defaults to
-        `mask=None` (all cells are included).
+        Convert 2D (axisymmetric) `voxel_map` to 3D with `voxel_map = voxel_map[:, None, :]`.
+    :param np.ndarray mask: A boolean mask array with shape `(n_radius, n_polar, n_height)`.
+        Allows to include (`mask[ir, iphi, iz] == True`) or exclude (`mask[ir, iphi, iz] == False`)
+        the cells from the calculation. The ray tranfer matrix will be calculated only for those
+        cells for which mask is True. This parameter is ignored if `voxel_map` is provided,
+        defaults to `mask=None` (all cells are included).
+        Convert 2D (axisymmetric) `mask` to 3D with `mask = mask[:, None, :]`.
     :param Node parent: Scene-graph parent node or None (default = None).
     :param AffineMatrix3D transform: An AffineMatrix3D defining the local co-ordinate system
         relative to the scene-graph parent (default = identity matrix).
@@ -182,21 +180,20 @@ class RayTransferCylinder(RayTransferObject):
         >>> camera.max_wavelength = 601.
     """
 
-    def __init__(self, radius_outer, height, n_radius, n_height, radius_inner=0, n_polar=0, period=360., step=None, voxel_map=None, mask=None,
+    def __init__(self, radius_outer, height, n_radius, n_height, radius_inner=0, n_polar=1, period=360., step=None, voxel_map=None, mask=None,
                  parent=None, transform=None):
-        grid_shape = (n_radius, n_polar, n_height) if n_polar else (n_radius, n_height)
-        if n_polar:
-            if not 0 < period <= 360.:
-                raise ValueError('period must be > 0 and <= 360')
+        if 360. % period > 1.e-3:
+            raise ValueError("The period %.3f is not a multiple of 360." % period)
+        grid_shape = (n_radius, n_polar, n_height)
         dr = (radius_outer - radius_inner) / n_radius
         dz = height / n_height
-        dphi = period / n_polar if n_polar else 0
-        grid_steps = (dr, dphi, dz) if n_polar else (dr, dz)
+        dphi = period / n_polar
+        grid_steps = (dr, dphi, dz)
         eps_r = 1.e-5 * dr
         eps_z = 1.e-5 * dz
         step = step or 0.1 * min(dr, dz)
         material = CylindricalRayTransferEmitter(grid_shape, grid_steps, mask=mask, voxel_map=voxel_map,
-                                                 integrator=CylindricalRayTransferIntegrator(step), rmin=radius_inner, period=period)
+                                                 integrator=CylindricalRayTransferIntegrator(step), rmin=radius_inner)
         primitive = Subtract(Cylinder(radius_outer - eps_r, height - eps_z), Cylinder(radius_inner + eps_r, height - eps_z),
                              material=material, parent=parent, transform=transform)
         super().__init__(primitive)

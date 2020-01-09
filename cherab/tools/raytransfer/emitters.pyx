@@ -1,5 +1,5 @@
-# -*- coding: utf-8 -*-
-#
+# cython: language_level=3
+
 # Copyright 2016-2018 Euratom
 # Copyright 2016-2018 United Kingdom Atomic Energy Authority
 # Copyright 2016-2018 Centro de Investigaciones Energéticas, Medioambientales y Tecnológicas
@@ -17,8 +17,6 @@
 #
 # See the Licence for the specific language governing permissions and limitations
 # under the Licence.
-#
-# The following code is created by Vladislav Neverov (NRC "Kurchatov Institute") for CHERAB Spectroscopy Modelling Framework
 
 """
 The following emitters and integrators are used in ray transfer objects.
@@ -27,10 +25,14 @@ with other integrators is not guaranteed.
 """
 
 import numpy as np
-from raysect.optical.material import VolumeIntegrator, InhomogeneousVolumeEmitter
+from raysect.optical cimport World, Primitive, Ray, Spectrum, Point3D, Vector3D, AffineMatrix3D
+from raysect.optical.material cimport VolumeIntegrator, InhomogeneousVolumeEmitter
+from libc.math cimport sqrt, atan2, M_PI as pi
+cimport numpy as np
+cimport cython
 
 
-class RayTransferIntegrator(VolumeIntegrator):
+cdef class RayTransferIntegrator(VolumeIntegrator):
     """
     Basic class for ray transfer integrators that calculate distances traveled by the ray
     through the voxels defined on a regular grid.
@@ -43,7 +45,11 @@ class RayTransferIntegrator(VolumeIntegrator):
     :ivar int min_samples: The minimum number of samples to use over integration range.
     """
 
-    def __init__(self, step=0.001, min_samples=2):
+    cdef:
+        double _step
+        int _min_samples
+
+    def __init__(self, double step=0.001, int min_samples=2):
         self.step = step
         self.min_samples = min_samples
 
@@ -54,7 +60,7 @@ class RayTransferIntegrator(VolumeIntegrator):
     @step.setter
     def step(self, value):
         if value <= 0:
-            raise ValueError("Numerical integration step size can not be less than or equal to zero")
+            raise ValueError("Numerical integration step size can not be less than or equal to zero.")
         self._step = value
 
     @property
@@ -68,7 +74,7 @@ class RayTransferIntegrator(VolumeIntegrator):
         self._min_samples = value
 
 
-class CylindricalRayTransferIntegrator(RayTransferIntegrator):
+cdef class CylindricalRayTransferIntegrator(RayTransferIntegrator):
     """
     Calculates the distances traveled by the ray through the voxels defined on a regular grid
     in cylindrical coordinate system: :math:`(R, \phi, Z)`. This integrator is used
@@ -79,40 +85,78 @@ class CylindricalRayTransferIntegrator(RayTransferIntegrator):
     approximately and the accuracy depends on the integration step.
     """
 
-    def integrate(self, spectrum, world, ray, primitive, material, start_point, end_point, world_to_primitive, primitive_to_world):
+    @cython.wraparound(False)
+    @cython.cdivision(True)
+    @cython.initializedcheck(False)
+    @cython.nonecheck(False)
+    cpdef Spectrum integrate(self, Spectrum spectrum, World world, Ray ray, Primitive primitive,
+                             InhomogeneousVolumeEmitter material, Point3D start_point, Point3D end_point,
+                             AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world):
+
+        cdef:
+            Point3D start, end
+            Vector3D direction
+            int isource, isource_current, it, ir, iphi, iz, ir_current, iphi_current, iz_current, n, nphi
+            double length, t, dt, x, y, z, r, phi, dr, dz, dphi, rmin, period, res
+            int[:, :, ::1] voxel_map_mv
+
         if not isinstance(material, CylindricalRayTransferEmitter):
-            raise ValueError('Only CylindricalRayTransferEmitter material is supported by CylindricalRayTransferIntegrator')
+            raise TypeError('Only CylindricalRayTransferEmitter material is supported by CylindricalRayTransferIntegrator.')
         start = start_point.transform(world_to_primitive)  # start point in local coordinates
         end = end_point.transform(world_to_primitive)  # end point in local coordinates
         direction = start.vector_to(end)  # direction of integration
-        length = direction.length  # integration length
-        if length < 0.1 * self.step:  # return if ray's path is too short
+        length = direction.get_length()  # integration length
+        if length < 0.1 * self._step:  # return if ray's path is too short
             return spectrum
         direction = direction.normalise()  # normalized direction
-        n = max(self.min_samples, int(length / self.step))  # number of points along ray's trajectory
-        t, dt = np.linspace(0, length, n, retstep=True)  # regulary scattered points along ray's trajectory and integration step
-        t = t[:-1] + 0.5 * dt  # moving them into the centers of the intervals (and removing the last point)
-        x = start.x + direction.x * t  # x coordinates of the points
-        y = start.y + direction.y * t  # y coordinates of the points
-        z = start.z + direction.z * t  # z coordinates of the points
-        iz = (z / material.dz).astype(int)  # Z-indices of grid cells, in which the points are located
-        r = np.sqrt(x * x + y * y)  # R coordinates of the points
-        ir = ((r - material.rmin) / material.dr).astype(int)  # R-indices of grid cells, in which the points are located
-        if material.voxel_map.ndim > 2:  # 3D grid
-            phi = (180. / np.pi) * np.arctan2(y, x)  # phi coordinates of the points (in degrees)
-            phi[phi < 0] += 360.  # making them all in [0, 360) interval
-            phi = phi % material.period  # moving into the [0, period) sector (periodic emitter)
-            iphi = (phi / material.dphi).astype(int)  # phi-indices of grid cells, in which the points are located
-            i0 = material.voxel_map[ir, iphi, iz]  # light source indices in spectral array
-        else:  # 2D grid (RZ-plane)
-            i0 = material.voxel_map[ir, iz]  # light source indices in spectral array
-        i, counts = np.unique(i0[i0 > -1], return_counts=True)  # exclude voxels for which i0 == -1
-        spectrum.samples[i] += counts * dt
+        n = max(self._min_samples, <int>(length / self._step))  # number of points along ray's trajectory
+        dt = length / n  # integration step
+        # cython performs checks on attributes of external class, so it's better to do the checks before the loop
+        voxel_map_mv = material.voxel_map_mv
+        nphi = material.grid_shape[1]
+        dz = material.dz
+        dr = material.dr
+        dphi = material.dphi
+        period = material.period
+        rmin = material.rmin
+        ir_current = -1
+        iphi_current = -1
+        iz_current = -1
+        isource_current = -1
+        res = 0
+        for it in range(n):
+            t = (it + 0.5) * dt
+            x = start.x + direction.x * t  # x coordinates of the points
+            y = start.y + direction.y * t  # y coordinates of the points
+            z = start.z + direction.z * t  # z coordinates of the points
+            iz = <int>(z / dz)  # Z-indices of grid cells, in which the points are located
+            r = sqrt(x * x + y * y)  # R coordinates of the points
+            ir = <int>((r - rmin) / dr)  # R-indices of grid cells, in which the points are located
+            if nphi == 1:  # axisymmetric case
+                iphi = 0
+            else:
+                phi = (180. / pi) * atan2(y, x)  # phi coordinates of the points (in degrees)
+                phi = (phi + 360.) % period  # moving into the [0, period) sector (periodic emitter)
+                iphi = <int>(phi / dphi)  # phi-indices of grid cells, in which the points are located
+            if ir != ir_current or iphi != iphi_current or iz != iz_current:  # we moved to the next cell
+                ir_current = ir
+                iphi_current = iphi
+                iz_current = iz
+                isource = voxel_map_mv[ir, iphi, iz]  # light source indices in spectral array
+                if isource != isource_current:  # we moved to the next source
+                    if isource_current > -1:
+                        spectrum.samples_mv[isource_current] += res  # writing results for the current source
+                    isource_current = isource
+                    res = 0
+            if isource_current > -1:
+                res += dt
+        if isource_current > -1:
+            spectrum.samples_mv[isource_current] += res
 
         return spectrum
 
 
-class CartesianRayTransferIntegrator(RayTransferIntegrator):
+cdef class CartesianRayTransferIntegrator(RayTransferIntegrator):
     """
     Calculates the distances traveled by the ray through the voxels defined on a regular grid
     in Cartesian coordinate system: :math:`(X, Y, Z)`. This integrator is used with
@@ -122,35 +166,71 @@ class CartesianRayTransferIntegrator(RayTransferIntegrator):
     the accuracy depends on the integration step.
     """
 
-    def integrate(self, spectrum, world, ray, primitive, material, start_point, end_point, world_to_primitive, primitive_to_world):
+    @cython.wraparound(False)
+    @cython.cdivision(True)
+    @cython.initializedcheck(False)
+    @cython.nonecheck(False)
+    cpdef Spectrum integrate(self, Spectrum spectrum, World world, Ray ray, Primitive primitive,
+                             InhomogeneousVolumeEmitter material, Point3D start_point, Point3D end_point,
+                             AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world):
+
+        cdef:
+            Point3D start, end
+            Vector3D direction
+            int isource, isource_current, it, ix, iy, iz, ix_current, iy_current, iz_current, n
+            double length, t, dt, x, y, z, dx, dy, dz, res
+            int[:, :, ::1] voxel_map_mv
+
         if not isinstance(material, CartesianRayTransferEmitter):
-            raise ValueError('Only CartesianRayTransferEmitter material is supported by CartesianRayTransferIntegrator')
+            raise TypeError('Only CartesianRayTransferEmitter material is supported by CartesianRayTransferIntegrator')
         start = start_point.transform(world_to_primitive)  # start point in local coordinates
         end = end_point.transform(world_to_primitive)  # end point in local coordinates
         direction = start.vector_to(end)  # direction of integration
-        length = direction.length  # integration length
-        if length < 0.1 * self.step:  # return if ray's path is too short
+        length = direction.get_length()  # integration length
+        if length < 0.1 * self._step:  # return if ray's path is too short
             return spectrum
         direction = direction.normalise()  # normalized direction
-        n = max(self.min_samples, int(length / self.step))  # number of points along ray's trajectory
-        t, dt = np.linspace(0, length, n, retstep=True)  # regulary scattered points along ray's trajectory and integration step
-        t = t[:-1] + 0.5 * dt  # moving them into the centers of the intervals (and removing the last point)
-        x = start.x + direction.x * t  # x coordinates of the points
-        y = start.y + direction.y * t  # y coordinates of the points
-        z = start.z + direction.z * t  # z coordinates of the points
-        ix = (x / material.dx).astype(int)  # X-indices of grid cells, in which the points are located
-        iy = (y / material.dy).astype(int)  # Y-indices of grid cells, in which the points are located
-        iz = (z / material.dz).astype(int)  # Z-indices of grid cells, in which the points are located
-        i0 = material.voxel_map[ix, iy, iz]  # light source indices in spectral array
-        i, counts = np.unique(i0[i0 > -1], return_counts=True)  # exclude voxels for which i0 == -1
-        spectrum.samples[i] += counts * dt
+        n = max(self._min_samples, <int>(length / self._step))  # number of points along ray's trajectory
+        dt = length / n  # integration step
+        # cython performs checks on attributes of external class, so it's better to do the checks before the loop
+        voxel_map_mv = material.voxel_map_mv
+        dx = material.dx
+        dy = material.dy
+        dz = material.dz
+        ix_current = -1
+        iy_current = -1
+        iz_current = -1
+        isource_current = -1
+        res = 0
+        for it in range(n):
+            t = (it + 0.5) * dt
+            x = start.x + direction.x * t  # x coordinates of the points
+            y = start.y + direction.y * t  # y coordinates of the points
+            z = start.z + direction.z * t  # z coordinates of the points
+            ix = <int>(x / dx)  # X-indices of grid cells, in which the points are located
+            iy = <int>(y / dy)  # Y-indices of grid cells, in which the points are located
+            iz = <int>(z / dz)  # Z-indices of grid cells, in which the points are located
+            if ix != ix_current or iy != iy_current or iz != iz_current:  # we moved to the next cell
+                ix_current = ix
+                iy_current = iy
+                iz_current = iz
+                isource = voxel_map_mv[ix, iy, iz]  # light source indices in spectral array
+                if isource != isource_current:  # we moved to the next source
+                    if isource_current > -1:
+                        spectrum.samples_mv[isource_current] += res  # writing results for the current source
+                    isource_current = isource
+                    res = 0
+            if isource_current > -1:
+                res += dt
+        if isource_current > -1:
+            spectrum.samples_mv[isource_current] += res
 
         return spectrum
 
 
-class RayTransferEmitter(InhomogeneousVolumeEmitter):
+cdef class RayTransferEmitter(InhomogeneousVolumeEmitter):
     """
-    Basic class for ray transfer emitters defined on a regular grid. Ray transfer emitters
+    Basic class for ray transfer emitters defined on a regular 3D grid. Ray transfer emitters
     are used to calculate ray transfer matrices (geometry matrices) for a single value
     of wavelength.
 
@@ -160,19 +240,19 @@ class RayTransferEmitter(InhomogeneousVolumeEmitter):
     :param np.ndarray voxel_map: An array with shape `grid_shape` containing the indices of
         the light sources. This array maps the cells of regular grid to the respective voxels
         (light sources). The cells with identical indices in `voxel_map` array form a single
-        voxel (light source). If `voxel_map[i1, i2, ...] == -1`, the cell with indices
-        `(i1, i2, ...)` will not be mapped to any light source. This parameters allows to
+        voxel (light source). If `voxel_map[i1, i2, i3] == -1`, the cell with indices
+        `(i1, i2, i3)` will not be mapped to any light source. This parameters allows to
         apply a custom geometry (pixelated though) to the light sources.
         Default value: `voxel_map=None`.
     :param np.ndarray mask: A boolean mask array with shape `grid_shape`.
-        Allows to include (`mask[...] == True`) or exclude (`mask[...] == False`) the cells
-        from the calculation. The ray tranfer matrix will be calculated only for those cells
-        for which mask is True. This parameter is ignored if `voxel_map` is provided,
+        Allows to include (`mask[i1, i2, i3] == True`) or exclude (`mask[i1, i2, i3] == False`)
+        the cells from the calculation. The ray tranfer matrix will be calculated only for those
+        cells for which mask is True. This parameter is ignored if `voxel_map` is provided,
         defaults to `mask=None` (all cells are included).
     :param raysect.optical.material.VolumeIntegrator integrator: Volume integrator,
         defaults to `integrator=NumericalVolumeIntegrator()`
 
-    :ivar tuple grid_shape: The shape of regular grid.
+    :ivar tuple grid_shape: The shape of regular 3D grid.
     :ivar tuple grid_steps: The sizes of grid cells along each direction.
     :ivar np.ndarray voxel_map: An array containing the indices of the light sources.
     :ivar np.ndarray ~.mask: A boolean mask array showing active (True) and inactive
@@ -180,17 +260,30 @@ class RayTransferEmitter(InhomogeneousVolumeEmitter):
     :ivar int bins: Number of light sources (the size of spectral array must be equal to this value).
     """
 
-    def __init__(self, grid_shape, grid_steps, voxel_map=None, mask=None, integrator=None):
-        if len(grid_shape) != len(grid_steps):
-            raise ValueError('Grid dimension %d is not equal to the number of grid steps given: %d' % (len(grid_shape), len(grid_steps)))
+    cdef:
+        int[3] _grid_shape
+        double[3] _grid_steps
+        int _bins
+        np.ndarray _voxel_map
+        public:
+            int[:, :, ::1] voxel_map_mv
+
+    def __init__(self, tuple grid_shape, tuple grid_steps, np.ndarray voxel_map=None, np.ndarray mask=None, VolumeIntegrator integrator=None):
+
+        cdef:
+            int i
+            double step
+
+        if len(grid_shape) != 3:
+            raise ValueError("Attribute 'grid_shape' must contain 3 elements.")
+        if len(grid_steps) != 3:
+            raise ValueError("Attribute 'grid_steps' must contain 3 elements.")
         for i in grid_shape:
-            if type(i) != int:
-                raise ValueError('grid_shape must be a tuple of integers')
             if i < 1:
-                raise ValueError('Number of grid cells must be > 0')
+                raise ValueError('Number of grid cells must be > 0.')
         for step in grid_steps:
             if step <= 0:
-                raise ValueError('Grid steps must be > 0')
+                raise ValueError('Grid steps must be > 0.')
         # grid_shape and grid_steps are defined on initialisation and must not be changed after that
         self._grid_shape = grid_shape
         self._grid_steps = grid_steps
@@ -202,22 +295,26 @@ class RayTransferEmitter(InhomogeneousVolumeEmitter):
 
     @property
     def grid_shape(self):
-        return self._grid_shape
+        return <tuple>self._grid_shape
 
     @property
     def grid_steps(self):
-        return self._grid_steps
+         return <tuple>self._grid_steps
 
-    def _map_from_mask(self, mask):
+    cdef np.ndarray _map_from_mask(self, mask):
+
+        cdef:
+            int i
+            np.ndarray voxel_map
+
         if mask is not None:
-            if mask.shape != self._grid_shape:
-                raise ValueError('Mask array must be of shape: %s' % (' '.join(['%d' % i for i in self._grid_shape])))
-            if mask.dtype != np.bool:
-                raise ValueError('Mask array must be of numpy.bool type')
+            if mask.shape != self.grid_shape:
+                raise ValueError('Mask array must be of shape: %s.' % (' '.join(['%d' % i for i in self._grid_shape])))
+            mask = mask.astype(np.bool)
         else:
-            mask = np.ones(self._grid_shape, dtype=np.bool)
-        voxel_map = -1 * np.ones(mask.shape, dtype=int)
-        voxel_map[mask] = np.arange(mask.sum(), dtype=int)
+            mask = np.ones(self.grid_shape, dtype=np.bool)
+        voxel_map = -1 * np.ones(mask.shape, dtype=np.int32)
+        voxel_map[mask] = np.arange(mask.sum(), dtype=np.int32)
 
         return voxel_map
 
@@ -231,11 +328,14 @@ class RayTransferEmitter(InhomogeneousVolumeEmitter):
 
     @voxel_map.setter
     def voxel_map(self, value):
-        if value.shape != self._grid_shape:
-            raise ValueError('Voxel_map array must be of shape: %s' % (' '.join(['%d' % i for i in self._grid_shape])))
-        if value.dtype != np.int:
-            raise ValueError('Voxel_map array must be of numpy.int type')
-        self._voxel_map = value
+
+        cdef:
+            int i
+
+        if value.shape != self.grid_shape:
+            raise ValueError('Voxel_map array must be of shape: %s.' % (' '.join(['%d' % i for i in self._grid_shape])))
+        self._voxel_map = value.astype(np.int32)
+        self.voxel_map_mv = self._voxel_map
         self._bins = self._voxel_map.max() + 1
 
     @property
@@ -243,26 +343,28 @@ class RayTransferEmitter(InhomogeneousVolumeEmitter):
         return self._voxel_map > -1
 
     @mask.setter
-    def mask(self, value):
+    def mask(self, np.ndarray value):
         self._voxel_map = self._map_from_mask(value)
+        self.voxel_map_mv = self._voxel_map
         self._bins = self._voxel_map.max() + 1
 
 
-class CylindricalRayTransferEmitter(RayTransferEmitter):
+cdef class CylindricalRayTransferEmitter(RayTransferEmitter):
     """
-    A unit emitter defined on a regular 2D (RZ plane) or 3D :math:`(R, \phi, Z)` grid, which
+    A unit emitter defined on a regular 3D :math:`(R, \phi, Z)` grid, which
     can be used to calculate ray transfer matrices (geometry matrices) for a single value
     of wavelength.
-    In case of 3D grid this emitter is periodic in :math:`\phi` direction.
+    This emitter is periodic in :math:`\phi` direction.
     Note that for performance reason there are no boundary checks in `emission_function()`,
     or in `CylindricalRayTranferIntegrator`, so this emitter must be placed between a couple
     of coaxial cylinders that act like a bounding box.
 
-    :param tuple grid_shape: The shape of regular :math:`(R, \phi, Z)` (3D case)
-        or :math:`(R, Z)` (axisymmetric case) grid.
+    :param tuple grid_shape: The shape of regular :math:`(R, \phi, Z)` 3D grid.
+        If `grid_shape[1] = 1`, the emitter is axisymmetric.
     :param tuple grid_steps: The sizes of grid cells in `R`, :math:`\phi` and `Z`
-        (3D case) or `R` and `Z` (axisymmetric case) directions. The size in :math:`\phi`
-        must be provided in degrees (sizes in `R` and `Z` are provided in meters).
+        directions. The size in :math:`\phi` must be provided in degrees (sizes in `R` and `Z`
+        are provided in meters). The period in :math:`\phi` direction is defined as
+        `grid_shape[1] * grid_steps[1]`. Note that the period must be a multiple of 360.
     :param np.ndarray voxel_map: An array with shape `grid_shape` containing the indices of
         the light sources. This array maps the cells in :math:`(R, \phi, Z)` space to
         the respective voxels (light sources). The cells with identical indices in `voxel_map`
@@ -278,16 +380,13 @@ class CylindricalRayTransferEmitter(RayTransferEmitter):
     :param raysect.optical.material.VolumeIntegrator integrator: Volume integrator, defaults to
         `integrator=CylindricalRayTransferIntegrator(step=0.1*min(grid_shape[0], grid_shape[-1]))`.
     :param float rmin: Lower bound of grid in `R` direction (in meters), defaults to `rmin=0`.
-    :param float period: A period in :math:`\phi` direction (in degree).
-        Used only in 3D case, defaults to `period=360`.
 
-    :ivar float period: The period in :math:`\phi` direction in 3D case or `None` in
-        axisymmetric case.
+    :ivar float period: The period in :math:`\phi` direction (equals to
+        `grid_shape[1] * grid_steps[1]`).
     :ivar float rmin: Lower bound of grid in `R` direction.
     :ivar float dr: The size of grid cell in `R` direction (equals to `grid_shape[0]`).
-    :ivar float dz: The size of grid cell in `Z` direction (equals to `grid_shape[-1]`).
-    :ivar float dphi: The size of grid cell in :math:`\phi` direction
-        (equals to None in axisymmetric case or to `grid_shape[1]` in 3D case).
+    :ivar float dphi: The size of grid cell in :math:`\phi` direction (equals to `grid_shape[1]`).
+    :ivar float dz: The size of grid cell in `Z` direction (equals to `grid_shape[2]`).
 
     .. code-block:: pycon
 
@@ -295,13 +394,13 @@ class CylindricalRayTransferEmitter(RayTransferEmitter):
         >>> from raysect.primitive import Cylinder, Subtract
         >>> from cherab.tools.raytransfer import CylindricalRayTransferEmitter
         >>> world = World()
-        >>> grid_shape = (10, 10)
-        >>> grid_steps = (0.5, 0.5)
+        >>> grid_shape = (10, 1, 10)  # axisymmetric case
+        >>> grid_steps = (0.5, 360, 0.5)
         >>> rmin = 2.5
         >>> material = CylindricalRayTransferEmitter(grid_shape, grid_steps, rmin=rmin)
         >>> eps = 1.e-6  # ray must never leave the grid when passing through the volume
         >>> radius_outer = grid_shape[0] * grid_steps[0] - eps
-        >>> height = grid_shape[1] * grid_steps[1] - eps
+        >>> height = grid_shape[2] * grid_steps[2] - eps
         >>> radius_inner = rmin + eps
         >>> bounding_box = Subtract(Cylinder(radius_outer, height), Cylinder(radius_inner, height),
                                     material=material, parent=world)  # bounding primitive
@@ -312,20 +411,26 @@ class CylindricalRayTransferEmitter(RayTransferEmitter):
         >>> camera.min_wavelength = 600.
         >>> camera.max_wavelength = 601.
     """
+    cdef:
+        double _dr, _dphi, _dz, _period, _rmin
 
-    def __init__(self, grid_shape, grid_steps, voxel_map=None, mask=None, integrator=None, rmin=0, period=360.):
-        if not 1 < len(grid_shape) < 4:
-            raise ValueError('grid_shape must contain 2 or 3 elements')
-        if not 1 < len(grid_steps) < 4:
-            raise ValueError('grid_steps must contain 2 or 3 elements')
+    def __init__(self, tuple grid_shape, tuple grid_steps, np.ndarray voxel_map=None, np.ndarray mask=None, VolumeIntegrator integrator=None,
+                 double rmin=0):
+
+        cdef:
+            double def_integration_step, period
+
         def_integration_step = 0.1 * min(grid_steps[0], grid_steps[-1])
         integrator = integrator or CylindricalRayTransferIntegrator(def_integration_step)
         super().__init__(grid_shape, grid_steps, voxel_map=voxel_map, mask=mask, integrator=integrator)
-        self.period = period
         self.rmin = rmin
-        self._dr = self.grid_steps[0]
-        self._dphi = self.grid_steps[1] if len(self.grid_steps) == 3 else None
-        self._dz = self.grid_steps[-1]
+        self._dr = self._grid_steps[0]
+        self._dphi = self._grid_steps[1]
+        self._dz = self._grid_steps[2]
+        period = self._grid_shape[1] * self._grid_steps[1]
+        if 360. % period > 1.e-3:
+            raise ValueError("The period %.3f (grid_shape[1] * grid_steps[1]) is not a multiple of 360." % period)
+        self._period = period
 
     @property
     def rmin(self):
@@ -334,21 +439,12 @@ class CylindricalRayTransferEmitter(RayTransferEmitter):
     @rmin.setter
     def rmin(self, value):
         if value < 0:
-            raise ValueError('rmin must be >= 0')
+            raise ValueError("Attribute 'rmin' must be >= 0.")
         self._rmin = value
 
     @property
     def period(self):
         return self._period
-
-    @period.setter
-    def period(self, value):
-        if len(self._grid_shape) < 3:
-            self._period = None
-            return
-        if not 0 < value <= 360.:
-            raise ValueError('period must be > 0 and <= 360')
-        self._period = value
 
     @property
     def dr(self):
@@ -362,26 +458,35 @@ class CylindricalRayTransferEmitter(RayTransferEmitter):
     def dz(self):
         return self._dz
 
-    def emission_function(self, point, direction, spectrum, world, ray, primitive, world_to_primitive, primitive_to_world):
-        iz = int(point.z / self._dz)  # Z-index of grid cell, in which the point is located
-        r = np.sqrt(point.x * point.x + point.y * point.y)  # R coordinates of the points
-        ir = int((r - self._rmin) / self._dr)  # R-index of grid cell, in which the points is located
-        if self.voxel_map.ndim > 2:  # 3D grid
-            phi = (180. / np.pi) * np.arctan2(point.y, point.x)  # phi coordinate of the point (in degrees)
-            if phi < 0:
-                phi += 360.  # moving to [0, 360) interval
-            phi = phi % self._period  # moving into the [0, period) sector (periodic emitter)
-            iphi = int(phi / self._dphi)  # phi-index of grid cell, in which the point is located
-            i = self.voxel_map[ir, iphi, iz]  # index of the light source in spectral array
-        else:  # 2D grid (RZ-plane)
-            i = self.voxel_map[ir, iz]  # index of the light source in spectral array
-        if i < 0:  # grid cell is not mapped to any light source
+    @cython.wraparound(False)
+    @cython.cdivision(True)
+    @cython.initializedcheck(False)
+    @cython.nonecheck(False)
+    cpdef Spectrum emission_function(self, Point3D point, Vector3D direction, Spectrum spectrum,
+                                     World world, Ray ray, Primitive primitive,
+                                     AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world):
+
+        cdef:
+            int isource, ir, iphi, iz
+            double r, phi
+
+        iz = <int>(point.z / self._dz)  # Z-index of grid cell, in which the point is located
+        r = sqrt(point.x * point.x + point.y * point.y)  # R coordinates of the points
+        ir = <int>((r - self._rmin) / self._dr)  # R-index of grid cell, in which the points is located
+        if self._grid_shape[1] == 1:  # axisymmetric case
+            iphi = 0
+        else:
+            phi = (180. / pi) * atan2(point.y, point.x)  # phi coordinate of the point (in degrees)
+            phi = (phi + 360) % self._period  # moving into the [0, period) sector (periodic emitter)
+            iphi = <int>(phi / self._dphi)  # phi-index of grid cell, in which the point is located
+        isource = self.voxel_map_mv[ir, iphi, iz]  # index of the light source in spectral array
+        if isource < 0:  # grid cell is not mapped to any light source
             return spectrum
-        spectrum.samples[i] += 1.  # unit emissivity
+        spectrum.samples_mv[isource] += 1.  # unit emissivity
         return spectrum
 
 
-class CartesianRayTransferEmitter(RayTransferEmitter):
+cdef class CartesianRayTransferEmitter(RayTransferEmitter):
     """
     A unit emitter defined on a regular 3D :math:`(X, Y, Z)` grid, which can be used
     to calculate ray transfer matrices (geometry matrices).
@@ -434,17 +539,20 @@ class CartesianRayTransferEmitter(RayTransferEmitter):
         >>> camera.max_wavelength = 601.
     """
 
-    def __init__(self, grid_shape, grid_steps, voxel_map=None, mask=None, integrator=None):
-        if len(grid_shape) != 3:
-            raise ValueError('grid_shape must contain 3 elements')
-        if len(grid_steps) != 3:
-            raise ValueError('grid_steps must contain 3 elements')
+    cdef:
+        double _dx, _dy, _dz
+
+    def __init__(self, tuple grid_shape, tuple grid_steps, np.ndarray voxel_map=None, np.ndarray mask=None, VolumeIntegrator integrator=None):
+
+        cdef:
+            double def_integration_step
+
         def_integration_step = 0.1 * min(grid_steps)
         integrator = integrator or CartesianRayTransferIntegrator(def_integration_step)
         super().__init__(grid_shape, grid_steps, voxel_map=voxel_map, mask=mask, integrator=integrator)
-        self._dx = self.grid_steps[0]
-        self._dy = self.grid_steps[1]
-        self._dz = self.grid_steps[2]
+        self._dx = self._grid_steps[0]
+        self._dy = self._grid_steps[1]
+        self._dz = self._grid_steps[2]
 
     @property
     def dx(self):
@@ -458,12 +566,22 @@ class CartesianRayTransferEmitter(RayTransferEmitter):
     def dz(self):
         return self._dz
 
-    def emission_function(self, point, direction, spectrum, world, ray, primitive, world_to_primitive, primitive_to_world):
-        ix = int(point.x / self._dx)  # X-index of grid cell, in which the point is located
-        iy = int(point.y / self._dy)  # Y-index of grid cell, in which the point is located
-        iz = int(point.z / self._dz)  # Z-index of grid cell, in which the point is located
-        i = self.voxel_map[ix, iy, iz]  # index of the light source in spectral array
-        if i < 0:  # grid cell is not mapped to any light source
+    @cython.wraparound(False)
+    @cython.cdivision(True)
+    @cython.initializedcheck(False)
+    @cython.nonecheck(False)
+    cpdef Spectrum emission_function(self, Point3D point, Vector3D direction, Spectrum spectrum,
+                                     World world, Ray ray, Primitive primitive,
+                                     AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world):
+
+        cdef:
+            int isource, ix, iy, iz
+
+        ix = <int>(point.x / self._dx)  # X-index of grid cell, in which the point is located
+        iy = <int>(point.y / self._dy)  # Y-index of grid cell, in which the point is located
+        iz = <int>(point.z / self._dz)  # Z-index of grid cell, in which the point is located
+        isource = self.voxel_map_mv[ix, iy, iz]  # index of the light source in spectral array
+        if isource < 0:  # grid cell is not mapped to any light source
             return spectrum
-        spectrum.samples[i] += 1.  # unit emissivity
+        spectrum.samples_mv[isource] += 1.  # unit emissivity
         return spectrum
