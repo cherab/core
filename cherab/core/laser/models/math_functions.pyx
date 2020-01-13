@@ -2,7 +2,7 @@ from raysect.core.math.function cimport Function3D
 from raysect.optical cimport Spectrum
 from raysect.core.math.cython.utility cimport find_index
 
-from libc.math cimport sqrt, exp, pi as PI
+from libc.math cimport sqrt, exp, pi
 
 
 cdef class AxisymmetricGaussian3D(Function3D):
@@ -23,7 +23,7 @@ cdef class AxisymmetricGaussian3D(Function3D):
 
         self._sigma = value
         self._recip_negative_2sigma2 = -1 / (2 * value ** 2)
-        self._recip_sqrt_2pisigma2 = 1 / sqrt(2 * PI * value ** 2)
+        self._recip_sqrt_2pisigma2 = 1 / sqrt(2 * pi * value ** 2)
 
     cdef double evaluate(self, double x, double y, double z) except? -1e999:
         cdef:
@@ -87,7 +87,7 @@ cdef class GaussianBeamModel(Function3D):
         self._cache_constants(self)
 
     def _cache_constants(self):
-        self._wavelengthm_div_pi = (self._wavelength * sqrt(self._m2)) / PI
+        self._wavelengthm_div_pi = (self._wavelength * sqrt(self._m2)) / pi
         self._focus_width2m = self._focus_width ** 2 * sqrt(self._m2)
 
     cdef double evaluate(self, double x, double y, double z) except? -1e999:

@@ -2,30 +2,25 @@ from raysect.optical cimport Vector3D, Point3D
 from raysect.optical.spectrum cimport Spectrum
 from cherab.core.laser.node cimport Laser
 from cherab.core.laser.models.model_base cimport LaserModel
-from cherab.core.laser.models.laserspectrum_base cimport LaserSpectrum_base
+from cherab.core.laser.models.laserspectrum_base cimport LaserSpectrum
 from cherab.core cimport Plasma
 cimport cython
 
 cdef double RE_SQUARED
 
-cdef class ScatteringModel_base:
+cdef class ScatteringModel:
 
     cdef:
         Plasma _plasma
         LaserModel _laser_model
         Laser _laser
-        LaserSpectrum_base _laser_spectrum
+        LaserSpectrum _laser_spectrum
         double[::1] _laser_wavelength_mv, _laser_power_mv
         int _laser_bins
 
     cpdef Spectrum emission(self, Point3D position_plasma, Point3D position_laser, Vector3D direction_observation, Spectrum spectrum)
 
-cdef class ThomsonScattering_tester(ScatteringModel_base):
-    cdef:
-        double ELECTRON_AMU, _scattering_crosssection
-#    cdef spectrum(self, ne, te, laser_power, pointing_vector, observation_direction, wavelength)
-
-cdef class SeldenMatobaThomsonSpectrum(ScatteringModel_base):
+cdef class SeldenMatobaThomsonSpectrum(ScatteringModel):
     cdef:
         double re, _CONST_ALPHA
 

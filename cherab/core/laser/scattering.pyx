@@ -5,7 +5,7 @@ from cherab.core.utility.constants cimport DEGREES_TO_RADIANS, ATOMIC_MASS, RECI
 from cherab.core.utility.constants cimport PLANCK_CONSTANT, SPEED_OF_LIGHT, ELECTRON_CLASSICAL_RADIUS, ELECTRON_REST_MASS, ELEMENTARY_CHARGE
 from cherab.core.laser.node cimport Laser
 from cherab.core.laser.models.model_base cimport LaserModel
-from cherab.core.laser.models.laserspectrum_base cimport LaserSpectrum_base
+from cherab.core.laser.models.laserspectrum_base cimport LaserSpectrum
 from cherab.core cimport Plasma
 
 cimport cython
@@ -16,7 +16,7 @@ cdef double E_TO_NPHOT = 10e-9 / (PLANCK_CONSTANT * SPEED_OF_LIGHT) # N_photons(
 cdef double NPHOT_TO_E = 1/ E_TO_NPHOT # E(wlen, N_photons) = n_photons/wlen * NPHOT_TO_E in [nm, J]
 
 
-cdef class ScatteringModel_base:
+cdef class ScatteringModel:
 
     cpdef Spectrum emission(self, Point3D position_plasma, Point3D position_laser, Vector3D direction_observation, Spectrum spectrum):
 
@@ -59,7 +59,7 @@ cdef class ScatteringModel_base:
 
         self._laser_model = value
 
-    def set_laser_spectrum(self, LaserSpectrum_base value):
+    def set_laser_spectrum(self, LaserSpectrum value):
         #unregister callback
         if self._laser_spectrum is not None:
             self._laser_spectrum._notifier.remove(self._laser_spectrum_changed)
@@ -73,7 +73,7 @@ cdef class ScatteringModel_base:
         self._laser_wavelength_mv = self._laser_spectrum._wavelengths_mv
         self._laser_power_mv = self._laser_spectrum._power_mv
         
-cdef class SeldenMatobaThomsonSpectrum(ScatteringModel_base):
+cdef class SeldenMatobaThomsonSpectrum(ScatteringModel):
 
     def __init__(self, Laser laser=None, LaserModel laser_models=None, Plasma plasma=None):
         # from article: 2 * alpha = m_e * c **2 /(k * T_e), here rewritten for Te in eV

@@ -1,8 +1,8 @@
-from raysect.optical cimport World, Primitive, Ray, Spectrum, SpectralFunction, Point3D, Vector3D, AffineMatrix3D
+from raysect.optical cimport World, Primitive, Ray, Spectrum, Point3D, Vector3D, AffineMatrix3D
 from raysect.optical.material.emitter cimport InhomogeneousVolumeEmitter
 from raysect.optical.material.emitter.inhomogeneous cimport VolumeIntegrator
 from cherab.core.laser.node cimport Laser
-from cherab.core.laser.scattering cimport ScatteringModel_base
+from cherab.core.laser.scattering cimport ScatteringModel
 
 cdef class LaserMaterial(InhomogeneousVolumeEmitter):
 
@@ -25,7 +25,7 @@ cdef class LaserMaterial(InhomogeneousVolumeEmitter):
 
         self._change()
 
-    def _set_scattering_model(self, ScatteringModel_base value):
+    def _set_scattering_model(self, ScatteringModel value):
         self._scattering_model = value
 
     cpdef Spectrum emission_function(self, Point3D point, Vector3D direction, Spectrum spectrum,

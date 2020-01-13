@@ -3,8 +3,8 @@ from raysect.optical.material.emitter.inhomogeneous cimport VolumeIntegrator
 
 from cherab.core.plasma cimport Plasma
 from cherab.core.laser.models.model_base cimport LaserModel
-from cherab.core.laser.models.laserspectrum_base cimport LaserSpectrum_base
-from cherab.core.laser.scattering cimport ScatteringModel_base
+from cherab.core.laser.models.laserspectrum_base cimport LaserSpectrum
+from cherab.core.laser.scattering cimport ScatteringModel
 
 cdef class Laser(Node):
 
@@ -13,9 +13,9 @@ cdef class Laser(Node):
         Vector3D BEAM_AXIS
         double _length, _radius
         Plasma _plasma
-        ScatteringModel_base  _scattering_model
+        ScatteringModel  _scattering_model
         LaserModel _laser_model
-        LaserSpectrum_base _laser_spectrum
+        LaserSpectrum _laser_spectrum
         Primitive _geometry
         VolumeIntegrator _integrator
 
