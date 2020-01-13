@@ -34,7 +34,7 @@ cdef class UniformPowerDensity(LaserModel):
 
 cdef class GaussianBeamAxisymmetric(LaserModel):
     def __init__(self, Laser laser = None, Vector3D polarization = Vector3D(0, 1, 0), power=1,
-                 laser_sigma = 0.01, waist_radius=0.001, m2 = 1, focus_z = 0.0, central_wavelength = 1064):
+                 laser_sigma = 0.01, waist_radius=0.001, beam_quality_factor = 1, focus_z = 0.0, central_wavelength = 1064):
 
         super().__init__(laser)
 
@@ -42,7 +42,7 @@ cdef class GaussianBeamAxisymmetric(LaserModel):
         #set laser constants
         self.polarization = polarization
         self.waist_radius = waist_radius
-        self.m2 = m2
+        self.beam_quality_factor = beam_quality_factor
         self.focus_z = focus_z
 
     cpdef double get_power_axis(self, double z, double wavelength):
@@ -66,15 +66,15 @@ cdef class GaussianBeamAxisymmetric(LaserModel):
         return self._waist2 + wavelength ** 2 * self._waist_const * (z - self._focus_z) ** 2
 
     @property
-    def m2(self):
-        return self._m2
-    @m2.setter
-    def m2(self, value):
+    def beam_quality_factor(self):
+        return self._beam_quality_factor
+    @beam_quality_factor.setter
+    def beam_quality_factor(self, value):
 
         if not value > 0:
             raise ValueError("Laser power has to be larger than 0.")
 
-        self._m2 = value
+        self._beam_quality_factor = value
         self._change_waist_const()
 
     @property
@@ -112,7 +112,7 @@ cdef class GaussianBeamAxisymmetric(LaserModel):
         self._focus_z = value
 
     def _change_waist_const(self):
-        self._waist_const = (1e-9 * self._m2 / (M_PI * self._waist_radius)) ** 2
+        self._waist_const = (1e-9 * self._beam_quality_factor / (M_PI * self._waist_radius)) ** 2
 
 cdef class AxisymmetricGaussian(LaserModel):
     def __init__(self, Laser laser = None, laser_sigma = 0.01, Vector3D polarization = Vector3D(0, 1, 0)):

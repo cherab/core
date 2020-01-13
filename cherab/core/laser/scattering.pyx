@@ -168,7 +168,6 @@ cdef class SeldenMatobaThomsonSpectrum(ScatteringModel):
             wavelength = (spectrum.min_wavelength + spectrum.delta_wavelength * index)
             epsilon =  (wavelength - laser_wavelength) / laser_wavelength
             spectrum_norm = self.seldenmatoba_spectral_shape(epsilon, cos_scatangle, alpha)
-            #print("spectrum norm = {}, epsilon={}".format(spectrum_norm, epsilon))
             spectrum.samples_mv[index] += spectrum_norm * photons_persec / wavelength * NPHOT_TO_E / spectrum.delta_wavelength
 
         return spectrum

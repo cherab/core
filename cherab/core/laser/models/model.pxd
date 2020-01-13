@@ -11,7 +11,7 @@ cdef class GaussianBeamAxisymmetric(LaserModel):
 
     cdef:
         double _laser_power, _const_width, _waist_radius, _waist_const, _waist2, _power_const, _focus_z
-        double _m2 # laser beam quality
+        double _beam_quality_factor
 
     cpdef double get_beam_width2(self, double z, double wavelength)
 

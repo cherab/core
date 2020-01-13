@@ -20,37 +20,37 @@ cdef class ConstantSpectrum(LaserSpectrum):
 
 cdef class GaussianSpectrum(LaserSpectrum):
 
-    def __init__(self, double min_wavelength, double max_wavelength, int bins, double mu, double sigma):
+    def __init__(self, double min_wavelength, double max_wavelength, int bins, double mean, double stddev):
 
-        self.sigma = sigma
-        self.mu = mu
+        self.stddev = stddev
+        self.mean = mean
         super().__init__(min_wavelength, max_wavelength, bins)
 
     @property
-    def sigma(self):
-        return self._sigma
+    def stddev(self):
+        return self._stddev
 
-    @sigma.setter
-    def sigma(self, value):
+    @stddev.setter
+    def stddev(self, value):
         if not value >0:
             raise ValueError("Value has to be larger than 0")
 
-        self._sigma = value
-        self._recip_sigma = 1 / value
+        self._stddev = value
+        self._recip_stddev = 1 / value
         self._normalisation = 1 / (value * sqrt(2 * M_PI))
 
     @property
-    def mu(self):
-        return self._mu
+    def mean(self):
+        return self._mean
 
-    @mu.setter
-    def mu(self, double value):
+    @mean.setter
+    def mean(self, double value):
         if not value >0:
             raise ValueError("Value has to be larger than 0")
         
-        self._mu = value
+        self._mean = value
 
 
     cdef double evaluate(self, double x) except? -1e999:
-        return self._normalisation * exp(-0.5 * ((x - self._mu) * self._recip_sigma) ** 2)
+        return self._normalisation * exp(-0.5 * ((x - self._mean) * self._recip_stddev) ** 2)
 
