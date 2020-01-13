@@ -7,6 +7,6 @@ cdef class ConstantSpectrum(LaserSpectrum):
 cdef class GaussianSpectrum(LaserSpectrum):
     
     cdef:
-        double _sigma, _spectral_mu, _recip_sigma, _normalisation, _mu
+        double _stddev, _spectral_mean, _recip_stddev, _normalisation, _mean
 
     cdef double evaluate(self, double x) except? -1e999

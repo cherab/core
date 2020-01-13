@@ -63,8 +63,8 @@ cdef class LaserSpectrum(Function1D):
         return self._wavelengths
 
     @property
-    def psd(self):
-        return self._psd
+    def power_spectral_density(self):
+        return self._power_spectral_density
 
     @property
     def photons(self):
@@ -101,18 +101,18 @@ cdef class LaserSpectrum(Function1D):
         for index in range(self._bins):
             self._wavelengths[index] = self._min_wavelength + (0.5 + index) * self._delta_wavelength
 
-        self._psd = np.zeros((self._bins), dtype=np.double)
+        self._power_spectral_density = np.zeros((self._bins), dtype=np.double)
         self._power_mv = np.zeros((self._bins), dtype=np.double)
         
-        self._psd_mv = self._psd
+        self._power_spectral_density_mv = self._power_spectral_density
 
         self._photons = np.zeros((self._bins), dtype=np.double)
         self._photons_mv = self._photons  
 
         for index in range(self._bins):
             self._power_mv[index] = self.evaluate(self._wavelengths_mv[index])
-            self._psd_mv[index] = self._power_mv[index] / self._delta_wavelength
-            self._photons_mv[index] = self._psd_mv[index] / self._photon_energy(self._wavelengths_mv[index])
+            self._power_spectral_density_mv[index] = self._power_mv[index] / self._delta_wavelength
+            self._photons_mv[index] = self._power_spectral_density_mv[index] / self._photon_energy(self._wavelengths_mv[index])
 
         #notify about changes
         self._notifier.notify()
