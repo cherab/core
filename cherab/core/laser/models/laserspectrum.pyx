@@ -1,7 +1,7 @@
-from cherab.core.laser.models.laserspectrum_base cimport LaserSpectrum_base
+from cherab.core.laser.models.laserspectrum_base cimport LaserSpectrum
 from libc.math cimport sqrt, exp, M_PI
 
-cdef class ConstantSpectrum(LaserSpectrum_base):
+cdef class ConstantSpectrum(LaserSpectrum):
 
     def __init__(self, double min_wavelength, double max_wavelength, int bins):
 
@@ -13,12 +13,12 @@ cdef class ConstantSpectrum(LaserSpectrum_base):
             double spectrum_width
             int index
 
-        if x < self._max_wavelength and x > self._min_wavelength:
+        if self._min_wavelength < x < self._max_wavelength:
             return 1.0/ (self._max_wavelength - self._min_wavelength)
         else:
             return 0
 
-cdef class GaussianSpectrum(LaserSpectrum_base):
+cdef class GaussianSpectrum(LaserSpectrum):
 
     def __init__(self, double min_wavelength, double max_wavelength, int bins, double mu, double sigma):
 

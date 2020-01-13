@@ -8,7 +8,7 @@ from numpy cimport ndarray
 
 cdef double CONSTANT_HC = SPEED_OF_LIGHT * PLANCK_CONSTANT
 
-cdef class LaserSpectrum_base(Function1D):
+cdef class LaserSpectrum(Function1D):
 
     cdef:
         double _min_wavelength, _max_wavelength, _delta_wavelength
