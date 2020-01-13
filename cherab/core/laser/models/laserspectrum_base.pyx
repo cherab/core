@@ -10,7 +10,7 @@ cimport numpy as np
 from cherab.core.utility.constants cimport SPEED_OF_LIGHT, PLANCK_CONSTANT
 cdef double CONSTANT_HC = SPEED_OF_LIGHT * PLANCK_CONSTANT
 
-cdef class LaserSpectrum_base(Function1D):
+cdef class LaserSpectrum(Function1D):
 
     def __init__(self, double min_wavelength, double max_wavelength, int bins):
 

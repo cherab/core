@@ -4,10 +4,9 @@ from raysect.optical cimport World, AffineMatrix3D, Primitive, Ray, new_vector3d
 from raysect.optical.material.emitter.inhomogeneous cimport NumericalIntegrator
 from raysect.core cimport translate
 
-from cherab.core.laser.models.model_base cimport LaserModel
 from cherab.core.laser.material cimport LaserMaterial
-from cherab.core.laser.scattering cimport ScatteringModel_base
-from cherab.core.laser.models.laserspectrum_base import LaserSpectrum_base
+from cherab.core.laser.scattering cimport ScatteringModel
+from cherab.core.laser.models.laserspectrum_base import LaserSpectrum
 from cherab.core.utility import Notifier
 from libc.math cimport M_PI
 
@@ -105,7 +104,7 @@ cdef class Laser(Node):
         return self._laser_spectrum
 
     @laser_spectrum.setter
-    def laser_spectrum(self, LaserSpectrum_base value):
+    def laser_spectrum(self, LaserSpectrum value):
         self._laser_spectrum = value
         self._laser_spectrum_changed()
         
@@ -127,7 +126,7 @@ cdef class Laser(Node):
         return self._scattering_model
 
     @scattering_model.setter
-    def scattering_model(self, ScatteringModel_base value):
+    def scattering_model(self, ScatteringModel value):
 
         # check necessary data is available
         if not self._plasma:
