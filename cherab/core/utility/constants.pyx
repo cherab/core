@@ -17,13 +17,18 @@
 # under the Licence.
 
 cdef:
+
+    # sourced c standard maths library
     double RECIP_2_PI = 1 / (2 * M_PI)
     double RECIP_4_PI = 1 / (4 * M_PI)
-    double ATOMIC_MASS = 1.66053892e-27
-    double ELEMENTARY_CHARGE = 1.6021766208e-19
-    double SPEED_OF_LIGHT = 299792458.0
     double DEGREES_TO_RADIANS = M_PI / 180
     double RADIANS_TO_DEGREES = 180 / M_PI
-    double PLANCK_CONSTANT = 6.6260700400e-34
-    double ELECTRON_CLASSICAL_RADIUS = 2.8179403262 #[m], NIST, CODATA 2018: https://physics.nist.gov/cgi-bin/cuu/Value?re|search_for=electron+radius
-    double ELECTRON_REST_MASS = 9.1093837015 #[kg], NIST, CODATA 2018: https://physics.nist.gov/cgi-bin/cuu/Value?me
+
+    # sourced from NIST, CODATA 2018: https://physics.nist.gov/cuu/Constants/Table/allascii.txt
+    double ATOMIC_MASS = 1.66053906660e-27
+    double ELEMENTARY_CHARGE = 1.602176634e-19
+    double SPEED_OF_LIGHT = 299792458.0
+    double PLANCK_CONSTANT = 6.62607015e-34
+    double ELECTRON_CLASSICAL_RADIUS = 2.8179403262e-15
+    double ELECTRON_REST_MASS = 9.1093837015e-31
+

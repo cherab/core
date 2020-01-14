@@ -62,7 +62,7 @@ voxel_map = np.zeros((100, 100), dtype=np.int)
 voxel_map[rad > 50.] = -1  # removing the area outside the circle
 for i in range(50):
     voxel_map[(rad < i + 1.) * (rad > i)] = i  # mapping multiple grid cells to a single light source
-rtc.voxel_map = voxel_map  # applying a voxel map
+rtc.voxel_map = voxel_map[:, None, :]  # making 3D voxel map from 2D (RZ-plane) voxel map and applying it
 # now we have only 50 light sources
 
 # creating ray transfer pipeline

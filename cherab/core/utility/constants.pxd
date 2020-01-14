@@ -21,11 +21,11 @@ from libc.math cimport M_PI
 cdef:
     double RECIP_2_PI
     double RECIP_4_PI
+    double DEGREES_TO_RADIANS
+    double RADIANS_TO_DEGREES
     double ATOMIC_MASS
     double ELEMENTARY_CHARGE
     double SPEED_OF_LIGHT
-    double DEGREES_TO_RADIANS
-    double RADIANS_TO_DEGREES
     double PLANCK_CONSTANT
     double ELECTRON_CLASSICAL_RADIUS
     double ELECTRON_REST_MASS
