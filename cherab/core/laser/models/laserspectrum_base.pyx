@@ -74,7 +74,7 @@ cdef class LaserSpectrum(Function1D):
     def delta_wavelength(self):
         return self._delta_wavelength
 
-    def _check_wavelength_validity(self, min_wavelength = None, max_wavelength = None):
+    def _check_wavelength_validity(self, min_wavelength=None, max_wavelength=None):
 
         if min_wavelength is None:
             min_wavelength = self._min_wavelength
@@ -95,18 +95,18 @@ cdef class LaserSpectrum(Function1D):
             Py_ssize_t index
 
         self._delta_wavelength = (self._max_wavelength - self._min_wavelength) / self._bins
-        self._wavelengths = np.zeros((self.bins), dtype=np.double)
+        self._wavelengths = np.zeros(self.bins, dtype=np.double)
         self._wavelengths_mv = self._wavelengths
         
         for index in range(self._bins):
             self._wavelengths[index] = self._min_wavelength + (0.5 + index) * self._delta_wavelength
 
-        self._power_spectral_density = np.zeros((self._bins), dtype=np.double)
-        self._power_mv = np.zeros((self._bins), dtype=np.double)
+        self._power_spectral_density = np.zeros(self._bins, dtype=np.double)
+        self._power_mv = np.zeros(self._bins, dtype=np.double)
         
         self._power_spectral_density_mv = self._power_spectral_density
 
-        self._photons = np.zeros((self._bins), dtype=np.double)
+        self._photons = np.zeros(self._bins, dtype=np.double)
         self._photons_mv = self._photons  
 
         for index in range(self._bins):

@@ -14,7 +14,7 @@ cdef class ConstantSpectrum(LaserSpectrum):
             int index
 
         if self._min_wavelength < x < self._max_wavelength:
-            return 1.0/ (self._max_wavelength - self._min_wavelength)
+            return 1.0 / (self._max_wavelength - self._min_wavelength)
         else:
             return 0
 
@@ -32,7 +32,7 @@ cdef class GaussianSpectrum(LaserSpectrum):
 
     @stddev.setter
     def stddev(self, value):
-        if not value >0:
+        if not value > 0:
             raise ValueError("Value has to be larger than 0")
 
         self._stddev = value
@@ -45,7 +45,7 @@ cdef class GaussianSpectrum(LaserSpectrum):
 
     @mean.setter
     def mean(self, double value):
-        if not value >0:
+        if not value > 0:
             raise ValueError("Value has to be larger than 0")
         
         self._mean = value
