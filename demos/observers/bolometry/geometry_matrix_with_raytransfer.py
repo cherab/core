@@ -13,7 +13,6 @@ from matplotlib.patches import Rectangle
 import numpy as np
 
 from raysect.core import Node, Point2D, Point3D, Vector3D, rotate_basis, rotate_y, translate
-from raysect.core.math import Arg2D
 from raysect.optical import World
 from raysect.optical.material import AbsorbingSurface
 from raysect.primitive import Box, Cylinder, Subtract
@@ -180,6 +179,11 @@ vertex_mask = vertex_radius_squared <= (WALL_LCFS_OFFSET + LCFS_RADIUS)**2
 # Cell is included if at least one vertex is within the wall
 grid_mask = (vertex_mask[1:, :-1] + vertex_mask[:-1, :-1]
              + vertex_mask[1:, 1:] + vertex_mask[:-1, 1:])
+# The RayTransferCylinder object is fully 3D, but for simplicity we're only
+# working in 2D as this case is axisymmetric. It is easy enough to pass 3D
+# views of our 2D data into the RayTransferCylinder object: we just ues a
+# numpy.newaxis (or equivalently, None) for the toroidal dimension.
+grid_mask = grid_mask[:, None, :]
 
 num_cells = grid_mask.sum()
 
@@ -187,7 +191,7 @@ ray_transfer_grid = RayTransferCylinder(
     radius_outer=cell_vertices_r[-1],
     radius_inner=cell_vertices_r[0],
     height=cell_vertices_z[-1] - cell_vertices_z[0],
-    n_radius=nx, n_height=ny, mask=grid_mask, n_polar=0,
+    n_radius=nx, n_height=ny, mask=grid_mask, n_polar=1,
     transform=translate(0, 0, cell_vertices_z[0])
 )
 
@@ -201,7 +205,7 @@ ray_transfer_grid = RayTransferCylinder(
 
 # Pad the voxel map with a 1-cell-wide border.
 voxel_map_with_borders = - np.ones((nx + 2, ny + 2), dtype=int)
-voxel_map_with_borders[1:-1, 1:-1] = ray_transfer_grid.voxel_map
+voxel_map_with_borders[1:-1, 1:-1] = ray_transfer_grid.voxel_map[:, 0, :]
 inverted_voxel_map = ray_transfer_grid.invert_voxel_map()
 grid_laplacian = np.zeros((num_cells, num_cells))
 
@@ -209,7 +213,7 @@ grid_laplacian = np.zeros((num_cells, num_cells))
 for ith_cell in range(num_cells):
 
     # get the 2D mesh coordinates of this cell
-    ix, iy = inverted_voxel_map[ith_cell]
+    ix, _, iy = inverted_voxel_map[ith_cell]
     # we didn't map multiple cells into the same light source,
     # so ix and iy are single-element arrays
     ix = ix[0]
@@ -253,7 +257,7 @@ sensitivity_matrix = np.asarray(sensitivity_matrix)
 # the 2D grid. A more general method which works if multiple cells are mapped to
 # a single voxel can be seen in the inversion_with_raytransfer.py demo.
 sensitivity_2d = np.full((nx, ny), np.nan)
-sensitivity_2d[ray_transfer_grid.mask] = sensitivity_matrix.sum(axis=0)
+sensitivity_2d[ray_transfer_grid.mask[:, 0, :]] = sensitivity_matrix.sum(axis=0)
 
 fig, ax = plt.subplots()
 image = ax.imshow(sensitivity_2d.T, origin="lower", interpolation="none",

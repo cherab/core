@@ -247,9 +247,14 @@ rsampled, zsampled, phantom_samples = sample2d(
 # numbers of grid cells inside each voxel (although we don't need it here). See
 # the geometry_matrix_with_raytransfer.py demo for a shorter, faster method using
 # the grid mask when there is a 1-to-1 mapping of grid cells to voxels.
+
+# Just like in the geometry_matrix_with_raytransfer.py demo, we are storing
+# axisymmetric data in 2D arrays but the ray transfer objects are fully
+# 3D. Therefore we need to pad our data to 3D views when using indices
+# provided by the ray transfer objects.
 inversion_2d = np.full_like(phantom_samples, np.nan)
 for indices, emission in zip(inverse_voxel_map, inverted_emission):
-    inversion_2d[tuple(np.squeeze(indices).T)] = emission
+    inversion_2d[:, None, :][tuple(np.squeeze(indices).T)] = emission
 # Note that cells not part of any voxel contain nan: they are undefined in the
 # inversion. This has the nice side effect that they show up without a colour in
 # the plot.
@@ -277,12 +282,13 @@ fig.tight_layout()
 # Calculate some metrics for comparison with the phantom
 ################################################################################
 back_calculated_measurements = sensitivity_matrix @ inverted_emission
-voxel_phantom_samples = np.asarray([phantom_samples[voxel].sum() for voxel in inverse_voxel_map])
+voxel_phantom_samples = np.asarray([phantom_samples[:, None, :][voxel].sum()
+                                    for voxel in inverse_voxel_map])
 phantom_measurements = sensitivity_matrix @ voxel_phantom_samples
 cell_dx = grid_centres[1, 0, 0] - grid_centres[0, 0, 0]
 cell_dy = grid_centres[0, 1, 1] - grid_centres[0, 0, 1]
 voxel_rs = grid_centres.take(0, -1)
-voxel_volumes = np.asarray([(2 * np.pi * voxel_rs[voxel] * cell_dx * cell_dy).sum()
+voxel_volumes = np.asarray([(2 * np.pi * voxel_rs[:, None, :][voxel] * cell_dx * cell_dy).sum()
                             for voxel in inverse_voxel_map])
 total_phantom_power = voxel_phantom_samples @ voxel_volumes
 total_inversion_power = inverted_emission @ voxel_volumes
