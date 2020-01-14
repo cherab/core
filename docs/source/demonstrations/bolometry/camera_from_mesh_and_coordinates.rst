@@ -19,7 +19,7 @@ program.
    rectangular box and aperture. The bolometer foils will be inside the box, but don't
    need their own mesh model.
 
-A camera geometry should always be present, else there is the risk that
+A camera geometry should **always** be present, else there is the risk that
 stray light can reach the modelled bolometer foils when it would be blocked by the
 camera enclosure in a physical system. Using a realistic camera geometry with a suitable
 material (e.g. metal or carbon) will also permit modelling of reflections inside the

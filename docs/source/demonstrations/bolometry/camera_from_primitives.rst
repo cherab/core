@@ -11,7 +11,7 @@ orientations are defined relative to the camera. Defining a bolometer system in 
 is common when working from design drawings.
 
 We use raysect primitives (:class:`Box` and CSG operations) to describe the geometry of
-the system. A camera geometry should always be present, else there is the risk that
+the system. A camera geometry should **always** be present, else there is the risk that
 stray light can reach the modelled bolometer foils when it would be blocked by the
 camera enclosure in a physical system. Using a realistic camera geometry with a suitable
 material (e.g. metal or carbon) will also permit modelling of reflections inside the
