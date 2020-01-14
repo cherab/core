@@ -145,8 +145,9 @@ cdef class SeldenMatobaThomsonSpectrum(ScatteringModel):
                                              double angle_polarization, double laser_wavelength, Spectrum spectrum):
 
         cdef:
-            double alpha, epsilon, min_wavelength, cos_scatangle, sin2_polarisation, wavelength, photons_persec
             int index, nbins
+            double alpha, epsilon, cos_scatangle, wavelength, min_wavelength, delta_wavelength
+            #double sin2_polarisation
 
         alpha = self._CONST_ALPHA / te
         nbins = spectrum.bins
@@ -156,19 +157,18 @@ cdef class SeldenMatobaThomsonSpectrum(ScatteringModel):
 
         #todo: verify that angle between observation and polarization influences only cross section of
         # scattering by sin(angle)**2 and does not influence spectrum shape. If yes, calculate sin2_polarisation and
-        # multiply photons_persec with it
+        # multiply scattered spectral power density with it
         #sin2_polarisation = sin(angle_polarization * DEGREES_TO_RADIANS) ** 2 #sin2 of observation to polarisation
+
         min_wavelength = spectrum.min_wavelength
+        delta_wavelength = spectrum.delta_wavelength
 
-
-        #photon density per second
         #sin2 of angle_polarisation takes into account dipole nature (sin2) of thomson scattering radiation of the scattered wave
-        photons_persec = ne * RE_SQUARED * laser_power * laser_wavelength * E_TO_NPHOT
         for index in range(nbins):
-            wavelength = (spectrum.min_wavelength + spectrum.delta_wavelength * index)
+            wavelength = (min_wavelength + delta_wavelength * index)
             epsilon =  (wavelength - laser_wavelength) / laser_wavelength
             spectrum_norm = self.seldenmatoba_spectral_shape(epsilon, cos_scatangle, alpha)
-            spectrum.samples_mv[index] += spectrum_norm * photons_persec / wavelength * NPHOT_TO_E / spectrum.delta_wavelength
+            spectrum.samples_mv[index] += spectrum_norm * ne * RE_SQUARED * laser_power / delta_wavelength
 
         return spectrum
 
