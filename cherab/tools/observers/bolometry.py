@@ -431,18 +431,16 @@ class BolometerFoil(TargettedPixel):
         if not isinstance(basis_y, Vector3D):
             raise TypeError("The basis vectors of BolometerFoil must be of type Vector3D.")
 
-        self._centre_point = centre_point
-        self._basis_x = basis_x.normalise()
-        self._basis_y = basis_y.normalise()
-        self._normal_vec = self._basis_x.cross(self._basis_y)
+        basis_x = basis_x.normalise()
+        basis_y = basis_y.normalise()
+        normal_vec = basis_x.cross(basis_y)
         self._slit = slit
-        self._foil_to_slit_vec = self._centre_point.vector_to(self._slit.centre_point).normalise()
         self._curvature_radius = curvature_radius
         self._accumulate = accumulate
 
         # setup root bolometer foil transform
-        translation = translate(self._centre_point.x, self._centre_point.y, self._centre_point.z)
-        rotation = rotate_basis(self._normal_vec, self._basis_y)
+        translation = translate(centre_point.x, centre_point.y, centre_point.z)
+        rotation = rotate_basis(normal_vec, basis_y)
 
         super().__init__([slit.target], targetted_path_prob=1.0,
                          pixel_samples=1000, x_width=dx, y_width=dy, spectral_bins=1, quiet=True,
@@ -785,26 +783,25 @@ class BolometerIRVB(TargettedCCDArray):
         normal_vec = basis_x.cross(basis_y)
         self._slit = slit
         self._curvature_radius = curvature_radius
-        self._units = units
+        self._accumulate = accumulate
 
         # setup root bolometer foil transform
         translation = translate(centre_point.x, centre_point.y, centre_point.z)
         rotation = rotate_basis(normal_vec, basis_y)
 
-        if self._units == "Power":
-            pipeline = PowerPipeline2D(accumulate=accumulate)
-        elif self._units == "Radiance":
-            pipeline = RadiancePipeline2D(accumulate=accumulate)
-        else:
-            raise ValueError("The units argument of BolometerIRVB must be one of 'Power' or 'Radiance'.")
-
-        super().__init__([slit.target], targetted_path_prob=1.0,
-                         pipelines=[pipeline], width=width, pixels=pixels,
-                         parent=parent, transform=translation * rotation, name=detector_id)
+        super().__init__([slit.target], pixels=pixels, width=width,
+                         targetted_path_prob=1.0, parent=parent, pipelines=[],
+                         transform=translation * rotation, name=detector_id)
         self.pixel_samples = 1000
         self.spectral_bins = 1
         self.quiet = True
 
+        # Update pipeline based on units
+        self.units = units
+
+        # round off the detector corners, if applicable
+        if self._curvature_radius > 0:
+            mask_corners(self)
 
     def __repr__(self):
         """Returns a string representation of this BolometerIRVB object."""
@@ -861,25 +858,13 @@ class BolometerIRVB(TargettedCCDArray):
         return [[pixel.centre_point.vector_to(self._slit.centre_point) for pixel in pixel_column]
                 for pixel_column in self.pixels_as_foils]
 
-    def trace_sightlines(self, rows="all", columns="all"):
-        """
-        Traces the central sightlines through each pixel in the detector to see where the sightline terminates.
-
-        Raises a RuntimeError exception if no intersections were found.
-
-        :return: Returns a 2D list of tuples containing the origin point, hit
-          point and terminating surface primitive for each pixel.
-        """
-        if rows == "all":
-            rows = slice(None)
-        if columns == "all":
-            columns = slice(None)
-        pixels = np.atleast_2d(np.asarray(self.pixels_as_foils)[columns, rows])
-        return [[pixel.trace_sightline() for pixel in pixel_column] for pixel_column in pixels]
-
     @property
     def slit(self):
         return self._slit
+
+    @property
+    def curvature_radius(self):
+        return self._curvature_radius
 
     @property
     def units(self):
@@ -926,8 +911,24 @@ class BolometerIRVB(TargettedCCDArray):
 
         return sightlines
 
-    def calculate_sensitivity(self, voxel_collection, ray_count=10000):
+    def trace_sightlines(self, rows="all", columns="all"):
         """
+        Traces the central sightlines through each pixel in the detector to see where the sightline terminates.
+
+        Raises a RuntimeError exception if no intersections were found.
+
+        :return: Returns a 2D list of tuples containing the origin point, hit
+          point and terminating surface primitive for each pixel.
+        """
+        if rows == "all":
+            rows = slice(None)
+        if columns == "all":
+            columns = slice(None)
+        pixels = np.atleast_2d(np.asarray(self.pixels_as_foils)[columns, rows])
+        return [[pixel.trace_sightline() for pixel in pixel_column] for pixel_column in pixels]
+
+    def calculate_sensitivity(self, voxel_collection, ray_count=10000):
+        r"""
         Calculates a sensitivity vector for this detector on the specified voxel collection.
 
         This function is used for calculating sensitivity matrices which can be combined for
@@ -940,7 +941,10 @@ class BolometerIRVB(TargettedCCDArray):
         :return: A 1D array of sensitivities with length equal to the number of voxels
           in the collection.
         """
-
+        # This method exploits ToroidalVoxelCollection.set_active("all"), which
+        # makes each voxel emit a different wavelength of light. By observing
+        # the voxel collection with a spectral pipeline we can thus distinguish
+        # the amount of emission from each individual voxel.
         if not isinstance(voxel_collection, VoxelCollection):
             raise TypeError("voxel_collection must be of type VoxelCollection")
 
@@ -1038,8 +1042,12 @@ def mask_corners(element):
         dx = element.x_width
         dy = element.y_width
     except AttributeError:
-        dx = element.dx
-        dy = element.dy
+        try:
+            dx = element.dx
+            dy = element.dy
+        except AttributeError:
+            dx = element.width
+            dy = element.height
 
     # Make the elements to cut out from the cover slightly thicker than the
     # cover, to guard against rounding errors
