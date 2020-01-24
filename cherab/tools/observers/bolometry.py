@@ -872,16 +872,26 @@ class BolometerIRVB(TargettedCCDArray):
         return self._units
 
     @units.setter
-    def units(self, value):
-        accumulate = self.pipelines[0].accumulate
-        if value == "Power":
-            pipeline = PowerPipeline2D(accumulate=accumulate)
-        elif value == "Radiance":
-            pipeline = RadiancePipeline2D(accumulate=accumulate)
+    def units(self, units):
+        if units == "Power":
+            pipeline = PowerPipeline2D(accumulate=self.accumulate)
+        elif units == "Radiance":
+            pipeline = RadiancePipeline2D(accumulate=self.accumulate)
         else:
-            raise ValueError("The units property of BolometerIRVB must be one of 'Power' or 'Radiance'.")
-        self._units = value
+            raise ValueError("The units property of BolometerFoil must be one of 'Power' or 'Radiance'.")
+        self._units = units
         self.pipelines = [pipeline]
+
+    @property
+    def accumulate(self):
+        return self._accumulate
+
+    @accumulate.setter
+    def accumulate(self, value):
+        for pipeline in self.pipelines:
+            pipeline.accumulate = value
+            # Discard any samples from previous accumulate behaviour
+            pipeline.value.clear()
 
     def as_sightlines(self):
         """
