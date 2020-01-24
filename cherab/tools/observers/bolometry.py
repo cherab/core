@@ -1009,24 +1009,22 @@ class BolometerIRVB(TargettedCCDArray):
         :return: a tuple (etendue, etendue_error)
         """
         # Calculate the etendue of each pixel as a separate task
-        ny = self.pixels[1]
+        nx, ny = self.pixels
         pixels_flattened = self.pixels_as_foils.ravel()
         etendues_flattened = np.empty_like(pixels_flattened, dtype=float)
         etendue_errors_flattened = np.empty_like(etendues_flattened)
 
-        def calculate(foil):
-            pixel_coords = foil.name.split()[-1]
-            column, row = (int(i) for i in pixel_coords.lstrip("(").rstrip(")").split(","))
-            index = (column - 1) * ny + (row - 1)
+        def calculate(pixel_index):
+            foil = pixels_flattened[pixel_index]
             foil.render_engine.processes = 1
-            return index, foil.calculate_etendue(ray_count, batches, max_distance)
+            return pixel_index, foil.calculate_etendue(ray_count, batches, max_distance)
 
         def update(result):
             index, (etendue, etendue_error) = result
             etendues_flattened[index] = etendue
             etendue_errors_flattened[index] = etendue_error
 
-        self.render_engine.run(pixels_flattened.tolist(), calculate, update)
+        self.render_engine.run(list(range(nx * ny)), calculate, update)
         # Reshape back to pixel dimensions
         etendue = etendues_flattened.reshape(self.pixels)
         etendue_error = etendue_errors_flattened.reshape(self.pixels)
