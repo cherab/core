@@ -50,7 +50,25 @@ bolometer etendue :math:`G`, which is given by:
 
 .. math:: G = A \omega_s = A \Omega \frac{\omega_s}{\Omega}.
 
+CHERAB also provides an Infra-Red Video Bolometer (IRVB) class. These are typically
+large foil bolometers which are imaged with an IR camera. CHERAB models only the
+incoming radiation incident on the foil, not the subsequent IR emission on the IR
+camera-facing side of the foil: solving the heat transfer equation to calculate this is
+left to downstream codes.
 
+Practically, the IRVB foil is typically divided up into separate regions, and the
+incident power on each of these individual regions is the quantity of interest. The foil
+can then be treated as a 2D array of pixels, where each pixel corresponds to a separate
+region on the foil. In this sense, the IRVB is used in a similar manner to a CCD array:
+observations will return a 2D array of measured powers. The pixels the foil is divided
+into are specified at instantiation time, along with the width of the foil: the height
+is calculated from the width and the pixel dimensions.
+
+Although the IRVB observations produce data similar to that of a CCD array,
+instantiation of the :class:`BolometerIRVB` is done in much the same way as for the
+:class:`BolometerFoil`. The two have similar methods too, with the caveat that some
+methods of the :class:`BolometerIRVB` return 2D arrays in place of a single return value
+for the :class:`BolometerFoil`.
 
 .. autoclass:: cherab.tools.observers.bolometry.BolometerCamera
    :members:
@@ -60,4 +78,7 @@ bolometer etendue :math:`G`, which is given by:
    :members:
 
 .. autoclass:: cherab.tools.observers.bolometry.BolometerFoil
+   :members:
+
+.. autoclass:: cherab.tools.observers.bolometry.BolometerIRVB
    :members:

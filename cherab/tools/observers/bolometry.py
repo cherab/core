@@ -699,8 +699,8 @@ class BolometerIRVB(TargettedCCDArray):
     """
     A rectangular infra red video bolometer (IRVB).
 
-    Can be configured to sample a single ray or fan of rays oriented along the
-    observer's z axis.
+    Can be configured to sample a single ray per pixel, or fan of rays
+    oriented along the observer's z axis.
 
     :param str detector_id: The name for this detector.
     :param Point3D centre_point: The centre point of the detector.
@@ -715,11 +715,14 @@ class BolometerIRVB(TargettedCCDArray):
       be ['Power', 'Radiance'], defaults to 'Power'.
     :param bool accumulate: Whether this observer should accumulate samples
       with multiple calls to observe. Defaults to False.
+    :param float curvature_radius: Detectors in real bolometer cameras may
+      have curved corners due to machining limitations. This parameter species
+      the corner radius.
 
     :ivar Vector3D normal_vector: The normal vector of the detector constructed from
       the cross product of the x and y basis vectors.
-    :ivar float foil_width: The extent of the bolometer foil in the basis_x direction.
-    :ivar float foil_height: The extent of the bolometer foil in the basis_y direction.
+    :ivar float width: The extent of the bolometer foil in the basis_x direction.
+    :ivar float height: The extent of the bolometer foil in the basis_y direction.
     :ivar array pixels_as_foils: A 2D array of pixels as individual BolometerFoil objects,
       useful for calling BolometerFoil methods on each pixel (e.g. sightline tracing).
       The array is indexed by (column, row).
@@ -927,7 +930,12 @@ class BolometerIRVB(TargettedCCDArray):
 
         Raises a RuntimeError exception if no intersections were found.
 
-        :return: Returns a 2D array of tuples containing the origin point, hit
+        :param rows: which pixel rows to trace. Can be an integer, a
+          list of integers or "all".
+        :param columns: which pixel columns to trace. Can be an
+          integer, a list of integers or "all".
+
+        :return: A 2D array of tuples containing the origin point, hit
           point and terminating surface primitive for each pixel.
         """
         if rows == "all":
@@ -949,8 +957,7 @@ class BolometerIRVB(TargettedCCDArray):
           the sensitivities.
         :param int ray_count: The number of rays to use in the calculation. This should be
           at least >= 10000 for decent statistics.
-        :return: A 1D array of sensitivities with length equal to the number of voxels
-          in the collection.
+        :return: A 3D array of sensitivities (ncol, nrow, nvoxels)
         """
         # This method exploits ToroidalVoxelCollection.set_active("all"), which
         # makes each voxel emit a different wavelength of light. By observing
@@ -1006,7 +1013,8 @@ class BolometerIRVB(TargettedCCDArray):
             If a ray makes it further than this, it is assumed to have passed through the aperture,
             regardless of what it hits. Use this if there are other primitives present in the scene
             which do not form the aperture.q
-        :return: a tuple (etendue, etendue_error)
+        :return: a tuple (etendue, etendue_error), each of which is a 2D
+          array of size (ncol, nrow)
         """
         # Calculate the etendue of each pixel as a separate task
         nx, ny = self.pixels
