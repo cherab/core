@@ -18,7 +18,6 @@
 # under the Licence.
 
 import functools
-from itertools import chain
 import numpy as np
 
 from raysect.core import Node, translate, rotate_basis, Point3D, Vector3D, Ray as CoreRay, Primitive, World
@@ -719,16 +718,15 @@ class BolometerIRVB(TargettedCCDArray):
 
     :ivar Vector3D normal_vector: The normal vector of the detector constructed from
       the cross product of the x and y basis vectors.
-    :ivar Vector3D sightline_vector: The vector that points from the centre of the foil
-      detector to the centre of the slit. Defines the effective sightline vector of the
-      detector.
     :ivar float foil_width: The extent of the bolometer foil in the basis_x direction.
     :ivar float foil_height: The extent of the bolometer foil in the basis_y direction.
-    :ivar list pixels_as_foils: A 2D list of pixels as individual BolometerFoil objects,
+    :ivar array pixels_as_foils: A 2D array of pixels as individual BolometerFoil objects,
       useful for calling BolometerFoil methods on each pixel (e.g. sightline tracing).
-      The array is indexed by (column, row)
-    :ivar list sightline_vectors: A 2D list of vectors describing the line of sight
-      of each pixel.
+      The array is indexed by (column, row).
+    :ivar Vector3D sightline_vectors: A 2D array of vectors that point from the centre
+      of each pixel on the foil detector to the centre of the slit. Defines the
+      effective sightline vectors of the pixels of the detector. The list is indexed by
+      (column, row).
 
     .. code-block:: pycon
 
@@ -831,7 +829,7 @@ class BolometerIRVB(TargettedCCDArray):
                 )
                 pixel_column.append(pixel)
             pixels.append(pixel_column)
-        return pixels
+        return np.asarray(pixels, dtype='object')
 
     @property
     def height(self):
@@ -855,8 +853,11 @@ class BolometerIRVB(TargettedCCDArray):
 
     @property
     def sightline_vectors(self):
-        return [[pixel.centre_point.vector_to(self._slit.centre_point) for pixel in pixel_column]
-                for pixel_column in self.pixels_as_foils]
+        return np.asarray(
+            [[pixel.centre_point.vector_to(self._slit.centre_point) for pixel in pixel_column]
+             for pixel_column in self.pixels_as_foils],
+            dtype='object'
+        )
 
     @property
     def slit(self):
@@ -886,21 +887,20 @@ class BolometerIRVB(TargettedCCDArray):
         """
         Constructs a SightLine observer for each pixel in this bolometer.
 
-        :rtype: List[SightLine]
+        :return: A 2D array of Sightline objects.
         """
 
         if self.units == "Power":
-            pipeline = PowerPipeline2D(accumulate=False)
-        elif self.units == "Radiance":
-            pipeline = RadiancePipeline2D(accumulate=False)
+            pipeline = PowerPipeline2D
         else:
-            raise ValueError("The units argument of BolometerIRVB must be one of 'Power' or 'Radiance'.")
+            pipeline = RadiancePipeline2D
 
         sightlines = []
         for pixel_column in self.pixels_as_foils:
             sightline_column = []
             for pixel in pixel_column:
-                los_observer = SightLine(pipelines=[pipeline], pixel_samples=1, quiet=True,
+                los_observer = SightLine(pipelines=[pipeline(accumulate=False)],
+                                         pixel_samples=1, quiet=True,
                                          parent=self, name=pixel.name + "Sightline")
                 los_observer.render_engine = self.render_engine
                 los_observer.spectral_bins = self.spectral_bins
@@ -909,7 +909,7 @@ class BolometerIRVB(TargettedCCDArray):
                 sightline_column.append(los_observer)
             sightlines.append(sightline_column)
 
-        return sightlines
+        return np.asarray(sightlines, dtype='object')
 
     def trace_sightlines(self, rows="all", columns="all"):
         """
@@ -917,15 +917,16 @@ class BolometerIRVB(TargettedCCDArray):
 
         Raises a RuntimeError exception if no intersections were found.
 
-        :return: Returns a 2D list of tuples containing the origin point, hit
+        :return: Returns a 2D array of tuples containing the origin point, hit
           point and terminating surface primitive for each pixel.
         """
         if rows == "all":
             rows = slice(None)
         if columns == "all":
             columns = slice(None)
-        pixels = np.atleast_2d(np.asarray(self.pixels_as_foils)[columns, rows])
-        return [[pixel.trace_sightline() for pixel in pixel_column] for pixel_column in pixels]
+        pixels = np.atleast_2d(self.pixels_as_foils[columns, rows])
+        traces = [[pixel.trace_sightline() for pixel in pixel_column] for pixel_column in pixels]
+        return np.asarray(traces, dtype='object')
 
     def calculate_sensitivity(self, voxel_collection, ray_count=10000):
         r"""
@@ -999,7 +1000,7 @@ class BolometerIRVB(TargettedCCDArray):
         """
         # Calculate the etendue of each pixel as a separate task
         ny = self.pixels[1]
-        pixels_flattened = list(chain.from_iterable(self.pixels_as_foils))
+        pixels_flattened = self.pixels_as_foils.ravel()
         etendues_flattened = np.empty_like(pixels_flattened, dtype=float)
         etendue_errors_flattened = np.empty_like(etendues_flattened)
 
@@ -1015,7 +1016,7 @@ class BolometerIRVB(TargettedCCDArray):
             etendues_flattened[index] = etendue
             etendue_errors_flattened[index] = etendue_error
 
-        self.render_engine.run(pixels_flattened, calculate, update)
+        self.render_engine.run(pixels_flattened.tolist(), calculate, update)
         # Reshape back to pixel dimensions
         etendue = etendues_flattened.reshape(self.pixels)
         etendue_error = etendue_errors_flattened.reshape(self.pixels)
