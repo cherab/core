@@ -9,7 +9,7 @@ from cherab.core.laser.models.math_functions cimport AxisymmetricGaussian3D
 from libc.math cimport M_PI, sqrt, exp
 
 cdef class UniformPowerDensity(LaserModel):
-    def __init__(self, Laser laser = None, power = 1,  Vector3D polarization = Vector3D(0, 1, 0)):
+    def __init__(self, Laser laser=None, power=1,  Vector3D polarization=Vector3D(0, 1, 0)):
         super().__init__(laser)
     
         self.set_polarization(polarization)
@@ -33,13 +33,13 @@ cdef class UniformPowerDensity(LaserModel):
         self.set_power_density_function(Constant3D(value))
 
 cdef class GaussianBeamAxisymmetric(LaserModel):
-    def __init__(self, Laser laser = None, Vector3D polarization = Vector3D(0, 1, 0), power=1,
-                 laser_sigma = 0.01, waist_radius=0.001, beam_quality_factor = 1, focus_z = 0.0, central_wavelength = 1064):
+    def __init__(self, Laser laser=None, Vector3D polarization=Vector3D(0, 1, 0), power=1,
+                 laser_sigma=0.01, waist_radius=0.001, beam_quality_factor=1, focus_z=0.0, central_wavelength=1064):
 
         super().__init__(laser)
 
-        #laser sigma dependent constants
-        #set laser constants
+        # laser sigma dependent constants
+        # set laser constants
         self.polarization = polarization
         self.waist_radius = waist_radius
         self.beam_quality_factor = beam_quality_factor
@@ -115,7 +115,7 @@ cdef class GaussianBeamAxisymmetric(LaserModel):
         self._waist_const = (1e-9 * self._beam_quality_factor / (M_PI * self._waist_radius)) ** 2
 
 cdef class AxisymmetricGaussian(LaserModel):
-    def __init__(self, Laser laser = None, laser_sigma = 0.01, Vector3D polarization = Vector3D(0, 1, 0)):
+    def __init__(self, Laser laser=None, laser_sigma=0.01, Vector3D polarization=Vector3D(0, 1, 0)):
 
         super().__init__(laser)
 
@@ -123,7 +123,7 @@ cdef class AxisymmetricGaussian(LaserModel):
         self.set_pointing_function(ConstantVector3D(Vector3D(0, 0, 1)))
         self.laser_sigma = laser_sigma
 
-        #set laser constants
+        # set laser constants
         self.set_polarization(polarization)
 
     def set_polarization(self, Vector3D value):
@@ -142,4 +142,3 @@ cdef class AxisymmetricGaussian(LaserModel):
         self._laser_sigma = value
         function = AxisymmetricGaussian3D(value)
         self.set_power_density_function(function)
-

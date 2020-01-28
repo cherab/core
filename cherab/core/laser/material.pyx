@@ -15,11 +15,6 @@ cdef class LaserMaterial(InhomogeneousVolumeEmitter):
         self._laser_to_plasma = None
         self._scattering_model = laser._scattering_model
 
-        # configure models
-        #for model in models:
-        #    model.laser = laser
-        #    model.plasma = plasma
-
         self._plasma.notifier.add(self._change)
         self._laser.notifier.add(self._change)
 
