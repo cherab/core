@@ -4,11 +4,11 @@ from raysect.optical cimport Point3D, Vector3D
 
 from cherab.core.utility import Notifier
 from cherab.core.laser.node import Laser
+from cherab.core.utility.constants cimport SPEED_OF_LIGHT, PLANCK_CONSTANT
+
 import numpy as np
 cimport numpy as np
 
-from cherab.core.utility.constants cimport SPEED_OF_LIGHT, PLANCK_CONSTANT
-cdef double CONSTANT_HC = SPEED_OF_LIGHT * PLANCK_CONSTANT
 
 cdef class LaserSpectrum(Function1D):
 
@@ -88,7 +88,7 @@ cdef class LaserSpectrum(Function1D):
 
         if min_wavelength > max_wavelength:
             raise ValueError("min_wavelength has to be smaller than max_wavelength: min_wavelength={} > max_wavelength={}".format(min_wavelength, max_wavelength))
-    
+
     cpdef void _update_cache(self):
 
         cdef:
@@ -97,29 +97,28 @@ cdef class LaserSpectrum(Function1D):
         self._delta_wavelength = (self._max_wavelength - self._min_wavelength) / self._bins
         self._wavelengths = np.zeros(self.bins, dtype=np.double)
         self._wavelengths_mv = self._wavelengths
-        
+
         for index in range(self._bins):
             self._wavelengths[index] = self._min_wavelength + (0.5 + index) * self._delta_wavelength
 
         self._power_spectral_density = np.zeros(self._bins, dtype=np.double)
         self._power_mv = np.zeros(self._bins, dtype=np.double)
-        
+
         self._power_spectral_density_mv = self._power_spectral_density
 
         self._photons = np.zeros(self._bins, dtype=np.double)
-        self._photons_mv = self._photons  
+        self._photons_mv = self._photons
 
         for index in range(self._bins):
             self._power_mv[index] = self.evaluate(self._wavelengths_mv[index])
             self._power_spectral_density_mv[index] = self._power_mv[index] / self._delta_wavelength
             self._photons_mv[index] = self._power_spectral_density_mv[index] / self._photon_energy(self._wavelengths_mv[index])
 
-        #notify about changes
+        # notify about changes
         self._notifier.notify()
 
     cdef double _photon_energy(self, double wavelength):
-        return CONSTANT_HC / (wavelength * 1e-9)
+        return SPEED_OF_LIGHT * PLANCK_CONSTANT / (wavelength * 1e-9)
 
     cpdef double evaluate_integral(self, double lower_limit, double upper_limit):
         raise NotImplementedError('Virtual method must be implemented in a sub-class.')
-        

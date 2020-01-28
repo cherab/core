@@ -12,5 +12,4 @@ cdef class LaserMaterial(InhomogeneousVolumeEmitter):
         ScatteringModel _scattering_model
         AffineMatrix3D _laser_to_plasma
 
-
     cdef object __weakref__

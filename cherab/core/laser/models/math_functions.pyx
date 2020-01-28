@@ -7,7 +7,7 @@ from libc.math cimport sqrt, exp, pi
 
 cdef class AxisymmetricGaussian3D(Function3D):
 
-    def __init__(self, sigma = None):
+    def __init__(self, sigma=None):
 
         super().__init__()
 
@@ -43,26 +43,26 @@ cdef class GaussianBeamModel(Function3D):
         self.m2 = m2
 
     @property
-    def wavelength (self):
+    def wavelength(self):
         return self._wavelength
 
     @wavelength.setter
     def wavelength(self, double value):
         if not value > 0:
             raise ValueError("Value has to be larger than 0, but {0} passed.".format(value))
-        
+
         self._wavelength = value
         self._cache_constants()
 
     @property
-    def z_focus (self):
+    def z_focus(self):
         return self._z_focus
 
     @z_focus.setter
     def z_focus(self, double value):
         self._z_focus = value
         self._cache_constants()
-    
+
     @property
     def focus_width(self):
         return self._focus_width
@@ -71,9 +71,9 @@ cdef class GaussianBeamModel(Function3D):
     def focus_width(self, double value):
         if not value > 0:
             raise ValueError("Value has to be larger than 0, but {0} passed.".format(value))
-    
+
         self._focus_width = value
-    
+
     @property
     def m2(self):
         return self._m2
@@ -82,7 +82,7 @@ cdef class GaussianBeamModel(Function3D):
     def m2(self, double value):
         if not value > 0:
             raise ValueError("Value has to be larger than 0, but {0} passed.".format(value))
-        
+
         self._m2 = value
         self._cache_constants(self)
 

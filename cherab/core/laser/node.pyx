@@ -1,6 +1,6 @@
 from raysect.primitive cimport Cylinder
 
-from raysect.optical cimport World, AffineMatrix3D, Primitive, Ray, new_vector3d
+from raysect.optical cimport World, AffineMatrix3D, Primitive, Ray
 from raysect.optical.material.emitter.inhomogeneous cimport NumericalIntegrator
 from raysect.core cimport translate
 
@@ -15,7 +15,7 @@ cdef double DEGREES_TO_RADIANS = (M_PI / 180)
 
 cdef class Laser(Node):
 
-    def __init__(self, object parent=None, AffineMatrix3D transform=None, str name=None): 
+    def __init__(self, object parent=None, AffineMatrix3D transform=None, str name=None):
         super().__init__(parent, transform, name)
 
         # change reporting and tracking
@@ -94,7 +94,7 @@ cdef class Laser(Node):
         # attach geometry to the beam
         self._geometry.parent = self
         self._geometry.name = 'Laser Beam Geometry'
-        #self._geometry.transform = translate(0, 0, 0)
+        # self._geometry.transform = translate(0, 0, 0)
 
         # build plasma material
         self._geometry.material = LaserMaterial(self, self._integrator)
@@ -107,7 +107,6 @@ cdef class Laser(Node):
     def laser_spectrum(self, LaserSpectrum value):
         self._laser_spectrum = value
         self._laser_spectrum_changed()
-        
 
     @property
     def laser_model(self):
@@ -115,7 +114,6 @@ cdef class Laser(Node):
 
     @laser_model.setter
     def laser_model(self, object value):
-
 
         self._laser_model = value
 
@@ -146,11 +144,11 @@ cdef class Laser(Node):
     def _laser_model_changed(self):
         if self._scattering_model is not None:
             self._scattering_model.laser_model = self._laser_model
-    
+
     def _laser_spectrum_changed(self):
         if self._scattering_model is not None:
             self._scattering_model.set_laser_spectrum(self._laser_spectrum)
-    
+
     def _scattering_changed(self):
         if self._plasma is not None:
             self._scattering_model.plasma = self._plasma
@@ -163,13 +161,13 @@ cdef class Laser(Node):
         self._configure_geometry()
         if self._scattering_model is not None:
             self._scattering_model.plasma = self._plasma
-        
 
     def _generate_geometry(self):
-
-        # the beam bounding envelope is a cylinder aligned with the beam axis, sharing the same coordinate space
-        # the cylinder radius is width, the cylinder length is length
-        return Cylinder(radius=self.radius, height=self.length, transform=translate(0, 0, 0))
+        # the beam bounding envelope is a cylinder aligned with the beam axis,
+        # sharing the same coordinate space the cylinder radius is width,
+        # the cylinder length is length
+        return Cylinder(radius=self.radius, height=self.length,
+                        transform=translate(0, 0, 0))
 
     @property
     def integrator(self):

@@ -4,7 +4,7 @@ from cherab.core.laser.node cimport Laser
 
 cdef class LaserModel:
 
-    def __init__(self, Laser laser = None):
+    def __init__(self, Laser laser=None):
         if laser:
             self.laser = laser
 
@@ -28,13 +28,13 @@ cdef class LaserModel:
     cpdef Vector3D get_pointing(self, double x, double y, double z):
         """
         Returns the pointing vector of the light at the specified point.
-        
+
         The point is specified in the laser beam space.
-        
+
         :param x: x coordinate in meters.
-        :param y: y coordinate in meters. 
+        :param y: y coordinate in meters.
         :param z: z coordinate in meters.
-        :return: Intensity in m^-3. 
+        :return: Intensity in m^-3.
         """
 
         return self._pointing.evaluate(x, y, z)
@@ -42,13 +42,13 @@ cdef class LaserModel:
     cpdef Vector3D get_polarization(self, double x, double y, double z):
         """
         Returns vector denoting the laser polarisation.
-        
+
         The point is specified in the laser beam space.
-        
+
         :param x: x coordinate in meters.
-        :param y: y coordinate in meters. 
+        :param y: y coordinate in meters.
         :param z: z coordinate in meters.
-        :return: power density in Wm^-3. 
+        :return: power density in Wm^-3.
         """
 
         return self._polarization(x, y, z)
@@ -57,17 +57,16 @@ cdef class LaserModel:
         """
         Returns the volumetric power density of the laser light at the specified point.
         The return value is a sum for all laser wavelengths.
-        
+
         The point is specified in the laser beam space.
-        
-        :param x: x coordinate in meters in the laser frame. 
-        :param y: y coordinate in meters in the laser frame. 
+
+        :param x: x coordinate in meters in the laser frame.
+        :param y: y coordinate in meters in the laser frame.
         :param z: z coordinate in meters in the laser frame.
-        :return: power density in W*m^-3. 
+        :return: power density in W*m^-3.
         """
 
         return self._power_density.evaluate(x, y, z)
-
 
     def _change(self):
         """
