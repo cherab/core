@@ -252,7 +252,7 @@ Code examples gallery
      - Description
      - Preview
    * - :ref:`CXRS Quickstart <jet_cxrs_quickstart>`
-     - Commented demo file about how to use CHERAB for JET CX simulations.
+     - Commented demo file about how to use Cherab for JET CX simulations.
      - .. image:: ./jet_cxrs/JET_CXRS_d5lines.png
           :height: 150px
           :width: 150px
@@ -271,7 +271,7 @@ Code examples gallery
           :height: 150px
           :width: 150px
    * - :ref:`Custom Emission Model <custom_emitter>`
-     - Example of making a custom emitter class in CHERAB. D-alpha impact excitation
+     - Example of making a custom emitter class in Cherab. D-alpha impact excitation
        is used for the example.
      - .. image:: ./line_emission/mastu_bulletb_midplane_dalpha.png
           :height: 150px

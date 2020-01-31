@@ -13,11 +13,11 @@ Atomic Data Providers
      - Description
    * - `cherab-openadas <https://github.com/cherab/openadas>`_
      - Provides utility functions for downloading `OPEN-ADAS <http://open.adas.ac.uk>`_
-       data and loading it into CHERAB's atomic data objects. This package is the default
-       atomic data provider for CHERAB.
+       data and loading it into Cherab's atomic data objects. This package is the default
+       atomic data provider for Cherab.
    * - `cherab-adas <https://github.com/cherab/adas>`_
      - Provides python wrappers to the `ADAS <http://www.adas.ac.uk/>`_ subscription packages and enables their
-       use in CHERAB. Note that you will need an ADAS subscription to use this package. This package
+       use in Cherab. Note that you will need an ADAS subscription to use this package. This package
        is currently in the early development phase and not ready for general use.
 
 
@@ -31,11 +31,11 @@ Fusion Experiment Packages
    * - Package
      - Description
    * - `cherab-aug <https://github.com/cherab/aug>`_
-     - The CHERAB configuration package for AUG.
+     - The Cherab configuration package for AUG.
    * - `cherab-compass <https://github.com/cherab/compass>`_
-     - The CHERAB configuration package for COMPASS.
+     - The Cherab configuration package for COMPASS.
    * - cherab-iter
-     - Integrates CHERAB with IMAS and provides diagnostic configuration
+     - Integrates Cherab with IMAS and provides diagnostic configuration
        for ITER. This package is under development but not yet publicly available.
    * - `cherab-jet <https://github.com/cherab/jet>`_
      - Experiment configuration package for JET.
@@ -58,5 +58,5 @@ and workflow management tools.
    * - `cherab-omfit <https://github.com/cherab/omfit>`_
      - Module for providing OMFIT integration and example workflow scripts.
    * - `cherab-solps <https://github.com/cherab/solps>`_
-     - Allows loading of CHERAB plasma objects from saved SOLPS simulations.
+     - Allows loading of Cherab plasma objects from saved SOLPS simulations.
 

@@ -8,9 +8,9 @@ Rationale
 ---------
 
 The governance model is a document that clearly describes how third parties are
-to engage with the CHERAB project and provides the rules and boundaries that
+to engage with the Cherab project and provides the rules and boundaries that
 ensure that the project remains manageable within the resources available. In
-this next phase of the CHERAB project it makes sense to use an open community
+this next phase of the Cherab project it makes sense to use an open community
 led management model, such as the Meritocracy model used by Mozilla, Apache and
 other large open source projects.
 
@@ -26,15 +26,15 @@ and a more costly programme.
 Overview
 --------
 
-CHERAB is a meritocratic, consensus-based community project. Anyone with an
+Cherab is a meritocratic, consensus-based community project. Anyone with an
 interest in the project can join the community, contribute to the project design
 and participate in the decision making process. This document describes how that
-participation takes place and how to set about earning merit within the CHERAB
+participation takes place and how to set about earning merit within the Cherab
 community. This governance model is based on the Open Meritocracy model used by
 a number of large open source software projects (e.g. Apache foundation).
 
 Most users will be members of the scientific community, contributing to physics
-models and diagnostic designs. The scientific strategy for CHERAB will be set
+models and diagnostic designs. The scientific strategy for Cherab will be set
 through the existing management channels, such as the JET Task Force and
 EUROfusion meetings. The bulk of this document deals with the technical
 management of the project, to ensure the integrity of the code base is

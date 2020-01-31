@@ -27,7 +27,7 @@ When this script is run, the output confirms power is conserved.
 
     >>> python symmetric_power_load.py
     Total radiated power => 4.848 MW
-    CHERAB total detected power => 4.844 MW
+    Cherab total detected power => 4.844 MW
 
 .. figure:: symmetric_power_load_detectors.png
    :align: center

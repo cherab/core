@@ -1,10 +1,10 @@
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.1206141.svg)](https://doi.org/10.5281/zenodo.1206141)
 [![Build Status](https://travis-ci.com/cherab/core.svg?branch=master)](https://travis-ci.com/cherab/core)
 
-CHERAB
+Cherab
 ======
 
-Welcome to the CHERAB project.
+Welcome to the Cherab project.
 
 Please see our [documentation](https://cherab.github.io/documentation/index.html)
 for guidance on using the code.
@@ -12,7 +12,7 @@ for guidance on using the code.
 Installation
 ------------
 
-CHERAB is a large code framework consisting of a core package and feature  
+Cherab is a large code framework consisting of a core package and feature  
 packages. Users will generally install the core package and the specific  
 feature packages they need for their work. For example, users working on the  
 JET tokamak will require the ``cherab-core`` package, and the ``cherab-jet``  
@@ -29,7 +29,7 @@ achieved with:
 python setup.py install
 ```
 
-This will compile the CHERAB cython extensions and install the package. If you 
+This will compile the Cherab cython extensions and install the package. If you 
 don't have administrator access to install the package, add the ``--user`` flag 
 to the above line to install the package under your own user account.
 
@@ -45,7 +45,7 @@ site-package path. Modifications to the code will therefore be visible to
 python next time the code is imported. The ``--user`` flag should be used if 
 you do not have administrative permission for your python installation.
 
-As all the CHERAB packages are dependent on the ``cherab-core`` package, this 
+As all the Cherab packages are dependent on the ``cherab-core`` package, this 
 package must be installed first. Note that other packages may have their own 
 inter-dependencies, see the specific package documentation for more 
 information.
@@ -58,7 +58,7 @@ Management. The Scientific management happens through the normal community
 routes such as JET and MST1 task force meetings, ITPA meetings, etc.
 
 The Technical Management Committee (TMC) is a smaller subset of the community, 
-being responsible for ensuring the integrity and high code quality of CHERAB is 
+being responsible for ensuring the integrity and high code quality of Cherab is 
 maintained. These TMC members would have in-depth knowledge of the code base 
 through a demonstrated history of contributing to the project. The TMC would 
 primarily be responsible for accepting / rejecting merge requests on the basis 
@@ -78,5 +78,5 @@ TMC Members
 Citing The Code
 ---------------
 * Dr Carine Giroud, Dr Alex Meakins, Dr Matthew Carr, Dr Alfonso Baciero, & 
-Mr Corentin Bertrand. (2018, March 23). CHERAB Spectroscopy Modelling Framework 
+Mr Corentin Bertrand. (2018, March 23). Cherab Spectroscopy Modelling Framework 
 (Version v0.1.0). Zenodo. http://doi.org/10.5281/zenodo.1206142

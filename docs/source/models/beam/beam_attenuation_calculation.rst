@@ -4,10 +4,10 @@ Beam attenuation calcualtion
 
 .. *Date: 03/12/2014*
 
-In this section, the calculation of beam attenuation in CHERAB is
+In this section, the calculation of beam attenuation in Cherab is
 presented. This documentation is meant to be a concise compilation
 of the main aspects needed to carry out a beam attenuation calculation
-highlighting what could be implemented in CHERAB and what is implemented
+highlighting what could be implemented in Cherab and what is implemented
 at present and how.
 
 .. WARNING::
@@ -228,7 +228,7 @@ plasma and beam conditons. [Delabie also in annex].
     It is appropriate to re-tune the tabulations of reference beam and plasma
     conditions for application to other plasma/injection systems. (He beams, …..)
 
-Features implemented in CHERAB
+Features implemented in Cherab
 ------------------------------
 
 **Assumption: no need to take into account the spatial transport of metastables in the plasma**

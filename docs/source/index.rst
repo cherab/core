@@ -1,9 +1,9 @@
 
 
-CHERAB's documentation
+Cherab's documentation
 ======================
 
-Welcome to the CHERAB project. A python library for forward modelling
+Welcome to the Cherab project. A python library for forward modelling
 diagnostics based on spectroscopic plasma emission.
 
 Please note that these documentation pages are in a state of flux and might not

@@ -202,7 +202,7 @@ cdef class Plasma(Node):
     """
     A scene-graph object representing a plasma.
 
-    The CHERAB Plasma object holds all the properties and state of a plasma
+    The Cherab Plasma object holds all the properties and state of a plasma
     and can optionally have emission models attached to it.
 
     To define a Plasma object you need to define the plasma composition,
@@ -238,7 +238,7 @@ cdef class Plasma(Node):
 
     Any change to the plasma object including adding/removing of species or models
     will result in a automatic notification being sent to objects that register
-    with the Plasma objects' Notifier. All CHERAB models and associated scene-graph
+    with the Plasma objects' Notifier. All Cherab models and associated scene-graph
     objects such as Beams automatically handle the notifications internally to clear
     cached data. If you need to keep track of plasma changes in your own classes,
     a callback can be registered with the plasma Notifier which will be called in

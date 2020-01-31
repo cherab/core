@@ -28,7 +28,7 @@ Start by importing all required modules and creating world. ::
     from raysect.primitive.mesh import Mesh
     from raysect.optical.material.absorber import AbsorbingSurface
 
-    # CHERAB imports
+    # Cherab imports
     from cherab_extra.simulation_data.solps.models.radiated_power import solps_total_radiated_power
     from cherab_extra.simulation_data.solps.solps_plasma import SOLPSSimulation
     from cherab_aug.integrated_power.wall_detector_geometry import aug_wall_detectors
@@ -204,5 +204,5 @@ power collected on the walls. ::
         for j in range(mesh.ny):
             solps_total_power += total_rad_data[i, j] * vol[i, j]
 
-    print("CHERAB total radiated power => {:.4G} W".format(cherab_total_power))
+    print("Cherab total radiated power => {:.4G} W".format(cherab_total_power))
     print("SOLPS total radiated power => {:.4G} W".format(solps_total_power))

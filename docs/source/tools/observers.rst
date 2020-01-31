@@ -3,7 +3,7 @@ Observers
 =========
 
 Most plasma diagnostics can be easily modelled using the base observer types provided in
-Raysect. In CHERAB we only provide a few specialist observers with extra functionality.
+Raysect. In Cherab we only provide a few specialist observers with extra functionality.
 
 .. _observers_bolometers:
 
