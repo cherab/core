@@ -9,7 +9,7 @@ env:
 install:
   - pip install cython>=0.28
   - pip install numpy==$NUMPY_VERSION scipy matplotlib
-  - pip install raysect==0.6.0
+  - pip install raysect==0.6.1
   - dev/build.sh
 # command to run tests
 script: dev/test.sh
