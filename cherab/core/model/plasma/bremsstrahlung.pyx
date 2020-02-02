@@ -16,6 +16,8 @@
 # See the Licence for the specific language governing permissions and limitations
 # under the Licence.
 
+# cython: language_level=3
+
 from raysect.optical cimport Spectrum, Point3D, Vector3D
 from cherab.core.utility.constants cimport RECIP_4_PI, ELEMENTARY_CHARGE, SPEED_OF_LIGHT, PLANCK_CONSTANT
 from libc.math cimport sqrt, log, exp
@@ -42,6 +44,10 @@ cdef class Bremsstrahlung(PlasmaModel):
     def __repr__(self):
         return '<PlasmaModel - Bremsstrahlung>'
 
+    @cython.cdivision(True)
+    @cython.initializedcheck(False)
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
     cpdef Spectrum emission(self, Point3D point, Vector3D direction, Spectrum spectrum):
 
         cdef:
@@ -50,10 +56,10 @@ cdef class Bremsstrahlung(PlasmaModel):
             double lower_sample, upper_sample
             int i
 
-        ne = self._plasma.electron_distribution.density(point.x, point.y, point.z)
+        ne = self._plasma.get_electron_distribution().density(point.x, point.y, point.z)
         if ne == 0:
             return spectrum
-        te = self._plasma.electron_distribution.effective_temperature(point.x, point.y, point.z)
+        te = self._plasma.get_electron_distribution().effective_temperature(point.x, point.y, point.z)
         if te == 0:
             return spectrum
         z_effective = self._plasma.z_effective(point.x, point.y, point.z)

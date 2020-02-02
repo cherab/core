@@ -16,6 +16,8 @@
 # See the Licence for the specific language governing permissions and limitations
 # under the Licence.
 
+# cython: language_level=3
+
 from cherab.core.atomic cimport Line
 from cherab.core.plasma cimport PlasmaModel
 from cherab.core.species cimport Species
