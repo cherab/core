@@ -38,12 +38,11 @@ class BolometerCamera(Node):
     """
     A group of bolometer sight-lines under a single scenegraph node.
 
-    A scenegraph object that manages a collection of `BolometerFoil()`
+    A scenegraph object that manages a collection of :class:`BolometerFoil`
     objects. Allows combined observation and display control simultaneously.
 
-    :param Primitive camera_geometry: An optional Raysect primitive to supply
-      as the box/aperture geometry. If not supplied, a CSG aperture will be
-      constructed from the slit parameters.
+    :param Primitive camera_geometry: A Raysect primitive to supply as the
+      box/aperture geometry.
     :param Node parent: The parent node of this camera in the scenegraph, often
       an optical World object.
     :param AffineMatrix3D transform: The relative coordinate transform of this
@@ -112,8 +111,7 @@ class BolometerCamera(Node):
             for detector in self._foil_detectors:
                 if detector.name == item:
                     return detector
-            else:
-                raise ValueError("BolometerFoil '{}' was not found in this BolometerCamera.".format(item))
+            raise ValueError("BolometerFoil '{}' was not found in this BolometerCamera.".format(item))
         else:
             raise TypeError("BolometerCamera key must be of type int or str.")
 
@@ -183,12 +181,25 @@ class BolometerSlit(Node):
     A rectangular bolometer slit.
 
     A single slit can be shared by multiple detectors in the parent camera. The slit
-    geometry is specified in terms of its centre_point, basis vectors in the plane
-    of the slit and their respective lengths.
+    geometry is specified in terms of its centre_point, basis vectors in the plane of
+    the slit and their respective lengths. When instantiating a
+    :class:`BolometerSlit` object these values are defined in the local coordinate
+    system of the slit's parent, usually a :class:`BolometerCamera` object. Accessing
+    these properties on an existing :class:`BolometerSlit` object returns them in the
+    world's coordinate system.
 
     If an external mesh model has been loaded for ray occlusion evaluation then this
     object is only used for targeting rays on the slit. If no mesh has been supplied,
     this object can construct an effective slit primitive from CSG operations.
+
+    .. warning::
+       Be very careful when using a CSG aperture. The aperture geometry is slightly
+       larger than the slit dx and dy, which can cause partial occlusion of
+       nearby primitives. It also relies on no rays being launched with directions
+       outside the solid angle of the aperture's bounding sphere: depending on the
+       foil-slit distance and slit size, and also the foil's targetted_path_prob,
+       this may not be guaranteed. Supplying a proper mesh geometry for the camera
+       is recommended instead of using a CSG aperture.
 
     :param str slit_id: The name for this slit.
     :param Point3D centre_point: The centre point of the slit.
@@ -198,10 +209,10 @@ class BolometerSlit(Node):
     :param float dy: The height of the slit along the y basis vector.
     :param float dz: The thickness of the slit along the z basis vector.
     :param Node parent: The parent scenegraph node to which this slit belongs.
-      Typically a BolometerCamera() or an optical World() object.
+      Typically a :class:`BolometerCamera` or an optical :class:`World` object.
     :param bool csg_aperture: Toggles whether an occluding surface should be
       constructed for this slit using CSG operations.
-    :param float curvature_radius: Slits in real bolometer cameras typically
+    :param float curvature_radius: Slits in real bolometer cameras may
       have curved corners due to machining limitations. This parameter species
       the corner radius.
 
@@ -326,10 +337,13 @@ class BolometerSlit(Node):
 
 class BolometerFoil(TargettedPixel):
     """
-    A rectangular bolometer detector.
+    A rectangular foil bolometer detector.
 
-    Can be configured to sample a single ray or fan of rays oriented along the
-    observer's z axis.
+    When instantiating a detector, the position and orientation
+    (i.e. centre_point, basis_x and basis_y) are given in the local coordinate
+    system of the foil's parent, usually a :class:`BolometerCamera` instance.
+    When these properties are accessed after instantiation, they are given in
+    the coordinate system of the world.
 
     :param str detector_id: The name for this detector.
     :param Point3D centre_point: The centre point of the detector.
@@ -338,11 +352,11 @@ class BolometerFoil(TargettedPixel):
     :param Vector3D basis_y: The y basis vector for the detector.
     :param float dy: The height of the detector along the y basis vector.
     :param Node parent: The parent scenegraph node to which this detector belongs.
-      Typically a BolometerCamera() or an optical World() object.
-    :param bool units: The units in which to perform observations, can
-      be ['Power', 'Radiance'], defaults to 'Power'.
+      Typically a :class:`BolometerCamera` or an optical :class:`World` object.
+    :param str units: The units in which to perform observations, can
+      be ['Power', 'Radiance'].
     :param bool accumulate: Whether this observer should accumulate samples
-      with multiple calls to observe. Defaults to False.
+      with multiple calls to observe.
     :param float curvature_radius: Detectors in real bolometer cameras typically
       have curved corners due to machining limitations. This parameter species
       the corner radius.
@@ -521,7 +535,7 @@ class BolometerFoil(TargettedPixel):
 
         Raises a RuntimeError exception if no intersection was found.
 
-        :return: Returns a tuple containing the origin point, hit point and terminating surface
+        :return: A tuple containing the origin point, hit point and terminating surface
           primitive.
         """
 
@@ -551,11 +565,15 @@ class BolometerFoil(TargettedPixel):
                 return self.centre_point, hit_point, intersection.primitive
 
     def calculate_sensitivity(self, voxel_collection, ray_count=10000):
-        """
+        r"""
         Calculates a sensitivity vector for this detector on the specified voxel collection.
 
-        This function is used for calculating sensitivity matrices which can be combined for
-        multiple detectors into a sensitivity matrix :math:`\mathbf{W}`.
+        This function is used for calculating sensitivity matrices which can be
+        combined for multiple detectors into a sensitivity matrix
+        :math:`\mathbf{W}`. If the :class:`BolometerFoil` has units of "Power", the
+        returned sensitivity matrix has units of [m³ sr]. If the
+        :class:`BolometerFoil` has units of "Radiance", the returned sensitivity
+        matrix has units of [m sr].
 
         :param VoxelCollection voxel_collection: The voxel collection on which to calculate
           the sensitivities.
@@ -564,7 +582,10 @@ class BolometerFoil(TargettedPixel):
         :return: A 1D array of sensitivities with length equal to the number of voxels
           in the collection.
         """
-
+        # This method exploits ToroidalVoxelCollection.set_active("all"), which
+        # makes each voxel emit a different wavelength of light. By observing
+        # the voxel collection with a spectral pipeline we can thus distinguish
+        # the amount of emission from each individual voxel.
         if not isinstance(voxel_collection, VoxelCollection):
             raise TypeError("voxel_collection must be of type VoxelCollection")
 
@@ -612,6 +633,7 @@ class BolometerFoil(TargettedPixel):
             If a ray makes it further than this, it is assumed to have passed through the aperture,
             regardless of what it hits. Use this if there are other primitives present in the scene
             which do not form the aperture.
+        :return: A tuple (etendue, etendue_error).
         """
 
         if batches < 5:

@@ -27,7 +27,7 @@ cdef class Species:
     """
     A class representing a given plasma species.
 
-    A plasma in CHERAB will be composed of 1 or more Species objects. A species
+    A plasma in Cherab will be composed of 1 or more Species objects. A species
     can be uniquely identified through its element and charge state.
 
     When instantiating a Species object a 6D distribution function (3 space, 3 velocity)

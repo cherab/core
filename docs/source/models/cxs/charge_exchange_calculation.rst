@@ -11,9 +11,9 @@ Calculation of predicted charge-exchange spectra seen by a line-of-sight
 In this section, the calculation of a predicted spectral line
 :math:`I_{obs}(\lambda)` resulting from a charge-exchange process is presented
 together with the different possible simplifications and details of what is
-currently implemented in CHERAB. This documentation is not meant to be a
+currently implemented in Cherab. This documentation is not meant to be a
 course on charge-exchange but a concise compilation of the main aspects in
-order to understand the assumptions made in CHERAB for an educated use.
+order to understand the assumptions made in Cherab for an educated use.
 
 .. WARNING::
     This documentation is useful only if it is correct and up-to-date. It is
@@ -21,7 +21,7 @@ order to understand the assumptions made in CHERAB for an educated use.
     documentation manager. Thanks.
 
 .. NOTE::
-    :math:`I_{obs}(\lambda)` in ray-tracer and therefore CHERAB is in :math:`W.m^{-2}.str^{-1}.nm^{-1}`.
+    :math:`I_{obs}(\lambda)` in ray-tracer and therefore Cherab is in :math:`W.m^{-2}.str^{-1}.nm^{-1}`.
 
 .. csv-table:: Notations for this section
     :header: "Notation", "Meaning", "Unit"
@@ -66,7 +66,7 @@ effective coefficients depend on the collision energy with the neutral beam
 :math:`E_c`, plasma electron and ion temperatures, plasma impurity ion species
 mix and number densities and electron density. The strongest dependences are on
 collisional energy :math:`E_c` and ion density :math:`n_I`. (For more specific
-use of ADAS effective charge-exchange coefficient look at CHERAB atomic data
+use of ADAS effective charge-exchange coefficient look at Cherab atomic data
 note). For a mixed impurity plasma of known fractions with charge neutrality,
 the electron and ion densities are related and it is usual to use the electron
 density as a parameter.
@@ -90,7 +90,7 @@ collisional processes. For information, the fraction of excited beam atoms
 depends not only on the beam energy but also on :math:`Z_{eff}`, plasma
 temperature and densities. Note that D(n=1) donor dominates at high beam energy
 and the small fraction of D(n=2) donor dominates at low beam energy
-[Hoekstra1998]. For more practical information, look at the CHERAB atomic data
+[Hoekstra1998]. For more practical information, look at the Cherab atomic data
 note.
 
 Calculation of the line intensity of CX spectral lines (without predicting observed spectra)

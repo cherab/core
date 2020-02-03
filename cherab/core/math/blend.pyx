@@ -45,26 +45,22 @@ cdef class Blend1D(Function1D):
     .. code-block:: pycon
 
        >>> from cherab.core.math import Blend1D
-       >>> from raysect.core.math.function.function1d import PythonFunction1D
        >>>
-       >>> def my_f1(x):
+       >>> def f1(x):
        >>>     return 0.5
-       >>> f1 = PythonFunction1D(my_f1)
        >>>
-       >>> def my_f2(x):
+       >>> def f2(x):
        >>>     return x**3
-       >>> f2 = PythonFunction1D(my_f2)
        >>>
-       >>> def my_fmask(x):
+       >>> def fmask(x):
        >>>     if x <= 0:
        >>>         return 0
        >>>     elif 0< x <= 1:
        >>>         return x
        >>>     else:
        >>>         return 1
-       >>> f_mask = PythonFunction1D(my_fmask)
        >>>
-       >>> fb = Blend1D(f1, f2, f_mask)
+       >>> fb = Blend1D(f1, f2, fmask)
        >>> fb(-3)
        0.5
        >>> fb(0.3)
@@ -120,17 +116,14 @@ cdef class Blend2D(Function2D):
 
        >>> from numpy import sqrt
        >>> from cherab.core.math import Blend2D
-       >>> from raysect.core.math.function.function2d import PythonFunction2D
        >>>
-       >>> def my_f1(x, y):
+       >>> def f1(x, y):
        >>>     return 0.5
-       >>> f1 = PythonFunction2D(my_f1)
        >>>
-       >>> def my_f2(x, y):
+       >>> def f2(x, y):
        >>>     return x**2 + y
-       >>> f2 = PythonFunction2D(my_f2)
        >>>
-       >>> def my_fmask(x, y):
+       >>> def fmask(x, y):
        >>>    radius = sqrt(x**2 + y**2)
        >>>    if radius <= 1:
        >>>        return 0
@@ -138,9 +131,8 @@ cdef class Blend2D(Function2D):
        >>>        return radius - 1
        >>>    else:
        >>>        return 1
-       >>> f_mask = PythonFunction2D(my_fmask)
        >>>
-       >>> fb = Blend2D(f1, f2, f_mask)
+       >>> fb = Blend2D(f1, f2, fmask)
        >>> fb(0, 0)
        0.5
        >>> fb(1, 1)
@@ -196,17 +188,14 @@ cdef class Blend3D(Function3D):
 
        >>> from numpy import sqrt
        >>> from cherab.core.math import Blend3D
-       >>> from raysect.core.math.function.function3d import PythonFunction3D
        >>>
-       >>> def my_f1(x, y, z):
+       >>> def f1(x, y, z):
        >>>     return 0.5
-       >>> f1 = PythonFunction3D(my_f1)
        >>>
-       >>> def my_f2(x, y, z):
+       >>> def f2(x, y, z):
        >>>     return x**3 + y**2 + z
-       >>> f2 = PythonFunction3D(my_f2)
        >>>
-       >>> def my_fmask(x, y, z):
+       >>> def fmask(x, y, z):
        >>>    radius = sqrt(x**2 + y**2 + z**2)
        >>>    if radius <= 1:
        >>>        return 0
@@ -214,9 +203,8 @@ cdef class Blend3D(Function3D):
        >>>        return radius - 1
        >>>    else:
        >>>        return 1
-       >>> f_mask = PythonFunction3D(my_fmask)
        >>>
-       >>> fb = Blend3D(f1, f2, f_mask)
+       >>> fb = Blend3D(f1, f2, fmask)
        >>> fb(0, 0, 0)
        0.5
        >>> fb(1, 1, 1)

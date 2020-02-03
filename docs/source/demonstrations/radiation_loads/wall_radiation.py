@@ -113,7 +113,7 @@ for i in range(mesh.nx):
         solps_total_power += total_rad_data[i, j] * vol[i, j]
 
 print()
-print("CHERAB total radiated power => {:.4G} W".format(cherab_total_power))
+print("Cherab total radiated power => {:.4G} W".format(cherab_total_power))
 print()
 print("SOLPS total radiated power => {:.4G} W".format(solps_total_power))
 

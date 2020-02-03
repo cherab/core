@@ -2,11 +2,11 @@
 Functions
 =========
 
-The CHERAB function framework is built on the core Raysect 1D, 2D and 3D
+The Cherab function framework is built on the core Raysect 1D, 2D and 3D
 `function framework <https://raysect.github.io/documentation/api_reference/core/functions.html>`_.
 For more details on the base functionality refer to the Raysect
-documentation and the CHERAB function tutorials. The only new classes of functions
-added by CHERAB are 2D and 3D Vector functions.
+documentation and the Cherab function tutorials. The only new classes of functions
+added by Cherab are 2D and 3D Vector functions.
 
 2D Vector Functions
 -------------------

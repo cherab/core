@@ -19,10 +19,12 @@
 import unittest
 
 import numpy as np
-from scipy.constants import atomic_mass, elementary_charge
 
 from cherab.core.distribution import Maxwellian
 from raysect.core import Vector3D
+
+ATOMIC_MASS = 1.66053906660e-27
+ELEMENTARY_CHARGE = 1.602176634e-19
 
 
 class TestMaxwellian(unittest.TestCase):
@@ -42,7 +44,7 @@ class TestMaxwellian(unittest.TestCase):
         density = lambda x, y, z: 6e19 * (1 + 0.1 * np.sin(x) * np.sin(y) * np.sin(z))  # m^-3
         temperature = lambda x, y, z: 3e3 * (1 + 0.1 * np.sin(x + 1) * np.sin(y + 1) * np.sin(z + 1))  # eV
         velocity = lambda x, y, z: 1.6e5 * (1 + 0.1 * np.sin(x + 2) * np.sin(y + 2) * np.sin(z + 2)) * Vector3D(1, 2, 3).normalise()  # m/s
-        mass = 4 * atomic_mass  # kg
+        mass = 4 * ATOMIC_MASS  # kg
         maxwellian = Maxwellian(density, temperature, velocity, mass)
 
         for x in self.x:
@@ -59,7 +61,7 @@ class TestMaxwellian(unittest.TestCase):
         density = lambda x, y, z: 6e19 * (1 + 0.1 * np.sin(x) * np.sin(y) * np.sin(z))  # m^-3
         temperature = lambda x, y, z: 3e3 * (1 + 0.1 * np.sin(x + 1) * np.sin(y + 1) * np.sin(z + 1))  # eV
         velocity = lambda x, y, z: 1.6e5 * (1 + 0.1 * np.sin(x + 2) * np.sin(y + 2) * np.sin(z + 2)) * Vector3D(1, 2, 3).normalise()  # m/s
-        mass = 4 * atomic_mass  # kg
+        mass = 4 * ATOMIC_MASS  # kg
         maxwellian = Maxwellian(density, temperature, velocity, mass)
 
         for x in self.x:
@@ -72,7 +74,7 @@ class TestMaxwellian(unittest.TestCase):
         density = lambda x, y, z: 6e19 * (1 + 0.1 * np.sin(x) * np.sin(y) * np.sin(z))  # m^-3
         temperature = lambda x, y, z: 3e3 * (1 + 0.1 * np.sin(x + 1) * np.sin(y + 1) * np.sin(z + 1))  # eV
         velocity = lambda x, y, z: 1.6e5 * (1 + 0.1 * np.sin(x + 2) * np.sin(y + 2) * np.sin(z + 2)) * Vector3D(1, 2, 3).normalise()  # m/s
-        mass = 4 * atomic_mass  # kg
+        mass = 4 * ATOMIC_MASS  # kg
         maxwellian = Maxwellian(density, temperature, velocity, mass)
 
         for x in self.x:
@@ -85,10 +87,10 @@ class TestMaxwellian(unittest.TestCase):
         density = lambda x, y, z: 6e19 * (1 + 0.1 * np.sin(x) * np.sin(y) * np.sin(z))  # m^-3
         temperature = lambda x, y, z: 3e3 * (1 + 0.1 * np.sin(x + 1) * np.sin(y + 1) * np.sin(z + 1))  # eV
         velocity = lambda x, y, z: 1.6e5 * (1 + 0.1 * np.sin(x + 2) * np.sin(y + 2) * np.sin(z + 2)) * Vector3D(1, 2, 3).normalise()  # m/s
-        mass = 4 * atomic_mass  # kg
+        mass = 4 * ATOMIC_MASS  # kg
         maxwellian = Maxwellian(density, temperature, velocity, mass)
 
-        sigma = lambda x, y, z: np.sqrt(temperature(x, y, z) * elementary_charge / mass)  # m/s
+        sigma = lambda x, y, z: np.sqrt(temperature(x, y, z) * ELEMENTARY_CHARGE / mass)  # m/s
         phase_space_density = lambda x, y, z, vx, vy, vz: density(x, y, z) / (np.sqrt(2 * np.pi) * sigma(x, y, z)) ** 3 \
                                                           * np.exp(-(Vector3D(vx, vy, vz) - velocity(x, y, z)).length ** 2 / (2 * sigma(x, y, z) ** 2))  # s^3/m^6
 

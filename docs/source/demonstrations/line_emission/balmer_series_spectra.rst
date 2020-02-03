@@ -5,7 +5,7 @@
 Measuring line of sight spectra
 ===============================
 
-CHERAB is capable of simulating spectroscopic measurements. In this example we
+Cherab is capable of simulating spectroscopic measurements. In this example we
 simulate a basic measurement of the balmer series in the MAST-U divertor with
 an optical fibre.
 

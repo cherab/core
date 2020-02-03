@@ -45,13 +45,10 @@ cpdef tuple sample1d(object function1d, tuple x_range):
     
     .. code-block:: pycon
 
-       >>> from raysect.core.math.function.function1d import PythonFunction1D
        >>> from cherab.core.math import sample1d
        >>>
-       >>> def my_func(x):
+       >>> def f1(x):
        >>>     return x**2
-       >>>
-       >>> f1 = PythonFunction1D(my_func)
        >>>
        >>> x_pts, f_vals = sample1d(f1, (0, 3, 5))
        >>> x_pts
@@ -102,13 +99,10 @@ cpdef np.ndarray sample1d_points(object function1d, object x_points):
 
     .. code-block:: pycon
 
-       >>> from raysect.core.math.function.function1d import PythonFunction1D
        >>> from cherab.core.math import sample1d_points
        >>>
-       >>> def my_func(x):
+       >>> def f1(x):
        >>>     return x**2
-       >>>
-       >>> f1 = PythonFunction1D(my_func)
        >>>
        >>> f_vals = sample1d_points(f1, [1, 2, 3])
        >>> f_vals
@@ -148,15 +142,12 @@ cpdef tuple sample2d(object function2d, tuple x_range, tuple y_range):
 
     .. code-block:: pycon
 
-       >>> from raysect.core.math.function.function2d import PythonFunction2D
        >>> from cherab.core.math import sample2d
        >>>
-       >>> def my_func(x, y):
+       >>> def f1(x, y):
        >>>     return x**2 + y
        >>>
-       >>> f2 = PythonFunction2D(my_func)
-       >>>
-       >>> x_pts, y_pts, f_vals = sample2d(f2, (1, 3, 5), (1, 3, 5))
+       >>> x_pts, y_pts, f_vals = sample2d(f1, (1, 3, 5), (1, 3, 5))
        >>> x_pts
        array([1. , 1.5, 2. , 2.5, 3. ])
        >>> y_pts
@@ -230,15 +221,12 @@ cpdef np.ndarray sample2d_points(object function2d, object points):
 
     .. code-block:: pycon
 
-       >>> from raysect.core.math.function.function2d import PythonFunction2D
        >>> from cherab.core.math import sample2d
        >>>
-       >>> def my_func(x, y):
+       >>> def f1(x, y):
        >>>     return x**2 + y
        >>>
-       >>> f2 = PythonFunction2D(my_func)
-       >>>
-       >>> f_vals = sample2d_points(f2, [[1, 1], [2, 2], [3, 3]])
+       >>> f_vals = sample2d_points(f1, [[1, 1], [2, 2], [3, 3]])
        >>> f_vals
        array([ 2.,  6., 12.])
     """
@@ -282,15 +270,12 @@ cpdef np.ndarray sample2d_grid(object function2d, object x, object y):
 
     .. code-block:: pycon
 
-       >>> from raysect.core.math.function.function2d import PythonFunction2D
        >>> from cherab.core.math import sample2d_grid
        >>>
-       >>> def my_func(x, y):
+       >>> def f1(x, y):
        >>>     return x**2 + y
        >>>
-       >>> f2 = PythonFunction2D(my_func)
-       >>>
-       >>> f_vals = sample2d_grid(f2, [1, 2], [1, 2, 3])
+       >>> f_vals = sample2d_grid(f1, [1, 2], [1, 2, 3])
        >>> f_vals
        array([[2., 3., 4.],
               [5., 6., 7.]])
@@ -339,15 +324,12 @@ cpdef tuple sample3d(object function3d, tuple x_range, tuple y_range, tuple z_ra
 
     .. code-block:: pycon
 
-       >>> from raysect.core.math.function.function3d import PythonFunction3D
        >>> from cherab.core.math import sample3d
        >>>
-       >>> def my_func(x, y, z):
+       >>> def f1(x, y, z):
        >>>     return x**3 + y**2 + z
        >>>
-       >>> f3 = PythonFunction3D(my_func)
-       >>>
-       >>> x_pts, y_pts, z_pts, f_vals = sample3d(f3, (1, 3, 3), (1, 3, 3), (1, 3, 3))
+       >>> x_pts, y_pts, z_pts, f_vals = sample3d(f1, (1, 3, 3), (1, 3, 3), (1, 3, 3))
        >>> x_pts
        array([1., 2., 3.])
        >>> f_vals
@@ -436,15 +418,12 @@ cpdef np.ndarray sample3d_points(object function3d, object points):
     
     .. code-block:: pycon
 
-       >>> from raysect.core.math.function.function3d import PythonFunction3D
        >>> from cherab.core.math import sample3d_points
        >>>
-       >>> def my_func(x, y, z):
+       >>> def f1(x, y, z):
        >>>     return x**3 + y**2 + z
        >>>
-       >>> f3 = PythonFunction3D(my_func)
-       >>>
-       >>> f_vals = sample3d_points(f3, [[1,1,1], [2,2,2], [3,3,3]])
+       >>> f_vals = sample3d_points(f1, [[1,1,1], [2,2,2], [3,3,3]])
        >>> f_vals
        array([ 3., 14., 39.])
     """
@@ -491,15 +470,12 @@ cpdef np.ndarray sample3d_grid(object function3d, object x, object y, object z):
 
     .. code-block:: pycon
 
-       >>> from raysect.core.math.function.function3d import PythonFunction3D
        >>> from cherab.core.math import sample3d_grid
        >>>
-       >>> def my_func(x, y, z):
+       >>> def f1(x, y, z):
        >>>     return x**3 + y**2 + z
        >>>
-       >>> f3 = PythonFunction3D(my_func)
-       >>>
-       >>> f_vals = sample3d_grid(f3, (1, 3, 3), (1, 3, 3), (1, 3, 3))
+       >>> f_vals = sample3d_grid(f1, (1, 3, 3), (1, 3, 3), (1, 3, 3))
        >>> f_vals
        array([[[ 3.,  5.,  5.],
                [11., 13., 13.],

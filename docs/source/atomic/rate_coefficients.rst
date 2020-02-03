@@ -9,9 +9,9 @@ information or data about the rate is specified in the core API, instead all oth
 implementation details are deferred to the atomic data provider.
 
 The reason for this design is that it allows rate objects to be used throughout all the
-CHERAB emission models without knowing how this data will be provided or calculated.
+Cherab emission models without knowing how this data will be provided or calculated.
 For example, some atomic data providers might use interpolated data while others could
-provide theoretical equations. CHERAB emission models only need to know how to call
+provide theoretical equations. Cherab emission models only need to know how to call
 them after they have been instantiated.
 
 
