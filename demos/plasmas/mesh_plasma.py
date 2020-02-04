@@ -29,7 +29,7 @@ from raysect.optical import World, translate, Point3D, Vector3D, rotate_basis, S
 from raysect.optical.observer import PinholeCamera, PowerPipeline2D
 
 from cherab.core import Species, Maxwellian, Plasma, Line
-from cherab.core.math import Constant3D, ConstantVector3D, sample3d, AxisymmetricMapper
+from cherab.core.math import sample3d, AxisymmetricMapper
 from cherab.core.atomic import deuterium
 from cherab.core.model import ExcitationLine, RecombinationLine
 from cherab.openadas import OpenADAS
@@ -99,7 +99,7 @@ plasma.geometry = Cylinder(1.5, 4, transform=translate(0, 0, -2))
 plasma.geometry_transform = translate(0, 0, -2)
 
 # No net velocity for any species
-zero_velocity = ConstantVector3D(Vector3D(0, 0, 0))
+zero_velocity = Vector3D(0, 0, 0)
 
 # define neutral species distribution
 
@@ -107,7 +107,7 @@ zero_velocity = ConstantVector3D(Vector3D(0, 0, 0))
 d0_density_interp = Interpolator2DMesh(vertex_coords, d0_vertex_densities, triangles, limit=False)
 # map the 2D interpolator into a 3D function using the axisymmetry operator
 d0_density = AxisymmetricMapper(d0_density_interp)
-d0_temperature = Constant3D(0.5)  # constant 0.5eV temperature for all neutrals
+d0_temperature = 0.5  # constant 0.5eV temperature for all neutrals
 d0_distribution = Maxwellian(d0_density, d0_temperature, zero_velocity,
                              deuterium.atomic_weight * atomic_mass)
 d0_species = Species(deuterium, 0, d0_distribution)
@@ -129,7 +129,7 @@ e_temperature = AxisymmetricMapper(e_temperature_interp)
 e_distribution = Maxwellian(e_density, e_temperature, zero_velocity, electron_mass)
 
 # define species
-plasma.b_field = ConstantVector3D(Vector3D(1.0, 1.0, 1.0))
+plasma.b_field = Vector3D(1.0, 1.0, 1.0)
 plasma.electron_distribution = e_distribution
 plasma.composition = [d0_species, d1_species]
 

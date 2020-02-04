@@ -26,7 +26,6 @@ from raysect.optical.spectrum cimport new_spectrum
 
 
 from cherab.core cimport Plasma
-from cherab.core.math cimport Constant1D, Constant2D
 from cherab.core.utility.constants cimport ATOMIC_MASS, ELEMENTARY_CHARGE, SPEED_OF_LIGHT
 
 cimport cython

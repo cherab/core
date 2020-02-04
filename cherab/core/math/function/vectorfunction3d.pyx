@@ -49,13 +49,38 @@ cdef class VectorFunction3D:
         return self.evaluate(x, y, z)
 
 
+cdef class ConstantVector3D(VectorFunction3D):
+    """Constant 3D real vector function.
+
+    Inherits from Function3D, implements `__call__(x, y, z)`.
+
+    .. code-block:: pycon
+
+       >>> from raysect.core.math import Vector3D
+       >>> from cherab.core.math import ConstantVector3D
+       >>>
+       >>> f3 = ConstantVector3D(Vector3D(0.5, 0.5, 0.5))
+       >>>
+       >>> f3(1, 1, 6)
+       Vector3D(0.5, 0.5, 0.5)
+       >>> f3(-1, 7e6, -1e999)
+       Vector3D(0.5, 0.5, 0.5)
+    """
+
+    def __init__(self, Vector3D value not None):
+        self.value = value
+
+    cdef Vector3D evaluate(self, double x, double y, double z):
+        return self.value
+
+
 cdef class PythonVectorFunction3D(VectorFunction3D):
     """
     Wraps a python callable object with a VectorFunction3D object.
 
     This class allows a python object to interact with cython code that requires
     a VectorFunction3D object. The python object must implement __call__()
-    expecting three arguments and return a Vector object.
+    expecting three arguments and return a Vector3D object.
 
     This class is intended to be used to transparently wrap python objects that
     are passed via constructors or methods into cython optimised code. It is not
@@ -100,18 +125,19 @@ cdef VectorFunction3D autowrap_vectorfunction3d(object function):
     If this function is passed a valid VectorFunction3D object, then the
     VectorFunction3D object is simply returned without wrapping.
 
+    If this function is passed a Vector3D, a ConstantVector3D object is
+    returned.
+
     This convenience function is provided to simplify the handling of
     VectorFunction3D and python callable objects in constructors, functions and
     setters.
     """
 
     if isinstance(function, VectorFunction3D):
-
         return <VectorFunction3D> function
-
-    else:
-
-        return PythonVectorFunction3D(function)
+    if isinstance(function, Vector3D):
+        return ConstantVector3D(function)
+    return PythonVectorFunction3D(function)
 
 
 cdef class ScalarToVectorFunction3D(VectorFunction3D):

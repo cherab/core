@@ -19,5 +19,6 @@
 from raysect.core.math.function cimport Function1D, autowrap_function1d
 from raysect.core.math.function cimport Function2D, autowrap_function2d
 from raysect.core.math.function cimport Function3D, autowrap_function3d
-from cherab.core.math.function.vectorfunction2d cimport VectorFunction2D, autowrap_vectorfunction2d, ScalarToVectorFunction2D
-from cherab.core.math.function.vectorfunction3d cimport VectorFunction3D, autowrap_vectorfunction3d, ScalarToVectorFunction3D
+from raysect.core.math.function cimport Constant1D, Constant2D, Constant3D
+from cherab.core.math.function.vectorfunction2d cimport VectorFunction2D, ConstantVector2D, autowrap_vectorfunction2d, ScalarToVectorFunction2D
+from cherab.core.math.function.vectorfunction3d cimport VectorFunction3D, ConstantVector3D, autowrap_vectorfunction3d, ScalarToVectorFunction3D

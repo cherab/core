@@ -48,13 +48,38 @@ cdef class VectorFunction2D:
         return self.evaluate(x, y)
 
 
+cdef class ConstantVector2D(VectorFunction2D):
+    """Constant 2D real vector function.
+
+    Inherits from Function2D, implements `__call__(x, y)`.
+
+    .. code-block:: pycon
+
+       >>> from raysect.core.math import Vector3D
+       >>> from cherab.core.math import ConstantVector2D
+       >>>
+       >>> f2 = ConstantVector2D(Vector3D(0.5, 0.5, 0.5))
+       >>>
+       >>> f2(1, 1)
+       Vector3D(0.5, 0.5, 0.5)
+       >>> f2(-1, 7e6)
+       Vector3D(0.5, 0.5, 0.5)
+    """
+
+    def __init__(self, Vector3D value not None):
+        self.value = value
+
+    cdef Vector3D evaluate(self, double x, double y):
+        return self.value
+
+
 cdef class PythonVectorFunction2D(VectorFunction2D):
     """
     Wraps a python callable object with a VectorFunction2D object.
 
     This class allows a python object to interact with cython code that requires
     a VectorFunction3D object. The python object must implement __call__()
-    expecting three arguments and return a Vector object.
+    expecting two arguments and return a Vector3D object.
 
     This class is intended to be used to transparently wrap python objects that
     are passed via constructors or methods into cython optimised code. It is not
@@ -99,18 +124,18 @@ cdef VectorFunction2D autowrap_vectorfunction2d(object function):
     If this function is passed a valid VectorFunction2D object, then the
     VectorFunction3D object is simply returned without wrapping.
 
+    If this function is passed a Vector3D, a ConstantVector2D object is
+    returned.
+
     This convenience function is provided to simplify the handling of
     VectorFunction2D and python callable objects in constructors, functions and
     setters.
     """
-
     if isinstance(function, VectorFunction2D):
-
         return <VectorFunction2D> function
-
-    else:
-
-        return PythonVectorFunction2D(function)
+    if isinstance(function, Vector3D):
+        return ConstantVector2D(function)
+    return PythonVectorFunction2D(function)
 
 
 cdef class ScalarToVectorFunction2D(VectorFunction2D):

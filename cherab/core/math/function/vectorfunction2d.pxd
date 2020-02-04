@@ -25,6 +25,10 @@ cdef class VectorFunction2D:
     cdef Vector3D evaluate(self, double x, double y)
 
 
+cdef class ConstantVector2D(VectorFunction2D):
+    cdef Vector3D value
+
+
 cdef class PythonVectorFunction2D(VectorFunction2D):
 
     cdef public object function
