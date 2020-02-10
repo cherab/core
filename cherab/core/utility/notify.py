@@ -94,12 +94,13 @@ class Notifier:
 
                 # bound method
                 instance = reference[0]()
-                method = instance.__getattribute__(reference[1])
 
                 # does the object still exist
                 if instance is None:
                     dead_callbacks.append(reference)
                     continue
+
+                method = instance.__getattribute__(reference[1])
 
                 # call method
                 method()
