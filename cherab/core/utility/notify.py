@@ -92,14 +92,15 @@ class Notifier:
             # obtain callback from weak reference
             if isinstance(reference, tuple):
 
-                # bound method
                 instance = reference[0]()
-                method = instance.__getattribute__(reference[1])
 
                 # does the object still exist
                 if instance is None:
                     dead_callbacks.append(reference)
                     continue
+
+                # bound method
+                method = instance.__getattribute__(reference[1])
 
                 # call method
                 method()
