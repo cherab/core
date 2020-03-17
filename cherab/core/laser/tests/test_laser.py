@@ -62,12 +62,6 @@ class TestLaser(unittest.TestCase):
                                    " before connecting to plasma."):
             laser.plasma = self.plasma
 
-    def test_laser_geometry(self):
-        """
-
-        :return:
-        """
-
     def _build_laser(self):
 
         laser = Laser()
