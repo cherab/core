@@ -102,17 +102,10 @@ z_lower = eq.limiter_polygon[:, 1].min()
 z_upper = eq.limiter_polygon[:, 1].max()
 dr = r_outer - r_inner
 dz = z_upper - z_lower
-outer_wall = Cylinder(radius=3, height=3, transform=translate(0, 0, -1.5))
 first_wall = axisymmetric_mesh_from_polygon(eq.limiter_polygon, 20)
-vessel = Subtract(outer_wall, first_wall)
-# FIXME: cutting a hole in the wall for the port with a cylinder causes
-# sightlines to terminate on the cylinder, even though the end plate of the
-# cylinder is inside the hollow volume of the subtraction of the outer wall
-# and the first wall. For now, move the IRVB inside the first wall.
-# irvb_port = Cylinder(radius=0.2, height=1.5,
-#                      transform=bolometer_camera.transform * translate(0, 0, -0.5))
-# vessel = Subtract(vessel, irvb_port, name="Vessel")
-bolometer_camera.transform = translate(1.5, 1.8, 0) * rotate_basis(-YAXIS, ZAXIS)
+irvb_port = Cylinder(radius=0.2, height=1.5,
+                     transform=bolometer_camera.transform * translate(0, 0, -0.5))
+vessel = Subtract(first_wall, irvb_port, name="Vessel")
 vessel.name = "Vessel"
 vessel.material = AbsorbingSurface()
 vessel.parent = world
