@@ -20,6 +20,7 @@ from raysect.core.math.function cimport Function1D, autowrap_function1d
 from raysect.core.math.function cimport Function2D, autowrap_function2d
 from raysect.core.math.function cimport Function3D, autowrap_function3d
 from raysect.core.math.function cimport Constant1D, Constant2D, Constant3D
+from raysect.core.math.function cimport Discrete2DMesh, Interpolator2DMesh
 from raysect.core.math.function.vector3dfunction2d cimport Vector3DFunction2D as VectorFunction2D
 from raysect.core.math.function.vector3dfunction2d cimport ConstantVector2D
 from raysect.core.math.function.vector3dfunction2d cimport autowrap_vectorfunction2d

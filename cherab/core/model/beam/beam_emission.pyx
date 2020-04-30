@@ -21,9 +21,8 @@
 
 cimport cython
 from raysect.core cimport Point3D, Vector3D
-from raysect.core.math.function cimport autowrap_function1d, autowrap_function2d
-
 from cherab.core cimport Species, Plasma, Beam, Element, DistributionFunction, BeamEmissionPEC, Spectrum, AtomicData
+from cherab.core.math.function cimport autowrap_function1d, autowrap_function2d
 from cherab.core.atomic.elements import Isotope, hydrogen
 from cherab.core.model.lineshape cimport BeamEmissionMultiplet
 from cherab.core.utility.constants cimport RECIP_4_PI, ELEMENTARY_CHARGE, ATOMIC_MASS

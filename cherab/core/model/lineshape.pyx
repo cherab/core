@@ -21,11 +21,10 @@
 import numpy as np
 cimport numpy as np
 from libc.math cimport sqrt, erf, M_SQRT2, floor, ceil, fabs
-from raysect.core.math.function cimport autowrap_function1d, autowrap_function2d
 from raysect.optical.spectrum cimport new_spectrum
 
-
 from cherab.core cimport Plasma
+from cherab.core.math.function cimport autowrap_function1d, autowrap_function2d
 from cherab.core.utility.constants cimport ATOMIC_MASS, ELEMENTARY_CHARGE, SPEED_OF_LIGHT
 
 cimport cython
