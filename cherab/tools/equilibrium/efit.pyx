@@ -24,7 +24,7 @@ cimport cython
 from raysect.optical cimport Vector3D, Point2D, new_vector3d
 from cherab.core.math cimport Function1D, autowrap_function1d
 from cherab.core.math cimport Function2D, autowrap_function2d
-from cherab.core.math cimport VectorFunction2D, autowrap_vectorfunction2d
+from cherab.core.math cimport VectorFunction2D, autowrap_vectorfunction2d, ConstantVector2D
 from cherab.core.math cimport Interpolate1DCubic, Interpolate2DCubic
 from cherab.core.math cimport PolygonMask2D
 from cherab.core.math cimport IsoMapper2D, AxisymmetricMapper, VectorAxisymmetricMapper
@@ -128,7 +128,7 @@ cdef class EFITEquilibrium:
         self.b_field = MagneticField(self.psi_normalised, dpsi_dr, dpsi_dz, self._f_profile, b_vacuum_radius, b_vacuum_magnitude, self.inside_lcfs)
 
         # populate flux coordinate attributes
-        self.toroidal_vector = autowrap_vectorfunction2d(Vector3D(0, 1, 0))
+        self.toroidal_vector = ConstantVector2D(Vector3D(0, 1, 0))
         self.poloidal_vector = PoloidalFieldVector(self.b_field)
         self.surface_normal = FluxSurfaceNormal(self.b_field)
 
