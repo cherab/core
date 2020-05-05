@@ -79,10 +79,10 @@ slit = BolometerSlit(slit_id="Example slit", centre_point=ORIGIN,
                      parent=bolometer_camera)
 foil_transform = translate(0, 0, -SLIT_SENSOR_SEPARATION)
 foil = BolometerIRVB(
-    detector_id="IRVB foil", centre_point=ORIGIN.transform(foil_transform),
+    name="IRVB foil", centre_point=ORIGIN.transform(foil_transform),
     basis_x=XAXIS.transform(foil_transform), basis_y=YAXIS.transform(foil_transform),
     width=FOIL_WIDTH, pixels=PIXELS, slit=slit, parent=bolometer_camera,
-    units="Power", accumulate=False, curvature_radius=FOIL_CORNER_CURVATURE)
+    units="power", accumulate=False, curvature_radius=FOIL_CORNER_CURVATURE)
 bolometer_camera.add_foil_detector(foil)
 
 # The camera is positioned at (x, y, z) = (1.5, 2.5, 0)m and looking along the -x axis.
@@ -111,16 +111,16 @@ vessel.material = AbsorbingSurface()
 vessel.parent = world
 
 plt.ion()
-print("Calculating tangential sightlines...")
+print("Calculating sightlines...")
+sightlines = irvb_foil.trace_sightlines()
 # Row (nrows // 2) has a purely tangential line of sight.
-sightlines = irvb_foil.trace_sightlines(columns="all", rows=20)
+tangential_sightlines = sightlines[:, 20]
 fig, ax = plt.subplots()
 ax.add_patch(Circle((0, 0), radius=r_inner, edgecolor='black', facecolor='none'))
 ax.add_patch(Circle((0, 0), radius=r_outer, edgecolor='black', facecolor='none'))
-for sightline_column in sightlines:
-    for sightline in sightline_column:
-        los_start, los_end, _ = sightline
-        ax.plot([los_start.x, los_end.x], [los_start.y, los_end.y], 'k', linewidth=0.2)
+for sightline in tangential_sightlines:
+    los_start, los_end, _ = sightline
+    ax.plot([los_start.x, los_end.x], [los_start.y, los_end.y], 'k', linewidth=0.2)
 ax.set_xlabel("x / m")
 ax.set_ylabel("y / m")
 ax.set_title("Pixel lines of sight: plan view")
@@ -130,19 +130,18 @@ plt.pause(0.1)
 print("Calculating poloidal sightlines...")
 # Column -1 is the column closest to a poloidal view.
 # Column (ncols // 2) nicely demonstrates some poloidal + tangential lines of sight.
-sightlines = irvb_foil.trace_sightlines(columns=15, rows="all")
+poloidal_sightlines = sightlines[15, :]
 fig, ax = plt.subplots()
 ax.add_patch(Polygon(eq.limiter_polygon, closed=True, edgecolor='k', facecolor='none'))
-for sightline_column in sightlines:
-    for sightline in sightline_column:
-        los_start, los_end, _ = sightline
-        los_vector = los_start.vector_to(los_end).normalise()
-        tmax = los_start.distance_to(los_end)
-        los_xs = los_start.x + np.linspace(0, tmax, 100) * los_vector.x
-        los_ys = los_start.y + np.linspace(0, tmax, 100) * los_vector.y
-        los_zs = los_start.z + np.linspace(0, tmax, 100) * los_vector.z
-        los_rs = np.hypot(los_xs, los_ys)
-        ax.plot(los_rs, los_zs, 'k', linewidth=0.2)
+for sightline in poloidal_sightlines:
+    los_start, los_end, _ = sightline
+    los_vector = los_start.vector_to(los_end).normalise()
+    tmax = los_start.distance_to(los_end)
+    los_xs = los_start.x + np.linspace(0, tmax, 100) * los_vector.x
+    los_ys = los_start.y + np.linspace(0, tmax, 100) * los_vector.y
+    los_zs = los_start.z + np.linspace(0, tmax, 100) * los_vector.z
+    los_rs = np.hypot(los_xs, los_ys)
+    ax.plot(los_rs, los_zs, 'k', linewidth=0.2)
 ax.set_xlabel("R / m")
 ax.set_ylabel("z / m")
 ax.set_title("Pixel lines of sight: poloidal view")
@@ -192,7 +191,7 @@ pixel = irvb_foil.pixels_as_foils[0][0]
 pixel_area = pixel.x_width * pixel.y_width
 radiance_scale_factor = etendue / (2 * np.pi * pixel_area)
 
-if irvb_foil.units == "Power":
+if irvb_foil.units.lower() == "power":
     brightness = irvb_foil.pipelines[0].frame.mean / etendue * 4 * np.pi
 else:
     brightness = irvb_foil.pipelines[0].frame.mean * radiance_scale_factor * 4 * np.pi
@@ -234,7 +233,7 @@ emitter = Cylinder(radius=r_outer, height=dz, transform=translate(0, 0, z_lower)
 
 irvb_foil.observe()
 
-if irvb_foil.units == "Power":
+if irvb_foil.units.lower() == "power":
     brightness = irvb_foil.pipelines[0].frame.mean / etendue * 4 * np.pi
 else:
     brightness = irvb_foil.pipelines[0].frame.mean * radiance_scale_factor * 4 * np.pi
@@ -276,7 +275,7 @@ emitter = Cylinder(radius=r_outer, height=dz, transform=translate(0, 0, z_lower)
 
 irvb_foil.observe()
 
-if irvb_foil.units == "Power":
+if irvb_foil.units.lower() == "power":
     brightness = irvb_foil.pipelines[0].frame.mean / etendue * 4 * np.pi
 else:
     brightness = irvb_foil.pipelines[0].frame.mean * radiance_scale_factor * 4 * np.pi

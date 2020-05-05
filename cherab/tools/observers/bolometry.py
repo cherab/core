@@ -17,6 +17,7 @@
 # See the Licence for the specific language governing permissions and limitations
 # under the Licence.
 
+from enum import Enum
 import functools
 import numpy as np
 
@@ -34,6 +35,11 @@ from cherab.tools.inversions.voxels import VoxelCollection
 
 
 R_2_PI = 1 / (2 * np.pi)
+
+
+class _Units(Enum):
+    POWER = "power"
+    RADIANCE = "radiance"
 
 
 class BolometerCamera(Node):
@@ -702,7 +708,7 @@ class BolometerIRVB(TargettedCCDArray):
     Can be configured to sample a single ray per pixel, or fan of rays
     oriented along the observer's z axis.
 
-    :param str detector_id: The name for this detector.
+    :param str name: The name for this detector.
     :param Point3D centre_point: The centre point of the detector.
     :param Vector3D basis_x: The x basis vector for the detector.
     :param float width: The width of the detector along the x basis vector.
@@ -712,7 +718,7 @@ class BolometerIRVB(TargettedCCDArray):
     :param Node parent: The parent scenegraph node to which this detector belongs.
       Typically a BolometerCamera() or an optical World() object.
     :param bool units: The units in which to perform observations, can
-      be ['Power', 'Radiance'], defaults to 'Power'.
+      be ['power', 'radiance'], defaults to 'power'.
     :param bool accumulate: Whether this observer should accumulate samples
       with multiple calls to observe. Defaults to False.
     :param float curvature_radius: Detectors in real bolometer cameras may
@@ -728,7 +734,7 @@ class BolometerIRVB(TargettedCCDArray):
       The array is indexed by (column, row).
     :ivar Vector3D sightline_vectors: A 2D array of vectors that point from the centre
       of each pixel on the foil detector to the centre of the slit. Defines the
-      effective sightline vectors of the pixels of the detector. The list is indexed by
+      effective sightline vectors of the pixels of the detector. The array is indexed by
       (column, row).
 
     .. code-block:: pycon
@@ -751,33 +757,31 @@ class BolometerIRVB(TargettedCCDArray):
        >>> detector = BolometerIRVB("ch#1", centre_point, basis_x, basis_y, width, pixels, slit, parent=camera)
     """
 
-    def __init__(self, detector_id, centre_point, basis_x, basis_y, width, pixels, slit,
-                 parent=None, units="Power", accumulate=False, curvature_radius=0):
+    _PIPELINES = {_Units.POWER: PowerPipeline2D,
+                  _Units.RADIANCE: RadiancePipeline2D}
+    _SPECTRAL_PIPELINES = {_Units.POWER: SpectralPowerPipeline2D,
+                           _Units.RADIANCE: SpectralRadiancePipeline2D}
+
+    def __init__(self, name, centre_point, basis_x, basis_y, width, pixels, slit,
+                 parent=None, units="power", accumulate=False, curvature_radius=0):
 
         # perform validation of input parameters
-
-        if not isinstance(width, (float, int)):
-            raise TypeError("width argument for BolometerIRVB must be of type float/int.")
+        width = float(width)
         if width < 0:
             raise ValueError("width argument for BolometerIRVB must be greater than zero.")
 
         if not isinstance(slit, BolometerSlit):
             raise TypeError("slit argument for BolometerIRVB must be of type BolometerSlit.")
 
-        if not isinstance(centre_point, Point3D):
-            raise TypeError("centre_point argument for BolometerIRVB must be of type Point3D.")
+        centre_point = Point3D(*centre_point)
 
-        if not isinstance(curvature_radius, (float, int)):
-            raise TypeError("curvature_radius argument for BolometerIRVB "
-                            "must be of type float/int.")
+        curvature_radius = float(curvature_radius)
         if curvature_radius < 0:
             raise ValueError("curvature_radius argument for BolometerIRVB "
                              "must not be negative.")
 
-        if not isinstance(basis_x, Vector3D):
-            raise TypeError("The basis vectors of BolometerIRVB must be of type Vector3D.")
-        if not isinstance(basis_y, Vector3D):
-            raise TypeError("The basis vectors of BolometerIRVB must be of type Vector3D.")
+        basis_x = Vector3D(*basis_x)
+        basis_y = Vector3D(*basis_y)
 
         basis_x = basis_x.normalise()
         basis_y = basis_y.normalise()
@@ -791,8 +795,8 @@ class BolometerIRVB(TargettedCCDArray):
         rotation = rotate_basis(normal_vec, basis_y)
 
         super().__init__([slit.target], pixels=pixels, width=width,
-                         targetted_path_prob=1.0, parent=parent, pipelines=[],
-                         transform=translation * rotation, name=detector_id)
+                         targetted_path_prob=0.99, parent=parent, pipelines=[],
+                         transform=translation * rotation, name=name)
         self.pixel_samples = 1000
         self.spectral_bins = 1
         self.quiet = True
@@ -828,7 +832,7 @@ class BolometerIRVB(TargettedCCDArray):
                     detector_id="IRVB pixel ({},{})".format(x + 1, y + 1),
                     centre_point=pixel_centre, basis_x=XAXIS, dx=pixel_width,
                     basis_y=YAXIS, dy=pixel_height, slit=self._slit,
-                    units=self.units, accumulate=False, parent=self
+                    units=self._units.value.capitalize(), accumulate=False, parent=self
                 )
                 pixel_column.append(pixel)
             pixels.append(pixel_column)
@@ -872,17 +876,21 @@ class BolometerIRVB(TargettedCCDArray):
 
     @property
     def units(self):
-        return self._units
+        return self._units.value
 
     @units.setter
     def units(self, units):
-        if units == "Power":
-            pipeline = PowerPipeline2D(accumulate=self.accumulate)
-        elif units == "Radiance":
-            pipeline = RadiancePipeline2D(accumulate=self.accumulate)
+        if units.lower() == _Units.POWER.value:
+            self._units = _Units.POWER
+        elif units.lower() == _Units.RADIANCE.value:
+            self._units = _Units.RADIANCE
         else:
-            raise ValueError("The units property of BolometerFoil must be one of 'Power' or 'Radiance'.")
-        self._units = units
+            raise ValueError(
+                "The units property of BolometerIRVB must be one of {}"
+                .format([member.value for member in _Units.__members__])
+            )
+        pipeline_class = self._PIPELINES[self._units]
+        pipeline = pipeline_class(accumulate=self.accumulate)
         self.pipelines = [pipeline]
 
     @property
@@ -902,51 +910,25 @@ class BolometerIRVB(TargettedCCDArray):
 
         :return: A 2D array of Sightline objects.
         """
-
-        if self.units == "Power":
-            pipeline = PowerPipeline2D
-        else:
-            pipeline = RadiancePipeline2D
-
-        sightlines = []
-        for pixel_column in self.pixels_as_foils:
-            sightline_column = []
-            for pixel in pixel_column:
-                los_observer = SightLine(pipelines=[pipeline(accumulate=False)],
-                                         pixel_samples=1, quiet=True,
-                                         parent=self, name=pixel.name + "Sightline")
-                los_observer.render_engine = self.render_engine
-                los_observer.spectral_bins = self.spectral_bins
-                los_observer.min_wavelength = self.min_wavelength
-                los_observer.max_wavelength = self.max_wavelength
-                sightline_column.append(los_observer)
-            sightlines.append(sightline_column)
-
+        pixels = self.pixels_as_foils
+        sightlines = [[pixel.as_sightline() for pixel in pixel_column] for pixel_column in pixels]
         return np.asarray(sightlines, dtype='object')
 
-    def trace_sightlines(self, rows="all", columns="all"):
+    def trace_sightlines(self):
         """
-        Traces the central sightlines through each pixel in the detector to see where the sightline terminates.
+        Trace the central sightlines through each pixel in the detector
+        to see where the sightline terminates.
 
         Raises a RuntimeError exception if no intersections were found.
-
-        :param rows: which pixel rows to trace. Can be an integer, a
-          list of integers or "all".
-        :param columns: which pixel columns to trace. Can be an
-          integer, a list of integers or "all".
 
         :return: A 2D array of tuples containing the origin point, hit
           point and terminating surface primitive for each pixel.
         """
-        if rows == "all":
-            rows = slice(None)
-        if columns == "all":
-            columns = slice(None)
-        pixels = np.atleast_2d(self.pixels_as_foils[columns, rows])
+        pixels = self.pixels_as_foils
         traces = [[pixel.trace_sightline() for pixel in pixel_column] for pixel_column in pixels]
         return np.asarray(traces, dtype='object')
 
-    def calculate_sensitivity(self, voxel_collection, ray_count=10000):
+    def calculate_sensitivity(self, voxel_collection, ray_count=None):
         r"""
         Calculates a sensitivity vector for this detector on the specified voxel collection.
 
@@ -956,9 +938,11 @@ class BolometerIRVB(TargettedCCDArray):
         :param VoxelCollection voxel_collection: The voxel collection on which to calculate
           the sensitivities.
         :param int ray_count: The number of rays to use in the calculation. This should be
-          at least >= 10000 for decent statistics.
+          at least >= 10000 for decent statistics. Default is 10000.
         :return: A 3D array of sensitivities (ncol, nrow, nvoxels)
         """
+        ray_count = ray_count or 10000
+
         # This method exploits ToroidalVoxelCollection.set_active("all"), which
         # makes each voxel emit a different wavelength of light. By observing
         # the voxel collection with a spectral pipeline we can thus distinguish
@@ -966,12 +950,8 @@ class BolometerIRVB(TargettedCCDArray):
         if not isinstance(voxel_collection, VoxelCollection):
             raise TypeError("voxel_collection must be of type VoxelCollection")
 
-        if self.units == "Power":
-            pipeline = SpectralPowerPipeline2D(display_progress=False)
-        elif self.units == "Radiance":
-            pipeline = SpectralRadiancePipeline2D(display_progress=False)
-        else:
-            raise ValueError("Sensitivity units can only be of type 'Power' or 'Radiance'.")
+        pipeline_class = self._SPECTRAL_PIPELINES[self._units]
+        pipeline = pipeline_class(display_progress=False)
 
         voxel_collection.set_active("all")
 
@@ -997,7 +977,7 @@ class BolometerIRVB(TargettedCCDArray):
 
         return pipeline.frame.mean
 
-    def calculate_etendue(self, ray_count=10000, batches=10, max_distance=1e999):
+    def calculate_etendue(self, ray_count=None, batches=None, max_distance=None):
         """
         Calculates the etendue of each pixel in this detector.
 
@@ -1006,16 +986,19 @@ class BolometerIRVB(TargettedCCDArray):
         and its aperture structures should be the only primitives present in the scene. If any
         other primitives are present, the results may be misleading.
 
-        :param int ray_count: The number of rays used per batch.
+        :param int ray_count: The number of rays used per batch (default 10000).
         :param int batches: The number of batches used to estimate the error on the etendue
-          calculation.
+          calculation. Default is 10.
         :param float max_distance: The maximum distance from the detector to consider intersections.
             If a ray makes it further than this, it is assumed to have passed through the aperture,
             regardless of what it hits. Use this if there are other primitives present in the scene
-            which do not form the aperture.q
+            which do not form the aperture. Default is infinity (no max distance).
         :return: a tuple (etendue, etendue_error), each of which is a 2D
           array of size (ncol, nrow)
         """
+        ray_count = ray_count or 10000
+        batches = batches or 10
+        max_distance = max_distance or 1e999
         # Calculate the etendue of each pixel as a separate task
         nx, ny = self.pixels
         pixels_flattened = self.pixels_as_foils.ravel()
