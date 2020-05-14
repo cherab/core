@@ -33,9 +33,9 @@ from cherab.core.math import Constant3D, ConstantVector3D
 from cherab.core.atomic import elements, Line
 from cherab.openadas import OpenADAS
 from cherab.core.model import SingleRayAttenuator, BeamCXLine
-from gaussian_volume import GaussianVolume
+from cherab.tools.plasmas import GaussianVolume
 
-integration_step = 0.01
+integration_step = 0.1
 
 # setup scenegraph
 world = World()
@@ -83,7 +83,7 @@ from cherab.core.model import ExcitationLine, RecombinationLine
 plasma.geometry = Sphere(sigma * 5.0)
 plasma.geometry_transform = None
 plasma.integrator.step = integration_step
-plasma.integrator.min_samples = 4
+plasma.integrator.min_samples = 5
 plasma.atomic_data = adas
 
 # Setup elements.deuterium lines
@@ -148,7 +148,7 @@ beam.models = [
     BeamCXLine(Line(elements.neon, 9, (12, 11))),
 ]
 beam.integrator.step = integration_step
-beam.integrator.min_samples = 10
+beam.integrator.min_samples = 5
 
 beam = Beam(parent=world, transform=translate(1.0, 0.0, 0) * rotate(90, 0, 0))
 beam.plasma = plasma
@@ -171,7 +171,7 @@ beam.models = [
     BeamCXLine(Line(elements.neon, 9, (12, 11))),
 ]
 beam.integrator.step = integration_step
-beam.integrator.min_samples = 10
+beam.integrator.min_samples = 5
 
 # LENS ------------------------------------------------------------------------
 
