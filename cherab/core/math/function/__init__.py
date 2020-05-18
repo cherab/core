@@ -16,12 +16,12 @@
 # See the Licence for the specific language governing permissions and limitations
 # under the Licence.
 
-from raysect.core.math.function import Function1D
-from raysect.core.math.function import Function2D
-from raysect.core.math.function import Function3D
-from raysect.core.math.function import Constant1D, Constant2D, Constant3D
-from raysect.core.math.function import Discrete2DMesh, Interpolator2DMesh
-from raysect.core.math.function.vector3dfunction2d import Vector3DFunction2D as VectorFunction2D
-from raysect.core.math.function.vector3dfunction2d import ConstantVector2D
-from raysect.core.math.function.vector3dfunction2d import FloatToVector3DFunction2D as ScalarToVectorFunction2D
-from .vectorfunction3d import VectorFunction3D, ConstantVector3D, ScalarToVectorFunction3D
+from raysect.core.math.function.float import Function1D, Function2D, Function3D
+from raysect.core.math.function.float import Constant1D, Constant2D, Constant3D
+from raysect.core.math.function.float import Discrete2DMesh, Interpolator2DMesh
+from raysect.core.math.function.vector3d import Function2D as VectorFunction2D
+from raysect.core.math.function.vector3d import Constant2D as ConstantVector2D
+from raysect.core.math.function.vector3d import FloatToVector3DFunction2D as ScalarToVectorFunction2D
+from raysect.core.math.function.vector3d import Function3D as VectorFunction3D
+from raysect.core.math.function.vector3d import Constant3D as ConstantVector3D
+from raysect.core.math.function.vector3d import FloatToVector3DFunction3D as ScalarToVectorFunction3D

@@ -16,13 +16,16 @@
 # See the Licence for the specific language governing permissions and limitations
 # under the Licence.
 
-from raysect.core.math.function cimport Function1D, autowrap_function1d
-from raysect.core.math.function cimport Function2D, autowrap_function2d
-from raysect.core.math.function cimport Function3D, autowrap_function3d
-from raysect.core.math.function cimport Constant1D, Constant2D, Constant3D
-from raysect.core.math.function cimport Discrete2DMesh, Interpolator2DMesh
-from raysect.core.math.function.vector3dfunction2d cimport Vector3DFunction2D as VectorFunction2D
-from raysect.core.math.function.vector3dfunction2d cimport ConstantVector2D
-from raysect.core.math.function.vector3dfunction2d cimport autowrap_vectorfunction2d
-from raysect.core.math.function.vector3dfunction2d cimport FloatToVector3DFunction2D as ScalarToVectorFunction2D
-from cherab.core.math.function.vectorfunction3d cimport VectorFunction3D, ConstantVector3D, autowrap_vectorfunction3d, ScalarToVectorFunction3D
+from raysect.core.math.function.float cimport Function1D, autowrap_function1d
+from raysect.core.math.function.float cimport Function2D, autowrap_function2d
+from raysect.core.math.function.float cimport Function3D, autowrap_function3d
+from raysect.core.math.function.float cimport Constant1D, Constant2D, Constant3D
+from raysect.core.math.function.float cimport Discrete2DMesh, Interpolator2DMesh
+from raysect.core.math.function.vector3d cimport Function2D as VectorFunction2D
+from raysect.core.math.function.vector3d cimport Constant2D as ConstantVector2D
+from raysect.core.math.function.vector3d cimport autowrap_function2d as autowrap_vectorfunction2d
+from raysect.core.math.function.vector3d cimport FloatToVector3DFunction2D as ScalarToVectorFunction2D
+from raysect.core.math.function.vector3d cimport Function3D as VectorFunction3D
+from raysect.core.math.function.vector3d cimport Constant3D as ConstantVector3D
+from raysect.core.math.function.vector3d cimport autowrap_function3d as autowrap_vectorfunction3d
+from raysect.core.math.function.vector3d cimport FloatToVector3DFunction3D as ScalarToVectorFunction3D
