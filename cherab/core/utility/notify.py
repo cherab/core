@@ -70,14 +70,14 @@ class Notifier:
 
     def remove(self, callback):
 
-        if isinstance(callback, MethodType):
+        if isinstance(callback, MethodType, BuiltinMethodType):
             self._remove_method(callback)
         else:
             self._remove_callable(callback)
 
     def is_present(self, callback):
 
-        if isinstance(callback, MethodType):
+        if isinstance(callback, MethodType, BuiltinMethodType):
             return self._is_present_method(callback)
         else:
             return self._is_present_callable(callback)
