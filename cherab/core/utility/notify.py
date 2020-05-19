@@ -122,7 +122,9 @@ class Notifier:
 
         for reference in self._callbacks_refs:
             if isinstance(reference, tuple):
-                if reference[0]() == callback.__self__ and reference[1] == callback.__name__:
+                instance = reference[0]()
+                method = reference[1]                
+                if callback.__self__ == instance and callback.__name__ == method:
                     self._purge([reference])
                     break
 
@@ -145,7 +147,7 @@ class Notifier:
             if isinstance(reference, tuple):
                 instance = reference[0]()
                 method = reference[1]
-                if callback.__self__ is instance and callback.__func__ is method:
+                if callback.__self__ == instance and callback.__name__ == method:
                     return True
 
         return False
