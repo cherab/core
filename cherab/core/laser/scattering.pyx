@@ -1,28 +1,55 @@
 from raysect.optical cimport Vector3D, Point3D
 from raysect.optical.spectrum cimport Spectrum
 
-from cherab.core.utility.constants cimport DEGREES_TO_RADIANS, ATOMIC_MASS, RECIP_4_PI
-from cherab.core.utility.constants cimport PLANCK_CONSTANT, SPEED_OF_LIGHT, ELECTRON_CLASSICAL_RADIUS, ELECTRON_REST_MASS, ELEMENTARY_CHARGE
+from cherab.core cimport Plasma
 from cherab.core.laser.node cimport Laser
 from cherab.core.laser.models.model_base cimport LaserModel
 from cherab.core.laser.models.laserspectrum_base cimport LaserSpectrum
-from cherab.core cimport Plasma
+from cherab.core.utility.constants cimport DEGREES_TO_RADIANS, ATOMIC_MASS, RECIP_4_PI
+from cherab.core.utility.constants cimport PLANCK_CONSTANT, SPEED_OF_LIGHT, ELECTRON_CLASSICAL_RADIUS, ELECTRON_REST_MASS, ELEMENTARY_CHARGE
 from cherab.core.utility import Notifier
 
 from libc.math cimport exp, sqrt, cos, M_PI
 cimport cython
 
 
-cdef class ScatteringModel:
+cdef class LaserEmissionModel:
 
-    cpdef Spectrum emission(self, double ne, double te, double laser_power_density,
-                            double laser_wavelength, Vector3D direction_observation,
-                            Vector3D pointing_vector, Vector3D polarization_vector, Spectrum spectrum):
+    def __init__(self, Laser laser):
+
+        self.laser = laser
+
+    cpdef Spectrum emission(self, Point3D point_plasma, Vector3D observation_plasma, Point3D point_laser, Vector3D observation_laser,
+                            Spectrum spectrum):
 
         raise NotImplementedError('Virtual method must be implemented in a sub-class.')
 
+    @property
+    def laser_model(self):
+        return self._laser_model
 
-cdef class SeldenMatobaThomsonSpectrum(ScatteringModel):
+    @laser_model.setter
+    def laser_model(self, LaserModel value):
+        self._laser_model = value
+
+    @property
+    def plasma(self):
+        return self._plasma
+
+    @plasma.setter
+    def plasma(self, Plasma value):
+        self._plasma = value
+
+    @property
+    def laser_spectrum(self):
+        return self._laser_spectrum
+
+    @laser_spectrum.setter
+    def laser_spectrum(self, LaserSpectrum value):
+
+        self._laser_spectrum = value
+
+cdef class SeldenMatobaThomsonSpectrum(LaserEmissionModel):
 
     def __init__(self):
         # from: Prunty, S. L. "A primer on the theory of Thomson scattering for high-temperature fusion plasmas."
@@ -44,26 +71,48 @@ cdef class SeldenMatobaThomsonSpectrum(ScatteringModel):
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    cpdef Spectrum emission(self, double ne, double te, double laser_power_density,
-                            double laser_wavelength, Vector3D direction_observation,
-                            Vector3D pointing_vector, Vector3D polarization_vector, Spectrum spectrum):
+    cpdef Spectrum emission(self, Point3D point_plasma, Vector3D observation_plasma, Point3D point_laser,
+                            Vector3D observation_laser, Spectrum spectrum):
         cdef:
             double angle_scattering, angle_pointing, angle_polarization
+            double te, ne, laser_power_density
+            double[::1] laser_wavelength_mv, laser_spectrum_power_mv
+            int bins
+            Vector3D pointing_vector
+            Py_ssize_t index
+
+        # get electron parameters for the plasma point
+        te = self._plasma.get_electron_distribution().effective_temperature(point_plasma.x, point_plasma.y, point_plasma.z)
+        ne = self._plasma.get_electron_distribution().density(point_plasma.x, point_plasma.y, point_plasma.z)
+        
+        #terminate early if electron density is 0
+        if ne == 0:
+            return spectrum
+        #get laser volumetric power
+        laser_volumetric_power = self._laser_model.get_power_density(point_laser.x, point_laser.y, point_laser.z)
+
+        #terminate early if laser power is 0
+        if laser_volumetric_power == 0:
+            return spectrum
+
+        pointing_vector = self._laser_model.get_pointing(point_laser.x, point_laser.y, point_laser.z)
 
         #angle between observation and pointing vector
-        angle_pointing = direction_observation.angle(pointing_vector)  # angle between observation and pointing vector of laser
+        angle_pointing = observation_laser.angle(pointing_vector)  # angle between observation and pointing vector of laser
 
-        angle_scattering = (180 - angle_pointing)  # scattering direction is the opposite to obervation direction
+        angle_scattering = (180. - angle_pointing)  # scattering direction is the opposite to obervation direction
 
         angle_polarization = 90.
-        # todo: uncomment if influence of polarization angle is verified
-        # Polarization vector (Vector of electric field of the laser) and angle between observation and polarisation
-        # polarization_vector = self._laser_model.get_polarization(position_laser.x, position_laser.y, position_laser.z)
-        # angle_polarization = direction_observation.angle(pointing_vector)
 
-        # no scattering contribution cases
-        spectrum = self._add_spectral_contribution(ne, te, laser_power_density, angle_scattering,
-                                                   angle_polarization, laser_wavelength, spectrum)
+        laser_wavelength_mv = self._laser_spectrum._wavelengths_mv
+        laser_spectrum_power_mv = self._laser_spectrum._power  # power in spectral bins (PSD * delta wavelength)
+        bins = self._laser_spectrum.bins
+
+        for index in range(bins):
+            laser_power_density = laser_spectrum_power_mv[index] * laser_volumetric_power 
+            if laser_power_density > 0:
+                spectrum = self._add_spectral_contribution(ne, te, laser_power_density, angle_scattering,
+                                                           angle_polarization, laser_wavelength_mv[index], spectrum)
 
         return spectrum
 
@@ -83,11 +132,6 @@ cdef class SeldenMatobaThomsonSpectrum(ScatteringModel):
         # scattering angle of the photon = pi - observation_angle
         cos_anglescat = cos(angle_scattering * DEGREES_TO_RADIANS)
 
-        # todo: verify that angle between observation and polarization influences only cross section of
-        # scattering by sin(angle)**2 and does not influence spectrum shape. If yes, calculate sin2_polarisation and
-        # multiply scattered spectral power density with it
-        # sin2_polarisation = sin(angle_polarization * DEGREES_TO_RADIANS) ** 2 #sin2 of observation to polarisation
-
         nbins = spectrum.bins
         min_wavelength = spectrum.min_wavelength
         delta_wavelength = spectrum.delta_wavelength
@@ -102,7 +146,7 @@ cdef class SeldenMatobaThomsonSpectrum(ScatteringModel):
         return spectrum
 
     cpdef Spectrum calculate_spectrum(self, double ne, double te, double laser_power_density, double laser_wavelength,
-                                      Vector3D direction_observation, Vector3D pointing_vector, Vector3D polarization_vector, Spectrum spectrum):
+                                      double observation_angle, Spectrum spectrum):
 
         # check for nonzero laser power, ne, te, wavelength
         if not ne > 0 or not te > 0 or not laser_power_density > 0:
@@ -110,5 +154,9 @@ cdef class SeldenMatobaThomsonSpectrum(ScatteringModel):
         if not laser_wavelength >= 0:
             raise ValueError("laser wavelength has to be larger than 0")
 
-        return self.emission(ne, te, laser_power_density, laser_wavelength, direction_observation,
-                             pointing_vector, polarization_vector, spectrum)
+        angle_scattering = (180. - observation_angle)  # scattering direction is the opposite to obervation direction
+        angle_polarisation = 90.
+
+        return self._add_spectral_contribution(ne, te, laser_power_density, angle_scattering, angle_polarisation, laser_wavelength, spectrum)
+
+    

@@ -10,7 +10,7 @@ from cherab.core import Plasma, Maxwellian
 from cherab.core.laser.node import Laser
 from cherab.core.laser.models.laserspectrum import ConstantSpectrum, GaussianSpectrum
 from cherab.core.laser.scattering import SeldenMatobaThomsonSpectrum
-from cherab.core.laser.models.model import UniformPowerDensity, ConstantAxisymmetricGaussian, ConstantBivariateGaussian
+from cherab.core.laser.models.model import UniformPowerDensity, ConstantBivariateGaussian
 from cherab.core.laser.models.model import TrivariateGaussian, GaussianBeamAxisymmetric
 from cherab.core.laser.models.laserspectrum_base import LaserSpectrum
 
@@ -22,152 +22,98 @@ from scipy.integrate import nquad
 
 
 class TestLaser(unittest.TestCase):
-    world = World()
-
-    plasma = build_slab_plasma()
-    plasma.parent = world
-
-    spectrum = ConstantSpectrum(1059.5, 1060.5, 5)
-    scattering = SeldenMatobaThomsonSpectrum()
-    model = UniformPowerDensity()
-
-    laser_radius = 3e-3
-    laser_length = 1
 
     def test_laser_init(self):
         """
         Test correct initialisation of a laser instance.
         """
-        laser = Laser()
-        laser.parent = self.world
 
-        self._connect_plasma(laser)
+        lengths = [0.005, 1]
+        radii = [0.01]
+        importance = 0.1
 
-        laser.laser_spectrum = self.spectrum
+        for length in lengths:
+            for radius in radii:
+                world = World()
+                laser = Laser(length=length, radius=radius, parent=world, importance=importance)
 
-        laser.scattering_model = self.scattering
-        self._connect_plasma(laser)
+        with self.assertRaises(ValueError, msg="Laser has to be connected to laser spectrum and laser models and plasma before scattering model."):
+            laser.models = [SeldenMatobaThomsonSpectrum()]
 
-        laser.laser_model = self.model
+        laser.laser_model = UniformPowerDensity()
+        laser.plasma = Plasma(parent=world)
+        laser.laser_spectrum = ConstantSpectrum(min_wavelength=1059, max_wavelength=1061, bins=10)
+        laser.models = [SeldenMatobaThomsonSpectrum()]
 
-        laser.plasma = self.plasma
+    def test_laser_shape_change(self):
 
-    def _connect_plasma(self, laser):
-        """
-        Laser can be connected to plasma only when connected to laser, scattering and spectrum models
-        """
+        world = World()
+        laser = Laser(length=0.5, radius=1., parent=world)
 
-        with self.assertRaises(ValueError,
-                               msg="Laser has to be connected to spectrum, scattering and laser models"
-                                   " before connecting to plasma."):
-            laser.plasma = self.plasma
+        laser.laser_model = UniformPowerDensity()
+        laser.laser_spectrum = ConstantSpectrum(min_wavelength=1059, max_wavelength=1061, bins=10)
+        laser.plasma = Plasma(parent=world)
+        laser.models = [SeldenMatobaThomsonSpectrum()]
 
-    def _build_laser(self):
+        self.assertEqual(len(laser.get_geometry()), 1, msg="Wrong nuber of laser segments, expected 1.")
 
-        laser = Laser()
-        laser.parent = self.world
+        laser.length = 1.05
+        laser.radius = 0.1
 
-        laser.radius = self.laser_radius
-        laser.length = self.laser_length
+        self.assertEqual(len(laser.get_geometry()), 5, msg="Wrong nuber of laser segments, expected 10.")
 
-        laser.laser_spectrum = self.spectrum
-        laser.scattering_model = self.scattering
-        laser.laser_model = self.model
-        laser.plasma = self.plasma
+    def test_reference_change(self):
 
-        return laser
+        world = World()
 
-    def test_laser_segment_position(self):
-        laser = self._build_laser()
+        laser_model = UniformPowerDensity()
+        laser_spectrum = ConstantSpectrum(min_wavelength=1059, max_wavelength=1061, bins=10)
+        plasma = Plasma(parent=world)
+        models = [SeldenMatobaThomsonSpectrum()]
 
-        geometry = laser.get_geometry()
+        laser_model2 = UniformPowerDensity()
+        laser_spectrum2 = ConstantSpectrum(min_wavelength=1059, max_wavelength=1061, bins=10)
+        plasma2 = Plasma(parent=world)
+        models2 = [SeldenMatobaThomsonSpectrum()]
 
-        # segments should have length same as 2 * radius. Test the segment boundaries
-        # precalculate boundaries
-        z_lower = np.zeros((len(geometry)))
-        z_upper = np.zeros((len(geometry)))
+        laser = Laser(length=1, radius=0.1, parent=world)
 
-        for index in range(len(geometry)):
-            z_lower[index] = 2 * self.laser_radius * index
-            z_upper[index] = 2 * self.laser_radius * (index + 1)
+        laser.laser_model
+        laser.laser_spectrum = laser_spectrum
+        laser.plasma = plasma
+        laser.laser_model = laser_model
+        laser.models = models
 
-        z_upper[-1] = laser.length
-        x_lower = -1 * self.laser_radius
-        x_upper = self.laser_radius
-        y_lower = x_lower
-        y_upper = x_upper
+        for mod in list(laser.models):
+            self.assertIs(mod.laser_model, laser_model, msg="laser_model reference in emission model"
+                          "is not set correctly.")
+            self.assertIs(mod.plasma, plasma, msg="plasma reference in emission model"
+                                                            "is not set correctly.")
+            self.assertIs(mod.laser_spectrum, laser_spectrum, msg="laser_spectrum reference in emission model"
+                                                            "is not set correctly.")
 
-        transform = laser.to_root()
-        for index, segment in enumerate(geometry):
-            bounding_box = segment.bounding_box()
+        laser.laser_model
+        laser.laser_spectrum = laser_spectrum2
+        laser.plasma = plasma2
+        laser.laser_model = laser_model2
 
-            lower_boundary = bounding_box.lower.transform(transform)
-            upper_boundary = bounding_box.upper.transform(transform)
+        for mod in list(laser.models):
+            self.assertIs(mod.laser_model, laser_model2, msg="laser_model reference in emission model"
+                                                            "is not set correctly.")
+            self.assertIs(mod.plasma, plasma2, msg="plasma reference in emission model"
+                                                  "is not set correctly.")
+            self.assertIs(mod.laser_spectrum, laser_spectrum2, msg="laser_spectrum reference in emission model"
+                                                                  "is not set correctly.")
 
-            self.assertAlmostEqual(z_lower[index], lower_boundary.z, delta=1e-8,
-                                   msg="Lower z boundary of the segment {0} is displaced"
-                                       " from expected position.".format(index))
+        laser.models = models + models2
 
-            self.assertAlmostEqual(z_upper[index], upper_boundary.z, delta=1e-8,
-                                   msg="Upper z boundary of the segment {0} is displaced"
-                                       " from expected position.".format(index))
-
-            self.assertAlmostEqual(x_upper, upper_boundary.x, delta=1e-8,
-                                   msg="Lower x boundary of the segment {0} is displaced"
-                                       " from expected position.".format(index))
-
-            self.assertAlmostEqual(x_lower, lower_boundary.x, delta=1e-8,
-                                   msg="Upper x boundary of the segment {0} is displaced"
-                                       " from expected position.".format(index))
-
-            self.assertAlmostEqual(y_upper, upper_boundary.y, delta=1e-8,
-                                   msg="Lower y boundary of the segment {0} is displaced"
-                                       " from expected position.".format(index))
-
-            self.assertAlmostEqual(y_lower, lower_boundary.y, delta=1e-8,
-                                   msg="Upper y boundary of the segment {0} is displaced"
-                                       " from expected position.".format(index))
-
-    def test_laser_segmentmaterial_notifications(self):
-        """
-        Initialisation of Laser.laser_model, Laser.laser_spectrum and Laser.scattering_model
-        has to propagate to all laser segments.
-        """
-        laser = self._build_laser()
-        geometry = laser.get_geometry()
-
-        for segment in geometry:
-            self.assertIs(segment.material.laser_spectrum, self.spectrum,
-                          msg="Segment reference to laser spectrum is incorrectly initialised.")
-            self.assertIs(segment.material.scattering_model, self.scattering,
-                          msg="Segment reference to scattering model is incorrectly initialised.")
-            self.assertIs(segment.material.laser_model, self.model,
-                          msg="Segment reference to laser model is incorrectly initialised.")
-
-    def test_model_changes(self):
-        """
-        Changing Laser.laser_model, Laser.laser_spectrum and Laser.scattering model
-        has to propagate to all laser segments.
-        """
-        laser = self._build_laser()
-        model = UniformPowerDensity()
-        spectrum = ConstantSpectrum(1200, 1230, 30)
-        scattering = SeldenMatobaThomsonSpectrum()
-
-        laser.laser_model = model
-        laser.laser_spectrum = spectrum
-        laser.scattering_model = scattering
-
-        geometry = laser.get_geometry()
-
-        for segment in geometry:
-            self.assertIs(segment.material.laser_spectrum, spectrum,
-                          msg="Segment reference to laser spectrum is incorrectly initialised.")
-            self.assertIs(segment.material.scattering_model, scattering,
-                          msg="Segment reference to scattering model is incorrectly initialised.")
-            self.assertIs(segment.material.laser_model, model,
-                          msg="Segment reference to laser model is incorrectly initialised.")
-
+        for mod in list(laser.models):
+            self.assertIs(mod.laser_model, laser_model2, msg="laser_model reference in emission model"
+                                                             "is not set correctly.")
+            self.assertIs(mod.plasma, plasma2, msg="plasma reference in emission model"
+                                                   "is not set correctly.")
+            self.assertIs(mod.laser_spectrum, laser_spectrum2, msg="laser_spectrum reference in emission model"
+                                                                   "is not set correctly.")
 
 class TestLaserSpectrum(unittest.TestCase):
 
@@ -462,9 +408,9 @@ class TestScatteringModel(unittest.TestCase):
                 laser.radius = 0.015
                 laser.transform = translate(0.05, 0, -0.5)
                 laser.laser_model = laser_model
-                laser.scattering_model = scattering_model
                 laser.laser_spectrum = laser_spectrum
                 laser.plasma = plasma
+                laser.models = [scattering_model]
 
                 # trace a single ray through the laser
                 ray = Ray(origin=ray_origin, direction=ray_direction, min_wavelength=min_wavelength,
