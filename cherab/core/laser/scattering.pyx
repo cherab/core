@@ -4,10 +4,9 @@ from raysect.optical.spectrum cimport Spectrum
 from cherab.core cimport Plasma
 from cherab.core.laser.node cimport Laser
 from cherab.core.laser.models.model_base cimport LaserModel
-from cherab.core.laser.models.laserspectrum_base cimport LaserSpectrum
 from cherab.core.utility.constants cimport DEGREES_TO_RADIANS, ATOMIC_MASS, RECIP_4_PI
+from cherab.core.laser.models.laserspectrum_base cimport LaserSpectrum
 from cherab.core.utility.constants cimport PLANCK_CONSTANT, SPEED_OF_LIGHT, ELECTRON_CLASSICAL_RADIUS, ELECTRON_REST_MASS, ELEMENTARY_CHARGE
-from cherab.core.utility import Notifier
 
 from libc.math cimport exp, sqrt, cos, M_PI
 cimport cython
@@ -56,16 +55,19 @@ cdef class SeldenMatobaThomsonSpectrum(LaserEmissionModel):
         # Physica Scripta 89.12 (2014): 128001.
         self._CONST_ALPHA = ELECTRON_REST_MASS * SPEED_OF_LIGHT ** 2 / (2 * ELEMENTARY_CHARGE)  # rewritten for Te in eV
         self._CONST_TS = 2 / 3 * ELECTRON_CLASSICAL_RADIUS ** 2  # rewritten per solid angle
+        self._RECIP_M_PI = 1 / M_PI
 
     @cython.cdivision(True)
-    cdef double seldenmatoba_spectral_shape(self, double epsilon, double cos_theta, double alpha):
+    cdef double seldenmatoba_spectral_shape(self, double epsilon, double const_theta, double alpha):
 
         cdef:
             double c, a, b
 
-        c = sqrt(alpha / M_PI) * (1 - 15. / (16. * alpha) + 345. / (512. * alpha ** 2))
-        a = (1 + epsilon) ** 3 * sqrt(2 * (1 - cos_theta) * (1 + epsilon) + epsilon ** 2)
-        b = sqrt(1 + epsilon ** 2 / (2 * (1 - cos_theta) * (1 + epsilon))) - 1
+        # const_theta is 2 * (1 - cos(theta))
+
+        c = sqrt(alpha * self._RECIP_M_PI) * (1 - 15. / (16. * alpha) + 345. / (512. * alpha ** 2))
+        a = (1 + epsilon) ** 3 * sqrt(const_theta * (1 + epsilon) + epsilon ** 2)
+        b = sqrt(1 + epsilon ** 2 / (const_theta * (1 + epsilon))) - 1
 
         return c / a * exp(-2 * alpha * b)
 
@@ -105,8 +107,8 @@ cdef class SeldenMatobaThomsonSpectrum(LaserEmissionModel):
         angle_polarization = 90.
 
         laser_wavelength_mv = self._laser_spectrum._wavelengths_mv
-        laser_spectrum_power_mv = self._laser_spectrum._power  # power in spectral bins (PSD * delta wavelength)
-        bins = self._laser_spectrum.bins
+        laser_spectrum_power_mv = self._laser_spectrum._power_mv  # power in spectral bins (PSD * delta wavelength)
+        bins = self._laser_spectrum._bins
 
         for index in range(bins):
             laser_power_density = laser_spectrum_power_mv[index] * laser_volumetric_power 
@@ -124,24 +126,28 @@ cdef class SeldenMatobaThomsonSpectrum(LaserEmissionModel):
 
         cdef:
             int index, nbins
-            double alpha, epsilon, cos_anglescat, wavelength, min_wavelength, delta_wavelength
-            # double sin2_polarisation
+            double alpha, epsilon, cos_anglescat, wavelength, min_wavelength, delta_wavelength, recip_delta_wavelength
+            double const_theta_epsilon, recip_laser_wavelength
 
         alpha = self._CONST_ALPHA / te
 
         # scattering angle of the photon = pi - observation_angle
         cos_anglescat = cos(angle_scattering * DEGREES_TO_RADIANS)
+        
+        # pre-calculate constants for Selden-Matoba shape 
+        const_theta = 2 * (1 - cos_anglescat)
 
         nbins = spectrum.bins
         min_wavelength = spectrum.min_wavelength
         delta_wavelength = spectrum.delta_wavelength
-        # sin2 of angle_polarisation takes into account dipole nature (sin2) of thomson scattering radiation of the scattered wave
+        recip_delta_wavelength = 1 / delta_wavelength
+        recip_laser_wavelength = 1 / laser_wavelength
 
         for index in range(nbins):
             wavelength = min_wavelength + (0.5 + index) * delta_wavelength
-            epsilon = (wavelength / laser_wavelength) - 1
-            spectrum_norm = self.seldenmatoba_spectral_shape(epsilon, cos_anglescat, alpha)
-            spectrum.samples_mv[index] += spectrum_norm * ne * self._CONST_TS * laser_power / delta_wavelength
+            epsilon = (wavelength * recip_laser_wavelength) - 1
+            spectrum_norm = self.seldenmatoba_spectral_shape(epsilon, const_theta, alpha)
+            spectrum.samples_mv[index] += spectrum_norm * ne * self._CONST_TS * laser_power * recip_delta_wavelength
 
         return spectrum
 

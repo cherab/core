@@ -9,5 +9,3 @@ cdef class LaserMaterial(InhomogeneousVolumeEmitter):
     cdef:
         AffineMatrix3D _laser_to_plasma, _laser_segment_to_laser_node
         list _models
-
-    cdef object __weakref__

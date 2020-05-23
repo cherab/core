@@ -7,7 +7,6 @@ from cherab.core.laser.node cimport Laser
 cdef class LaserModel:
 
     cdef:
-        object __weakref__
         VectorFunction3D _polarization3d, _pointing3d
         Function3D _power_density3d
 

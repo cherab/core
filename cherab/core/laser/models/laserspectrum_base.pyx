@@ -16,8 +16,6 @@ cdef class LaserSpectrum(Function1D):
 
         super().__init__()
 
-        self.notifier = Notifier()
-
         self._check_wavelength_validity(min_wavelength, max_wavelength)
 
         self._min_wavelength = min_wavelength
@@ -111,9 +109,6 @@ cdef class LaserSpectrum(Function1D):
             self._power_spectral_density_mv[index] = self.evaluate(self._wavelengths_mv[index])
             self._power_mv[index] = self._power_spectral_density_mv[index] * self._delta_wavelength
             self._photons_mv[index] = self._power_spectral_density_mv[index] / self._photon_energy(self._wavelengths_mv[index])
-
-        # notify about changes
-        self.notifier.notify()
 
     cdef double _photon_energy(self, double wavelength):
         return SPEED_OF_LIGHT * PLANCK_CONSTANT / (wavelength * 1e-9)
