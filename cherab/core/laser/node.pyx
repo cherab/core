@@ -1,11 +1,10 @@
 from raysect.primitive cimport Cylinder
-
 from raysect.optical cimport World, AffineMatrix3D, Primitive, Ray
 from raysect.optical.material.emitter.inhomogeneous cimport NumericalIntegrator
-from raysect.core cimport translate
+from raysect.core cimport translate, Material
 
 from cherab.core.laser.material cimport LaserMaterial
-from cherab.core.laser.scattering cimport ScatteringModel
+from cherab.core.laser.scattering cimport LaserEmissionModel
 from cherab.core.laser.models.laserspectrum_base import LaserSpectrum
 from cherab.core.utility import Notifier
 from libc.math cimport M_PI
@@ -14,25 +13,76 @@ from math import ceil
 
 cdef double DEGREES_TO_RADIANS = (M_PI / 180)
 
+
+cdef class ModelManager:
+
+    def __init__(self):
+        self._models = []
+        self.notifier = Notifier()
+
+    def __iter__(self):
+        return iter(self._models)
+
+    cpdef object set(self, object models):
+
+        # copy models and test it is an iterable
+        models = list(models)
+
+        # check contents of list are laser models
+        for model in models:
+            if not isinstance(model, LaserEmissionModel):
+                raise TypeError('The model list must consist of only LaserEmissionModel objects.')
+
+        self._models = models
+        self.notifier.notify()
+
+    cpdef object add(self, LaserEmissionModel model):
+
+        if not model:
+            raise ValueError('Model must not be None type.')
+
+        self._models.append(model)
+        self.notifier.notify()
+
+    cpdef object clear(self):
+        self._models = []
+        self.notifier.notify()
+
 cdef class Laser(Node):
 
-    def __init__(self, object parent=None, AffineMatrix3D transform=None,
-                 str name=None):
+    def __init__(self, double length=1, double radius=0.05, object parent=None, AffineMatrix3D transform=None,
+                 double importance=0., str name=None):
 
         super().__init__(parent, transform, name)
 
+        # set init values of the laser
+        self._set_init_values()
+
         # change reporting and tracking
         self.notifier = Notifier()
+        self.notifier.add(self._configure_geometry)
 
+        #setup model manager
+        self._models = ModelManager()
+        
         # set material integrator
         self._integrator = NumericalIntegrator(step=1e-3)
 
         # laser beam properties
-        self.BEAM_AXIS = Vector3D(0.0, 0.0, 1.0)
-        self._length = 1.0                         # [m]
-        self._radius = 0.1                         # [m]
-        self._geometry = []
+        self.length = length                         # [m]
+        self.radius = radius                         # [m]
+
+        self._importance = importance
         self._configure_geometry()
+
+    def _set_init_values(self):
+        """
+        Sets initial values of the laser shape to avoid errors.
+        """
+        self._length = 1
+        self._radius = 0.5
+        self._importance = 0.
+        self._geometry = []
 
     @property
     def length(self):
@@ -45,7 +95,7 @@ cdef class Laser(Node):
             raise ValueError("Laser length has to be larger than 0.")
 
         self._length = value
-        self._configure_geometry()
+        self.notifier.notify()
 
     @property
     def radius(self):
@@ -58,7 +108,7 @@ cdef class Laser(Node):
             raise ValueError("Laser radius has to be larger than 0.")
 
         self._radius = value
-        self._configure_geometry()
+        self.notifier.notify()
 
     @property
     def plasma(self):
@@ -66,26 +116,24 @@ cdef class Laser(Node):
 
     @plasma.setter
     def plasma(self, Plasma value not None):
-        # check necessary data is available
-        if not self._scattering_model:
-            raise ValueError('The laser must have a reference to a scattering model object before specifying plasma.')
 
-        if not self._laser_model:
-            raise ValueError('The laser must have a reference to a laser model object before specifying plasma.')
-
-        if not self._laser_spectrum:
-            raise ValueError('The laser must have a reference to a laser spectrum object before specifying plasma.')
+        #unregister from old plasma notifier
+        if self._plasma is not None:
+            self._plasma.notifier.remove(self._plasma_changed)
 
         self._plasma = value
-
+        self._plasma.notifier.add(self._plasma_changed)
         self.notifier.notify()
 
-    def set_importance(self, value):
-        for i in self._geometry:
-            i.material.importance = value
+    @property
+    def importance(self):
+        return self._importance
 
-    cdef Plasma get_plasma(self):
-        return self._plasma
+    @importance.setter
+    def importance(self, double value):
+        
+        self._importance = value
+        self.notifier.notify()
 
     def _configure_geometry(self):
         """
@@ -95,33 +143,36 @@ cdef class Laser(Node):
         The length of the cylidrical segments is equal to 2 * self.radius, except the last segment.
         Length of the last segment can be different to match self.length value.
         """
-        # disconnect segments
+
+        # no further work if there are no emission models
+        if not list(self._models):
+            return
+
+        # clear geometry to remove segments
         for i in self._geometry:
             i.parent = None
+        self._geometry[:] = []
 
         # length of first n-1 segments is 2 * radius
         radius = self.radius  # radius of segments
-        segment_length = 2 * radius  # length of segments
-        n_segments = int(self.length // segment_length)  # number of segments
-        self._geometry = []
+        n_segments = int(self.length // (2 * radius))  # number of segments
+
         if n_segments > 1:
-            for i in range(n_segments - 1):
-                cylinder = Cylinder(name="Laser segment {0:d}".format(i), radius=radius, height=segment_length,
-                                    transform=translate(0, 0, i * segment_length), parent=self,
-                                    material=LaserMaterial(self, self._integrator))
-                cylinder.material.laser = self
+            segment_length = self.length / n_segments
+            for i in range(n_segments):
+                segment = Cylinder(name="Laser segment {0:d}".format(i), radius=radius, height=segment_length,
+                                    transform=translate(0, 0, i * segment_length), parent=self)
+                segment.material = LaserMaterial(self, segment, list(self._models), self._integrator)
 
-                self._geometry.append(cylinder)
+                self._geometry.append(segment)
+        elif 0 <= n_segments < 2:
+                segment = Cylinder(name="Laser segment {0:d}".format(0), radius=radius, height=self.length,
+                                    parent=self)
+                segment.material = LaserMaterial(self, segment, list(self._models), self._integrator)
 
-        # length of the last segment is laser_length - n * 2 radius to avoid infinitesimal reminder segments
-        segment_length_last = self.length - (n_segments - 1) * segment_length
-        cylinder = Cylinder(name="Laser segment {0:d}".format(n_segments - 1), radius=radius, height=segment_length_last,
-                            transform=translate(0, 0, (n_segments - 1) * segment_length), parent=self,
-                            material=LaserMaterial(self, self._integrator))
-
-        self._geometry.append(cylinder)
-
-        self.notifier.notify()
+                self._geometry.append(segment)
+        else:
+            raise ValueError("Incorrect number of segments calculated.")
 
     @property
     def laser_spectrum(self):
@@ -144,14 +195,22 @@ cdef class Laser(Node):
         self.notifier.notify()
 
     @property
-    def scattering_model(self):
-        return self._scattering_model
+    def models(self):
+        return list(self._models)
 
-    @scattering_model.setter
-    def scattering_model(self, ScatteringModel value):
+    @models.setter
+    def models(self, value):
+        # check necessary data is available
+        if not self._plasma:
+            raise ValueError('The laser must have a reference to a plasma object before specifying the scattering model.')
 
-        self._scattering_model = value
+        if not self._laser_model:
+            raise ValueError('The laser must have a reference to a laser model object before specifying the scattering model.')
 
+        if not self._laser_spectrum:
+            raise ValueError('The laser must have a reference to a laser spectrum object before specifying scattering model.')
+
+        self._models.set(value)
         self.notifier.notify()
 
     @property
@@ -161,7 +220,14 @@ cdef class Laser(Node):
     @integrator.setter
     def integrator(self, VolumeIntegrator value):
         self._integrator = value
-        self._configure_geometry()
+        self.notifier.notify()
 
     def get_geometry(self):
         return self._geometry
+
+    def _plasma_changed(self):
+        """React to change of plasma and propagate the information."""
+        self.notifier.notify()
+
+    def _modified(self):
+        self.notifier.notify()

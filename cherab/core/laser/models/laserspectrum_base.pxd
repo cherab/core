@@ -11,12 +11,9 @@ cdef class LaserSpectrum(Function1D):
 
     cdef:
         double _min_wavelength, _max_wavelength, _delta_wavelength
-        int _bins
+        readonly int _bins
         ndarray _power, _power_spectral_density, _photons, _wavelengths  # power_spectral_density [w/nm]
         double[::1] _power_mv, _power_spectral_density_mv, _photons_mv, _wavelengths_mv
-        object notifier
-
-    cdef object __weakref__
 
     cpdef double evaluate_integral(self, double lower_limit, double upper_limit)
 
