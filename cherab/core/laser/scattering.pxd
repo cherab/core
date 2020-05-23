@@ -8,7 +8,7 @@ from cherab.core.laser.models.model_base cimport LaserModel
 from cherab.core.laser.models.laserspectrum_base cimport LaserSpectrum
 cimport cython
 
-cdef double RE_SQUARED
+#cdef double RE_SQUARED
 
 
 cdef class LaserEmissionModel:
@@ -25,7 +25,7 @@ cdef class LaserEmissionModel:
 
 cdef class SeldenMatobaThomsonSpectrum(LaserEmissionModel):
     cdef:
-        double re, _CONST_ALPHA, _CONST_TS
+        double re, _CONST_ALPHA, _CONST_TS, _RECIP_M_PI
 
 
     cpdef Spectrum emission(self, Point3D point_plasma, Vector3D observation_plasma, Point3D point_laser,
