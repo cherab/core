@@ -24,8 +24,12 @@ from raysect.core.math.function.float cimport Discrete2DMesh, Interpolator2DMesh
 from raysect.core.math.function.vector3d cimport Function2D as VectorFunction2D
 from raysect.core.math.function.vector3d cimport Constant2D as ConstantVector2D
 from raysect.core.math.function.vector3d cimport autowrap_function2d as autowrap_vectorfunction2d
-from raysect.core.math.function.vector3d cimport FloatToVector3DFunction2D as ScalarToVectorFunction2D
+from raysect.core.math.function.vector3d cimport FloatToVector3DFunction2D
 from raysect.core.math.function.vector3d cimport Function3D as VectorFunction3D
 from raysect.core.math.function.vector3d cimport Constant3D as ConstantVector3D
 from raysect.core.math.function.vector3d cimport autowrap_function3d as autowrap_vectorfunction3d
-from raysect.core.math.function.vector3d cimport FloatToVector3DFunction3D as ScalarToVectorFunction3D
+from raysect.core.math.function.vector3d cimport FloatToVector3DFunction3D
+
+# Alias deprecated names for FloatToVector3DFunctionxD
+ctypedef FloatToVector3DFunction2D ScalarToVectorFunction2D
+ctypedef FloatToVector3DFunction3D ScalarToVectorFunction3D

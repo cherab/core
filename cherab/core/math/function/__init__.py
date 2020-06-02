@@ -21,7 +21,11 @@ from raysect.core.math.function.float import Constant1D, Constant2D, Constant3D
 from raysect.core.math.function.float import Discrete2DMesh, Interpolator2DMesh
 from raysect.core.math.function.vector3d import Function2D as VectorFunction2D
 from raysect.core.math.function.vector3d import Constant2D as ConstantVector2D
-from raysect.core.math.function.vector3d import FloatToVector3DFunction2D as ScalarToVectorFunction2D
+from raysect.core.math.function.vector3d import FloatToVector3DFunction2D
 from raysect.core.math.function.vector3d import Function3D as VectorFunction3D
 from raysect.core.math.function.vector3d import Constant3D as ConstantVector3D
-from raysect.core.math.function.vector3d import FloatToVector3DFunction3D as ScalarToVectorFunction3D
+from raysect.core.math.function.vector3d import FloatToVector3DFunction3D
+
+# Alias deprecated names for FloatToVector3DFunctionxD
+ScalarToVectorFunction2D = FloatToVector3DFunction2D
+ScalarToVectorFunction3D = FloatToVector3DFunction3D
