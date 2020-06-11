@@ -281,7 +281,6 @@ cdef class Plasma(Node):
        >>> from raysect.optical import World
        >>>
        >>> from cherab.core import Plasma, Species, Maxwellian
-       >>> from cherab.core.math import Constant3D, ConstantVector3D
        >>> from cherab.core.atomic import deuterium
        >>> from cherab.openadas import OpenADAS
        >>>
@@ -293,14 +292,14 @@ cdef class Plasma(Node):
        >>>
        >>>
        >>> # Setup basic distribution functions for the species
-       >>> d0_density = Constant3D(1E17)
-       >>> d0_temperature = Constant3D(1)
-       >>> bulk_velocity = ConstantVector3D(Vector3D(0, 0, 0))
+       >>> d0_density = 1E17
+       >>> d0_temperature = 1
+       >>> bulk_velocity = Vector3D(0, 0, 0)
        >>> d0_distribution = Maxwellian(d0_density, d0_temperature, bulk_velocity, deuterium.atomic_weight * atomic_mass)
        >>> d0_species = Species(deuterium, 0, d0_distribution)
        >>>
-       >>> d1_density = Constant3D(1E18)
-       >>> d1_temperature = Constant3D(10)
+       >>> d1_density = 1E18
+       >>> d1_temperature = 10
        >>> d1_distribution = Maxwellian(d1_density, d1_temperature, bulk_velocity, deuterium.atomic_weight * atomic_mass)
        >>> d1_species = Species(deuterium, 1, d1_distribution)
        >>>
@@ -310,7 +309,7 @@ cdef class Plasma(Node):
        >>> plasma = Plasma(parent=world)
        >>> plasma.atomic_data = adas
        >>> plasma.geometry = Sphere(2.0)
-       >>> plasma.b_field = ConstantVector3D(Vector3D(1.0, 1.0, 1.0))
+       >>> plasma.b_field = Vector3D(1.0, 1.0, 1.0)
        >>> plasma.composition = [d0_species, d1_species]
        >>> plasma.electron_distribution = e_distribution
     """

@@ -276,19 +276,17 @@ cdef class VectorAxisymmetricMapper(VectorFunction3D):
     .. code-block:: pycon
 
        >>> from cherab.core.math import VectorAxisymmetricMapper
-       >>> from cherab.core.math.function.vectorfunction2d import PythonVectorFunction2D
        >>>
        >>> def my_func(r, z):
        >>>     v = Vector3D(1, 0, 0)
        >>>     v.length = r
        >>>     return v
        >>>
-       >>> f2 = PythonVectorFunction2D(my_func)
-       >>> f3 = VectorAxisymmetricMapper(f2)
+       >>> f = VectorAxisymmetricMapper(my_func)
        >>>
-       >>> f3(1, 0, 0)
+       >>> f(1, 0, 0)
        Vector3D(1.0, 0.0, 0.0)
-       >>> f3(1/sqrt(2), 1/sqrt(2), 0)
+       >>> f(1/sqrt(2), 1/sqrt(2), 0)
        Vector3D(0.70710678, 0.70710678, 0.0)
     """
 

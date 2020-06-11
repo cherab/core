@@ -129,13 +129,12 @@ cdef class Maxwellian(DistributionFunction):
        >>> from scipy.constants import atomic_mass
        >>> from raysect.core.math import Vector3D
        >>> from cherab.core import Maxwellian
-       >>> from cherab.core.math import Constant3D, ConstantVector3D
        >>> from cherab.core.atomic import deuterium
        >>>
        >>> # Setup distribution for a slab of plasma in thermodynamic equilibrium
-       >>> d0_density = Constant3D(1E17)
-       >>> d0_temperature = Constant3D(1)
-       >>> bulk_velocity = ConstantVector3D(Vector3D(0, 0, 0))
+       >>> d0_density = 1E17
+       >>> d0_temperature = 1
+       >>> bulk_velocity = Vector3D(0, 0, 0)
        >>> d0_distribution = Maxwellian(d0_density, d0_temperature, bulk_velocity, deuterium.atomic_weight * atomic_mass)
     """
 

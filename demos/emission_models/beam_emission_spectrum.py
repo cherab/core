@@ -6,7 +6,7 @@ from raysect.optical import World, translate, rotate_basis, Vector3D, Point3D, R
 from raysect.optical.observer import PinholeCamera
 
 from cherab.core import Beam
-from cherab.core.math import sample3d, ConstantVector3D
+from cherab.core.math import sample3d
 from cherab.core.atomic import hydrogen, deuterium, carbon, Line
 from cherab.core.model import SingleRayAttenuator, BeamEmissionLine, \
     ExcitationLine, RecombinationLine
@@ -23,7 +23,7 @@ world = World()
 
 plasma = build_slab_plasma(width=1.0, height=3.0, peak_density=1e18,
                            impurities=[(carbon, 6, 0.005)], parent=world)
-plasma.b_field = ConstantVector3D(Vector3D(0, 1.5, 0))
+plasma.b_field = Vector3D(0, 1.5, 0)
 plasma.atomic_data = OpenADAS(permit_extrapolation=True)
 
 # add background emission

@@ -8,7 +8,6 @@ from raysect.primitive import Box
 from raysect.optical import World, Point3D, Vector3D
 
 from cherab.core import Species, Maxwellian, Plasma
-from cherab.core.math import Constant3D, ConstantVector3D
 from cherab.core.math.function cimport Function3D
 from cherab.core.atomic import hydrogen
 
@@ -158,11 +157,11 @@ def build_slab_plasma(length=5, width=1, height=1, peak_density=1e19, peak_tempe
     species = []
 
     # No net velocity for any species
-    zero_velocity = ConstantVector3D(Vector3D(0, 0, 0))
+    zero_velocity = Vector3D(0, 0, 0)
 
     # define neutral species distribution
     h0_density = NeutralFunction(peak_density, 0.1, pedestal_top=pedestal_top)
-    h0_temperature = Constant3D(neutral_temperature)
+    h0_temperature = neutral_temperature
     h0_distribution = Maxwellian(h0_density, h0_temperature, zero_velocity,
                                  hydrogen.atomic_weight * atomic_mass)
     species.append(Species(hydrogen, 0, h0_distribution))
@@ -189,7 +188,7 @@ def build_slab_plasma(length=5, width=1, height=1, peak_density=1e19, peak_tempe
     e_distribution = Maxwellian(e_density, e_temperature, zero_velocity, electron_mass)
 
     # define species
-    plasma.b_field = ConstantVector3D(Vector3D(0, 0, 0))
+    plasma.b_field = Vector3D(0, 0, 0)
     plasma.electron_distribution = e_distribution
     plasma.composition = species
 

@@ -9,7 +9,7 @@ from raysect.optical import World, Ray
 from raysect.optical.observer import PinholeCamera
 
 from cherab.core import Plasma, Beam, Maxwellian, Species
-from cherab.core.math import sample3d, PythonVectorFunction3D, Constant3D, ConstantVector3D
+from cherab.core.math import sample3d, ScalarToVectorFunction3D
 from cherab.core.atomic import hydrogen, deuterium, carbon, Line
 from cherab.core.model import SingleRayAttenuator, BeamCXLine
 from cherab.tools.plasmas.slab import NeutralFunction, IonFunction
@@ -40,15 +40,12 @@ species = []
 
 # make a non-zero velocity profile for the plasma
 vy_profile = IonFunction(1E5, 0, pedestal_top=pedestal_top)
-def vectorfunction3d(x, y, z):
-    vy = vy_profile(x, y, z)
-    return Vector3D(0, vy, 0)
-velocity_profile = PythonVectorFunction3D(vectorfunction3d)
+velocity_profile = ScalarToVectorFunction3D(0, vy_profile, 0)
 
 
 # define neutral species distribution
 h0_density = NeutralFunction(peak_density, 0.1, pedestal_top=pedestal_top)
-h0_temperature = Constant3D(neutral_temperature)
+h0_temperature = neutral_temperature
 h0_distribution = Maxwellian(h0_density, h0_temperature, velocity_profile,
                              hydrogen.atomic_weight * atomic_mass)
 species.append(Species(hydrogen, 0, h0_distribution))
@@ -75,7 +72,7 @@ e_temperature = IonFunction(peak_temperature, 0, pedestal_top=pedestal_top)
 e_distribution = Maxwellian(e_density, e_temperature, velocity_profile, electron_mass)
 
 # define species
-plasma.b_field = ConstantVector3D(Vector3D(0, 0, 0))
+plasma.b_field = Vector3D(0, 0, 0)
 plasma.electron_distribution = e_distribution
 plasma.composition = species
 
