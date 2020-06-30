@@ -255,5 +255,6 @@ def build_constant_slab_plasma(length=5, width=1, height=1, electron_density=1e1
     plasma.geometry = Box(Point3D(0, -width/2, -height/2), Point3D(length, width/2, height/2))
     plasma.electron_distribution = e_distribution
     plasma.b_field = b_field
+    plasma.composition = species
 
     return plasma
