@@ -196,8 +196,7 @@ def build_slab_plasma(length=5, width=1, height=1, peak_density=1e19, peak_tempe
 
 
 def build_constant_slab_plasma(length=5, width=1, height=1, electron_density=1e19, electron_temperature=2.5e3,
-                               ions=[(hydrogen, 1, 1e19, 2.5e3, Vector3D(0, 0, 0))],
-                               b_field=Vector3D(0, 0, 0), parent=None):
+                               plasma_species=None, b_field=Vector3D(0, 0, 0), parent=None):
     """
     Constructs a simple slab of plasma with constant conditions.
 
@@ -212,14 +211,19 @@ def build_constant_slab_plasma(length=5, width=1, height=1, electron_density=1e1
     Ion species can be included as a list of tuples, where each tuple specifies an
     impurity. The specification format is (species, charge, density, temperature, velocity). For example:
 
-        >>> ions = [(carbon, 6, 1e18, 3.4e3, Vector3D(1.0e3, 0, 0))]
+        >>> plasma_species = [(carbon, 6, 1e18, 3.4e3, Vector3D(1.0e3, 0, 0))]
+
+    If omitted, hydrogen distribution with properties equal to electrons is used:
+        >>> plasma_species = [(hydrogen, 1, electron_density, electron_temperature, Vector3D(0, 0, 0))]
+    
+    If an empty list is passed, plasma contains only electrons.
 
     :param float length: the overall length of the slab along x.
     :param float width: the y width of the slab.
     :param float height: the z height of the slab.
     :param float electron_density: the electron density in m^-3 .
     :param float electron_temperature: the electron temperature in eV.
-    :param list ions: an optional list of impurities to include.
+    :param list plasma_species: an optional list of impurities to include.
     :param Vector3D b_field: vector giving the magnetic field
     :param parent: the Raysect scene-graph parent node.
 
@@ -229,31 +233,27 @@ def build_constant_slab_plasma(length=5, width=1, height=1, electron_density=1e1
        >>> from cherab.core.atomic import hydrogen, carbon
        >>> from cherab.tools.plasmas.slab import build_constant_slab_plasma
        >>>
-       >>> ions = [(hydrogen, 0, 1e19, 3.5e3, Vector3D(5e3, 0, 0)), (carbon, 5, 1e18, 3.4e3, Vector3D(1.0e3, 0, 0))]
-       >>> plasma = build_constant_slab_plasma(0.2, 0.5, 0.5, electron_density = 1.19, electron_temperature=4e4, ions=ions, b_field=Vector3D(0, 5, 0))
+       >>> plasma_species = [(hydrogen, 0, 1e19, 3.5e3, Vector3D(5e3, 0, 0)), (carbon, 5, 1e18, 3.4e3, Vector3D(1.0e3, 0, 0))]
+       >>> plasma = build_constant_slab_plasma(0.2, 0.5, 0.5, electron_density = 1.19, electron_temperature=4e4, plasma_species=plasma_species, b_field=Vector3D(0, 5, 0))
        >>> plasma.parent = World()
     """
 
-    zero_velocity = ConstantVector3D(Vector3D(0, 0, 0))
+    if plasma_species is None:
+        plasma_species = [(hydrogen, 1, electron_density, electron_temperature, Vector3D(0, 0, 0))]
 
     # create electron distribution
-    e_density = Constant3D(electron_density)
-    e_temperature = Constant3D(electron_temperature)
-    e_distribution = Maxwellian(e_density, e_temperature, zero_velocity, electron_mass)
+    e_distribution = Maxwellian(electron_density, electron_temperature, Vector3D(0, 0, 0), electron_mass)
 
     # create ion species
     species = []
-    for element, ionisation, density, temperature, velocity in ions:
-        imp_density = Constant3D(density)
-        imp_temperature = Constant3D(temperature)
-        imp_velocity = ConstantVector3D(velocity)
-        imp_distribution = Maxwellian(imp_density, imp_temperature, imp_velocity, element.atomic_weight * atomic_mass)
+    for element, ionisation, density, temperature, velocity in plasma_species:
+        imp_distribution = Maxwellian(density, temperature, velocity, element.atomic_weight * atomic_mass)
         species.append(Species(element, ionisation, imp_distribution))
 
     # create plasma, add particles and magnetic field
     plasma = Plasma(parent=parent)
     plasma.geometry = Box(Point3D(0, -width/2, -height/2), Point3D(length, width/2, height/2))
     plasma.electron_distribution = e_distribution
-    plasma.b_field = ConstantVector3D(b_field)
+    plasma.b_field = b_field
 
     return plasma
