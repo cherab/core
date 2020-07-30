@@ -418,7 +418,7 @@ cdef class CylindricalRayTransferEmitter(RayTransferEmitter):
                  double rmin=0):
 
         cdef:
-            double def_integration_step, period
+            double def_integration_step, period, num_sectors
 
         def_integration_step = 0.1 * min(grid_steps[0], grid_steps[-1])
         integrator = integrator or CylindricalRayTransferIntegrator(def_integration_step)
@@ -428,7 +428,8 @@ cdef class CylindricalRayTransferEmitter(RayTransferEmitter):
         self._dphi = self._grid_steps[1]
         self._dz = self._grid_steps[2]
         period = self._grid_shape[1] * self._grid_steps[1]
-        if 360. % period > 1.e-3:
+        num_sectors = 360. / period
+        if abs(round(num_sectors) - num_sectors) > 1.e-3:
             raise ValueError("The period %.3f (grid_shape[1] * grid_steps[1]) is not a multiple of 360." % period)
         self._period = period
 
