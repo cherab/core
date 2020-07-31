@@ -9,7 +9,11 @@ env:
 install:
   - pip install cython>=0.28
   - pip install numpy==$NUMPY_VERSION scipy matplotlib
-  - pip install raysect==0.7
+  - if [ "$TRAVIS_BRANCH" = "master" ]; then
+       pip install raysect;
+    else
+       pip install git+https://github.com/raysect/source@development;
+    fi
   - dev/build.sh
 # command to run tests
 script: dev/test.sh
