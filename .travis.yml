@@ -8,7 +8,7 @@ env:
   - NUMPY="numpy"
 install:
   - pip install cython>=0.28
-  - pip install "$NUMPY" scipy matplotlib
+  - pip install --upgrade "$NUMPY" scipy matplotlib
   - if [ "$TRAVIS_BRANCH" = "master" ]; then
        pip install raysect;
     else
