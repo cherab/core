@@ -179,7 +179,7 @@ def build_slab_plasma(length=5, width=1, height=1, peak_density=1e19, peak_tempe
             imp_density = IonFunction(peak_density * concentration, 0, pedestal_top=pedestal_top)
             imp_temperature = IonFunction(peak_temperature, 0, pedestal_top=pedestal_top)
             imp_distribution = Maxwellian(imp_density, imp_temperature, zero_velocity,
-                                         impurity.atomic_weight * atomic_mass)
+                                          impurity.atomic_weight * atomic_mass)
             species.append(Species(impurity, ionisation, imp_distribution))
 
     # define the electron distribution
@@ -190,6 +190,71 @@ def build_slab_plasma(length=5, width=1, height=1, peak_density=1e19, peak_tempe
     # define species
     plasma.b_field = Vector3D(0, 0, 0)
     plasma.electron_distribution = e_distribution
+    plasma.composition = species
+
+    return plasma
+
+
+def build_constant_slab_plasma(length=5, width=1, height=1, electron_density=1e19, electron_temperature=2.5e3,
+                               plasma_species=None, b_field=Vector3D(0, 0, 0), parent=None):
+    """
+    Constructs a simple slab of plasma with constant conditions.
+
+    The plasma is defined for positive x starting at x = 0, symmetric in y-z. The plasma
+    parameters such as electron density and temperature are constant over the plasma volume.
+
+    Raysect cannot handle infinite geometry, so overall spatial dimensions of the slab need
+    to be set, [length, width, height]. These can be set very large to make an effectively
+    infinite slab of plasma, although the numerical performance will degrade accordingly.
+    The dimensions should be set appropriately with valid assumptions for your scenario.
+
+    Ion species can be included as a list of tuples, where each tuple specifies an
+    impurity. The specification format is (species, charge, density, temperature, velocity). For example:
+
+        >>> plasma_species = [(carbon, 6, 1e18, 3.4e3, Vector3D(1.0e3, 0, 0))]
+
+    If omitted, hydrogen distribution with properties equal to electrons is used:
+        >>> plasma_species = [(hydrogen, 1, electron_density, electron_temperature, Vector3D(0, 0, 0))]
+    
+    If an empty list is passed, plasma contains only electrons.
+
+    :param float length: the overall length of the slab along x.
+    :param float width: the y width of the slab.
+    :param float height: the z height of the slab.
+    :param float electron_density: the electron density in m^-3 .
+    :param float electron_temperature: the electron temperature in eV.
+    :param list plasma_species: an optional list of impurities to include.
+    :param Vector3D b_field: vector giving the magnetic field
+    :param parent: the Raysect scene-graph parent node.
+
+    .. code-block:: pycon
+
+       >>> from raysect.optical import World
+       >>> from cherab.core.atomic import hydrogen, carbon
+       >>> from cherab.tools.plasmas.slab import build_constant_slab_plasma
+       >>>
+       >>> plasma_species = [(hydrogen, 0, 1e19, 3.5e3, Vector3D(5e3, 0, 0)), (carbon, 5, 1e18, 3.4e3, Vector3D(1.0e3, 0, 0))]
+       >>> plasma = build_constant_slab_plasma(0.2, 0.5, 0.5, electron_density = 1.19, electron_temperature=4e4, plasma_species=plasma_species, b_field=Vector3D(0, 5, 0))
+       >>> plasma.parent = World()
+    """
+
+    if plasma_species is None:
+        plasma_species = [(hydrogen, 1, electron_density, electron_temperature, Vector3D(0, 0, 0))]
+
+    # create electron distribution
+    e_distribution = Maxwellian(electron_density, electron_temperature, Vector3D(0, 0, 0), electron_mass)
+
+    # create ion species
+    species = []
+    for element, ionisation, density, temperature, velocity in plasma_species:
+        imp_distribution = Maxwellian(density, temperature, velocity, element.atomic_weight * atomic_mass)
+        species.append(Species(element, ionisation, imp_distribution))
+
+    # create plasma, add particles and magnetic field
+    plasma = Plasma(parent=parent)
+    plasma.geometry = Box(Point3D(0, -width/2, -height/2), Point3D(length, width/2, height/2))
+    plasma.electron_distribution = e_distribution
+    plasma.b_field = b_field
     plasma.composition = species
 
     return plasma
