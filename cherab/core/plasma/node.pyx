@@ -363,7 +363,12 @@ cdef class Plasma(Node):
 
     @electron_distribution.setter
     def electron_distribution(self, value):
-        self._electron_distribution = value
+        #assign ZeroDistribution if None value passed
+        if value is None:
+            self._electron_distribution = ZeroDistribution()
+        else:
+            self._electron_distribution = value
+
         self._modified()
 
     # cython fast access
