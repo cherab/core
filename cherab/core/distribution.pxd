@@ -35,14 +35,7 @@ cdef class DistributionFunction:
 
 
 cdef class ZeroDistribution(DistributionFunction):
-
-    cdef double evaluate(self, double x, double y, double z, double vx, double vy, double vz) except? -1e999
-
-    cpdef Vector3D bulk_velocity(self, double x, double y, double z)
-
-    cpdef double effective_temperature(self, double x, double y, double z) except? -1e999
-
-    cpdef double density(self, double x, double y, double z) except? -1e999
+    pass
 
 
 cdef class Maxwellian(DistributionFunction):
@@ -52,10 +45,3 @@ cdef class Maxwellian(DistributionFunction):
         VectorFunction3D _velocity
         double _atomic_mass
 
-    cdef double evaluate(self, double x, double y, double z, double vx, double vy, double vz) except? -1e999
-
-    cpdef Vector3D bulk_velocity(self, double x, double y, double z)
-
-    cpdef double effective_temperature(self, double x, double y, double z) except? -1e999
-
-    cpdef double density(self, double x, double y, double z) except? -1e999
