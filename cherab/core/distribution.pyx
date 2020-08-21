@@ -118,7 +118,7 @@ cdef class ZeroDistribution(DistributionFunction):
     """
 
     def __init__(self):
-        self.notifier = Notifier()
+        super().__init__()
 
     def __call__(self, double x, double y, double z, double vx, double vy, double vz):
         """

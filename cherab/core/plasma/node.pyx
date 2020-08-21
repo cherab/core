@@ -323,8 +323,8 @@ cdef class Plasma(Node):
         self.notifier = Notifier()
 
         # plasma properties
-        self.b_field = Vector3D(0, 0, 0)
-        self.electron_distribution = ZeroDistribution()
+        self.b_field = None
+        self.electron_distribution = None
 
         # setup plasma composition handler and pass through notifications
         self._composition = Composition()
@@ -350,7 +350,12 @@ cdef class Plasma(Node):
 
     @b_field.setter
     def b_field(self, object value):
-        self._b_field = autowrap_vectorfunction3d(value)
+        # assign Vector3D(0, 0, 0) if None is passed
+        if value is None:
+            self._b_field = autowrap_vectorfunction3d(Vector3D(0, 0, 0))
+        else:
+            self._b_field = autowrap_vectorfunction3d(value)
+
         self._modified()
 
     # cython fast access
@@ -362,8 +367,8 @@ cdef class Plasma(Node):
         return self._electron_distribution
 
     @electron_distribution.setter
-    def electron_distribution(self, value):
-        #assign ZeroDistribution if None value passed
+    def electron_distribution(self, DistributionFunction value):
+        # assign ZeroDistribution if None value passed
         if value is None:
             self._electron_distribution = ZeroDistribution()
         else:
