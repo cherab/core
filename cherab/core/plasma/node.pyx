@@ -20,12 +20,12 @@
 from cherab.core.utility import Notifier
 
 from cherab.core.species import SpeciesNotFound
-from raysect.optical cimport AffineMatrix3D
+from raysect.optical cimport AffineMatrix3D, Vector3D
 from raysect.optical.material.emitter.inhomogeneous cimport NumericalIntegrator
 
 from cherab.core.math cimport Function3D, autowrap_function3d
 from cherab.core.math cimport VectorFunction3D, autowrap_vectorfunction3d
-from cherab.core.distribution cimport DistributionFunction
+from cherab.core.distribution cimport DistributionFunction, ZeroDistribution
 from cherab.core.plasma.material cimport PlasmaMaterial
 cimport cython
 
@@ -323,8 +323,8 @@ cdef class Plasma(Node):
         self.notifier = Notifier()
 
         # plasma properties
-        self._b_field = None
-        self._electron_distribution = None
+        self.b_field = Vector3D(0, 0, 0)
+        self.electron_distribution = ZeroDistribution()
 
         # setup plasma composition handler and pass through notifications
         self._composition = Composition()
