@@ -110,6 +110,83 @@ cdef class DistributionFunction:
         raise NotImplementedError()
 
 
+cdef class ZeroDistribution(DistributionFunction):
+    """
+    A zero distribution function.
+
+    All distribution properties are zero.
+    """
+
+    def __init__(self):
+        super().__init__()
+
+    def __call__(self, double x, double y, double z, double vx, double vy, double vz):
+        """
+        Evaluates the phase space density at the specified point in 6D phase space.
+
+        Wraps the cython evaluate() function for fast evaluation.
+
+        :param float x: position in meters
+        :param float y: position in meters
+        :param float z: position in meters
+        :param float vx: velocity in meters per second
+        :param float vy: velocity in meters per second
+        :param float vz: velocity in meters per second
+        :return: phase space density 0 s^3/m^6
+        """
+        return self.evaluate(x, y, z, vx, vy, vz)
+
+    cdef double evaluate(self, double x, double y, double z, double vx, double vy, double vz) except? -1e999:
+        """
+        Evaluates the phase space density at the specified point in 6D phase space.
+        
+        :param float x: position in meters
+        :param float y: position in meters
+        :param float z: position in meters
+        :param float vx: velocity in meters per second
+        :param float vy: velocity in meters per second
+        :param float vz: velocity in meters per second
+        :return: phase space density 0 s^3/m^6
+        """
+        return 0.0
+
+    cpdef Vector3D bulk_velocity(self, double x, double y, double z):
+        """
+        Evaluates the species' bulk velocity at the specified 3D coordinate.
+
+        :param float x: position in meters
+        :param float y: position in meters
+        :param float z: position in meters
+        :return: velocity vector (0, 0, 0) in m/s
+        :rtype: Vector3D
+        """
+        return Vector3D(0, 0, 0)
+
+    cpdef double effective_temperature(self, double x, double y, double z) except? -1e999:
+        """
+        Returns 0 species' effective temperature at the specified 3D coordinate.
+
+        :param float x: position in meters
+        :param float y: position in meters
+        :param float z: position in meters
+        :return: temperature 0 eV
+        :rtype: float
+        """
+        return 0.0
+
+    cpdef double density(self, double x, double y, double z) except? -1e999:
+        """
+        Returns 0 species' density.
+
+        :param float x: position in meters
+        :param float y: position in meters
+        :param float z: position in meters
+        :return: density 0 m^-3
+        :rtype: float
+        """
+        return 0.0
+
+
 cdef class Maxwellian(DistributionFunction):
     """
     A Maxwellian distribution function.
