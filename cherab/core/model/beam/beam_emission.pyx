@@ -21,10 +21,8 @@
 
 cimport cython
 from raysect.core cimport Point3D, Vector3D
-from raysect.core.math.function cimport autowrap_function1d, autowrap_function2d
-
 from cherab.core cimport Species, Plasma, Beam, Element, DistributionFunction, BeamEmissionPEC, Spectrum, AtomicData
-from cherab.core.math cimport Constant1D, Constant2D
+from cherab.core.math.function cimport autowrap_function1d, autowrap_function2d
 from cherab.core.atomic.elements import Isotope, hydrogen
 from cherab.core.model.lineshape cimport BeamEmissionMultiplet
 from cherab.core.utility.constants cimport RECIP_4_PI, ELEMENTARY_CHARGE, ATOMIC_MASS
@@ -36,10 +34,10 @@ cdef double RECIP_ATOMIC_MASS = 1 / ATOMIC_MASS
 # example statistical weights supplied by E. Delabie for JET like plasmas
                             # [    Sigma group   ][        Pi group            ]
 # STARK_STATISTICAL_WEIGHTS = [0.586167, 0.206917, 0.153771, 0.489716, 0.356513]
-SIGMA_TO_PI = Constant2D(0.56)
-SIGMA1_TO_SIGMA0 = Constant1D(0.7060001671878492)  # s1*2/s0
-PI2_TO_PI3 = Constant1D(0.3140003593919741)  # pi2/pi3
-PI4_TO_PI3 = Constant1D(0.7279994935840365)  # pi4/pi3
+SIGMA_TO_PI = 0.56
+SIGMA1_TO_SIGMA0 = 0.7060001671878492  # s1*2/s0
+PI2_TO_PI3 = 0.3140003593919741  # pi2/pi3
+PI4_TO_PI3 = 0.7279994935840365  # pi4/pi3
 
 
 # TODO - the sigma/pi line ratios should be moved to an atomic data source

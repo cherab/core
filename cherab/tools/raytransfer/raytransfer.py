@@ -182,7 +182,8 @@ class RayTransferCylinder(RayTransferObject):
 
     def __init__(self, radius_outer, height, n_radius, n_height, radius_inner=0, n_polar=1, period=360., step=None, voxel_map=None, mask=None,
                  parent=None, transform=None):
-        if 360. % period > 1.e-3:
+        num_sectors = 360. / period
+        if abs(round(num_sectors) - num_sectors) > 1.e-3:
             raise ValueError("The period %.3f is not a multiple of 360." % period)
         grid_shape = (n_radius, n_polar, n_height)
         dr = (radius_outer - radius_inner) / n_radius

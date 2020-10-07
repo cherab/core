@@ -26,7 +26,6 @@ from raysect.optical.material.emitter.inhomogeneous import NumericalIntegrator
 
 # Cherab imports
 from cherab.core import Species, Maxwellian, Plasma, Line
-from cherab.core.math import ConstantVector3D
 from cherab.core.atomic.elements import deuterium, nitrogen
 from cherab.core.model import ExcitationLine, RecombinationLine,\
     MultipletLineShape, StarkBroadenedLine
@@ -56,7 +55,7 @@ d_density = GaussianVolume(0.5 * ion_density, sigma*10000)
 n_density = d_density * 0.01
 e_density = GaussianVolume(ion_density, sigma*10000)
 temperature = 1 + GaussianVolume(79, sigma)
-bulk_velocity = ConstantVector3D(Vector3D(-1e6, 0, 0))
+bulk_velocity = Vector3D(-1e6, 0, 0)
 
 deuterium_mass = deuterium.atomic_weight * atomic_mass
 d_distribution = Maxwellian(d_density, temperature, bulk_velocity, deuterium_mass)
@@ -69,7 +68,7 @@ d1_species = Species(deuterium, 1, d_distribution)
 n1_species = Species(nitrogen, 1, n_distribution)
 
 # define species
-plasma.b_field = ConstantVector3D(Vector3D(1.0, 1.0, 1.0))
+plasma.b_field = Vector3D(1.0, 1.0, 1.0)
 plasma.electron_distribution = e_distribution
 plasma.composition = [d0_species, d1_species, n1_species]
 

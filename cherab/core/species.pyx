@@ -46,13 +46,12 @@ cdef class Species:
        >>> from scipy.constants import atomic_mass
        >>> from raysect.core.math import Vector3D
        >>> from cherab.core import Species, Maxwellian
-       >>> from cherab.core.math import Constant3D, ConstantVector3D
        >>> from cherab.core.atomic import deuterium
        >>>
        >>> # Setup a distribution function for the species
-       >>> density = Constant3D(1E18)
-       >>> temperature = Constant3D(10)
-       >>> bulk_velocity = ConstantVector3D(Vector3D(-1e6, 0, 0))
+       >>> density = 1E18
+       >>> temperature = 10
+       >>> bulk_velocity = Vector3D(-1e6, 0, 0)
        >>> d1_distribution = Maxwellian(density, temperature, bulk_velocity, deuterium.atomic_weight * atomic_mass)
        >>>
        >>> # create the plasma Species object

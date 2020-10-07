@@ -24,12 +24,11 @@ cimport cython
 from raysect.optical cimport Vector3D, Point2D, new_vector3d
 from cherab.core.math cimport Function1D, autowrap_function1d
 from cherab.core.math cimport Function2D, autowrap_function2d
-from cherab.core.math cimport VectorFunction2D, autowrap_vectorfunction2d
+from cherab.core.math cimport VectorFunction2D, autowrap_vectorfunction2d, ConstantVector2D
 from cherab.core.math cimport Interpolate1DCubic, Interpolate2DCubic
 from cherab.core.math cimport PolygonMask2D
 from cherab.core.math cimport IsoMapper2D, AxisymmetricMapper, VectorAxisymmetricMapper
-from cherab.core.math cimport Blend2D, Constant2D, ConstantVector2D
-from cherab.core.math cimport ClampOutput2D
+from cherab.core.math cimport Blend2D, ClampOutput2D
 
 cdef class EFITEquilibrium:
     """
@@ -245,7 +244,7 @@ cdef class EFITEquilibrium:
         f = IsoMapper2D(self.psi_normalised, profile)
 
         # mask off values outside the lcfs
-        return Blend2D(Constant2D(value_outside_lcfs), f, self.inside_lcfs)
+        return Blend2D(value_outside_lcfs, f, self.inside_lcfs)
 
     def map3d(self, object profile, double value_outside_lcfs=0.0):
         """
@@ -300,8 +299,7 @@ cdef class EFITEquilibrium:
            >>> v_poloidal[0, :] = [0, 0.1, 0.2, 0.4, 0.7, 1.0]
            >>> v_poloidal[1, :] = [4e4, 1e4, 3e3, 1e3, 0, 0]
            >>> # Assume zero velocity normal to flux surface
-           >>> from cherab.core.math import Constant1D
-           >>> v_normal = Constant1D(0.0)
+           >>> v_normal = 0.0
            >>>
            >>> # generate VectorFunction2D and sample
            >>> v = equilibrium.map_vector2d(v_toroidal, v_poloidal, v_normal)
@@ -360,8 +358,7 @@ cdef class EFITEquilibrium:
            >>> v_poloidal[0, :] = [0, 0.1, 0.2, 0.4, 0.7, 1.0]
            >>> v_poloidal[1, :] = [4e4, 1e4, 3e3, 1e3, 0, 0]
            >>> # Assume zero velocity normal to flux surface
-           >>> from cherab.core.math import Constant1D
-           >>> v_normal = Constant1D(0.0)
+           >>> v_normal = 0.0
            >>>
            >>> # generate VectorFunction2D and sample
            >>> v = equilibrium.map_vector3d(v_toroidal, v_poloidal, v_normal)

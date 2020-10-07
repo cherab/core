@@ -24,7 +24,6 @@ from scipy.constants import electron_mass, atomic_mass
 import matplotlib.pyplot as plt
 import numpy as np
 from cherab.core.model import ExcitationLine, RecombinationLine, Bremsstrahlung
-from cherab.core.math import Constant3D, ConstantVector3D
 
 # Cherab and raysect imports
 from cherab.core import Species, Maxwellian, Plasma, Line, elements
@@ -58,7 +57,7 @@ plasma.integrator = NumericalIntegrator(step=sigma / 5.0)
 d_density = GaussianVolume(0.5 * ion_density, sigma*10000)
 e_density = GaussianVolume(ion_density, sigma*10000)
 temperature = 1 + GaussianVolume(79, sigma)
-bulk_velocity = ConstantVector3D(Vector3D(-1e5, 0, 0))
+bulk_velocity = Vector3D(-1e5, 0, 0)
 
 d_mass = elements.deuterium.atomic_weight * atomic_mass
 d_distribution = Maxwellian(d_density, temperature, bulk_velocity, d_mass)
@@ -68,7 +67,7 @@ d0_species = Species(elements.deuterium, 0, d_distribution)
 d1_species = Species(elements.deuterium, 1, d_distribution)
 
 # define species
-plasma.b_field = ConstantVector3D(Vector3D(1.0, 1.0, 1.0))
+plasma.b_field = Vector3D(1.0, 1.0, 1.0)
 plasma.electron_distribution = e_distribution
 plasma.composition = [d0_species, d1_species]
 
