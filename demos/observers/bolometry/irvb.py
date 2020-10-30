@@ -16,7 +16,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from raysect.core import Point3D, Vector3D, rotate_basis, translate
-from raysect.core.math.function import Exp2D
+from raysect.core.math.function.float import Exp2D
 from raysect.primitive import Box, Cylinder, Subtract
 from raysect.optical import World
 from raysect.optical.material import AbsorbingSurface, VolumeTransform
