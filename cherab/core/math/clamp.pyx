@@ -54,7 +54,7 @@ cdef class ClampOutput1D(Function1D):
         self._max = max
 
     cdef double evaluate(self, double x) except? -1e999:
-        return clamp(self._f(x), self._min, self._max)
+        return clamp(self._f.evaluate(x), self._min, self._max)
 
 
 cdef class ClampOutput2D(Function2D):
@@ -87,7 +87,7 @@ cdef class ClampOutput2D(Function2D):
         self._max = max
 
     cdef double evaluate(self, double x, double y) except? -1e999:
-        return clamp(self._f(x, y), self._min, self._max)
+        return clamp(self._f.evaluate(x, y), self._min, self._max)
 
 
 cdef class ClampOutput3D(Function3D):
@@ -124,7 +124,7 @@ cdef class ClampOutput3D(Function3D):
         self._max = max
 
     cdef double evaluate(self, double x, double y, double z) except? -1e999:
-        return clamp(self._f(x, y, z), self._min, self._max)
+        return clamp(self._f.evaluate(x, y, z), self._min, self._max)
 
 
 cdef class ClampInput1D(Function1D):
@@ -158,7 +158,7 @@ cdef class ClampInput1D(Function1D):
 
     cdef double evaluate(self, double x) except? -1e999:
         x = clamp(x, self._xmin, self._xmax)
-        return self._f(x)
+        return self._f.evaluate(x)
 
 
 cdef class ClampInput2D(Function2D):
@@ -203,7 +203,7 @@ cdef class ClampInput2D(Function2D):
     cdef double evaluate(self, double x, double y) except? -1e999:
         x = clamp(x, self._xmin, self._xmax)
         y = clamp(y, self._ymin, self._ymax)
-        return self._f(x, y)
+        return self._f.evaluate(x, y)
 
 
 cdef class ClampInput3D(Function3D):
@@ -256,5 +256,5 @@ cdef class ClampInput3D(Function3D):
         x = clamp(x, self._xmin, self._xmax)
         y = clamp(y, self._ymin, self._ymax)
         z = clamp(z, self._zmin, self._zmax)
-        return self._f(x, y, z)
+        return self._f.evaluate(x, y, z)
 
