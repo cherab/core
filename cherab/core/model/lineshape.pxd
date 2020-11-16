@@ -63,6 +63,11 @@ cdef class StarkBroadenedLine(LineShapeModel):
     pass
 
 
+cdef class SimpleZeemanLineShape(LineShapeModel):
+
+    cdef double _polarization
+
+
 cdef class BeamLineShapeModel:
 
     cdef:

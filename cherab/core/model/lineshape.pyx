@@ -367,6 +367,97 @@ cdef class StarkBroadenedLine(LineShapeModel):
         return spectrum
 
 
+DEF BOHR_MAGNETON = 5.78838180123e-5  # in eV/T
+DEF HC_EV_NM = 1239.8419738620933  # (Planck constant in eV s) x (speed of light in nm/s)
+
+
+cdef class SimpleZeemanLineShape(LineShapeModel):
+
+    def __init__(self, Line line, double wavelength, Species target_species, Plasma plasma, polarization='both'):
+        """
+        Simple Dopple-Zeeman triplet.
+
+        :param Line line: The emission line object for this line shape.
+        :param float wavelength: The rest wavelength for this emission line.
+        :param Species target_species: The target plasma species that is emitting.
+        :param Plasma plasma: The emitting plasma object.
+        :param polarization: The components of Zeeman triplet to calculate:
+                             "pi" - central component,
+                             "sigma" - side components,
+                             "both" - all components (default).
+        """
+
+        super().__init__(line, wavelength, target_species, plasma)
+
+        self.polarization = polarization
+
+    @property
+    def polarization(self):
+        return self._polarization
+
+    @polarization.setter
+    def polarization(self, value):
+        if value not in ('pi', 'sigma', 'both'):
+            raise ValueError('Select between "pi", "sigma" or "both", {} is unsupported.'.format(value))
+
+        self._polarization = value
+
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    @cython.initializedcheck(False)
+    @cython.cdivision(True)
+    cpdef Spectrum add_line(self, double radiance, Point3D point, Vector3D direction, Spectrum spectrum):
+
+        cdef double ts, sigma, shifted_wavelength, photon_energy, b_magn, radiance_pi, radiance_sigma, cos_sqr, sin_sqr
+        cdef Vector3D ion_velocity, b_field
+
+        ts = self.target_species.distribution.effective_temperature(point.x, point.y, point.z)
+        if ts <= 0.0:
+            return spectrum
+
+        ion_velocity = self.target_species.distribution.bulk_velocity(point.x, point.y, point.z)
+
+        # calculate emission line central wavelength, doppler shifted along observation direction
+        shifted_wavelength = doppler_shift(self.wavelength, direction, ion_velocity)
+
+        # calculate the line width
+        sigma = thermal_broadening(self.wavelength, ts, self.line.element.atomic_weight)
+
+        # obtain magnetic field
+        b_field = self.plasma.get_b_field().evaluate(point.x, point.y, point.z)
+        b_magn = b_field.get_length()
+
+        if b_magn == 0:
+            # no splitting if magnetic filed strength is zero
+            if self._polarization == 'both':
+                return add_gaussian_line(radiance, shifted_wavelength, sigma, spectrum)
+
+            return add_gaussian_line(0.5 * radiance, shifted_wavelength, sigma, spectrum)
+
+        # coefficients for intensities parallel and perpendicular to magnetic field
+        cos_sqr = (b_field.dot(direction.normalise()) / b_magn)**2
+        sin_sqr = 1. - cos_sqr
+
+        # adding pi component of the Zeeman triplet
+        if self._polarization != 'sigma':
+            radiance_pi = 0.5 * sin_sqr * radiance
+            spectrum = add_gaussian_line(radiance_pi, shifted_wavelength, sigma, spectrum)
+
+        # adding sigma +/- components of the Zeeman triplet
+        if self._polarization != 'pi':
+            radiance_sigma = (0.25 * sin_sqr + 0.5 * cos_sqr) * radiance
+
+            photon_energy = HC_EV_NM / shifted_wavelength
+
+            shifted_wavelength = HC_EV_NM / (photon_energy - BOHR_MAGNETON * b_magn)
+            spectrum = add_gaussian_line(radiance_sigma, shifted_wavelength, sigma, spectrum)
+
+            shifted_wavelength = HC_EV_NM / (photon_energy + BOHR_MAGNETON * b_magn)
+            spectrum = add_gaussian_line(radiance_sigma, shifted_wavelength, sigma, spectrum)
+
+        return spectrum
+
+
 cdef class BeamLineShapeModel:
     """
     A base class for building beam emission line shapes.
