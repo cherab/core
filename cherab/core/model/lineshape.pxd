@@ -63,9 +63,39 @@ cdef class StarkBroadenedLine(LineShapeModel):
     pass
 
 
-cdef class SimpleZeemanLineShape(LineShapeModel):
+cdef class ZeemanLineShapeModel(LineShapeModel):
 
     cdef double _polarization
+
+    pass
+
+
+cdef class ZeemanTriplet(ZeemanLineShapeModel):
+
+    pass
+
+
+cdef class ParametrisedZeemanTriplet(ZeemanLineShapeModel):
+
+    cdef double _alpha, _beta, _gamma
+
+    pass
+
+
+cdef class ZeemanSplittingFunction():
+
+    cdef:
+        int _number_of_pi_lines, _number_of_sigma_lines
+        list _wavelengths, _ratios
+    
+    cdef double[:, :] evaluate(self, double b, bint polarisation)
+
+
+cdef class ZeemanMultiplet(ZeemanLineShapeModel):
+
+    cdef ZeemanSplittingFunction _splitting_function
+    
+    pass
 
 
 cdef class BeamLineShapeModel:

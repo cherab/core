@@ -87,7 +87,8 @@ cpdef Spectrum add_gaussian_line(double radiance, double wavelength, double sigm
     Adds a Gaussian line to the given spectrum and returns the new spectrum.
 
     The formula used is based on the following definite integral:
-    \frac{1}{\sigma \sqrt{2 \pi}} \int_{\lambda_0}^{\lambda_1} \exp(-\frac{(x-\mu)^2}{2\sigma^2}) dx = \frac{1}{2} \left[ -Erf(\frac{a-\mu}{\sqrt{2}\sigma}) +Erf(\frac{b-\mu}{\sqrt{2}\sigma}) \right]
+    :math:`\frac{1}{\sigma \sqrt{2 \pi}} \int_{\lambda_0}^{\lambda_1} \exp(-\frac{(x-\mu)^2}{2\sigma^2}) dx =
+           \frac{1}{2} \left[ -Erf(\frac{a-\mu}{\sqrt{2}\sigma}) +Erf(\frac{b-\mu}{\sqrt{2}\sigma}) \right]`
 
     :param float radiance: Intensity of the line in radiance.
     :param float wavelength: central wavelength of the line in nm.
@@ -370,10 +371,42 @@ cdef class StarkBroadenedLine(LineShapeModel):
 DEF BOHR_MAGNETON = 5.78838180123e-5  # in eV/T
 DEF HC_EV_NM = 1239.8419738620933  # (Planck constant in eV s) x (speed of light in nm/s)
 
+DEF PI_POLARISATION = 0
+DEF SIGMA_POLARISATION = 1
+DEF NO_POLARISATION = 2
 
-cdef class SimpleZeemanLineShape(LineShapeModel):
 
-    def __init__(self, Line line, double wavelength, Species target_species, Plasma plasma, polarization='both'):
+cdef class ZeemanLineShapeModel(LineShapeModel):
+
+    def __init__(self, Line line, double wavelength, Species target_species, Plasma plasma, polarisation):
+        super().__init__(line, wavelength, target_species, plasma)
+
+        self.polarisation = polarisation
+
+    @property
+    def polarisation(self):
+        if self._polarisation == PI_POLARISATION:
+            return 'pi'
+        if self._polarisation == SIGMA_POLARISATION:
+            return 'sigma'
+        if self._polarisation == NO_POLARISATION:
+            return 'no'
+
+    @polarisation.setter
+    def polarisation(self, value):
+        if value == 'pi':
+            self._polarisation = PI_POLARISATION
+        elif value == 'sigma':
+            self._polarisation = SIGMA_POLARISATION
+        elif value == 'no':
+            self._polarisation = NO_POLARISATION
+        else:
+            raise ValueError('Select between "pi", "sigma" or "no", {} is unsupported.'.format(value))
+
+
+cdef class ZeemanTriplet(ZeemanLineShapeModel):
+
+    def __init__(self, Line line, double wavelength, Species target_species, Plasma plasma, polarisation='no'):
         """
         Simple Dopple-Zeeman triplet.
 
@@ -381,26 +414,13 @@ cdef class SimpleZeemanLineShape(LineShapeModel):
         :param float wavelength: The rest wavelength for this emission line.
         :param Species target_species: The target plasma species that is emitting.
         :param Plasma plasma: The emitting plasma object.
-        :param polarization: The components of Zeeman triplet to calculate:
+        :param polarisation: Calculate only pi/sigma-polarised components of Zeeman triplet:
                              "pi" - central component,
                              "sigma" - side components,
-                             "both" - all components (default).
+                             "no" - all components (default).
         """
 
-        super().__init__(line, wavelength, target_species, plasma)
-
-        self.polarization = polarization
-
-    @property
-    def polarization(self):
-        return self._polarization
-
-    @polarization.setter
-    def polarization(self, value):
-        if value not in ('pi', 'sigma', 'both'):
-            raise ValueError('Select between "pi", "sigma" or "both", {} is unsupported.'.format(value))
-
-        self._polarization = value
+        super().__init__(line, wavelength, target_species, plasma, polarisation)
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
@@ -408,7 +428,7 @@ cdef class SimpleZeemanLineShape(LineShapeModel):
     @cython.cdivision(True)
     cpdef Spectrum add_line(self, double radiance, Point3D point, Vector3D direction, Spectrum spectrum):
 
-        cdef double ts, sigma, shifted_wavelength, photon_energy, b_magn, radiance_pi, radiance_sigma, cos_sqr, sin_sqr
+        cdef double ts, sigma, shifted_wavelength, photon_energy, b_magn, component_radiance, cos_sqr, sin_sqr
         cdef Vector3D ion_velocity, b_field
 
         ts = self.target_species.distribution.effective_temperature(point.x, point.y, point.z)
@@ -429,7 +449,7 @@ cdef class SimpleZeemanLineShape(LineShapeModel):
 
         if b_magn == 0:
             # no splitting if magnetic filed strength is zero
-            if self._polarization == 'both':
+            if self._polarisation == NO_POLARISATION:
                 return add_gaussian_line(radiance, shifted_wavelength, sigma, spectrum)
 
             return add_gaussian_line(0.5 * radiance, shifted_wavelength, sigma, spectrum)
@@ -439,21 +459,376 @@ cdef class SimpleZeemanLineShape(LineShapeModel):
         sin_sqr = 1. - cos_sqr
 
         # adding pi component of the Zeeman triplet
-        if self._polarization != 'sigma':
-            radiance_pi = 0.5 * sin_sqr * radiance
-            spectrum = add_gaussian_line(radiance_pi, shifted_wavelength, sigma, spectrum)
+        if self._polarisation != SIGMA_POLARISATION:
+            component_radiance = 0.5 * sin_sqr * radiance
+            spectrum = add_gaussian_line(component_radiance, shifted_wavelength, sigma, spectrum)
 
         # adding sigma +/- components of the Zeeman triplet
-        if self._polarization != 'pi':
-            radiance_sigma = (0.25 * sin_sqr + 0.5 * cos_sqr) * radiance
+        if self._polarisation != PI_POLARISATION:
+            component_radiance = (0.25 * sin_sqr + 0.5 * cos_sqr) * radiance
 
-            photon_energy = HC_EV_NM / shifted_wavelength
+            photon_energy = HC_EV_NM / self.wavelength
 
-            shifted_wavelength = HC_EV_NM / (photon_energy - BOHR_MAGNETON * b_magn)
-            spectrum = add_gaussian_line(radiance_sigma, shifted_wavelength, sigma, spectrum)
+            shifted_wavelength = doppler_shift(HC_EV_NM / (photon_energy - BOHR_MAGNETON * b_magn), direction, ion_velocity)
+            spectrum = add_gaussian_line(component_radiance, shifted_wavelength, sigma, spectrum)
 
-            shifted_wavelength = HC_EV_NM / (photon_energy + BOHR_MAGNETON * b_magn)
-            spectrum = add_gaussian_line(radiance_sigma, shifted_wavelength, sigma, spectrum)
+            shifted_wavelength = doppler_shift(HC_EV_NM / (photon_energy + BOHR_MAGNETON * b_magn), direction, ion_velocity)
+            spectrum = add_gaussian_line(component_radiance, shifted_wavelength, sigma, spectrum)
+
+        return spectrum
+
+
+cdef class ParametrisedZeemanTriplet(ZeemanLineShapeModel):
+
+    def __init__(self, Line line, double wavelength, Species target_species, Plasma plasma, alpha=None, beta=None, gamma=None, polarisation='no'):
+        """
+        Parametrised Dopple-Zeeman triplet that takes into account additional broadening due to
+        the line's fine structure without resolving the individual components of the fine
+        structure. The model is described with three parameters: \alpha, \beta and \gamma.
+
+        The distance between :math:`\sigma^+` and :math:`\sigma^-` peaks: 
+        :math:`\Delta \lambda_{\sigma}=\alpha B`, 
+        where B is the magnetic field strength.
+        The ratio between Zeeman and thermal broadening line widths:
+        :math:`\frac{W_{Zeeman}}{W_{Doppler}}=\beta T^{\gamma}`,
+        where T is the species temperature in eV.
+        If `\alpha` is not provided and the spectral line is not in the database, it's calculated
+        as `\alpha = 2\frac{\mu_{0}}{\lambda_{0}^{2}hc}`,
+        where `\mu_{0}` is the Bohr magneton and `\lambda_{0}` is the rest wavelength of this line.
+
+        For details see A. Blom and C. Jupén, Parametrisation of the Zeeman effect
+        for hydrogen-like spectra in high-temperature plasmas,
+        Plasma Phys. Control. Fusion 44 (2002) 1229-1241, 
+        https://doi.org/10.1088/0741-3335/44/7/312
+
+        :param Line line: The emission line object for this line shape.
+        :param float wavelength: The rest wavelength for this emission line.
+        :param Species target_species: The target plasma species that is emitting.
+        :param Plasma plasma: The emitting plasma object.
+        :param float alpha: Parameter alpha, defaults to None. Used only if the given spectral
+                            line is not in the database.
+        :param float beta:  Parameter beta, defaults to None. Used only if the given spectral
+                            line is not in the database.
+        :param float gamma: Parameter gamma, defaults to None. Used only if the given spectral
+                            line is not in the database.
+        :param polarisation: Calculate only pi/sigma-polarised components of Zeeman triplet:
+                             "pi" - central component,
+                             "sigma" - side components,
+                             "no" - all components (default).
+        """
+        LINE_PARAMETERS = {  # alpha, beta, gamma parameters for selected lines
+            ('H', 0): {
+                (3, 2): (0.0402267, 0.3415, -0.5247),
+                (4, 2): (0.0220724, 0.2837, -0.5346)
+            },
+            ('D', 0): {
+                (3, 2): (0.0402068, 0.4384, -0.5015),
+                (4, 2): (0.0220610, 0.3702, -0.5132)
+            },
+            ('He3', 1): {
+                (4, 3): (0.0205200, 1.4418, -0.4892),
+                (5, 3): (0.0095879, 1.2576, -0.5001),
+                (6, 4): (0.0401980, 0.8976, -0.4971),
+                (7, 4): (0.0273538, 0.8529, -0.5039)
+            },
+            ('He', 1): {
+                (4, 3): (0.0205206, 1.6118, -0.4838),
+                (5, 3): (0.0095879, 1.4294, -0.4975),
+                (6, 4): (0.0401955, 1.0058, -0.4918),
+                (7, 4): (0.0273521, 0.9563, -0.4981)
+            },
+            ('Be', 3): {
+                (5, 4): (0.0060354, 2.1245, -0.3190),
+                (6, 5): (0.0202754, 1.6538, -0.3192),
+                (7, 5): (0.0078966, 1.7017, -0.3348),
+                (8, 6): (0.0205025, 1.4581, -0.3450)
+            },
+            ('B', 4): {
+                (6, 5): (0.0083423, 2.0519, -0.2960),
+                (7, 6): (0.0228379, 1.6546, -0.2941),
+                (8, 6): (0.0084065, 1.8041, -0.3177),
+                (8, 7): (0.0541883, 1.4128, -0.2966),
+                (9, 7): (0.0190781, 1.5440, -0.3211),
+                (10, 8): (0.0391914, 1.3569, -0.3252)
+            },
+            ('C', 5): {
+                (6, 5): (0.0040900, 2.4271, -0.2818),
+                (7, 6): (0.0110398, 1.9785, -0.2816),
+                (8, 6): (0.0040747, 2.1776, -0.3035),
+                (8, 7): (0.0261405, 1.6689, -0.2815),
+                (9, 7): (0.0092096, 1.8495, -0.3049),
+                (10, 8): (0.0189020, 1.6191, -0.3078),
+                (11, 8): (0.0110428, 1.6600, -0.3162),
+                (11, 9): (0.0359009, 1.4464, -0.3104)
+            },
+            ('N', 6): {
+                (7, 6): (0.0060010, 2.4789, -0.2817),
+                (8, 7): (0.0141271, 2.0249, -0.2762),
+                (9, 8): (0.0300127, 1.7415, -0.2753),
+                (10, 8): (0.0102089, 1.9464, -0.2975),
+                (11, 9): (0.0193799, 1.7133, -0.2973)
+            },
+            ('O', 7): {
+                (8, 7): (0.0083081, 2.4263, -0.2747),
+                (9, 8): (0.0176049, 2.0652, -0.2721),
+                (10, 8): (0.0059933, 2.3445, -0.2944),
+                (10, 9): (0.0343805, 1.8122, -0.2718),
+                (11, 9): (0.0113640, 2.0268, -0.2911)
+            },
+            ('Ne', 9): {
+                (9, 8): (0.0072488, 2.8838, -0.2758),
+                (10, 9): (0.0141002, 2.4755, -0.2718),
+                (11, 9): (0.0046673, 2.8410, -0.2917),
+                (11, 10): (0.0257292, 2.1890, -0.2715)
+            }
+        }
+        LINE_PARAMETERS[('He4', 1)] = LINE_PARAMETERS[('He', 1)]
+        LINE_PARAMETERS[('B11', 4)] = LINE_PARAMETERS[('B', 4)]
+        LINE_PARAMETERS[('C12', 5)] = LINE_PARAMETERS[('C', 5)]
+        LINE_PARAMETERS[('N14', 6)] = LINE_PARAMETERS[('N', 6)]
+        LINE_PARAMETERS[('O16', 7)] = LINE_PARAMETERS[('O', 6)]
+        LINE_PARAMETERS[('Ne20', 9)] = LINE_PARAMETERS[('Ne', 9)]
+
+        super().__init__(line, wavelength, target_species, plasma, polarisation)
+
+        try:
+            _alpha, _beta, _gamma = self.LINE_PARAMETERS[(self.line.element, self.line.charge)][self.line.transition]
+            self._alpha = _alpha
+            self._beta = _beta
+            self._gamma = _gamma
+        except KeyError:
+            if beta is None or gamma is None:
+                raise ValueError('Data for {} {}+ transition {} is not currently available.'.format(self.line.element.symbol,
+                                                                                                    self.line.charge,
+                                                                                                    self.line.transition))
+            if alpha is None:
+                # assign simple triplet value (error < 0.0001 nm for tested lines)
+                self._alpha = 2. * BOHR_MAGNETON * self.wavelength * self.wavelength / HC_EV_NM
+            elif alpha <= 0:
+                raise ValueError('Parameter alpha must be positive.')
+            else:
+                self._alpha = alpha
+
+            if beta < 0:
+                raise ValueError('Parameter beta must be non-negative.')
+            self._beta = beta
+            self._gamma = gamma
+
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    @cython.initializedcheck(False)
+    @cython.cdivision(True)
+    cpdef Spectrum add_line(self, double radiance, Point3D point, Vector3D direction, Spectrum spectrum):
+
+        cdef double ts, sigma, shifted_wavelength, b_magn, component_radiance, cos_sqr, sin_sqr
+        cdef Vector3D ion_velocity, b_field
+
+        ts = self.target_species.distribution.effective_temperature(point.x, point.y, point.z)
+        if ts <= 0.0:
+            return spectrum
+
+        ion_velocity = self.target_species.distribution.bulk_velocity(point.x, point.y, point.z)
+
+        # calculate emission line central wavelength, doppler shifted along observation direction
+        shifted_wavelength = doppler_shift(self.wavelength, direction, ion_velocity)
+
+        # calculate the line width
+        sigma = thermal_broadening(self.wavelength, ts, self.line.element.atomic_weight)
+
+        # fine structure broadening correction
+        sigma *= sqrt(1. + self._beta * self._beta * ts**(2. * self._gamma))
+
+        # obtain magnetic field
+        b_field = self.plasma.get_b_field().evaluate(point.x, point.y, point.z)
+        b_magn = b_field.get_length()
+
+        if b_magn == 0:
+            # no splitting if magnetic filed strength is zero
+            if self._polarisation == NO_POLARISATION:
+                return add_gaussian_line(radiance, shifted_wavelength, sigma, spectrum)
+
+            return add_gaussian_line(0.5 * radiance, shifted_wavelength, sigma, spectrum)
+
+        # coefficients for intensities parallel and perpendicular to magnetic field
+        cos_sqr = (b_field.dot(direction.normalise()) / b_magn)**2
+        sin_sqr = 1. - cos_sqr
+
+        # adding pi component of the Zeeman triplet
+        if self._polarisation != SIGMA_POLARISATION:
+            component_radiance = 0.5 * sin_sqr * radiance
+            spectrum = add_gaussian_line(component_radiance, shifted_wavelength, sigma, spectrum)
+
+        # adding sigma +/- components of the Zeeman triplet
+        if self._polarisation != PI_POLARISATION:
+            component_radiance = (0.25 * sin_sqr + 0.5 * cos_sqr) * radiance
+
+            shifted_wavelength = doppler_shift(self.wavelength + 0.5 * self._alpha * b_magn, direction, ion_velocity)
+            spectrum = add_gaussian_line(component_radiance, shifted_wavelength, sigma, spectrum)
+            shifted_wavelength = doppler_shift(self.wavelength - 0.5 * self._alpha * b_magn, direction, ion_velocity)
+            spectrum = add_gaussian_line(component_radiance, shifted_wavelength, sigma, spectrum)
+
+        return spectrum
+
+
+cdef class ZeemanSplittingFunction():
+
+    def __init__(self, wavelengths_pi, ratios_pi, wavelengths_sigma, ratios_sigma):
+
+        if len(wavelengths_pi) != len(ratios_pi):
+            raise ValueError('The lengths of "wavelengths_pi" ({}) and "ratios_pi" ({}) do not match.'.format(len(wavelengths_pi),
+                                                                                                              len(ratios_pi)))
+
+        if len(wavelengths_sigma) != len(ratios_sigma):
+            raise ValueError('The lengths of "wavelengths_sigma" ({}) and "ratios_sigma" ({}) do not match.'.format(len(wavelengths_sigma),
+                                                                                                                    len(ratios_sigma)))
+
+        self._number_of_pi_lines = len(wavelengths_pi)
+        self._number_of_sigma_lines = len(wavelengths_sigma)
+
+        self._wavelengths = wavelengths_pi + wavelengths_sigma
+        self._ratios = ratios_pi + ratios_sigma
+
+        for wavelength in self._wavelengths:
+            if not isinstance(wavelength, Function1D):
+                raise ValueError('All elements in "wavelengths_pi" and "wavelengths_sigma" lists must be Function1D instances.')
+
+        for ratio in self._ratios:
+            if not isinstance(ratio, Function1D):
+                raise ValueError('All elements in "ratios_pi" and "ratios_sigma" lists must be Function1D instances.')
+
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    @cython.initializedcheck(False)
+    @cython.cdivision(True)
+    cdef double[:, :] evaluate(self, double b, bint polarisation):
+
+        cdef int i, start, number_of_lines
+        cdef np.npy_intp multiplet_shape[2]
+        cdef double ratio_sum
+        cdef np.ndarray multiplet
+        cdef double[:, :] multiplet_mv
+        cdef Function1D wavelength, ratio
+
+        if polarisation == PI_POLARISATION:
+            start = 0
+            number_of_lines = self._number_of_pi_lines
+        else:
+            start = self._number_of_pi_lines
+            number_of_lines = self._number_of_sigma_lines
+
+        multiplet_shape[0] = 2
+        multiplet_shape[1] = number_of_lines
+        multiplet = np.PyArray_SimpleNew(2, multiplet_shape, np.NPY_FLOAT64)
+        multiplet_mv = multiplet
+
+        ratio_sum = 0
+        for i in range(number_of_lines):
+            wavelength = self._wavelengths[start + i]
+            ratio = self._ratios[start + i]
+            multiplet_mv[MULTIPLET_WAVELENGTH, i] = wavelength.evaluate(b)
+            multiplet_mv[MULTIPLET_RATIO, i] = ratio.evaluate(b)
+            ratio_sum += multiplet_mv[1, i]
+
+        # normalising ratios
+        if ratio_sum > 0:
+            for i in range(number_of_lines):
+                multiplet_mv[1, i] /= ratio_sum
+
+        return multiplet_mv
+
+    def __call__(self, double b, str polarisation):
+
+        if polarisation == 'pi':
+            return np.asarray(self.evaluate(b, PI_POLARISATION))
+
+        if polarisation == 'sigma':
+            return np.asarray(self.evaluate(b, SIGMA_POLARISATION))
+
+        raise ValueError('Argument "polarisation" must be "pi" or "sigma", {} given.'.fotmat(polarisation))
+
+
+cdef class ZeemanMultiplet(ZeemanLineShapeModel):
+    """
+    Doppler-Zeeman Multiplet.
+
+    The lineshape radiance is calculated from a base PEC rate that is unresolved. This
+    radiance is then divided over a number of components as specified in the multiplet
+    argument. The multiplet components are specified with an Nx2 array where N is the
+    number of components in the multiplet. The first axis of the array contains the
+    wavelengths of each component, the second contains the line ratio for each component.
+    The component line ratios must sum to one. For example:
+
+    :param Line line: The emission line object for the base rate radiance calculation.
+    :param float wavelength: The rest wavelength of the base emission line.
+    :param Species target_species: The target plasma species that is emitting.
+    :param Plasma plasma: The emitting plasma object.
+    :param splitting_function: A ZeemanSplittingFunction object that provides wavelengths and ratios
+                               of pi-/sigma-polarised components for any given magnetic field strength.
+    :param polarisation: Calculate only pi/sigma-polarised components of Zeeman multiplet:
+                         "pi", "sigma" or "no" (default).
+
+    """
+
+    def __init__(self, Line line, double wavelength, Species target_species, Plasma plasma,
+                 ZeemanSplittingFunction splitting_function, polarisation='both'):
+
+        super().__init__(line, wavelength, target_species, plasma, polarisation)
+
+        self._splitting_function = splitting_function
+
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    @cython.initializedcheck(False)
+    @cython.cdivision(True)
+    cpdef Spectrum add_line(self, double radiance, Point3D point, Vector3D direction, Spectrum spectrum):
+
+        cdef int i
+        cdef double ts, sigma, shifted_wavelength, component_radiance
+        cdef Vector3D ion_velocity
+        cdef double[:, :] multiplet_pi_mv, multiplet_sigma_mv
+
+        ts = self.target_species.distribution.effective_temperature(point.x, point.y, point.z)
+        if ts <= 0.0:
+            return spectrum
+
+        ion_velocity = self.target_species.distribution.bulk_velocity(point.x, point.y, point.z)
+
+        # calculate the line width
+        sigma = thermal_broadening(self.wavelength, ts, self.line.element.atomic_weight)
+
+        # obtain magnetic field
+        b_field = self.plasma.get_b_field().evaluate(point.x, point.y, point.z)
+        b_magn = b_field.get_length()
+
+        if b_magn == 0:
+            # no splitting if magnetic filed strength is zero
+            shifted_wavelength = doppler_shift(self.wavelength, direction, ion_velocity)
+            if self._polarisation == 'both':
+                return add_gaussian_line(radiance, shifted_wavelength, sigma, spectrum)
+
+            return add_gaussian_line(0.5 * radiance, shifted_wavelength, sigma, spectrum)
+
+        # coefficients for intensities parallel and perpendicular to magnetic field
+        cos_sqr = (b_field.dot(direction.normalise()) / b_magn)**2
+        sin_sqr = 1. - cos_sqr
+
+        # adding pi components of the Zeeman multiplet
+        if self._polarisation != SIGMA_POLARISATION:
+            component_radiance = 0.5 * sin_sqr * radiance
+            multiplet_mv = self._splitting_function.evaluate(b_magn, PI_POLARISATION)
+
+            for i in range(multiplet_mv.shape[1]):
+                shifted_wavelength = doppler_shift(multiplet_mv[MULTIPLET_WAVELENGTH, i], direction, ion_velocity)
+                spectrum = add_gaussian_line(component_radiance * multiplet_mv[MULTIPLET_RATIO, i], shifted_wavelength, sigma, spectrum)
+
+        # adding sigma components of the Zeeman multiplet
+        if self._polarisation != PI_POLARISATION:
+            component_radiance = (0.5 * sin_sqr + cos_sqr) * radiance
+            multiplet_mv = self._splitting_function.evaluate(b_magn, SIGMA_POLARISATION)
+
+            for i in range(multiplet_mv.shape[1]):
+                shifted_wavelength = doppler_shift(multiplet_mv[MULTIPLET_WAVELENGTH, i], direction, ion_velocity)
+                spectrum = add_gaussian_line(component_radiance * multiplet_mv[MULTIPLET_RATIO, i], shifted_wavelength, sigma, spectrum)
 
         return spectrum
 
