@@ -182,7 +182,7 @@ def _update_and_write_adf11(species, rate_data, path):
             raise ValueError('Electron temperature, density and rate data arrays have inconsistent sizes.')
 
         # update file content with new rate
-        content[charge] = {
+        content[str(charge)] = {
             'te': te.tolist(),
             'ne': ne.tolist(),
             'rate': rate_table.tolist(),
