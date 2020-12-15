@@ -65,7 +65,7 @@ cdef class StarkBroadenedLine(LineShapeModel):
 
 cdef class ZeemanLineShapeModel(LineShapeModel):
 
-    cdef double _polarization
+    cdef double _polarisation
 
     pass
 

@@ -586,13 +586,13 @@ cdef class ParametrisedZeemanTriplet(ZeemanLineShapeModel):
         LINE_PARAMETERS[('B11', 4)] = LINE_PARAMETERS[('B', 4)]
         LINE_PARAMETERS[('C12', 5)] = LINE_PARAMETERS[('C', 5)]
         LINE_PARAMETERS[('N14', 6)] = LINE_PARAMETERS[('N', 6)]
-        LINE_PARAMETERS[('O16', 7)] = LINE_PARAMETERS[('O', 6)]
+        LINE_PARAMETERS[('O16', 7)] = LINE_PARAMETERS[('O', 7)]
         LINE_PARAMETERS[('Ne20', 9)] = LINE_PARAMETERS[('Ne', 9)]
 
         super().__init__(line, wavelength, target_species, plasma, polarisation)
 
         try:
-            _alpha, _beta, _gamma = self.LINE_PARAMETERS[(self.line.element, self.line.charge)][self.line.transition]
+            _alpha, _beta, _gamma = LINE_PARAMETERS[(self.line.element.symbol, self.line.charge)][self.line.transition]
             self._alpha = _alpha
             self._beta = _beta
             self._gamma = _gamma
@@ -770,7 +770,7 @@ cdef class ZeemanMultiplet(ZeemanLineShapeModel):
     """
 
     def __init__(self, Line line, double wavelength, Species target_species, Plasma plasma,
-                 ZeemanSplittingFunction splitting_function, polarisation='both'):
+                 ZeemanSplittingFunction splitting_function, polarisation='no'):
 
         super().__init__(line, wavelength, target_species, plasma, polarisation)
 
@@ -803,7 +803,7 @@ cdef class ZeemanMultiplet(ZeemanLineShapeModel):
         if b_magn == 0:
             # no splitting if magnetic filed strength is zero
             shifted_wavelength = doppler_shift(self.wavelength, direction, ion_velocity)
-            if self._polarisation == 'both':
+            if self._polarisation == NO_POLARISATION:
                 return add_gaussian_line(radiance, shifted_wavelength, sigma, spectrum)
 
             return add_gaussian_line(0.5 * radiance, shifted_wavelength, sigma, spectrum)
