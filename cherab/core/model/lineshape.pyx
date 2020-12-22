@@ -62,12 +62,12 @@ cpdef double doppler_shift(double wavelength, Vector3D observation_direction, Ve
 @cython.cdivision(True)
 cpdef double thermal_broadening(double wavelength, double temperature, double atomic_weight):
     """
-    Returns the line width for a gaussian line as a standard deviation.  
-    
+    Returns the line width for a gaussian line as a standard deviation.
+
     :param wavelength: Central wavelength.
     :param temperature: Temperature in eV.
     :param atomic_weight: Atomic weight in AMU.
-    :return: Standard deviation of gaussian line. 
+    :return: Standard deviation of gaussian line.
     """
 
     # todo: add input sanity checks
@@ -75,7 +75,9 @@ cpdef double thermal_broadening(double wavelength, double temperature, double at
 
 
 # the number of standard deviations outside the rest wavelength the line is considered to add negligible value (including a margin for safety)
-DEF GAUSSIAN_CUTOFF_SIGMA=10.0
+DEF GAUSSIAN_CUTOFF_SIGMA = 10.0
+
+DEF LORENZIAN_CUTOFF_GAMMA = 50.0
 
 
 @cython.cdivision(True)
@@ -83,12 +85,11 @@ DEF GAUSSIAN_CUTOFF_SIGMA=10.0
 @cython.boundscheck(False)
 @cython.wraparound(False)
 cpdef Spectrum add_gaussian_line(double radiance, double wavelength, double sigma, Spectrum spectrum):
-    """
+    r"""
     Adds a Gaussian line to the given spectrum and returns the new spectrum.
 
     The formula used is based on the following definite integral:
-    :math:`\frac{1}{\sigma \sqrt{2 \pi}} \int_{\lambda_0}^{\lambda_1} \exp(-\frac{(x-\mu)^2}{2\sigma^2}) dx =
-           \frac{1}{2} \left[ -Erf(\frac{a-\mu}{\sqrt{2}\sigma}) +Erf(\frac{b-\mu}{\sqrt{2}\sigma}) \right]`
+    :math:`\frac{1}{\sigma \sqrt{2 \pi}} \int_{\lambda_0}^{\lambda_1} \exp(-\frac{(x-\mu)^2}{2\sigma^2}) dx = \frac{1}{2} \left[ -Erf(\frac{a-\mu}{\sqrt{2}\sigma}) +Erf(\frac{b-\mu}{\sqrt{2}\sigma}) \right]`
 
     :param float radiance: Intensity of the line in radiance.
     :param float wavelength: central wavelength of the line in nm.
@@ -158,6 +159,24 @@ cdef class LineShapeModel:
 
 
 cdef class GaussianLine(LineShapeModel):
+    """
+    Produces Gaussian line shape.
+
+    :param Line line: The emission line object for this line shape.
+    :param float wavelength: The rest wavelength for this emission line.
+    :param Species target_species: The target plasma species that is emitting.
+    :param Plasma plasma: The emitting plasma object.
+
+    .. code-block:: pycon
+
+       >>> from cherab.core.atomic import Line, deuterium
+       >>> from cherab.core.model import ExcitationLine, GaussianLine
+       >>>
+       >>> # Adding Gaussian line to the plasma model.
+       >>> d_alpha = Line(deuterium, 0, (3, 2))
+       >>> excit = ExcitationLine(d_alpha, lineshape=GaussianLine)
+       >>> plasma.models.add(excit)
+    """
 
     def __init__(self, Line line, double wavelength, Species target_species, Plasma plasma):
 
@@ -210,15 +229,15 @@ cdef class MultipletLineShape(LineShapeModel):
 
     .. code-block:: pycon
 
-       >>> from cherab.core.atomic import Line, deuterium
+       >>> from cherab.core.atomic import Line, nitrogen
        >>> from cherab.core.model import ExcitationLine, MultipletLineShape
        >>>
        >>> # multiplet specification in Nx2 array
-       >>> multiplet = [[403.5, 404.1, 404.3], [0.2, 0.5, 0.3]]
+       >>> multiplet = [[403.509, 404.132, 404.354, 404.479, 405.692], [0.205, 0.562, 0.175, 0.029, 0.029]]
        >>>
        >>> # Adding the multiplet to the plasma model.
-       >>> d_alpha = Line(deuterium, 0, (3, 2))
-       >>> excit = ExcitationLine(d_alpha, lineshape=MultipletLineShape, lineshape_args=[multiplet])
+       >>> nitrogen_II_404 = Line(nitrogen, 1, ("2s2 2p1 4f1 3G13.0", "2s2 2p1 3d1 3F10.0"))
+       >>> excit = ExcitationLine(nitrogen_II_404, lineshape=MultipletLineShape, lineshape_args=[multiplet])
        >>> plasma.models.add(excit)
     """
 
@@ -270,12 +289,20 @@ cdef class MultipletLineShape(LineShapeModel):
 
 
 cdef class StarkBroadenedLine(LineShapeModel):
+    """
+    Parametrised Stark broadened line shape based on the Model Microfield Method (MMM).
+    Contains embedded atomic data in the form of fits to MMM.
+    Only Balmer and Paschen series are supported.
+    See B. Lomanowski, et al. "Inferring divertor plasma properties from hydrogen Balmer
+    and Paschen series spectroscopy in JET-ILW." Nuclear Fusion 55.12 (2015)
+    `123028 <https://doi.org/10.1088/0029-5515/55/12/123028>`_.
 
-    # Parametrised Microfield Method Stark profile coefficients.
-    # Contains embedded atomic data in the form of fits to numerical models.
-    # Only a limited range of lines is supported.
-    # See B. Lomanowski, et al. "Inferring divertor plasma properties from hydrogen Balmer
-    # and Paschen series spectroscopy in JET-ILW." Nuclear Fusion 55.12 (2015): 123028.
+    :param Line line: The emission line object for this line shape.
+    :param float wavelength: The rest wavelength for this emission line.
+    :param Species target_species: The target plasma species that is emitting.
+    :param Plasma plasma: The emitting plasma object.
+    """
+
     STARK_MODEL_COEFFICIENTS = {
         (3, 2): (3.71e-18, 0.7665, 0.064),
         (4, 2): (8.425e-18, 0.7803, 0.050),
@@ -307,6 +334,13 @@ cdef class StarkBroadenedLine(LineShapeModel):
 
         super().__init__(line, wavelength, target_species, plasma)
 
+    def show_supported_transitions(self):
+        """ Prints all supported transitions."""
+        for key in self.STARK_MODEL_COEFFICIENTS.keys():
+            print('H0: {}-->{}'.format(key[0], key[1]))
+            print('D0: {}-->{}'.format(key[0], key[1]))
+            print('T0: {}-->{}'.format(key[0], key[1]))
+
     @cython.boundscheck(False)
     @cython.wraparound(False)
     @cython.initializedcheck(False)
@@ -330,11 +364,11 @@ cdef class StarkBroadenedLine(LineShapeModel):
         lambda_1_2 = self._cij * ne**self._aij / (te**self._bij)
 
         # calculate and check end of limits
-        cutoff_lower_wavelength = self.wavelength - GAUSSIAN_CUTOFF_SIGMA * lambda_1_2
+        cutoff_lower_wavelength = self.wavelength - LORENZIAN_CUTOFF_GAMMA * lambda_1_2
         if spectrum.max_wavelength < cutoff_lower_wavelength:
             return spectrum
 
-        cutoff_upper_wavelength = self.wavelength + GAUSSIAN_CUTOFF_SIGMA * lambda_1_2
+        cutoff_upper_wavelength = self.wavelength + LORENZIAN_CUTOFF_GAMMA * lambda_1_2
         if spectrum.min_wavelength > cutoff_upper_wavelength:
             return spectrum
 
@@ -347,11 +381,11 @@ cdef class StarkBroadenedLine(LineShapeModel):
         raw_lineshape = spectrum.new_spectrum()
 
         lower_wavelength = raw_lineshape.min_wavelength + start * raw_lineshape.delta_wavelength
-        lower_value = 1 / ((fabs(lower_wavelength - self.wavelength))**2.5 + (0.5*lambda_1_2)**2.5)
+        lower_value = 1 / ((fabs(lower_wavelength - self.wavelength))**2.5 + (0.5 * lambda_1_2)**2.5)
         for i in range(start, end):
 
             upper_wavelength = raw_lineshape.min_wavelength + raw_lineshape.delta_wavelength * (i + 1)
-            upper_value = 1 / ((fabs(upper_wavelength - self.wavelength))**2.5 + (0.5*lambda_1_2)**2.5)
+            upper_value = 1 / ((fabs(upper_wavelength - self.wavelength))**2.5 + (0.5 * lambda_1_2)**2.5)
 
             raw_lineshape.samples_mv[i] += 0.5 * (upper_value + lower_value)
 
@@ -377,6 +411,18 @@ DEF NO_POLARISATION = 2
 
 
 cdef class ZeemanLineShapeModel(LineShapeModel):
+    r"""
+    A base class for building Zeeman line shapes.
+
+    :param Line line: The emission line object for this line shape.
+    :param float wavelength: The rest wavelength for this emission line.
+    :param Species target_species: The target plasma species that is emitting.
+    :param Plasma plasma: The emitting plasma object.
+    :param str polarisation: Leaves only :math:`\pi`-/:math:`\sigma`-polarised components:
+                             "pi" - leave only :math:`\pi`-polarised components,
+                             "sigma" - leave only :math:`\sigma`-polarised components,
+                             "no" - leave all components (default).
+    """
 
     def __init__(self, Line line, double wavelength, Species target_species, Plasma plasma, polarisation):
         super().__init__(line, wavelength, target_species, plasma)
@@ -405,20 +451,20 @@ cdef class ZeemanLineShapeModel(LineShapeModel):
 
 
 cdef class ZeemanTriplet(ZeemanLineShapeModel):
+    r"""
+    Simple Doppler-Zeeman triplet (Paschen-Back effect).
+
+    :param Line line: The emission line object for this line shape.
+    :param float wavelength: The rest wavelength for this emission line.
+    :param Species target_species: The target plasma species that is emitting.
+    :param Plasma plasma: The emitting plasma object.
+    :param str polarisation: Leaves only :math:`\pi`-/:math:`\sigma`-polarised components:
+                             "pi" - leave central component,
+                             "sigma" - leave side components,
+                             "no" - all components (default).
+    """
 
     def __init__(self, Line line, double wavelength, Species target_species, Plasma plasma, polarisation='no'):
-        """
-        Simple Dopple-Zeeman triplet.
-
-        :param Line line: The emission line object for this line shape.
-        :param float wavelength: The rest wavelength for this emission line.
-        :param Species target_species: The target plasma species that is emitting.
-        :param Plasma plasma: The emitting plasma object.
-        :param polarisation: Calculate only pi/sigma-polarised components of Zeeman triplet:
-                             "pi" - central component,
-                             "sigma" - side components,
-                             "no" - all components (default).
-        """
 
         super().__init__(line, wavelength, target_species, plasma, polarisation)
 
@@ -479,120 +525,124 @@ cdef class ZeemanTriplet(ZeemanLineShapeModel):
 
 
 cdef class ParametrisedZeemanTriplet(ZeemanLineShapeModel):
+    r"""
+    Parametrised Doppler-Zeeman triplet. It takes into account additional broadening due to
+    the line's fine structure without resolving the individual components of the fine
+    structure. The model is described with three parameters: :math:`\alpha`,
+    :math:`\beta` and :math:`\gamma`.
+
+    The distance between :math:`\sigma^+` and :math:`\sigma^-` peaks: 
+    :math:`\Delta \lambda_{\sigma} = \alpha B`, 
+    where `B` is the magnetic field strength.
+    The ratio between Zeeman and thermal broadening line widths: 
+    :math:`\frac{W_{Zeeman}}{W_{Doppler}} = \beta T^{\gamma}`,
+    where `T` is the species temperature in eV.
+    If :math:`\alpha` is not provided and the spectral line is not in the database, it's calculated
+    as :math:`\alpha = 2 \frac{\mu_{0}}{\lambda_{0}^{2} h c}`,
+    where :math:`\mu_{0}` is the Bohr magneton and :math:`\lambda_{0}` is the rest wavelength
+    of this line.
+
+    For details see A. Blom and C. Jupén, Parametrisation of the Zeeman effect
+    for hydrogen-like spectra in high-temperature plasmas,
+    Plasma Phys. Control. Fusion 44 (2002) `1229-1241 
+    <https://doi.org/10.1088/0741-3335/44/7/312>`_.
+
+    :param Line line: The emission line object for this line shape.
+    :param float wavelength: The rest wavelength for this emission line.
+    :param Species target_species: The target plasma species that is emitting.
+    :param Plasma plasma: The emitting plasma object.
+    :param float alpha: Parameter :math:`\alpha`, defaults to None. Used only if the given spectral
+                        line is not in the database.
+    :param float beta:  Parameter :math:`\beta`, defaults to None. Used only if the given spectral
+                        line is not in the database.
+    :param float gamma: Parameter :math:`\gamma`, defaults to None. Used only if the given spectral
+                        line is not in the database.
+    :param str polarisation: Leaves only :math:`\pi`-/:math:`\sigma`-polarised components:
+                             "pi" - leave central component,
+                             "sigma" - leave side components,
+                             "no" - all components (default).
+    """
+
+    LINE_PARAMETERS = {  # alpha, beta, gamma parameters for selected lines
+        ('H', 0): {
+            (3, 2): (0.0402267, 0.3415, -0.5247),
+            (4, 2): (0.0220724, 0.2837, -0.5346)
+        },
+        ('D', 0): {
+            (3, 2): (0.0402068, 0.4384, -0.5015),
+            (4, 2): (0.0220610, 0.3702, -0.5132)
+        },
+        ('He3', 1): {
+            (4, 3): (0.0205200, 1.4418, -0.4892),
+            (5, 3): (0.0095879, 1.2576, -0.5001),
+            (6, 4): (0.0401980, 0.8976, -0.4971),
+            (7, 4): (0.0273538, 0.8529, -0.5039)
+        },
+        ('He', 1): {
+            (4, 3): (0.0205206, 1.6118, -0.4838),
+            (5, 3): (0.0095879, 1.4294, -0.4975),
+            (6, 4): (0.0401955, 1.0058, -0.4918),
+            (7, 4): (0.0273521, 0.9563, -0.4981)
+        },
+        ('Be', 3): {
+            (5, 4): (0.0060354, 2.1245, -0.3190),
+            (6, 5): (0.0202754, 1.6538, -0.3192),
+            (7, 5): (0.0078966, 1.7017, -0.3348),
+            (8, 6): (0.0205025, 1.4581, -0.3450)
+        },
+        ('B', 4): {
+            (6, 5): (0.0083423, 2.0519, -0.2960),
+            (7, 6): (0.0228379, 1.6546, -0.2941),
+            (8, 6): (0.0084065, 1.8041, -0.3177),
+            (8, 7): (0.0541883, 1.4128, -0.2966),
+            (9, 7): (0.0190781, 1.5440, -0.3211),
+            (10, 8): (0.0391914, 1.3569, -0.3252)
+        },
+        ('C', 5): {
+            (6, 5): (0.0040900, 2.4271, -0.2818),
+            (7, 6): (0.0110398, 1.9785, -0.2816),
+            (8, 6): (0.0040747, 2.1776, -0.3035),
+            (8, 7): (0.0261405, 1.6689, -0.2815),
+            (9, 7): (0.0092096, 1.8495, -0.3049),
+            (10, 8): (0.0189020, 1.6191, -0.3078),
+            (11, 8): (0.0110428, 1.6600, -0.3162),
+            (11, 9): (0.0359009, 1.4464, -0.3104)
+        },
+        ('N', 6): {
+            (7, 6): (0.0060010, 2.4789, -0.2817),
+            (8, 7): (0.0141271, 2.0249, -0.2762),
+            (9, 8): (0.0300127, 1.7415, -0.2753),
+            (10, 8): (0.0102089, 1.9464, -0.2975),
+            (11, 9): (0.0193799, 1.7133, -0.2973)
+        },
+        ('O', 7): {
+            (8, 7): (0.0083081, 2.4263, -0.2747),
+            (9, 8): (0.0176049, 2.0652, -0.2721),
+            (10, 8): (0.0059933, 2.3445, -0.2944),
+            (10, 9): (0.0343805, 1.8122, -0.2718),
+            (11, 9): (0.0113640, 2.0268, -0.2911)
+        },
+        ('Ne', 9): {
+            (9, 8): (0.0072488, 2.8838, -0.2758),
+            (10, 9): (0.0141002, 2.4755, -0.2718),
+            (11, 9): (0.0046673, 2.8410, -0.2917),
+            (11, 10): (0.0257292, 2.1890, -0.2715)
+        }
+    }
 
     def __init__(self, Line line, double wavelength, Species target_species, Plasma plasma, alpha=None, beta=None, gamma=None, polarisation='no'):
-        """
-        Parametrised Dopple-Zeeman triplet that takes into account additional broadening due to
-        the line's fine structure without resolving the individual components of the fine
-        structure. The model is described with three parameters: \alpha, \beta and \gamma.
 
-        The distance between :math:`\sigma^+` and :math:`\sigma^-` peaks: 
-        :math:`\Delta \lambda_{\sigma}=\alpha B`, 
-        where B is the magnetic field strength.
-        The ratio between Zeeman and thermal broadening line widths:
-        :math:`\frac{W_{Zeeman}}{W_{Doppler}}=\beta T^{\gamma}`,
-        where T is the species temperature in eV.
-        If `\alpha` is not provided and the spectral line is not in the database, it's calculated
-        as `\alpha = 2\frac{\mu_{0}}{\lambda_{0}^{2}hc}`,
-        where `\mu_{0}` is the Bohr magneton and `\lambda_{0}` is the rest wavelength of this line.
-
-        For details see A. Blom and C. Jupén, Parametrisation of the Zeeman effect
-        for hydrogen-like spectra in high-temperature plasmas,
-        Plasma Phys. Control. Fusion 44 (2002) 1229-1241, 
-        https://doi.org/10.1088/0741-3335/44/7/312
-
-        :param Line line: The emission line object for this line shape.
-        :param float wavelength: The rest wavelength for this emission line.
-        :param Species target_species: The target plasma species that is emitting.
-        :param Plasma plasma: The emitting plasma object.
-        :param float alpha: Parameter alpha, defaults to None. Used only if the given spectral
-                            line is not in the database.
-        :param float beta:  Parameter beta, defaults to None. Used only if the given spectral
-                            line is not in the database.
-        :param float gamma: Parameter gamma, defaults to None. Used only if the given spectral
-                            line is not in the database.
-        :param polarisation: Calculate only pi/sigma-polarised components of Zeeman triplet:
-                             "pi" - central component,
-                             "sigma" - side components,
-                             "no" - all components (default).
-        """
-        LINE_PARAMETERS = {  # alpha, beta, gamma parameters for selected lines
-            ('H', 0): {
-                (3, 2): (0.0402267, 0.3415, -0.5247),
-                (4, 2): (0.0220724, 0.2837, -0.5346)
-            },
-            ('D', 0): {
-                (3, 2): (0.0402068, 0.4384, -0.5015),
-                (4, 2): (0.0220610, 0.3702, -0.5132)
-            },
-            ('He3', 1): {
-                (4, 3): (0.0205200, 1.4418, -0.4892),
-                (5, 3): (0.0095879, 1.2576, -0.5001),
-                (6, 4): (0.0401980, 0.8976, -0.4971),
-                (7, 4): (0.0273538, 0.8529, -0.5039)
-            },
-            ('He', 1): {
-                (4, 3): (0.0205206, 1.6118, -0.4838),
-                (5, 3): (0.0095879, 1.4294, -0.4975),
-                (6, 4): (0.0401955, 1.0058, -0.4918),
-                (7, 4): (0.0273521, 0.9563, -0.4981)
-            },
-            ('Be', 3): {
-                (5, 4): (0.0060354, 2.1245, -0.3190),
-                (6, 5): (0.0202754, 1.6538, -0.3192),
-                (7, 5): (0.0078966, 1.7017, -0.3348),
-                (8, 6): (0.0205025, 1.4581, -0.3450)
-            },
-            ('B', 4): {
-                (6, 5): (0.0083423, 2.0519, -0.2960),
-                (7, 6): (0.0228379, 1.6546, -0.2941),
-                (8, 6): (0.0084065, 1.8041, -0.3177),
-                (8, 7): (0.0541883, 1.4128, -0.2966),
-                (9, 7): (0.0190781, 1.5440, -0.3211),
-                (10, 8): (0.0391914, 1.3569, -0.3252)
-            },
-            ('C', 5): {
-                (6, 5): (0.0040900, 2.4271, -0.2818),
-                (7, 6): (0.0110398, 1.9785, -0.2816),
-                (8, 6): (0.0040747, 2.1776, -0.3035),
-                (8, 7): (0.0261405, 1.6689, -0.2815),
-                (9, 7): (0.0092096, 1.8495, -0.3049),
-                (10, 8): (0.0189020, 1.6191, -0.3078),
-                (11, 8): (0.0110428, 1.6600, -0.3162),
-                (11, 9): (0.0359009, 1.4464, -0.3104)
-            },
-            ('N', 6): {
-                (7, 6): (0.0060010, 2.4789, -0.2817),
-                (8, 7): (0.0141271, 2.0249, -0.2762),
-                (9, 8): (0.0300127, 1.7415, -0.2753),
-                (10, 8): (0.0102089, 1.9464, -0.2975),
-                (11, 9): (0.0193799, 1.7133, -0.2973)
-            },
-            ('O', 7): {
-                (8, 7): (0.0083081, 2.4263, -0.2747),
-                (9, 8): (0.0176049, 2.0652, -0.2721),
-                (10, 8): (0.0059933, 2.3445, -0.2944),
-                (10, 9): (0.0343805, 1.8122, -0.2718),
-                (11, 9): (0.0113640, 2.0268, -0.2911)
-            },
-            ('Ne', 9): {
-                (9, 8): (0.0072488, 2.8838, -0.2758),
-                (10, 9): (0.0141002, 2.4755, -0.2718),
-                (11, 9): (0.0046673, 2.8410, -0.2917),
-                (11, 10): (0.0257292, 2.1890, -0.2715)
-            }
-        }
-        LINE_PARAMETERS[('He4', 1)] = LINE_PARAMETERS[('He', 1)]
-        LINE_PARAMETERS[('B11', 4)] = LINE_PARAMETERS[('B', 4)]
-        LINE_PARAMETERS[('C12', 5)] = LINE_PARAMETERS[('C', 5)]
-        LINE_PARAMETERS[('N14', 6)] = LINE_PARAMETERS[('N', 6)]
-        LINE_PARAMETERS[('O16', 7)] = LINE_PARAMETERS[('O', 7)]
-        LINE_PARAMETERS[('Ne20', 9)] = LINE_PARAMETERS[('Ne', 9)]
+        self.LINE_PARAMETERS[('He4', 1)] = self.LINE_PARAMETERS[('He', 1)]
+        self.LINE_PARAMETERS[('B11', 4)] = self.LINE_PARAMETERS[('B', 4)]
+        self.LINE_PARAMETERS[('C12', 5)] = self.LINE_PARAMETERS[('C', 5)]
+        self.LINE_PARAMETERS[('N14', 6)] = self.LINE_PARAMETERS[('N', 6)]
+        self.LINE_PARAMETERS[('O16', 7)] = self.LINE_PARAMETERS[('O', 7)]
+        self.LINE_PARAMETERS[('Ne20', 9)] = self.LINE_PARAMETERS[('Ne', 9)]
 
         super().__init__(line, wavelength, target_species, plasma, polarisation)
 
         try:
-            _alpha, _beta, _gamma = LINE_PARAMETERS[(self.line.element.symbol, self.line.charge)][self.line.transition]
+            _alpha, _beta, _gamma = self.LINE_PARAMETERS[(self.line.element.symbol, self.line.charge)][self.line.transition]
             self._alpha = _alpha
             self._beta = _beta
             self._gamma = _gamma
@@ -613,6 +663,12 @@ cdef class ParametrisedZeemanTriplet(ZeemanLineShapeModel):
                 raise ValueError('Parameter beta must be non-negative.')
             self._beta = beta
             self._gamma = gamma
+
+    def show_supported_transitions(self):
+        """ Prints all supported transitions."""
+        for key_ion, value in self.LINE_PARAMETERS.items():
+            for key_trans in value.keys():
+                print('{1}{2}: {3}-->{4}'.format(key_ion[0], key_ion[1], key_trans[0], key_trans[1]))
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
@@ -671,6 +727,24 @@ cdef class ParametrisedZeemanTriplet(ZeemanLineShapeModel):
 
 
 cdef class ZeemanSplittingFunction():
+    r"""
+    Contains the functions that provide wavelengths and ratios of
+    :math:`\pi`-/:math:`\sigma`-polarised Zeeman components for any given value of
+    magnetic field strength.
+
+    :param list wavelengths_pi: A list of Function1D objects that provide the wavelengths
+                                of individual :math:`\pi`-polarised Zeeman components for a given
+                                magnetic field strength.
+    :param list ratios_pi: A list of Function1D objects that provide the ratios
+                           of individual :math:`\pi`-polarised Zeeman components for a given
+                           magnetic field strength. The sum of all ratios must be equal to 1.
+    :param list wavelengths_sigma: A list of Function1D objects that provide the wavelengths
+                                   of individual :math:`\sigma`-polarised Zeeman components fo
+                                   a given magnetic field strength.
+    :param list ratios_sigma: A list of Function1D objects that provide the ratios
+                              of individual :math:`\sigma`-polarised Zeeman components for a given
+                              magnetic field strength. The sum of all ratios must be equal to 1.
+    """
 
     def __init__(self, wavelengths_pi, ratios_pi, wavelengths_sigma, ratios_sigma):
 
@@ -708,6 +782,8 @@ cdef class ZeemanSplittingFunction():
         cdef np.ndarray multiplet
         cdef double[:, :] multiplet_mv
         cdef Function1D wavelength, ratio
+
+        b = max(0, b)
 
         if polarisation == PI_POLARISATION:
             start = 0
@@ -748,24 +824,26 @@ cdef class ZeemanSplittingFunction():
 
 
 cdef class ZeemanMultiplet(ZeemanLineShapeModel):
-    """
+    r"""
     Doppler-Zeeman Multiplet.
 
     The lineshape radiance is calculated from a base PEC rate that is unresolved. This
-    radiance is then divided over a number of components as specified in the multiplet
-    argument. The multiplet components are specified with an Nx2 array where N is the
-    number of components in the multiplet. The first axis of the array contains the
-    wavelengths of each component, the second contains the line ratio for each component.
-    The component line ratios must sum to one. For example:
+    radiance is then divided over a number of components as specified in the ``splitting_function``
+    argument. The ``splitting_function`` specifies wavelengths and ratios of
+    :math:`\pi`-/:math:`\sigma`-polarised components as functions of the magnetic field strength.
+    These functions can be obtained using the output of the ADAS603 routines.
 
     :param Line line: The emission line object for the base rate radiance calculation.
     :param float wavelength: The rest wavelength of the base emission line.
     :param Species target_species: The target plasma species that is emitting.
     :param Plasma plasma: The emitting plasma object.
-    :param splitting_function: A ZeemanSplittingFunction object that provides wavelengths and ratios
-                               of pi-/sigma-polarised components for any given magnetic field strength.
-    :param polarisation: Calculate only pi/sigma-polarised components of Zeeman multiplet:
-                         "pi", "sigma" or "no" (default).
+    :param splitting_function: A ``ZeemanSplittingFunction`` object that provides wavelengths and
+                               ratios of :math:`\pi`-/:math:`\sigma`-polarised components for any
+                               given magnetic field strength.
+    :param str polarisation: Leaves only :math:`\pi`-/:math:`\sigma`-polarised components:
+                             "pi" - leave only :math:`\pi`-polarised components,
+                             "sigma" - leave only :math:`\sigma`-polarised components,
+                             "no" - leave all components (default).
 
     """
 

@@ -29,8 +29,8 @@ from cherab.core import Line
 from cherab.core.atomic import deuterium, nitrogen
 from cherab.openadas import OpenADAS
 from cherab.tools.plasmas.slab import build_constant_slab_plasma
-from cherab.core.model import GaussianLine, MultipletLineShape, ZeemanTriplet, ParametrisedZeemanTriplet, ZeemanMultiplet, ZeemanSplittingFunction
-from matplotlib import pyplot as plt
+from cherab.core.model import GaussianLine, MultipletLineShape, StarkBroadenedLine, ZeemanTriplet, ParametrisedZeemanTriplet, ZeemanMultiplet, ZeemanSplittingFunction
+
 
 ATOMIC_MASS = 1.66053906660e-27
 ELEMENTARY_CHARGE = 1.602176634e-19
@@ -178,7 +178,6 @@ class TestLineShapes(unittest.TestCase):
         wavelength = self.plasma.atomic_data.wavelength(line.element, line.charge, line.transition)
         triplet = ParametrisedZeemanTriplet(line, wavelength, target_species, self.plasma)
 
-
         # spectrum parameters
         min_wavelength = wavelength - 0.5
         max_wavelength = wavelength + 0.5
@@ -282,6 +281,40 @@ class TestLineShapes(unittest.TestCase):
             for i in range(bins):
                 self.assertAlmostEqual(tri_gaussian[pol][i], spectrum[pol].samples[i], delta=1e-10,
                                        msg='GaussianLine.add_line() method gives a wrong value at {} nm.'.format(wavelengths[i]))
+
+    def test_stark_broadened_line(self):
+        # setting up a line shape model
+        line = Line(deuterium, 0, (6, 2))  # D-delta line
+        target_species = self.plasma.composition.get(line.element, line.charge)
+        wavelength = self.plasma.atomic_data.wavelength(line.element, line.charge, line.transition)
+        stark_line = StarkBroadenedLine(line, wavelength, target_species, self.plasma)
+
+        # spectrum parameters
+        min_wavelength = wavelength - 0.2
+        max_wavelength = wavelength + 0.2
+        bins = 512
+        point = Point3D(0.5, 0.5, 0.5)
+        direction = Vector3D(-1, 1, 0) / np.sqrt(2)
+
+        # obtaining spectrum
+        radiance = 1.0
+        spectrum = Spectrum(min_wavelength, max_wavelength, bins)
+        spectrum = stark_line.add_line(radiance, point, direction, spectrum)
+
+        # validating
+        cij, aij, bij = stark_line.STARK_MODEL_COEFFICIENTS[line.transition]
+        ne = self.plasma.electron_distribution.density(point.x, point.y, point.z)
+        te = self.plasma.electron_distribution.effective_temperature(point.x, point.y, point.z)
+        lambda_1_2 = cij * ne**aij / (te**bij)
+
+        wavelengths, delta = np.linspace(min_wavelength, max_wavelength, bins + 1, retstep=True)
+        stark_lineshape = 1 / ((np.abs(wavelengths - wavelength))**2.5 + (0.5 * lambda_1_2)**2.5)
+        stark_lineshape = 0.5 * (stark_lineshape[1:] + stark_lineshape[:-1])
+        stark_lineshape /= stark_lineshape.sum() * delta
+
+        for i in range(bins):
+            self.assertAlmostEqual(stark_lineshape[i], spectrum.samples[i], delta=1e-10,
+                                   msg='GaussianLine.add_line() method gives a wrong value at {} nm.'.format(wavelengths[i]))
 
 
 if __name__ == '__main__':
