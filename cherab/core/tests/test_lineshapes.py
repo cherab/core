@@ -47,13 +47,12 @@ class TestLineShapes(unittest.TestCase):
         self.plasma = build_constant_slab_plasma(length=1, width=1, height=1, electron_density=1e19, electron_temperature=20.,
                                                  plasma_species=plasma_species, b_field=Vector3D(0, 5., 0))
         self.plasma.atomic_data = OpenADAS()
-        self.nitrogen_II_404 = Line(nitrogen, 1, ("2s2 2p1 4f1 3G13.0", "2s2 2p1 3d1 3F10.0"))
 
     def test_gaussian_line(self):
         # setting up a line shape model
         line = Line(deuterium, 0, (3, 2))  # D-alpha line
         target_species = self.plasma.composition.get(line.element, line.charge)
-        wavelength = self.plasma.atomic_data.wavelength(line.element, line.charge, line.transition)
+        wavelength = 656.104
         gaussian_line = GaussianLine(line, wavelength, target_species, self.plasma)
 
         # spectrum parameters
@@ -88,7 +87,7 @@ class TestLineShapes(unittest.TestCase):
         line = Line(nitrogen, 1, ("2s2 2p1 4f1 3G13.0", "2s2 2p1 3d1 3F10.0"))
         target_species = self.plasma.composition.get(line.element, line.charge)
         multiplet = [[403.509, 404.132, 404.354, 404.479, 405.692], [0.205, 0.562, 0.175, 0.029, 0.029]]
-        wavelength = self.plasma.atomic_data.wavelength(line.element, line.charge, line.transition)
+        wavelength = 404.21
         multiplet_line = MultipletLineShape(line, wavelength, target_species, self.plasma, multiplet)
 
         # spectrum parameters
@@ -124,7 +123,7 @@ class TestLineShapes(unittest.TestCase):
         # setting up a line shape model
         line = Line(deuterium, 0, (3, 2))  # D-alpha line
         target_species = self.plasma.composition.get(line.element, line.charge)
-        wavelength = self.plasma.atomic_data.wavelength(line.element, line.charge, line.transition)
+        wavelength = 656.104
         triplet = ZeemanTriplet(line, wavelength, target_species, self.plasma)
 
         # spectrum parameters
@@ -175,7 +174,7 @@ class TestLineShapes(unittest.TestCase):
         # setting up a line shape model
         line = Line(deuterium, 0, (3, 2))  # D-alpha line
         target_species = self.plasma.composition.get(line.element, line.charge)
-        wavelength = self.plasma.atomic_data.wavelength(line.element, line.charge, line.transition)
+        wavelength = 656.104
         triplet = ParametrisedZeemanTriplet(line, wavelength, target_species, self.plasma)
 
         # spectrum parameters
@@ -229,7 +228,7 @@ class TestLineShapes(unittest.TestCase):
         # setting up a line shape model
         line = Line(deuterium, 0, (3, 2))  # D-alpha line
         target_species = self.plasma.composition.get(line.element, line.charge)
-        wavelength = self.plasma.atomic_data.wavelength(line.element, line.charge, line.transition)
+        wavelength = 656.104
         photon_energy = HC_EV_NM / wavelength
         wavelengths_pi = [Constant1D(wavelength)]
         ratios_pi = [Constant1D(1.0)]
@@ -286,7 +285,7 @@ class TestLineShapes(unittest.TestCase):
         # setting up a line shape model
         line = Line(deuterium, 0, (6, 2))  # D-delta line
         target_species = self.plasma.composition.get(line.element, line.charge)
-        wavelength = self.plasma.atomic_data.wavelength(line.element, line.charge, line.transition)
+        wavelength = 656.104
         stark_line = StarkBroadenedLine(line, wavelength, target_species, self.plasma)
 
         # spectrum parameters
