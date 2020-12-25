@@ -70,7 +70,7 @@ cdef class BeamEmissionPEC(_BeamRate):
     pass
 
 
-cdef class TotalRadiatedPower():
+cdef class TotalRadiatedPower:
 
     cdef:
         readonly Element element
