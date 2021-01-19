@@ -138,7 +138,7 @@ cdef class ThermalCXPEC(_PECRate):
 
 
 cdef class BeamCXPEC:
-    """:math:`q^{eff}_{n\rightarrow n'}` [:math:`W.m^{3}.s^{-1}.str^{-1}`]
+    r""":math:`q^{eff}_{n\rightarrow n'}` [:math:`W.m^{3}`]
 
     Effective emission coefficient (or rate) for a charge-exchange line corresponding to a
     transition :math:`n\rightarrow n'` of ion :math:`Z^{(\alpha+1)+}` with electron donor
@@ -210,12 +210,12 @@ cdef class BeamPopulationRate(_BeamRate):
 
 
 cdef class BeamEmissionPEC(_BeamRate):
-    """:math:`bme(X^0(m_i))` [dimensionless]
+    """:math:`bme(X^0(m_i))` [:math:`W.m^3`]
 
-    Relative beam population of excited state :math:`m_i` over ground state for atom :math:`X^0`, :math:`bme(X^0(m_i))`.
+    The effective beam emission coefficient, :math:`bme(X^0(m_i))`.
 
     The rate :math:`bme(X^0(m_i))` is equivalent to the :math:`BME` rate as defined in
-    `adf22 <http://open.adas.ac.uk/adf22>`_ and is dimensionless.
+    `adf22 <http://open.adas.ac.uk/adf22>`_.
     """
     pass
 
