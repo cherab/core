@@ -17,9 +17,8 @@
 # under the Licence.
 
 from cherab.core.utility import RecursiveDict
+from cherab.core.utility.conversion import Cm3ToM3
 from .utility import parse_adas2x_rate
-
-CM3TOM3 = 1E-6
 
 
 def parse_adf21(beam_species, target_ion, target_charge, adf_file_path):
@@ -35,5 +34,5 @@ def parse_adf21(beam_species, target_ion, target_charge, adf_file_path):
 
     rate = RecursiveDict()
     with open(adf_file_path, 'r') as file:
-        rate[beam_species][target_ion][target_charge] = parse_adas2x_rate(file, normalisation=CM3TOM3)
+        rate[beam_species][target_ion][target_charge] = parse_adas2x_rate(file, normalisation=Cm3ToM3.conversion_factor)
     return rate
