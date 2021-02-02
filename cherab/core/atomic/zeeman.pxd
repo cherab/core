@@ -16,10 +16,12 @@
 # See the Licence for the specific language governing permissions and limitations
 # under the Licence.
 
-from cherab.core.atomic cimport elements
-from cherab.core.atomic.elements cimport Element, Isotope
-from cherab.core.atomic.line cimport Line
-from cherab.core.atomic.interface cimport AtomicData
-from cherab.core.atomic.rates cimport *
-from cherab.core.atomic.zeeman cimport ZeemanStructure
+
+cdef class ZeemanStructure:
+
+    cdef:
+        int _number_of_pi_lines, _number_of_sigma_lines
+        list _wavelengths, _ratios
+
+    cdef double[:, :] evaluate(self, double b, bint polarisation)
 

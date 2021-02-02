@@ -26,10 +26,10 @@ from raysect.core.math.function.float import Arg1D, Constant1D
 from raysect.optical import Spectrum
 
 from cherab.core import Line
-from cherab.core.atomic import deuterium, nitrogen
+from cherab.core.atomic import deuterium, nitrogen, ZeemanStructure
 from cherab.openadas import OpenADAS
 from cherab.tools.plasmas.slab import build_constant_slab_plasma
-from cherab.core.model import GaussianLine, MultipletLineShape, StarkBroadenedLine, ZeemanTriplet, ParametrisedZeemanTriplet, ZeemanMultiplet, ZeemanSplittingFunction
+from cherab.core.model import GaussianLine, MultipletLineShape, StarkBroadenedLine, ZeemanTriplet, ParametrisedZeemanTriplet, ZeemanMultiplet
 
 
 ATOMIC_MASS = 1.66053906660e-27
@@ -234,7 +234,7 @@ class TestLineShapes(unittest.TestCase):
         ratios_pi = [Constant1D(1.0)]
         wavelengths_sigma = [HC_EV_NM / (photon_energy - BOHR_MAGNETON * Arg1D()), HC_EV_NM / (photon_energy + BOHR_MAGNETON * Arg1D())]
         ratios_sigma = [Constant1D(0.5), Constant1D(0.5)]
-        splitting_function = ZeemanSplittingFunction(wavelengths_pi, ratios_pi, wavelengths_sigma, ratios_sigma)
+        splitting_function = ZeemanStructure(wavelengths_pi, ratios_pi, wavelengths_sigma, ratios_sigma)
         multiplet = ZeemanMultiplet(line, wavelength, target_species, self.plasma, splitting_function)
 
         # spectrum parameters

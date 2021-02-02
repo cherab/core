@@ -726,110 +726,13 @@ cdef class ParametrisedZeemanTriplet(ZeemanLineShapeModel):
         return spectrum
 
 
-cdef class ZeemanSplittingFunction():
-    r"""
-    Contains the functions that provide wavelengths and ratios of
-    :math:`\pi`-/:math:`\sigma`-polarised Zeeman components for any given value of
-    magnetic field strength.
-
-    :param list wavelengths_pi: A list of Function1D objects that provide the wavelengths
-                                of individual :math:`\pi`-polarised Zeeman components for a given
-                                magnetic field strength.
-    :param list ratios_pi: A list of Function1D objects that provide the ratios
-                           of individual :math:`\pi`-polarised Zeeman components for a given
-                           magnetic field strength. The sum of all ratios must be equal to 1.
-    :param list wavelengths_sigma: A list of Function1D objects that provide the wavelengths
-                                   of individual :math:`\sigma`-polarised Zeeman components fo
-                                   a given magnetic field strength.
-    :param list ratios_sigma: A list of Function1D objects that provide the ratios
-                              of individual :math:`\sigma`-polarised Zeeman components for a given
-                              magnetic field strength. The sum of all ratios must be equal to 1.
-    """
-
-    def __init__(self, wavelengths_pi, ratios_pi, wavelengths_sigma, ratios_sigma):
-
-        if len(wavelengths_pi) != len(ratios_pi):
-            raise ValueError('The lengths of "wavelengths_pi" ({}) and "ratios_pi" ({}) do not match.'.format(len(wavelengths_pi),
-                                                                                                              len(ratios_pi)))
-
-        if len(wavelengths_sigma) != len(ratios_sigma):
-            raise ValueError('The lengths of "wavelengths_sigma" ({}) and "ratios_sigma" ({}) do not match.'.format(len(wavelengths_sigma),
-                                                                                                                    len(ratios_sigma)))
-
-        self._number_of_pi_lines = len(wavelengths_pi)
-        self._number_of_sigma_lines = len(wavelengths_sigma)
-
-        self._wavelengths = wavelengths_pi + wavelengths_sigma
-        self._ratios = ratios_pi + ratios_sigma
-
-        for wavelength in self._wavelengths:
-            if not isinstance(wavelength, Function1D):
-                raise ValueError('All elements in "wavelengths_pi" and "wavelengths_sigma" lists must be Function1D instances.')
-
-        for ratio in self._ratios:
-            if not isinstance(ratio, Function1D):
-                raise ValueError('All elements in "ratios_pi" and "ratios_sigma" lists must be Function1D instances.')
-
-    @cython.boundscheck(False)
-    @cython.wraparound(False)
-    @cython.initializedcheck(False)
-    @cython.cdivision(True)
-    cdef double[:, :] evaluate(self, double b, bint polarisation):
-
-        cdef int i, start, number_of_lines
-        cdef np.npy_intp multiplet_shape[2]
-        cdef double ratio_sum
-        cdef np.ndarray multiplet
-        cdef double[:, :] multiplet_mv
-        cdef Function1D wavelength, ratio
-
-        b = max(0, b)
-
-        if polarisation == PI_POLARISATION:
-            start = 0
-            number_of_lines = self._number_of_pi_lines
-        else:
-            start = self._number_of_pi_lines
-            number_of_lines = self._number_of_sigma_lines
-
-        multiplet_shape[0] = 2
-        multiplet_shape[1] = number_of_lines
-        multiplet = np.PyArray_SimpleNew(2, multiplet_shape, np.NPY_FLOAT64)
-        multiplet_mv = multiplet
-
-        ratio_sum = 0
-        for i in range(number_of_lines):
-            wavelength = self._wavelengths[start + i]
-            ratio = self._ratios[start + i]
-            multiplet_mv[MULTIPLET_WAVELENGTH, i] = wavelength.evaluate(b)
-            multiplet_mv[MULTIPLET_RATIO, i] = ratio.evaluate(b)
-            ratio_sum += multiplet_mv[1, i]
-
-        # normalising ratios
-        if ratio_sum > 0:
-            for i in range(number_of_lines):
-                multiplet_mv[1, i] /= ratio_sum
-
-        return multiplet_mv
-
-    def __call__(self, double b, str polarisation):
-
-        if polarisation == 'pi':
-            return np.asarray(self.evaluate(b, PI_POLARISATION))
-
-        if polarisation == 'sigma':
-            return np.asarray(self.evaluate(b, SIGMA_POLARISATION))
-
-        raise ValueError('Argument "polarisation" must be "pi" or "sigma", {} given.'.fotmat(polarisation))
-
-
 cdef class ZeemanMultiplet(ZeemanLineShapeModel):
     r"""
     Doppler-Zeeman Multiplet.
 
     The lineshape radiance is calculated from a base PEC rate that is unresolved. This
-    radiance is then divided over a number of components as specified in the ``splitting_function``
-    argument. The ``splitting_function`` specifies wavelengths and ratios of
+    radiance is then divided over a number of components as specified in the ``zeeman_structure``
+    argument. The ``zeeman_structure`` specifies wavelengths and ratios of
     :math:`\pi`-/:math:`\sigma`-polarised components as functions of the magnetic field strength.
     These functions can be obtained using the output of the ADAS603 routines.
 
@@ -837,9 +740,9 @@ cdef class ZeemanMultiplet(ZeemanLineShapeModel):
     :param float wavelength: The rest wavelength of the base emission line.
     :param Species target_species: The target plasma species that is emitting.
     :param Plasma plasma: The emitting plasma object.
-    :param splitting_function: A ``ZeemanSplittingFunction`` object that provides wavelengths and
-                               ratios of :math:`\pi`-/:math:`\sigma`-polarised components for any
-                               given magnetic field strength.
+    :param zeeman_structure: A ``ZeemanStructure`` object that provides wavelengths and
+                             ratios of :math:`\pi`-/:math:`\sigma`-polarised components for any
+                             given magnetic field strength.
     :param str polarisation: Leaves only :math:`\pi`-/:math:`\sigma`-polarised components:
                              "pi" - leave only :math:`\pi`-polarised components,
                              "sigma" - leave only :math:`\sigma`-polarised components,
@@ -848,11 +751,11 @@ cdef class ZeemanMultiplet(ZeemanLineShapeModel):
     """
 
     def __init__(self, Line line, double wavelength, Species target_species, Plasma plasma,
-                 ZeemanSplittingFunction splitting_function, polarisation='no'):
+                 ZeemanStructure zeeman_structure, polarisation='no'):
 
         super().__init__(line, wavelength, target_species, plasma, polarisation)
 
-        self._splitting_function = splitting_function
+        self._zeeman_structure = zeeman_structure
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
@@ -893,7 +796,7 @@ cdef class ZeemanMultiplet(ZeemanLineShapeModel):
         # adding pi components of the Zeeman multiplet
         if self._polarisation != SIGMA_POLARISATION:
             component_radiance = 0.5 * sin_sqr * radiance
-            multiplet_mv = self._splitting_function.evaluate(b_magn, PI_POLARISATION)
+            multiplet_mv = self._zeeman_structure.evaluate(b_magn, PI_POLARISATION)
 
             for i in range(multiplet_mv.shape[1]):
                 shifted_wavelength = doppler_shift(multiplet_mv[MULTIPLET_WAVELENGTH, i], direction, ion_velocity)
@@ -902,7 +805,7 @@ cdef class ZeemanMultiplet(ZeemanLineShapeModel):
         # adding sigma components of the Zeeman multiplet
         if self._polarisation != PI_POLARISATION:
             component_radiance = (0.5 * sin_sqr + cos_sqr) * radiance
-            multiplet_mv = self._splitting_function.evaluate(b_magn, SIGMA_POLARISATION)
+            multiplet_mv = self._zeeman_structure.evaluate(b_magn, SIGMA_POLARISATION)
 
             for i in range(multiplet_mv.shape[1]):
                 shifted_wavelength = doppler_shift(multiplet_mv[MULTIPLET_WAVELENGTH, i], direction, ion_velocity)

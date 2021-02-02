@@ -90,3 +90,5 @@ cdef class AtomicData:
     cpdef FractionalAbundance fractional_abundance(self, Element ion, int charge):
         raise NotImplementedError("The fractional_abundance() virtual method is not implemented for this atomic data source.")
 
+    cpdef ZeemanStructure zeeman_structure(self, Line line, object b_field=None):
+        raise NotImplementedError("The zeeman_structure() virtual method is not implemented for this atomic data source.")

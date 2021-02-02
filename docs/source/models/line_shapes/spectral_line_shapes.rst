@@ -32,9 +32,6 @@ will be added in the future.
 .. autoclass:: cherab.core.model.lineshape.ParametrisedZeemanTriplet
    :members:
 
-.. autoclass:: cherab.core.model.lineshape.ZeemanSplittingFunction
-   :members:
-
 .. autoclass:: cherab.core.model.lineshape.ZeemanMultiplet
    :members:
 
