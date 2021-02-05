@@ -24,6 +24,7 @@ from libc.math cimport sqrt, erf, M_SQRT2, floor, ceil, fabs
 from raysect.optical.spectrum cimport new_spectrum
 
 from cherab.core cimport Plasma
+from cherab.core.atomic.elements import hydrogen, deuterium, tritium, helium, helium3, beryllium, boron, carbon, nitrogen, oxygen, neon
 from cherab.core.math.function cimport autowrap_function1d, autowrap_function2d
 from cherab.core.utility.constants cimport ATOMIC_MASS, ELEMENTARY_CHARGE, SPEED_OF_LIGHT
 
@@ -304,42 +305,64 @@ cdef class StarkBroadenedLine(LineShapeModel):
     """
 
     STARK_MODEL_COEFFICIENTS = {
-        (3, 2): (3.71e-18, 0.7665, 0.064),
-        (4, 2): (8.425e-18, 0.7803, 0.050),
-        (5, 2): (1.31e-15, 0.6796, 0.030),
-        (6, 2): (3.954e-16, 0.7149, 0.028),
-        (7, 2): (6.258e-16, 0.712, 0.029),
-        (8, 2): (7.378e-16, 0.7159, 0.032),
-        (9, 2): (8.947e-16, 0.7177, 0.033),
-        (4, 3): (1.330e-16, 0.7449, 0.045),
-        (5, 3): (6.64e-16, 0.7356, 0.044),
-        (6, 3): (2.481e-15, 0.7118, 0.016),
-        (7, 3): (3.270e-15, 0.7137, 0.029),
-        (8, 3): (4.343e-15, 0.7133, 0.032),
-        (9, 3): (5.588e-15, 0.7165, 0.033),
+        Line(hydrogen, 0, (3, 2)): (3.71e-18, 0.7665, 0.064),
+        Line(hydrogen, 0, (4, 2)): (8.425e-18, 0.7803, 0.050),
+        Line(hydrogen, 0, (5, 2)): (1.31e-15, 0.6796, 0.030),
+        Line(hydrogen, 0, (6, 2)): (3.954e-16, 0.7149, 0.028),
+        Line(hydrogen, 0, (7, 2)): (6.258e-16, 0.712, 0.029),
+        Line(hydrogen, 0, (8, 2)): (7.378e-16, 0.7159, 0.032),
+        Line(hydrogen, 0, (9, 2)): (8.947e-16, 0.7177, 0.033),
+        Line(hydrogen, 0, (4, 3)): (1.330e-16, 0.7449, 0.045),
+        Line(hydrogen, 0, (5, 3)): (6.64e-16, 0.7356, 0.044),
+        Line(hydrogen, 0, (6, 3)): (2.481e-15, 0.7118, 0.016),
+        Line(hydrogen, 0, (7, 3)): (3.270e-15, 0.7137, 0.029),
+        Line(hydrogen, 0, (8, 3)): (4.343e-15, 0.7133, 0.032),
+        Line(hydrogen, 0, (9, 3)): (5.588e-15, 0.7165, 0.033),
+        Line(deuterium, 0, (3, 2)): (3.71e-18, 0.7665, 0.064),
+        Line(deuterium, 0, (4, 2)): (8.425e-18, 0.7803, 0.050),
+        Line(deuterium, 0, (5, 2)): (1.31e-15, 0.6796, 0.030),
+        Line(deuterium, 0, (6, 2)): (3.954e-16, 0.7149, 0.028),
+        Line(deuterium, 0, (7, 2)): (6.258e-16, 0.712, 0.029),
+        Line(deuterium, 0, (8, 2)): (7.378e-16, 0.7159, 0.032),
+        Line(deuterium, 0, (9, 2)): (8.947e-16, 0.7177, 0.033),
+        Line(deuterium, 0, (4, 3)): (1.330e-16, 0.7449, 0.045),
+        Line(deuterium, 0, (5, 3)): (6.64e-16, 0.7356, 0.044),
+        Line(deuterium, 0, (6, 3)): (2.481e-15, 0.7118, 0.016),
+        Line(deuterium, 0, (7, 3)): (3.270e-15, 0.7137, 0.029),
+        Line(deuterium, 0, (8, 3)): (4.343e-15, 0.7133, 0.032),
+        Line(deuterium, 0, (9, 3)): (5.588e-15, 0.7165, 0.033),
+        Line(tritium, 0, (3, 2)): (3.71e-18, 0.7665, 0.064),
+        Line(tritium, 0, (4, 2)): (8.425e-18, 0.7803, 0.050),
+        Line(tritium, 0, (5, 2)): (1.31e-15, 0.6796, 0.030),
+        Line(tritium, 0, (6, 2)): (3.954e-16, 0.7149, 0.028),
+        Line(tritium, 0, (7, 2)): (6.258e-16, 0.712, 0.029),
+        Line(tritium, 0, (8, 2)): (7.378e-16, 0.7159, 0.032),
+        Line(tritium, 0, (9, 2)): (8.947e-16, 0.7177, 0.033),
+        Line(tritium, 0, (4, 3)): (1.330e-16, 0.7449, 0.045),
+        Line(tritium, 0, (5, 3)): (6.64e-16, 0.7356, 0.044),
+        Line(tritium, 0, (6, 3)): (2.481e-15, 0.7118, 0.016),
+        Line(tritium, 0, (7, 3)): (3.270e-15, 0.7137, 0.029),
+        Line(tritium, 0, (8, 3)): (4.343e-15, 0.7133, 0.032),
+        Line(tritium, 0, (9, 3)): (5.588e-15, 0.7165, 0.033)
     }
 
     def __init__(self, Line line, double wavelength, Species target_species, Plasma plasma):
 
-        if not line.element.atomic_number == 1:
-            raise ValueError('Stark broadening coefficients only available for hydrogenic species.')
         try:
             # Fitted Stark Constants
-            cij, aij, bij = self.STARK_MODEL_COEFFICIENTS[line.transition]
+            cij, aij, bij = self.STARK_MODEL_COEFFICIENTS[line]
             self._aij = aij
             self._bij = bij
             self._cij = cij
         except IndexError:
-            raise ValueError('Stark data for H transition {} is not currently available.'.format(line.transition))
+            raise ValueError('Stark broadening coefficients for {} is not currently available.'.format(line))
 
         super().__init__(line, wavelength, target_species, plasma)
 
     def show_supported_transitions(self):
         """ Prints all supported transitions."""
-        for key in self.STARK_MODEL_COEFFICIENTS.keys():
-            print('H0: {}-->{}'.format(key[0], key[1]))
-            print('D0: {}-->{}'.format(key[0], key[1]))
-            print('T0: {}-->{}'.format(key[0], key[1]))
+        for line in self.STARK_MODEL_COEFFICIENTS.keys():
+            print(line)
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
@@ -564,93 +587,64 @@ cdef class ParametrisedZeemanTriplet(ZeemanLineShapeModel):
     """
 
     LINE_PARAMETERS = {  # alpha, beta, gamma parameters for selected lines
-        ('H', 0): {
-            (3, 2): (0.0402267, 0.3415, -0.5247),
-            (4, 2): (0.0220724, 0.2837, -0.5346)
-        },
-        ('D', 0): {
-            (3, 2): (0.0402068, 0.4384, -0.5015),
-            (4, 2): (0.0220610, 0.3702, -0.5132)
-        },
-        ('He3', 1): {
-            (4, 3): (0.0205200, 1.4418, -0.4892),
-            (5, 3): (0.0095879, 1.2576, -0.5001),
-            (6, 4): (0.0401980, 0.8976, -0.4971),
-            (7, 4): (0.0273538, 0.8529, -0.5039)
-        },
-        ('He', 1): {
-            (4, 3): (0.0205206, 1.6118, -0.4838),
-            (5, 3): (0.0095879, 1.4294, -0.4975),
-            (6, 4): (0.0401955, 1.0058, -0.4918),
-            (7, 4): (0.0273521, 0.9563, -0.4981)
-        },
-        ('Be', 3): {
-            (5, 4): (0.0060354, 2.1245, -0.3190),
-            (6, 5): (0.0202754, 1.6538, -0.3192),
-            (7, 5): (0.0078966, 1.7017, -0.3348),
-            (8, 6): (0.0205025, 1.4581, -0.3450)
-        },
-        ('B', 4): {
-            (6, 5): (0.0083423, 2.0519, -0.2960),
-            (7, 6): (0.0228379, 1.6546, -0.2941),
-            (8, 6): (0.0084065, 1.8041, -0.3177),
-            (8, 7): (0.0541883, 1.4128, -0.2966),
-            (9, 7): (0.0190781, 1.5440, -0.3211),
-            (10, 8): (0.0391914, 1.3569, -0.3252)
-        },
-        ('C', 5): {
-            (6, 5): (0.0040900, 2.4271, -0.2818),
-            (7, 6): (0.0110398, 1.9785, -0.2816),
-            (8, 6): (0.0040747, 2.1776, -0.3035),
-            (8, 7): (0.0261405, 1.6689, -0.2815),
-            (9, 7): (0.0092096, 1.8495, -0.3049),
-            (10, 8): (0.0189020, 1.6191, -0.3078),
-            (11, 8): (0.0110428, 1.6600, -0.3162),
-            (11, 9): (0.0359009, 1.4464, -0.3104)
-        },
-        ('N', 6): {
-            (7, 6): (0.0060010, 2.4789, -0.2817),
-            (8, 7): (0.0141271, 2.0249, -0.2762),
-            (9, 8): (0.0300127, 1.7415, -0.2753),
-            (10, 8): (0.0102089, 1.9464, -0.2975),
-            (11, 9): (0.0193799, 1.7133, -0.2973)
-        },
-        ('O', 7): {
-            (8, 7): (0.0083081, 2.4263, -0.2747),
-            (9, 8): (0.0176049, 2.0652, -0.2721),
-            (10, 8): (0.0059933, 2.3445, -0.2944),
-            (10, 9): (0.0343805, 1.8122, -0.2718),
-            (11, 9): (0.0113640, 2.0268, -0.2911)
-        },
-        ('Ne', 9): {
-            (9, 8): (0.0072488, 2.8838, -0.2758),
-            (10, 9): (0.0141002, 2.4755, -0.2718),
-            (11, 9): (0.0046673, 2.8410, -0.2917),
-            (11, 10): (0.0257292, 2.1890, -0.2715)
-        }
+        Line(hydrogen, 0, (3, 2)): (0.0402267, 0.3415, -0.5247),
+        Line(hydrogen, 0, (4, 2)): (0.0220724, 0.2837, -0.5346),
+        Line(deuterium, 0, (3, 2)): (0.0402068, 0.4384, -0.5015),
+        Line(deuterium, 0, (4, 2)): (0.0220610, 0.3702, -0.5132),
+        Line(helium3, 1, (4, 3)): (0.0205200, 1.4418, -0.4892),
+        Line(helium3, 1, (5, 3)): (0.0095879, 1.2576, -0.5001),
+        Line(helium3, 1, (6, 4)): (0.0401980, 0.8976, -0.4971),
+        Line(helium3, 1, (7, 4)): (0.0273538, 0.8529, -0.5039),
+        Line(helium, 1, (4, 3)): (0.0205206, 1.6118, -0.4838),
+        Line(helium, 1, (5, 3)): (0.0095879, 1.4294, -0.4975),
+        Line(helium, 1, (6, 4)): (0.0401955, 1.0058, -0.4918),
+        Line(helium, 1, (7, 4)): (0.0273521, 0.9563, -0.4981),
+        Line(beryllium, 3, (5, 4)): (0.0060354, 2.1245, -0.3190),
+        Line(beryllium, 3, (6, 5)): (0.0202754, 1.6538, -0.3192),
+        Line(beryllium, 3, (7, 5)): (0.0078966, 1.7017, -0.3348),
+        Line(beryllium, 3, (8, 6)): (0.0205025, 1.4581, -0.3450),
+        Line(boron, 4, (6, 5)): (0.0083423, 2.0519, -0.2960),
+        Line(boron, 4, (7, 6)): (0.0228379, 1.6546, -0.2941),
+        Line(boron, 4, (8, 6)): (0.0084065, 1.8041, -0.3177),
+        Line(boron, 4, (8, 7)): (0.0541883, 1.4128, -0.2966),
+        Line(boron, 4, (9, 7)): (0.0190781, 1.5440, -0.3211),
+        Line(boron, 4, (10, 8)): (0.0391914, 1.3569, -0.3252),
+        Line(carbon, 5, (6, 5)): (0.0040900, 2.4271, -0.2818),
+        Line(carbon, 5, (7, 6)): (0.0110398, 1.9785, -0.2816),
+        Line(carbon, 5, (8, 6)): (0.0040747, 2.1776, -0.3035),
+        Line(carbon, 5, (8, 7)): (0.0261405, 1.6689, -0.2815),
+        Line(carbon, 5, (9, 7)): (0.0092096, 1.8495, -0.3049),
+        Line(carbon, 5, (10, 8)): (0.0189020, 1.6191, -0.3078),
+        Line(carbon, 5, (11, 8)): (0.0110428, 1.6600, -0.3162),
+        Line(carbon, 5, (10, 9)): (0.0359009, 1.4464, -0.3104),
+        Line(nitrogen, 6, (7, 6)): (0.0060010, 2.4789, -0.2817),
+        Line(nitrogen, 6, (8, 7)): (0.0141271, 2.0249, -0.2762),
+        Line(nitrogen, 6, (9, 8)): (0.0300127, 1.7415, -0.2753),
+        Line(nitrogen, 6, (10, 8)): (0.0102089, 1.9464, -0.2975),
+        Line(nitrogen, 6, (11, 9)): (0.0193799, 1.7133, -0.2973),
+        Line(oxygen, 7, (8, 7)): (0.0083081, 2.4263, -0.2747),
+        Line(oxygen, 7, (9, 8)): (0.0176049, 2.0652, -0.2721),
+        Line(oxygen, 7, (10, 8)): (0.0059933, 2.3445, -0.2944),
+        Line(oxygen, 7, (10, 9)): (0.0343805, 1.8122, -0.2718),
+        Line(oxygen, 7, (11, 9)): (0.0113640, 2.0268, -0.2911),
+        Line(neon, 9, (9, 8)): (0.0072488, 2.8838, -0.2758),
+        Line(neon, 9, (10, 9)): (0.0141002, 2.4755, -0.2718),
+        Line(neon, 9, (11, 9)): (0.0046673, 2.8410, -0.2917),
+        Line(neon, 9, (11, 10)): (0.0257292, 2.1890, -0.2715)
     }
 
     def __init__(self, Line line, double wavelength, Species target_species, Plasma plasma, alpha=None, beta=None, gamma=None, polarisation='no'):
 
-        self.LINE_PARAMETERS[('He4', 1)] = self.LINE_PARAMETERS[('He', 1)]
-        self.LINE_PARAMETERS[('B11', 4)] = self.LINE_PARAMETERS[('B', 4)]
-        self.LINE_PARAMETERS[('C12', 5)] = self.LINE_PARAMETERS[('C', 5)]
-        self.LINE_PARAMETERS[('N14', 6)] = self.LINE_PARAMETERS[('N', 6)]
-        self.LINE_PARAMETERS[('O16', 7)] = self.LINE_PARAMETERS[('O', 7)]
-        self.LINE_PARAMETERS[('Ne20', 9)] = self.LINE_PARAMETERS[('Ne', 9)]
-
         super().__init__(line, wavelength, target_species, plasma, polarisation)
 
         try:
-            _alpha, _beta, _gamma = self.LINE_PARAMETERS[(self.line.element.symbol, self.line.charge)][self.line.transition]
+            _alpha, _beta, _gamma = self.LINE_PARAMETERS[line]
             self._alpha = _alpha
             self._beta = _beta
             self._gamma = _gamma
         except KeyError:
             if beta is None or gamma is None:
-                raise ValueError('Data for {} {}+ transition {} is not currently available.'.format(self.line.element.symbol,
-                                                                                                    self.line.charge,
-                                                                                                    self.line.transition))
+                raise ValueError('Data for {} is not currently available.'.format(self.line))
             if alpha is None:
                 # assign simple triplet value (error < 0.0001 nm for tested lines)
                 self._alpha = 2. * BOHR_MAGNETON * self.wavelength * self.wavelength / HC_EV_NM
@@ -664,11 +658,10 @@ cdef class ParametrisedZeemanTriplet(ZeemanLineShapeModel):
             self._beta = beta
             self._gamma = gamma
 
-    def show_supported_transitions(self):
+    def show_supported_lines(self):
         """ Prints all supported transitions."""
-        for key_ion, value in self.LINE_PARAMETERS.items():
-            for key_trans in value.keys():
-                print('{1}{2}: {3}-->{4}'.format(key_ion[0], key_ion[1], key_trans[0], key_trans[1]))
+        for line in self.LINE_PARAMETERS.keys():
+            print(line)
 
     @cython.boundscheck(False)
     @cython.wraparound(False)

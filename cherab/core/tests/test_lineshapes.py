@@ -301,7 +301,7 @@ class TestLineShapes(unittest.TestCase):
         spectrum = stark_line.add_line(radiance, point, direction, spectrum)
 
         # validating
-        cij, aij, bij = stark_line.STARK_MODEL_COEFFICIENTS[line.transition]
+        cij, aij, bij = stark_line.STARK_MODEL_COEFFICIENTS[line]
         ne = self.plasma.electron_distribution.density(point.x, point.y, point.z)
         te = self.plasma.electron_distribution.effective_temperature(point.x, point.y, point.z)
         lambda_1_2 = cij * ne**aij / (te**bij)
