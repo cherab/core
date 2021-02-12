@@ -215,7 +215,7 @@ class OpenADAS(AtomicData):
         try:
             # locate data file
             data = repository.get_beam_emission_rate(beam_ion, plasma_ion, charge, transition)
-            wavelength = repository.get_wavelength(plasma_ion, charge - 1, transition)
+            wavelength = repository.get_wavelength(beam_ion, 0, transition)
 
         except RuntimeError:
             if self._missing_rates_return_null:
