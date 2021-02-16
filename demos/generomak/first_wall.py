@@ -15,7 +15,8 @@ FIRST_WALL_COMPONENT["InnerWallLimiter"] = {"component_name": "InnerWallLimiter"
                                             "toroidal_instances": 32,
                                             "initial_vertical_shift": -0.561,
                                             "vertical_step": 187e-3,
-                                            "vertical_instances": (0, 10)}
+                                            "vertical_instances": 10}
+
 FIRST_WALL_COMPONENT["InnerDivertorBaffle"] = {"component_name": "InnerDivertorBaffle",
                                                "file_name": "InnerDivertorBaffle.obj",
                                                "initial_toroidal_shift": -90,
@@ -23,7 +24,8 @@ FIRST_WALL_COMPONENT["InnerDivertorBaffle"] = {"component_name": "InnerDivertorB
                                                "toroidal_instances": 32,
                                                "initial_vertical_shift": 0,
                                                "vertical_step": 0,
-                                               "vertical_instances": (0, 1)}
+                                               "vertical_instances": 1}
+
 FIRST_WALL_COMPONENT["BottomBaffle"] = {"component_name": "BottomBaffle",
                                         "file_name": "BottomBaffle.obj",
                                         "initial_toroidal_shift": -90,
@@ -31,7 +33,7 @@ FIRST_WALL_COMPONENT["BottomBaffle"] = {"component_name": "BottomBaffle",
                                         "toroidal_instances": 32,
                                         "initial_vertical_shift": 0,
                                         "vertical_step": 0,
-                                        "vertical_instances": (0, 1)}
+                                        "vertical_instances": 1}
 
 FIRST_WALL_COMPONENT["BottomDivertorFloor"] = {"component_name": "BottomDivertorFloor",
                                                "file_name": "BottomDivertorFloor.obj",
@@ -40,8 +42,7 @@ FIRST_WALL_COMPONENT["BottomDivertorFloor"] = {"component_name": "BottomDivertor
                                                "toroidal_instances": 32,
                                                "initial_vertical_shift": 0,
                                                "vertical_step": 0,
-                                               "vertical_instances": (0, 1)}
-
+                                               "vertical_instances": 1}
 
 FIRST_WALL_COMPONENT["BottomOuterVerticalTarget"] = {"component_name": "BottomOuterVerticalTarget",
                                                      "file_name": "BottomOuterVerticalTarget.obj",
@@ -50,7 +51,7 @@ FIRST_WALL_COMPONENT["BottomOuterVerticalTarget"] = {"component_name": "BottomOu
                                                      "toroidal_instances": 32,
                                                      "initial_vertical_shift": 0,
                                                      "vertical_step": 0,
-                                                     "vertical_instances": (0, 1)}
+                                                     "vertical_instances": 1}
 
 FIRST_WALL_COMPONENT["BottomInnerVerticalTarget"] = {"component_name": "BottomInnerVerticalTarget",
                                                      "file_name": "BottomInnerVerticalTarget.obj",
@@ -59,7 +60,7 @@ FIRST_WALL_COMPONENT["BottomInnerVerticalTarget"] = {"component_name": "BottomIn
                                                      "toroidal_instances": 32,
                                                      "initial_vertical_shift": 0,
                                                      "vertical_step": 0,
-                                                     "vertical_instances": (0, 1)}
+                                                     "vertical_instances": 1}
 
 FIRST_WALL_COMPONENT["TopBaffle"] = {"component_name": "TopBaffle",
                                      "file_name": "TopBaffle.obj",
@@ -68,7 +69,7 @@ FIRST_WALL_COMPONENT["TopBaffle"] = {"component_name": "TopBaffle",
                                      "toroidal_instances": 32,
                                      "initial_vertical_shift": 0,
                                      "vertical_step": 0,
-                                     "vertical_instances": (0, 1)}
+                                     "vertical_instances": 1}
 
 FIRST_WALL_COMPONENT["TopDivertorFloor"] = {"component_name": "TopDivertorFloor",
                                             "file_name": "TopDivertorFloor.obj",
@@ -77,7 +78,7 @@ FIRST_WALL_COMPONENT["TopDivertorFloor"] = {"component_name": "TopDivertorFloor"
                                             "toroidal_instances": 32,
                                             "initial_vertical_shift": 0,
                                             "vertical_step": 0,
-                                            "vertical_instances": (0, 1)}
+                                            "vertical_instances": 1}
 
 FIRST_WALL_COMPONENT["TopInnerVerticalTarget"] = {"component_name": "TopInnerVerticalTarget",
                                                   "file_name": "TopInnerVerticalTarget.obj",
@@ -86,7 +87,7 @@ FIRST_WALL_COMPONENT["TopInnerVerticalTarget"] = {"component_name": "TopInnerVer
                                                   "toroidal_instances": 32,
                                                   "initial_vertical_shift": 0,
                                                   "vertical_step": 0,
-                                                  "vertical_instances": (0, 1)}
+                                                  "vertical_instances": 1}
 
 FIRST_WALL_COMPONENT["TopOuterVerticalTarget"] = {"component_name": "TopOuterVerticalTarget",
                                                   "file_name": "TopOuterVerticalTarget.obj",
@@ -95,7 +96,7 @@ FIRST_WALL_COMPONENT["TopOuterVerticalTarget"] = {"component_name": "TopOuterVer
                                                   "toroidal_instances": 32,
                                                   "initial_vertical_shift": 0,
                                                   "vertical_step": 0,
-                                                  "vertical_instances": (0, 1)}
+                                                  "vertical_instances": 1}
 
 FIRST_WALL_COMPONENT["OuterWallLimiter"] = {"component_name": "OuterWallLimiter",
                                             "file_name": "OuterWallLimiter.obj",
@@ -104,7 +105,7 @@ FIRST_WALL_COMPONENT["OuterWallLimiter"] = {"component_name": "OuterWallLimiter"
                                             "toroidal_instances": 8,
                                             "initial_vertical_shift": 0,
                                             "vertical_step": 0,
-                                            "vertical_instances": (0, 1)}
+                                            "vertical_instances": 1}
 
 
 def load_component_group(file_path, parent, material, component_name,
