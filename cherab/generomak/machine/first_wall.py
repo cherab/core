@@ -146,8 +146,8 @@ def load_component_group(file_path, parent, material, component_name,
             component_id = "{:d}, {:d}".format(tor, vert)
             name = component_name + ": " + component_id
 
-            component_group[id] = original.instance(material=material, transform=transform,
-                                                    parent=parent, name=name)
+            component_group[component_id] = original.instance(material=material, transform=transform,
+                                                              parent=parent, name=name)
 
     return component_group
 
