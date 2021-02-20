@@ -1,3 +1,5 @@
+# cython: language_level=3
+
 # Copyright 2016-2018 Euratom
 # Copyright 2016-2018 United Kingdom Atomic Energy Authority
 # Copyright 2016-2018 Centro de Investigaciones Energéticas, Medioambientales y Tecnológicas
@@ -22,8 +24,8 @@ from libc.math cimport sqrt, INFINITY
 cimport cython
 
 from raysect.optical cimport Vector3D, Point2D, new_vector3d
-from raysect.core.math.function.float import Blend2D as ScalarBlend2D
-from raysect.core.math.function.vector3d import Blend2D as VectorBlend2D
+from raysect.core.math.function.float cimport Blend2D as ScalarBlend2D
+from raysect.core.math.function.vector3d cimport Blend2D as VectorBlend2D
 
 from cherab.core.math cimport Function1D, autowrap_function1d
 from cherab.core.math cimport Function2D, autowrap_function2d
@@ -521,7 +523,7 @@ cdef class FluxCoordToCartesian(VectorFunction2D):
         cdef Vector3D f, toroidal, poloidal, normal
 
         f = self._field.evaluate(r, z)
-        psi = self._psin(r, z)
+        psi = self._psin.evaluate(r, z)
 
         # calculate flux coordinate vectors
         if f.x == 0 and f.z == 0:
