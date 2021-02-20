@@ -16,6 +16,7 @@
 # See the Licence for the specific language governing permissions and limitations
 # under the Licence.
 
+from raysect.core.math.function.float import Blend1D, Blend2D, Blend3D
 from .samplers import sample1d, sample2d, sample3d, samplevector2d, samplevector3d
 from .samplers import sample1d_points, sample2d_points, sample3d_points
 from .samplers import sample2d_grid, sample3d_grid
@@ -28,7 +29,6 @@ from .interpolators import Interpolate1DLinear, Interpolate1DCubic
 from .interpolators import Interpolate2DLinear, Interpolate2DCubic
 from .interpolators import Interpolate3DLinear, Interpolate3DCubic
 from .caching import Caching1D, Caching2D, Caching3D
-from .blend import Blend1D, Blend2D, Blend3D
 from .clamp import ClampOutput1D, ClampOutput2D, ClampOutput3D
 from .clamp import ClampInput1D, ClampInput2D, ClampInput3D
 from .mappers import IsoMapper2D, IsoMapper3D, Swizzle2D, Swizzle3D, AxisymmetricMapper, VectorAxisymmetricMapper
