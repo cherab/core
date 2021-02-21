@@ -26,6 +26,8 @@ cimport cython
 
 cdef double PH_TO_J_FACTOR = PLANCK_CONSTANT * SPEED_OF_LIGHT * 1e9
 
+cdef double EXP_FACTOR = PH_TO_J_FACTOR / ELEMENTARY_CHARGE
+
 
 # todo: doppler shift?
 cdef class Bremsstrahlung(PlasmaModel):
@@ -92,15 +94,14 @@ cdef class Bremsstrahlung(PlasmaModel):
         :return: 
         """
 
-        cdef double gaunt_factor, radiance, prefactor, exp_factor, ph_to_j
+        cdef double gaunt_factor, radiance, pre_factor
 
         # gaunt factor
-        gaunt_factor = 0.6183 * log(te) - 0.0821
+        gaunt_factor = max(1., 0.6183 * log(te) - 0.0821)
 
         # bremsstrahlung equation W/m^3/str/nm
         pre_factor = 0.95e-19 * RECIP_4_PI * gaunt_factor * ne * ne * zeff / (sqrt(te) * wvl)
-        exp_factor = - PLANCK_CONSTANT * SPEED_OF_LIGHT / te
-        radiance =  pre_factor * exp(exp_factor / wvl) * PH_TO_J_FACTOR
+        radiance =  pre_factor * exp(- EXP_FACTOR / (te * wvl)) * PH_TO_J_FACTOR
 
         # convert to W/m^3/str/nm
         return radiance / wvl
