@@ -116,21 +116,19 @@ cdef class ConstantBivariateGaussian(LaserModel):
 
     def _function_changed(self):
         """
-        Power density should be returned in units [w/m ** 3]. Power shape in xy
+        Power density should be returned in units [J/m ** 3]. Power shape in xy
         plane is defined by normal distribution (integral over xy plane for
         constant z is 1). The units of such distribution are [m ** -2].
         In the z axis direction (direction of laser propagation),
         the laser_energy is spread along the z axis using the velocity
         of light SPEED_OF_LIGHT and the temporal duration of the pulse:
-        length = SPEED_OF_LIGTH * pulse_length.
-        This gives units [J / m ** 3]. To convert to watts, the length
-        is divided by temporal length of the pulse.  This should give correct
-        units and magnitude for the power density.
+        length = SPEED_OF_LIGTH * pulse_length. Combining the normal distribution with the normalisation
+         pulse_energy / length gives the units [J / m ** 3].
         """
         self._distribution = ConstantBivariateGaussian3D(self._stddev_x, self._stddev_y)
 
         length = SPEED_OF_LIGHT * self._pulse_length  # convert from temporal to spatial length of pulse
-        normalisation = self._pulse_energy / length / self._pulse_length  # normalisation to have correct spatial power density per time [J / s / m**3]
+        normalisation = self._pulse_energy / length   # normalisation to have correct spatial energy density [J / m**3]
 
         function = MultiplyScalar3D(normalisation, self._distribution)
         self.set_power_density_function(function)
@@ -224,19 +222,14 @@ cdef class TrivariateGaussian(LaserModel):
 
     def _function_changed(self):
         """
-        Power density should be returned in units [w/m ** 3]. Power shape in xy
+        Power density should be returned in units [J/m ** 3]. Power shape in xy
         plane is defined by normal distribution (integral over xy plane for
         constant z is 1). The units of such distribution are [m ** -2].
         In the z axis direction (direction of laser propagation),
         the laser_energy is spread along the z axis using the velocity
         of light SPEED_OF_LIGHT and the temporal duration of the pulse:
-        length = SPEED_OF_LIGTH * pulse_length.
-        This gives units [J / m ** 3]. To convert to watts, the length
-        is divided by temporal length of the pulse and multiplied by ratio of
-        signal in 1 sigma (pulse_length is the standart deviation of
-        the normal distribution of intensity of the laser in the temporal
-        domain). This should give correct units and magnitude for the power
-        density.
+        length = SPEED_OF_LIGTH * pulse_length. Combining the normal distribution with the normalisation
+         pulse_energy / length gives the units [J / m ** 3].
         """
 
         self._distribution = TrivariateGaussian3D(self._mean_z, self._stddev_x, self._stddev_y,
@@ -245,7 +238,7 @@ cdef class TrivariateGaussian(LaserModel):
         one_stddev = 0.682689492137  # ratio of energy in one standart deviation
 
         # pulse length is given by a standart deviation, which contains only one_stddev part of the energy
-        normalisation = one_stddev * self._pulse_energy / self._pulse_length
+        normalisation =  self._pulse_energy / self._pulse_length
 
         function = MultiplyScalar3D(normalisation, self._distribution)
         self.set_power_density_function(function)
@@ -332,22 +325,20 @@ cdef class GaussianBeamAxisymmetric(LaserModel):
 
     def _function_changed(self):
         """
-        Power density should be returned in units [w/m ** 3]. Power shape in xy
+        Power density should be returned in units [J/m ** 3]. Power shape in xy
         plane is defined by normal distribution (integral over xy plane for
         constant z is 1). The units of such distribution are [m ** -2].
         In the z axis direction (direction of laser propagation),
         the laser_energy is spread along the z axis using the velocity
         of light SPEED_OF_LIGHT and the temporal duration of the pulse:
-        length = SPEED_OF_LIGTH * pulse_length.
-        This gives units [J / m ** 3]. To convert to watts, the length
-        is divided by temporal length of the pulse.  This should give correct
-        units and magnitude for the power density.
+        length = SPEED_OF_LIGTH * pulse_length. Combining the normal distribution with the normalisation
+         pulse_energy / length gives the units [J / m ** 3].
         """
 
         self._distribution = GaussianBeamModel(self.laser_wavelength, self._waist_z, self.stddev_waist)
         # calculate volumetric power dentiy
         length = SPEED_OF_LIGHT * self._pulse_length  # convert from temporal to spatial length of pulse
-        normalisation = self._pulse_energy / length / self._pulse_length  # normalisation to have correct spatial power density per time [J / s / m**3]
+        normalisation = self._pulse_energy / length  # normalisation to have correct spatial energy density [J / m**3]
 
         function = MultiplyScalar3D(normalisation, self._distribution)
         self.set_power_density_function(function)

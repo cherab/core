@@ -54,7 +54,10 @@ cdef class SeldenMatobaThomsonSpectrum(LaserEmissionModel):
         # from: Prunty, S. L. "A primer on the theory of Thomson scattering for high-temperature fusion plasmas."
         # Physica Scripta 89.12 (2014): 128001.
         self._CONST_ALPHA = ELECTRON_REST_MASS * SPEED_OF_LIGHT ** 2 / (2 * ELEMENTARY_CHARGE)  # rewritten for Te in eV
-        self._CONST_TS = 2 / 3 * ELECTRON_CLASSICAL_RADIUS ** 2  # rewritten per solid angle
+        
+        # Thomson scattering reaction rate from Prunty eq. (4.39)
+        self._CONST_TS = ELECTRON_CLASSICAL_RADIUS ** 2
+
         self._RECIP_M_PI = 1 / M_PI
 
     @cython.cdivision(True)
