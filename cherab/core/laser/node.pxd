@@ -3,7 +3,7 @@ from raysect.optical.material.emitter.inhomogeneous cimport VolumeIntegrator
 from raysect.primitive cimport Cylinder
 
 from cherab.core.plasma cimport Plasma
-from cherab.core.laser.models.model_base cimport LaserModel
+from cherab.core.laser.models.profile_base cimport LaserProfile
 from cherab.core.laser.models.laserspectrum_base cimport LaserSpectrum
 from cherab.core.laser.scattering cimport LaserEmissionModel
 cdef class ModelManager:
@@ -25,7 +25,7 @@ cdef class Laser(Node):
         double _length, _radius, _importance
         Plasma _plasma
         ModelManager  _models
-        LaserModel _laser_model
+        LaserProfile _laser_profile
         LaserSpectrum _laser_spectrum
         list _geometry
         VolumeIntegrator _integrator

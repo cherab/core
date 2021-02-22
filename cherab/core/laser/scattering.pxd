@@ -4,7 +4,7 @@ from raysect.optical.spectrum cimport Spectrum
 from cherab.core cimport Plasma
 from cherab.core.distribution cimport DistributionFunction
 from cherab.core.laser.node cimport Laser
-from cherab.core.laser.models.model_base cimport LaserModel
+from cherab.core.laser.models.profile_base cimport LaserProfile
 from cherab.core.laser.models.laserspectrum_base cimport LaserSpectrum
 cimport cython
 
@@ -15,7 +15,7 @@ cdef class LaserEmissionModel:
     cdef:
         Plasma _plasma
         LaserSpectrum _laser_spectrum
-        LaserModel _laser_model
+        LaserProfile _laser_profile
 
 
     cpdef Spectrum emission(self, Point3D point_plasma, Vector3D observation_plasma, Point3D point_laser,

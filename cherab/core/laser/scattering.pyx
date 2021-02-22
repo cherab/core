@@ -3,7 +3,7 @@ from raysect.optical.spectrum cimport Spectrum
 
 from cherab.core cimport Plasma
 from cherab.core.laser.node cimport Laser
-from cherab.core.laser.models.model_base cimport LaserModel
+from cherab.core.laser.models.profile_base cimport LaserProfile
 from cherab.core.utility.constants cimport DEGREES_TO_RADIANS, ATOMIC_MASS, RECIP_4_PI
 from cherab.core.laser.models.laserspectrum_base cimport LaserSpectrum
 from cherab.core.utility.constants cimport PLANCK_CONSTANT, SPEED_OF_LIGHT, ELECTRON_CLASSICAL_RADIUS, ELECTRON_REST_MASS, ELEMENTARY_CHARGE
@@ -24,12 +24,12 @@ cdef class LaserEmissionModel:
         raise NotImplementedError('Virtual method must be implemented in a sub-class.')
 
     @property
-    def laser_model(self):
-        return self._laser_model
+    def laser_profile(self):
+        return self._laser_profile
 
-    @laser_model.setter
-    def laser_model(self, LaserModel value):
-        self._laser_model = value
+    @laser_profile.setter
+    def laser_profile(self, LaserProfile value):
+        self._laser_profile = value
 
     @property
     def plasma(self):
@@ -94,13 +94,13 @@ cdef class SeldenMatobaThomsonSpectrum(LaserEmissionModel):
         if ne == 0:
             return spectrum
         #get laser volumetric power
-        laser_volumetric_power = self._laser_model.get_power_density(point_laser.x, point_laser.y, point_laser.z)
+        laser_volumetric_power = self._laser_profile.get_power_density(point_laser.x, point_laser.y, point_laser.z)
 
         #terminate early if laser power is 0
         if laser_volumetric_power == 0:
             return spectrum
 
-        pointing_vector = self._laser_model.get_pointing(point_laser.x, point_laser.y, point_laser.z)
+        pointing_vector = self._laser_profile.get_pointing(point_laser.x, point_laser.y, point_laser.z)
 
         #angle between observation and pointing vector
         angle_pointing = observation_laser.angle(pointing_vector)  # angle between observation and pointing vector of laser

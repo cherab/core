@@ -184,13 +184,13 @@ cdef class Laser(Node):
         self.notifier.notify()
 
     @property
-    def laser_model(self):
-        return self._laser_model
+    def laser_profle(self):
+        return self._laser_profle
 
-    @laser_model.setter
-    def laser_model(self, object value):
+    @laser_profle.setter
+    def laser_profle(self, object value):
 
-        self._laser_model = value
+        self._laser_profle = value
 
         self.notifier.notify()
 
@@ -204,7 +204,7 @@ cdef class Laser(Node):
         if not self._plasma:
             raise ValueError('The laser must have a reference to a plasma object before specifying the scattering model.')
 
-        if not self._laser_model:
+        if not self._laser_profle:
             raise ValueError('The laser must have a reference to a laser model object before specifying the scattering model.')
 
         if not self._laser_spectrum:

@@ -5,7 +5,7 @@ from raysect.optical cimport SpectralFunction, Spectrum, InterpolatedSF, Point3D
 
 from cherab.core.laser.node cimport Laser
 
-cdef class LaserModel:
+cdef class LaserProfile:
 
     def set_polarization_function(self, VectorFunction3D function):
         self._polarization3d = function

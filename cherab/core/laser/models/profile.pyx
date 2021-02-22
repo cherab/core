@@ -4,7 +4,7 @@ from raysect.optical cimport Spectrum, Vector3D
 
 from raysect.core.math.function.vector3d cimport Constant3D as ConstantVector3D
 from cherab.core.laser.node cimport Laser
-from cherab.core.laser.models.model_base cimport LaserModel
+from cherab.core.laser.models.profile_base cimport LaserProfile
 from cherab.core.laser.models.math_functions cimport ConstantAxisymmetricGaussian3D, ConstantBivariateGaussian3D, TrivariateGaussian3D, GaussianBeamModel 
 
 from cherab.core.utility.constants cimport SPEED_OF_LIGHT
@@ -12,7 +12,7 @@ from cherab.core.utility.constants cimport SPEED_OF_LIGHT
 from libc.math cimport M_PI, sqrt, exp
 
 
-cdef class UniformPowerDensity(LaserModel):
+cdef class UniformPowerDensity(LaserProfile):
 
     def __init__(self, power_density=1,  Vector3D polarization=Vector3D(0, 1, 0)):
         super().__init__()
@@ -39,7 +39,7 @@ cdef class UniformPowerDensity(LaserModel):
         self.set_power_density_function(funct)
 
 
-cdef class ConstantBivariateGaussian(LaserModel):
+cdef class ConstantBivariateGaussian(LaserProfile):
     def __init__(self, double pulse_energy=1, pulse_length=1, double stddev_x=0.01, double stddev_y=0.01,
                  Vector3D polarization=Vector3D(0, 1, 0)):
 
@@ -134,7 +134,7 @@ cdef class ConstantBivariateGaussian(LaserModel):
         self.set_power_density_function(function)
 
 
-cdef class TrivariateGaussian(LaserModel):
+cdef class TrivariateGaussian(LaserProfile):
     def __init__(self, double pulse_energy=1, double pulse_length=1, double mean_z=0,
                  double stddev_x=0.01, double stddev_y=0.01,
                  Vector3D polarization=Vector3D(0, 1, 0)):
@@ -244,7 +244,7 @@ cdef class TrivariateGaussian(LaserModel):
         self.set_power_density_function(function)
 
 
-cdef class GaussianBeamAxisymmetric(LaserModel):
+cdef class GaussianBeamAxisymmetric(LaserProfile):
 
     def __init__(self, double pulse_energy=1, double pulse_length=1,
                  double waist_z=0, double stddev_waist=0.01,

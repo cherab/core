@@ -1,36 +1,36 @@
 from raysect.core.math.function.float cimport Function3D
 from raysect.optical cimport Spectrum, Point3D, Vector3D
 
-from cherab.core.laser.models.model_base cimport LaserModel
+from cherab.core.laser.models.profile_base cimport LaserProfile
 
-cdef class UniformPowerDensity(LaserModel):
+cdef class UniformPowerDensity(LaserProfile):
 
     cdef:
         double _power_density
 
 
-cdef class ConstantAxisymmetricGaussian(LaserModel):
+cdef class ConstantAxisymmetricGaussian(LaserProfile):
 
     cdef:
         double _stddev, _pulse_energy, _pulse_length
         Function3D _distribution
 
 
-cdef class ConstantBivariateGaussian(LaserModel):
+cdef class ConstantBivariateGaussian(LaserProfile):
 
     cdef:
         double _stddev_x, _stddev_y, _pulse_energy, _pulse_length
         Function3D _distribution
 
 
-cdef class TrivariateGaussian(LaserModel):
+cdef class TrivariateGaussian(LaserProfile):
 
     cdef:
         double _stddev_x, _stddev_y, _stddev_z, _mean_z, _pulse_energy, _pulse_length
         Function3D _distribution
 
 
-cdef class GaussianBeamAxisymmetric(LaserModel):
+cdef class GaussianBeamAxisymmetric(LaserProfile):
 
     cdef:
         double _pulse_energy, _pulse_length, _stddev_waist, _waist_z, _laser_wavelength
