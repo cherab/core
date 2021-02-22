@@ -2,7 +2,7 @@ from raysect.core.math.function.float import Constant3D
 from raysect.core.math.function.float import MultiplyScalar3D
 from raysect.optical cimport Spectrum, Vector3D
 
-from raysect.core.math.function.vector3d cimport ConstantVector3D
+from raysect.core.math.function.vector3d cimport Constant3D as ConstantVector3D
 from cherab.core.laser.node cimport Laser
 from cherab.core.laser.models.model_base cimport LaserModel
 from cherab.core.laser.models.math_functions cimport ConstantAxisymmetricGaussian3D, ConstantBivariateGaussian3D, TrivariateGaussian3D, GaussianBeamModel 
