@@ -3,7 +3,7 @@ from raysect.optical cimport Spectrum, Point3D, Vector3D
 
 from cherab.core.laser.models.profile_base cimport LaserProfile
 
-cdef class UniformPowerDensity(LaserProfile):
+cdef class UniformEnergyDensity(LaserProfile):
 
     cdef:
         double _power_density

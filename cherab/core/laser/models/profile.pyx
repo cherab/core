@@ -12,7 +12,7 @@ from cherab.core.utility.constants cimport SPEED_OF_LIGHT
 from libc.math cimport M_PI, sqrt, exp
 
 
-cdef class UniformPowerDensity(LaserProfile):
+cdef class UniformEnergyDensity(LaserProfile):
 
     def __init__(self, power_density=1,  Vector3D polarization=Vector3D(0, 1, 0)):
         super().__init__()
@@ -116,7 +116,7 @@ cdef class ConstantBivariateGaussian(LaserProfile):
 
     def _function_changed(self):
         """
-        Power density should be returned in units [J/m ** 3]. Power shape in xy
+        Energy density should be returned in units [J/m ** 3]. Energy shape in xy
         plane is defined by normal distribution (integral over xy plane for
         constant z is 1). The units of such distribution are [m ** -2].
         In the z axis direction (direction of laser propagation),
@@ -222,7 +222,7 @@ cdef class TrivariateGaussian(LaserProfile):
 
     def _function_changed(self):
         """
-        Power density should be returned in units [J/m ** 3]. Power shape in xy
+        Energy density should be returned in units [J/m ** 3]. Energy shape in xy
         plane is defined by normal distribution (integral over xy plane for
         constant z is 1). The units of such distribution are [m ** -2].
         In the z axis direction (direction of laser propagation),
@@ -325,7 +325,7 @@ cdef class GaussianBeamAxisymmetric(LaserProfile):
 
     def _function_changed(self):
         """
-        Power density should be returned in units [J/m ** 3]. Power shape in xy
+        Energy density should be returned in units [J/m ** 3]. Energy shape in xy
         plane is defined by normal distribution (integral over xy plane for
         constant z is 1). The units of such distribution are [m ** -2].
         In the z axis direction (direction of laser propagation),
