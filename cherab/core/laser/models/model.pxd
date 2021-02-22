@@ -1,4 +1,4 @@
-from raysect.core.math.function.function3d cimport Function3D
+from raysect.core.math.function.float cimport Function3D
 from raysect.optical cimport Spectrum, Point3D, Vector3D
 
 from cherab.core.laser.models.model_base cimport LaserModel

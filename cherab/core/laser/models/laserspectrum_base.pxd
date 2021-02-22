@@ -1,5 +1,5 @@
 
-from raysect.core.math.function cimport Function1D
+from raysect.core.math.function.float cimport Function1D
 
 from cherab.core.laser.node cimport Laser
 from cherab.core.utility.constants cimport SPEED_OF_LIGHT, PLANCK_CONSTANT

@@ -1,5 +1,5 @@
 
-from raysect.core.math.function cimport Function1D
+from raysect.core.math.function.float cimport Function1D
 from raysect.optical cimport Point3D, Vector3D
 
 from cherab.core.utility import Notifier

@@ -1,4 +1,4 @@
-from raysect.core.math.function cimport Function3D
+from raysect.core.math.function.float cimport Function3D
 
 cdef class ConstantAxisymmetricGaussian3D(Function3D):
     cdef:

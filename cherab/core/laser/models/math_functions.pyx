@@ -1,4 +1,4 @@
-from raysect.core.math.function cimport Function3D
+from raysect.core.math.function.float cimport Function3D
 from raysect.optical cimport Spectrum
 from raysect.core.math.cython.utility cimport find_index
 
@@ -75,13 +75,13 @@ cdef class ConstantBivariateGaussian3D(Function3D):
         self._cache_constants()
 
     def _cache_constants(self):
-        self._negative_recip_2stddevx2 = -1 / (2 * self._stddev_x ** 2)
-        self._negative_recip_2stddevy2 = -1 / (2 * self._stddev_y ** 2)
-        self._recip_2pistddevxstddevy = 1 / (2 * pi * self._stddev_x * self._stddev_y)
+        self._kx = -1 / (2 * self._stddev_x ** 2)
+        self._ky = -1 / (2 * self._stddev_y ** 2)
+        self._normalisation = 1 / (2 * pi * self._stddev_x * self._stddev_y)
 
     cdef double evaluate(self, double x, double y, double z) except? -1e999:
-        return self._recip_2pistddevxstddevy * exp(x ** 2 * self._negative_recip_2stddevx2 +
-                                                   y ** 2 * self._negative_recip_2stddevy2)
+        return self._normalisation * exp(x ** 2 * self._kx +
+                                                   y ** 2 * self._ky)
 
 
 cdef class TrivariateGaussian3D(Function3D):
@@ -150,14 +150,14 @@ cdef class TrivariateGaussian3D(Function3D):
         self._mean_z = value
 
     def _cache_constants(self):
-        self._negative_recip_2stddevx2 = -1 / (2 * self._stddev_x ** 2)
-        self._negative_recip_2stddevy2 = -1 / (2 * self._stddev_y ** 2)
+        self._kx = -1 / (2 * self._stddev_x ** 2)
+        self._ky = -1 / (2 * self._stddev_y ** 2)
         self._negative_recip_2stddevz2 = -1 / (2 * self._stddev_z ** 2)
-        self._recip_2pistddevxstddevystddevz = 1 / (sqrt((2 * pi) ** 3) * self._stddev_x * self._stddev_y * self._stddev_z)
+        self._normalisationstddevz = 1 / (sqrt((2 * pi) ** 3) * self._stddev_x * self._stddev_y * self._stddev_z)
 
     cdef double evaluate(self, double x, double y, double z) except? -1e999:
-        return self._recip_2pistddevxstddevystddevz * exp(x ** 2 * self._negative_recip_2stddevx2 +
-                                                          y ** 2 * self._negative_recip_2stddevy2 +
+        return self._normalisationstddevz * exp(x ** 2 * self._kx +
+                                                          y ** 2 * self._ky +
                                                           (z - self._mean_z) ** 2 * self._negative_recip_2stddevz2)
 
 
