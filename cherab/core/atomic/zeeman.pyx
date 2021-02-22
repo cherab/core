@@ -104,12 +104,12 @@ cdef class ZeemanStructure():
             ratio = self._ratios[start + i]
             multiplet_mv[MULTIPLET_WAVELENGTH, i] = wavelength.evaluate(b)
             multiplet_mv[MULTIPLET_RATIO, i] = ratio.evaluate(b)
-            ratio_sum += multiplet_mv[1, i]
+            ratio_sum += multiplet_mv[MULTIPLET_RATIO, i]
 
         # normalising ratios
         if ratio_sum > 0:
             for i in range(number_of_lines):
-                multiplet_mv[1, i] /= ratio_sum
+                multiplet_mv[MULTIPLET_RATIO, i] /= ratio_sum
 
         return multiplet_mv
 
