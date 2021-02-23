@@ -61,9 +61,11 @@ cdef class Laser(Node):
 
         # change reporting and tracking
         self.notifier = Notifier()
+        self.notifier.add(self._configure_geometry)
 
         #setup model manager
         self._models = ModelManager()
+        self._models.notifier.add(self._configure_geometry)
         
         # set material integrator
         self._integrator = NumericalIntegrator(step=1e-3)
@@ -153,10 +155,10 @@ cdef class Laser(Node):
             i.parent = None
         self._geometry[:] = []
 
-        # length of first n-1 segments is 2 * radius
         radius = self.radius  # radius of segments
         n_segments = int(self.length // (2 * radius))  # number of segments
 
+        #length of segment is either length / n_segments if length > radius or length i f length < radius
         if n_segments > 1:
             segment_length = self.length / n_segments
             for i in range(n_segments):
