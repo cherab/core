@@ -80,7 +80,7 @@ cdef class SeldenMatobaThomsonSpectrum(LaserEmissionModel):
                             Vector3D observation_laser, Spectrum spectrum):
         cdef:
             double angle_scattering, angle_pointing, angle_polarization
-            double te, ne, laser_power_density
+            double te, ne, laser_energy_density
             double[::1] laser_wavelength_mv, laser_spectrum_power_mv
             int bins
             Vector3D pointing_vector
@@ -94,7 +94,7 @@ cdef class SeldenMatobaThomsonSpectrum(LaserEmissionModel):
         if ne == 0:
             return spectrum
         #get laser volumetric power
-        laser_volumetric_power = self._laser_profile.get_power_density(point_laser.x, point_laser.y, point_laser.z)
+        laser_volumetric_power = self._laser_profile.get_energy_density(point_laser.x, point_laser.y, point_laser.z)
 
         #terminate early if laser power is 0
         if laser_volumetric_power == 0:
@@ -114,9 +114,9 @@ cdef class SeldenMatobaThomsonSpectrum(LaserEmissionModel):
         bins = self._laser_spectrum._bins
 
         for index in range(bins):
-            laser_power_density = laser_spectrum_power_mv[index] * laser_volumetric_power 
-            if laser_power_density > 0:
-                spectrum = self._add_spectral_contribution(ne, te, laser_power_density, angle_scattering,
+            laser_energy_density = laser_spectrum_power_mv[index] * laser_volumetric_power 
+            if laser_energy_density > 0:
+                spectrum = self._add_spectral_contribution(ne, te, laser_energy_density, angle_scattering,
                                                            angle_polarization, laser_wavelength_mv[index], spectrum)
 
         return spectrum
@@ -154,11 +154,11 @@ cdef class SeldenMatobaThomsonSpectrum(LaserEmissionModel):
 
         return spectrum
 
-    cpdef Spectrum calculate_spectrum(self, double ne, double te, double laser_power_density, double laser_wavelength,
+    cpdef Spectrum calculate_spectrum(self, double ne, double te, double laser_energy_density, double laser_wavelength,
                                       double observation_angle, Spectrum spectrum):
 
         # check for nonzero laser power, ne, te, wavelength
-        if not ne > 0 or not te > 0 or not laser_power_density > 0:
+        if not ne > 0 or not te > 0 or not laser_energy_density > 0:
             return spectrum
         if not laser_wavelength >= 0:
             raise ValueError("laser wavelength has to be larger than 0")
@@ -166,6 +166,6 @@ cdef class SeldenMatobaThomsonSpectrum(LaserEmissionModel):
         angle_scattering = (180. - observation_angle)  # scattering direction is the opposite to obervation direction
         angle_polarisation = 90.
 
-        return self._add_spectral_contribution(ne, te, laser_power_density, angle_scattering, angle_polarisation, laser_wavelength, spectrum)
+        return self._add_spectral_contribution(ne, te, laser_energy_density, angle_scattering, angle_polarisation, laser_wavelength, spectrum)
 
     

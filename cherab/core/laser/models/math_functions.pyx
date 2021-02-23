@@ -24,14 +24,14 @@ cdef class ConstantAxisymmetricGaussian3D(Function3D):
             raise ValueError("Value has to be larger than 0.")
 
         self._stddev = value
-        self._recip_negative_2stddev2 = -1 / (2 * value ** 2)
-        self._recip_2pistddev2 = 1 / (2 * pi * value ** 2)
+        self._kr = -1 / (2 * value ** 2)
+        self._normalisation = 1 / (2 * pi * value ** 2)
 
     cdef double evaluate(self, double x, double y, double z) except? -1e999:
         cdef:
             double r2
         r2 = x ** 2 + y ** 2
-        return self._recip_2pistddev2 * exp(r2 * self._recip_negative_2stddev2)
+        return self._normalisation * exp(r2 * self._kr)
 
 
 cdef class ConstantBivariateGaussian3D(Function3D):
@@ -152,13 +152,13 @@ cdef class TrivariateGaussian3D(Function3D):
     def _cache_constants(self):
         self._kx = -1 / (2 * self._stddev_x ** 2)
         self._ky = -1 / (2 * self._stddev_y ** 2)
-        self._negative_recip_2stddevz2 = -1 / (2 * self._stddev_z ** 2)
-        self._normalisationstddevz = 1 / (sqrt((2 * pi) ** 3) * self._stddev_x * self._stddev_y * self._stddev_z)
+        self._kz = -1 / (2 * self._stddev_z ** 2)
+        self._normalisation = 1 / (sqrt((2 * pi) ** 3) * self._stddev_x * self._stddev_y * self._stddev_z)
 
     cdef double evaluate(self, double x, double y, double z) except? -1e999:
-        return self._normalisationstddevz * exp(x ** 2 * self._kx +
+        return self._normalisation * exp(x ** 2 * self._kx +
                                                           y ** 2 * self._ky +
-                                                          (z - self._mean_z) ** 2 * self._negative_recip_2stddevz2)
+                                                          (z - self._mean_z) ** 2 * self._kz)
 
 
 cdef class GaussianBeamModel(Function3D):

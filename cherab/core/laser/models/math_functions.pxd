@@ -10,14 +10,14 @@ cdef class ConstantAxisymmetricGaussian3D(Function3D):
 cdef class ConstantBivariateGaussian3D(Function3D):
 
     cdef:
-        double _stddev_x, _stddev_y, _negative_recip_2stddevx2, _negative_recip_2stddevy2,_recip_2pistddevxstddevy
+        double _stddev_x, _stddev_y, _kx, _ky,_normalisation
 
 
 cdef class TrivariateGaussian3D(Function3D):
 
     cdef:
-        double _mean_z, _stddev_x, _stddev_y, _stddev_z, _negative_recip_2stddevx2, _negative_recip_2stddevy2
-        double _negative_recip_2stddevz2, _recip_2pistddevxstddevystddevz
+        double _mean_z, _stddev_x, _stddev_y, _stddev_z, _kx, _ky
+        double _kz, _normalisation
 
 
 cdef class GaussianBeamModel(Function3D):

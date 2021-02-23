@@ -9,10 +9,10 @@ cdef class LaserProfile:
 
     cdef:
         VectorFunction3D _polarization3d, _pointing3d
-        Function3D _power_density3d
+        Function3D _energy_density3d
 
     cpdef Vector3D get_pointing(self, double x, double y, double z)
 
     cpdef Vector3D get_polarization(self, double x, double y, double z)
 
-    cpdef double get_power_density(self, double x, double y, double z)
+    cpdef double get_energy_density(self, double x, double y, double z)

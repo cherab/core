@@ -21,7 +21,7 @@ cdef class LaserMaterial(InhomogeneousVolumeEmitter):
             if not isinstance(model, LaserEmissionModel):
                 raise TypeError("Model supplied to laser are not LaserMaterial is not LaserEmissionModel")
             model.plasma = laser.plasma
-            model.laser_profle = laser.laser_profle
+            model.laser_profile = laser.laser_profile
             model.laser_spectrum = laser.laser_spectrum
 
         self._models = models

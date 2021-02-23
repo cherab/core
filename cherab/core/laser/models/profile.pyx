@@ -1,5 +1,4 @@
 from raysect.core.math.function.float import Constant3D
-from raysect.core.math.function.float import MultiplyScalar3D
 from raysect.optical cimport Spectrum, Vector3D
 
 from raysect.core.math.function.vector3d cimport Constant3D as ConstantVector3D
@@ -14,29 +13,29 @@ from libc.math cimport M_PI, sqrt, exp
 
 cdef class UniformEnergyDensity(LaserProfile):
 
-    def __init__(self, power_density=1,  Vector3D polarization=Vector3D(0, 1, 0)):
+    def __init__(self, energy_density=1,  Vector3D polarization=Vector3D(0, 1, 0)):
         super().__init__()
 
         self.set_polarization(polarization)
         self.set_pointing_function(ConstantVector3D(Vector3D(0, 0, 1)))
-        self.power_density = power_density
+        self.energy_density = energy_density
 
     def set_polarization(self, Vector3D value):
         value = value.normalise()
         self.set_polarization_function(ConstantVector3D(value))
 
     @property
-    def power_density(self):
-        return self._power_density
+    def energy_density(self):
+        return self._energy_density
 
-    @power_density.setter
-    def power_density(self, value):
+    @energy_density.setter
+    def energy_density(self, value):
         if not value > 0:
             raise ValueError("Laser power density has to be larger than 0.")
 
-        self._power_density = value
+        self._energy_density = value
         funct = Constant3D(value)
-        self.set_power_density_function(funct)
+        self.set_energy_density_function(funct)
 
 
 cdef class ConstantBivariateGaussian(LaserProfile):
@@ -130,8 +129,8 @@ cdef class ConstantBivariateGaussian(LaserProfile):
         length = SPEED_OF_LIGHT * self._pulse_length  # convert from temporal to spatial length of pulse
         normalisation = self._pulse_energy / length   # normalisation to have correct spatial energy density [J / m**3]
 
-        function = MultiplyScalar3D(normalisation, self._distribution)
-        self.set_power_density_function(function)
+        function = normalisation * self._distribution
+        self.set_energy_density_function(function)
 
 
 cdef class TrivariateGaussian(LaserProfile):
@@ -235,13 +234,10 @@ cdef class TrivariateGaussian(LaserProfile):
         self._distribution = TrivariateGaussian3D(self._mean_z, self._stddev_x, self._stddev_y,
                                                   self._stddev_z)
 
-        one_stddev = 0.682689492137  # ratio of energy in one standart deviation
+        normalisation =  self._pulse_energy 
 
-        # pulse length is given by a standart deviation, which contains only one_stddev part of the energy
-        normalisation =  self._pulse_energy / self._pulse_length
-
-        function = MultiplyScalar3D(normalisation, self._distribution)
-        self.set_power_density_function(function)
+        function = normalisation * self._distribution
+        self.set_energy_density_function(function)
 
 
 cdef class GaussianBeamAxisymmetric(LaserProfile):
@@ -340,5 +336,5 @@ cdef class GaussianBeamAxisymmetric(LaserProfile):
         length = SPEED_OF_LIGHT * self._pulse_length  # convert from temporal to spatial length of pulse
         normalisation = self._pulse_energy / length  # normalisation to have correct spatial energy density [J / m**3]
 
-        function = MultiplyScalar3D(normalisation, self._distribution)
-        self.set_power_density_function(function)
+        function = normalisation * self._distribution
+        self.set_energy_density_function(function)

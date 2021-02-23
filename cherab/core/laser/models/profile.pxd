@@ -6,7 +6,7 @@ from cherab.core.laser.models.profile_base cimport LaserProfile
 cdef class UniformEnergyDensity(LaserProfile):
 
     cdef:
-        double _power_density
+        double _energy_density
 
 
 cdef class ConstantAxisymmetricGaussian(LaserProfile):

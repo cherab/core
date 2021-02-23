@@ -13,8 +13,8 @@ cdef class LaserProfile:
     def set_pointing_function(self, VectorFunction3D function):
         self._pointing3d = function
 
-    def set_power_density_function(self, Function3D function):
-        self._power_density3d = function
+    def set_energy_density_function(self, Function3D function):
+        self._energy_density3d = function
 
     cpdef Vector3D get_pointing(self, double x, double y, double z):
         """
@@ -44,7 +44,7 @@ cdef class LaserProfile:
 
         return self._polarization3d(x, y, z)
 
-    cpdef double get_power_density(self, double x, double y, double z):
+    cpdef double get_energy_density(self, double x, double y, double z):
         """
         Returns the volumetric power density of the laser light at the specified point.
         The return value is a sum for all laser wavelengths.
@@ -57,7 +57,7 @@ cdef class LaserProfile:
         :return: power density in W*m^-3.
         """
 
-        return self._power_density3d.evaluate(x, y, z)
+        return self._energy_density3d.evaluate(x, y, z)
 
     def _change(self):
         """
