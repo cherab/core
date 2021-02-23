@@ -293,18 +293,24 @@ cdef class StarkBroadenedLine(LineShapeModel):
     """
     Parametrised Stark broadened line shape based on the Model Microfield Method (MMM).
     Contains embedded atomic data in the form of fits to MMM.
-    Only Balmer and Paschen series are supported.
+    Only Balmer and Paschen series are supported by default.
     See B. Lomanowski, et al. "Inferring divertor plasma properties from hydrogen Balmer
     and Paschen series spectroscopy in JET-ILW." Nuclear Fusion 55.12 (2015)
     `123028 <https://doi.org/10.1088/0029-5515/55/12/123028>`_.
+
+    Call `show_supported_transitions()` to see the list of supported transitions and
+    default model coefficients.
 
     :param Line line: The emission line object for this line shape.
     :param float wavelength: The rest wavelength for this emission line.
     :param Species target_species: The target plasma species that is emitting.
     :param Plasma plasma: The emitting plasma object.
+    :param dict stark_model_coefficients: Alternative model coefficients in the form
+                                          {line_ij: (c_ij, a_ij, b_ij), ...}.
+                                          If None, the default model parameters will be used.
     """
 
-    STARK_MODEL_COEFFICIENTS = {
+    STARK_MODEL_COEFFICIENTS_DEFAULT = {
         Line(hydrogen, 0, (3, 2)): (3.71e-18, 0.7665, 0.064),
         Line(hydrogen, 0, (4, 2)): (8.425e-18, 0.7803, 0.050),
         Line(hydrogen, 0, (5, 2)): (1.31e-15, 0.6796, 0.030),
@@ -346,11 +352,19 @@ cdef class StarkBroadenedLine(LineShapeModel):
         Line(tritium, 0, (9, 3)): (5.588e-15, 0.7165, 0.033)
     }
 
-    def __init__(self, Line line, double wavelength, Species target_species, Plasma plasma):
+    def __init__(self, Line line, double wavelength, Species target_species, Plasma plasma, dict stark_model_coefficients=None):
+
+        stark_model_coefficients = stark_model_coefficients or self.STARK_MODEL_COEFFICIENTS_DEFAULT
 
         try:
             # Fitted Stark Constants
-            cij, aij, bij = self.STARK_MODEL_COEFFICIENTS[line]
+            cij, aij, bij = stark_model_coefficients[line]
+            if cij <= 0:
+                raise ValueError('Coefficient c_ij must be positive.')
+            if aij <= 0:
+                raise ValueError('Coefficient a_ij must be positive.')
+            if bij <= 0:
+                raise ValueError('Coefficient b_ij must be positive.')
             self._aij = aij
             self._bij = bij
             self._cij = cij
@@ -361,8 +375,8 @@ cdef class StarkBroadenedLine(LineShapeModel):
 
     def show_supported_transitions(self):
         """ Prints all supported transitions."""
-        for line in self.STARK_MODEL_COEFFICIENTS.keys():
-            print(line)
+        for line, coeff in self.STARK_MODEL_COEFFICIENTS_DEFAULT.items():
+            print('{}: c_ij={}, a_ij={}, b_ij={}'.format(line, coeff[0], coeff[1], coeff[2]))
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
@@ -463,11 +477,11 @@ cdef class ZeemanLineShapeModel(LineShapeModel):
 
     @polarisation.setter
     def polarisation(self, value):
-        if value == 'pi':
+        if value.lower() == 'pi':
             self._polarisation = PI_POLARISATION
-        elif value == 'sigma':
+        elif value.lower() == 'sigma':
             self._polarisation = SIGMA_POLARISATION
-        elif value == 'no':
+        elif value.lower() == 'no':
             self._polarisation = NO_POLARISATION
         else:
             raise ValueError('Select between "pi", "sigma" or "no", {} is unsupported.'.format(value))
@@ -517,7 +531,7 @@ cdef class ZeemanTriplet(ZeemanLineShapeModel):
         b_magn = b_field.get_length()
 
         if b_magn == 0:
-            # no splitting if magnetic filed strength is zero
+            # no splitting if magnetic field strength is zero
             if self._polarisation == NO_POLARISATION:
                 return add_gaussian_line(radiance, shifted_wavelength, sigma, spectrum)
 
@@ -527,12 +541,12 @@ cdef class ZeemanTriplet(ZeemanLineShapeModel):
         cos_sqr = (b_field.dot(direction.normalise()) / b_magn)**2
         sin_sqr = 1. - cos_sqr
 
-        # adding pi component of the Zeeman triplet
+        # adding pi component of the Zeeman triplet in case of NO_POLARISATION or PI_POLARISATION
         if self._polarisation != SIGMA_POLARISATION:
             component_radiance = 0.5 * sin_sqr * radiance
             spectrum = add_gaussian_line(component_radiance, shifted_wavelength, sigma, spectrum)
 
-        # adding sigma +/- components of the Zeeman triplet
+        # adding sigma +/- components of the Zeeman triplet in case of NO_POLARISATION or SIGMA_POLARISATION
         if self._polarisation != PI_POLARISATION:
             component_radiance = (0.25 * sin_sqr + 0.5 * cos_sqr) * radiance
 
@@ -560,33 +574,29 @@ cdef class ParametrisedZeemanTriplet(ZeemanLineShapeModel):
     The ratio between Zeeman and thermal broadening line widths: 
     :math:`\frac{W_{Zeeman}}{W_{Doppler}} = \beta T^{\gamma}`,
     where `T` is the species temperature in eV.
-    If :math:`\alpha` is not provided and the spectral line is not in the database, it's calculated
-    as :math:`\alpha = 2 \frac{\mu_{0}}{\lambda_{0}^{2} h c}`,
-    where :math:`\mu_{0}` is the Bohr magneton and :math:`\lambda_{0}` is the rest wavelength
-    of this line.
+
+    Call `show_supported_transitions()` to see the list of supported transitions and
+    default parameters of the model.
 
     For details see A. Blom and C. Jupén, Parametrisation of the Zeeman effect
     for hydrogen-like spectra in high-temperature plasmas,
-    Plasma Phys. Control. Fusion 44 (2002) `1229-1241 
+    Plasma Phys. Control. Fusion 44 (2002) `1229-1241
     <https://doi.org/10.1088/0741-3335/44/7/312>`_.
 
     :param Line line: The emission line object for this line shape.
     :param float wavelength: The rest wavelength for this emission line.
     :param Species target_species: The target plasma species that is emitting.
     :param Plasma plasma: The emitting plasma object.
-    :param float alpha: Parameter :math:`\alpha`, defaults to None. Used only if the given spectral
-                        line is not in the database.
-    :param float beta:  Parameter :math:`\beta`, defaults to None. Used only if the given spectral
-                        line is not in the database.
-    :param float gamma: Parameter :math:`\gamma`, defaults to None. Used only if the given spectral
-                        line is not in the database.
+    :param dict line_parameters: Alternative parameters of the model in the form
+                                 {line_i: (alpha_i, beta_i, gamma_i), ...}.
+                                 If None, the default model parameters will be used.
     :param str polarisation: Leaves only :math:`\pi`-/:math:`\sigma`-polarised components:
                              "pi" - leave central component,
                              "sigma" - leave side components,
                              "no" - all components (default).
     """
 
-    LINE_PARAMETERS = {  # alpha, beta, gamma parameters for selected lines
+    LINE_PARAMETERS_DEFAULT = {  # alpha, beta, gamma parameters for selected lines
         Line(hydrogen, 0, (3, 2)): (0.0402267, 0.3415, -0.5247),
         Line(hydrogen, 0, (4, 2)): (0.0220724, 0.2837, -0.5346),
         Line(deuterium, 0, (3, 2)): (0.0402068, 0.4384, -0.5015),
@@ -633,35 +643,29 @@ cdef class ParametrisedZeemanTriplet(ZeemanLineShapeModel):
         Line(neon, 9, (11, 10)): (0.0257292, 2.1890, -0.2715)
     }
 
-    def __init__(self, Line line, double wavelength, Species target_species, Plasma plasma, alpha=None, beta=None, gamma=None, polarisation='no'):
+    def __init__(self, Line line, double wavelength, Species target_species, Plasma plasma, dict line_parameters=None, polarisation='no'):
 
         super().__init__(line, wavelength, target_species, plasma, polarisation)
 
-        try:
-            _alpha, _beta, _gamma = self.LINE_PARAMETERS[line]
-            self._alpha = _alpha
-            self._beta = _beta
-            self._gamma = _gamma
-        except KeyError:
-            if beta is None or gamma is None:
-                raise ValueError('Data for {} is not currently available.'.format(self.line))
-            if alpha is None:
-                # assign simple triplet value (error < 0.0001 nm for tested lines)
-                self._alpha = 2. * BOHR_MAGNETON * self.wavelength * self.wavelength / HC_EV_NM
-            elif alpha <= 0:
-                raise ValueError('Parameter alpha must be positive.')
-            else:
-                self._alpha = alpha
+        line_parameters = line_parameters or self.LINE_PARAMETERS_DEFAULT
 
+        try:
+            alpha, beta, gamma = line_parameters[self.line]
+            if alpha <= 0:
+                raise ValueError('Parameter alpha must be positive.')
             if beta < 0:
                 raise ValueError('Parameter beta must be non-negative.')
+            self._alpha = alpha
             self._beta = beta
             self._gamma = gamma
 
-    def show_supported_lines(self):
+        except KeyError:
+            raise ValueError('Data for {} is not available.'.format(self.line))
+
+    def show_supported_transitions(self):
         """ Prints all supported transitions."""
-        for line in self.LINE_PARAMETERS.keys():
-            print(line)
+        for line, param in self.LINE_PARAMETERS_DEFAULT.items():
+            print('{}: alpha={}, beta={}, gamma={}'.format(line, param[0], param[1], param[2]))
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
@@ -702,12 +706,12 @@ cdef class ParametrisedZeemanTriplet(ZeemanLineShapeModel):
         cos_sqr = (b_field.dot(direction.normalise()) / b_magn)**2
         sin_sqr = 1. - cos_sqr
 
-        # adding pi component of the Zeeman triplet
+        # adding pi component of the Zeeman triplet in case of NO_POLARISATION or PI_POLARISATION
         if self._polarisation != SIGMA_POLARISATION:
             component_radiance = 0.5 * sin_sqr * radiance
             spectrum = add_gaussian_line(component_radiance, shifted_wavelength, sigma, spectrum)
 
-        # adding sigma +/- components of the Zeeman triplet
+        # adding sigma +/- components of the Zeeman triplet in case of NO_POLARISATION or SIGMA_POLARISATION
         if self._polarisation != PI_POLARISATION:
             component_radiance = (0.25 * sin_sqr + 0.5 * cos_sqr) * radiance
 
@@ -786,7 +790,7 @@ cdef class ZeemanMultiplet(ZeemanLineShapeModel):
         cos_sqr = (b_field.dot(direction.normalise()) / b_magn)**2
         sin_sqr = 1. - cos_sqr
 
-        # adding pi components of the Zeeman multiplet
+        # adding pi components of the Zeeman multiplet in case of NO_POLARISATION or PI_POLARISATION
         if self._polarisation != SIGMA_POLARISATION:
             component_radiance = 0.5 * sin_sqr * radiance
             multiplet_mv = self._zeeman_structure.evaluate(b_magn, PI_POLARISATION)
@@ -795,7 +799,7 @@ cdef class ZeemanMultiplet(ZeemanLineShapeModel):
                 shifted_wavelength = doppler_shift(multiplet_mv[MULTIPLET_WAVELENGTH, i], direction, ion_velocity)
                 spectrum = add_gaussian_line(component_radiance * multiplet_mv[MULTIPLET_RATIO, i], shifted_wavelength, sigma, spectrum)
 
-        # adding sigma components of the Zeeman multiplet
+        # adding sigma components of the Zeeman multiplet in case of NO_POLARISATION or SIGMA_POLARISATION
         if self._polarisation != PI_POLARISATION:
             component_radiance = (0.5 * sin_sqr + cos_sqr) * radiance
             multiplet_mv = self._zeeman_structure.evaluate(b_magn, SIGMA_POLARISATION)

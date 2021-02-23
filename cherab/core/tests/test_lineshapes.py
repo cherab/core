@@ -193,9 +193,7 @@ class TestLineShapes(unittest.TestCase):
             spectrum[pol] = triplet.add_line(radiance, point, direction, spectrum[pol])
 
         # validating
-        alpha = 0.0402068
-        beta = 0.4384
-        gamma = -0.5015
+        alpha, beta, gamma = triplet.LINE_PARAMETERS_DEFAULT[line]
         temperature = target_species.distribution.effective_temperature(point.x, point.y, point.z)
         velocity = target_species.distribution.bulk_velocity(point.x, point.y, point.z)
         sigma = np.sqrt(temperature * ELEMENTARY_CHARGE / (line.element.atomic_weight * ATOMIC_MASS)) * wavelength / SPEED_OF_LIGHT
@@ -230,12 +228,13 @@ class TestLineShapes(unittest.TestCase):
         target_species = self.plasma.composition.get(line.element, line.charge)
         wavelength = 656.104
         photon_energy = HC_EV_NM / wavelength
-        wavelengths_pi = [Constant1D(wavelength)]
-        ratios_pi = [Constant1D(1.0)]
-        wavelengths_sigma = [HC_EV_NM / (photon_energy - BOHR_MAGNETON * Arg1D()), HC_EV_NM / (photon_energy + BOHR_MAGNETON * Arg1D())]
-        ratios_sigma = [Constant1D(0.5), Constant1D(0.5)]
-        splitting_function = ZeemanStructure(wavelengths_pi, ratios_pi, wavelengths_sigma, ratios_sigma)
-        multiplet = ZeemanMultiplet(line, wavelength, target_species, self.plasma, splitting_function)
+
+        pi_components = [(Constant1D(wavelength), Constant1D(1.0))]
+        sigma_components = [(HC_EV_NM / (photon_energy - BOHR_MAGNETON * Arg1D()), Constant1D(0.5)),
+                            (HC_EV_NM / (photon_energy + BOHR_MAGNETON * Arg1D()), Constant1D(0.5))]
+
+        zeeman_structure = ZeemanStructure(pi_components, sigma_components)
+        multiplet = ZeemanMultiplet(line, wavelength, target_species, self.plasma, zeeman_structure)
 
         # spectrum parameters
         min_wavelength = wavelength - 0.5
@@ -301,7 +300,7 @@ class TestLineShapes(unittest.TestCase):
         spectrum = stark_line.add_line(radiance, point, direction, spectrum)
 
         # validating
-        cij, aij, bij = stark_line.STARK_MODEL_COEFFICIENTS[line]
+        cij, aij, bij = stark_line.STARK_MODEL_COEFFICIENTS_DEFAULT[line]
         ne = self.plasma.electron_distribution.density(point.x, point.y, point.z)
         te = self.plasma.electron_distribution.effective_temperature(point.x, point.y, point.z)
         lambda_1_2 = cij * ne**aij / (te**bij)

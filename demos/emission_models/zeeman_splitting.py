@@ -116,15 +116,16 @@ BOHR_MAGNETON = 5.78838180123e-5  # in eV/T
 HC_EV_NM = 1239.8419738620933  # (Planck constant in eV s) x (speed of light in nm/s)
 wavelength = plasma.atomic_data.wavelength(deuterium, 0, (3, 2))
 photon_energy = HC_EV_NM / wavelength
-wavelengths_pi = [Constant1D(wavelength)]
-ratios_pi = [Constant1D(1.0)]
-wavelengths_sigma = [HC_EV_NM / (photon_energy - BOHR_MAGNETON * Arg1D()), HC_EV_NM / (photon_energy + BOHR_MAGNETON * Arg1D())]
-ratios_sigma = [Constant1D(0.5), Constant1D(0.5)]
-splitting_function = ZeemanStructure(wavelengths_pi, ratios_pi, wavelengths_sigma, ratios_sigma)
+
+pi_components = [(Constant1D(wavelength), Constant1D(1.0))]
+sigma_components = [(HC_EV_NM / (photon_energy - BOHR_MAGNETON * Arg1D()), Constant1D(0.5)),
+                    (HC_EV_NM / (photon_energy + BOHR_MAGNETON * Arg1D()), Constant1D(0.5))]
+
+zeeman_structure = ZeemanStructure(pi_components, sigma_components)
 
 plasma.models = [
-    ExcitationLine(deuterium_I_656, lineshape=ZeemanMultiplet, lineshape_args=[splitting_function]),
-    RecombinationLine(deuterium_I_656, lineshape=ZeemanMultiplet, lineshape_args=[splitting_function])
+    ExcitationLine(deuterium_I_656, lineshape=ZeemanMultiplet, lineshape_args=[zeeman_structure]),
+    RecombinationLine(deuterium_I_656, lineshape=ZeemanMultiplet, lineshape_args=[zeeman_structure])
 ]
 
 # Ray-trace the spectrum again

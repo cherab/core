@@ -20,8 +20,7 @@
 cdef class ZeemanStructure:
 
     cdef:
-        int _number_of_pi_lines, _number_of_sigma_lines
-        list _wavelengths, _ratios
+        list _pi_components, _sigma_components
 
     cdef double[:, :] evaluate(self, double b, bint polarisation)
 

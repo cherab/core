@@ -37,39 +37,34 @@ cdef class ZeemanStructure():
     :math:`\pi`-/:math:`\sigma`-polarised Zeeman components for any given value of
     magnetic field strength.
 
-    :param list wavelengths_pi: A list of Function1D objects that provide the wavelengths
-                                of individual :math:`\pi`-polarised Zeeman components for a given
-                                magnetic field strength.
-    :param list ratios_pi: A list of Function1D objects that provide the ratios
-                           of individual :math:`\pi`-polarised Zeeman components for a given
-                           magnetic field strength. The sum of all ratios must be equal to 1.
-    :param list wavelengths_sigma: A list of Function1D objects that provide the wavelengths
-                                   of individual :math:`\sigma`-polarised Zeeman components fo
-                                   a given magnetic field strength.
-    :param list ratios_sigma: A list of Function1D objects that provide the ratios
-                              of individual :math:`\sigma`-polarised Zeeman components for a given
-                              magnetic field strength. The sum of all ratios must be equal to 1.
+    :param list pi_components: A list of 2-tuples of Function1D objects that provide the
+                               wavelengths and ratios of individual :math:`\pi`-polarised
+                               Zeeman components for a given magnetic field strength:
+                               [(wvl_func1, ratio_func1), (wvl_func2, ratio_func2), ...]
+    :param list sigma_components: A list of 2-tuples of Function1D objects that provide the
+                                  wavelengths and ratios of individual :math:`\sigma`-polarised
+                                  Zeeman components for a given magnetic field strength:
+                                  [(wvl_func1, ratio_func1), (wvl_func2, ratio_func2), ...]
     """
 
-    def __init__(self, wavelengths_pi, ratios_pi, wavelengths_sigma, ratios_sigma):
+    def __init__(self, pi_components, sigma_components):
 
-        if len(wavelengths_pi) != len(ratios_pi):
-            raise ValueError('The lengths of "wavelengths_pi" ({}) and "ratios_pi" ({}) do not match.'.format(len(wavelengths_pi),
-                                                                                                              len(ratios_pi)))
+        cdef tuple component
 
-        if len(wavelengths_sigma) != len(ratios_sigma):
-            raise ValueError('The lengths of "wavelengths_sigma" ({}) and "ratios_sigma" ({}) do not match.'.format(len(wavelengths_sigma),
-                                                                                                                    len(ratios_sigma)))
+        self._pi_components = []
+        self._sigma_components = []
 
-        self._number_of_pi_lines = len(wavelengths_pi)
-        self._number_of_sigma_lines = len(wavelengths_sigma)
+        for component in pi_components:
+            if len(component) != 2:
+                raise ValueError('Argument "pi_components" must be a list of 2-tuples.')
+            self._pi_components.append((autowrap_function1d(component[MULTIPLET_WAVELENGTH]),
+                                        autowrap_function1d(component[MULTIPLET_RATIO])))
 
-        self._wavelengths = wavelengths_pi + wavelengths_sigma
-        self._ratios = ratios_pi + ratios_sigma
-
-        for i in range(len(self._wavelengths)):
-            self._wavelengths[i] = autowrap_function1d(self._wavelengths[i])
-            self._ratios[i] = autowrap_function1d(self._ratios[i])
+        for component in sigma_components:
+            if len(component) != 2:
+                raise ValueError('Argument "sigma_components" must be a list of 2-tuples.')
+            self._sigma_components.append((autowrap_function1d(component[MULTIPLET_WAVELENGTH]),
+                                           autowrap_function1d(component[MULTIPLET_RATIO])))
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
@@ -77,48 +72,50 @@ cdef class ZeemanStructure():
     @cython.cdivision(True)
     cdef double[:, :] evaluate(self, double b, bint polarisation):
 
-        cdef int i, start, number_of_lines
+        cdef int i
         cdef np.npy_intp multiplet_shape[2]
         cdef double ratio_sum
         cdef np.ndarray multiplet
         cdef double[:, :] multiplet_mv
         cdef Function1D wavelength, ratio
+        cdef list components
 
-        b = max(0, b)
+        if b < 0:  # safety check in case if used stand-alone
+            raise ValueError('Argument "b" (magnetic field strength) must be non-negative.')
 
         if polarisation == PI_POLARISATION:
-            start = 0
-            number_of_lines = self._number_of_pi_lines
+            components = self._pi_components
         else:
-            start = self._number_of_pi_lines
-            number_of_lines = self._number_of_sigma_lines
+            components = self._sigma_components
 
         multiplet_shape[0] = 2
-        multiplet_shape[1] = number_of_lines
+        multiplet_shape[1] = len(components)
         multiplet = np.PyArray_SimpleNew(2, multiplet_shape, np.NPY_FLOAT64)
         multiplet_mv = multiplet
 
         ratio_sum = 0
-        for i in range(number_of_lines):
-            wavelength = self._wavelengths[start + i]
-            ratio = self._ratios[start + i]
+        for i in range(len(components)):
+            wavelength = components[i][MULTIPLET_WAVELENGTH]
+            ratio = components[i][MULTIPLET_RATIO]
+
             multiplet_mv[MULTIPLET_WAVELENGTH, i] = wavelength.evaluate(b)
             multiplet_mv[MULTIPLET_RATIO, i] = ratio.evaluate(b)
+
             ratio_sum += multiplet_mv[MULTIPLET_RATIO, i]
 
         # normalising ratios
         if ratio_sum > 0:
-            for i in range(number_of_lines):
+            for i in range(multiplet_mv.shape[1]):
                 multiplet_mv[MULTIPLET_RATIO, i] /= ratio_sum
 
         return multiplet_mv
 
     def __call__(self, double b, str polarisation):
 
-        if polarisation == 'pi':
+        if polarisation.lower() == 'pi':
             return np.asarray(self.evaluate(b, PI_POLARISATION))
 
-        if polarisation == 'sigma':
+        if polarisation.lower() == 'sigma':
             return np.asarray(self.evaluate(b, SIGMA_POLARISATION))
 
         raise ValueError('Argument "polarisation" must be "pi" or "sigma", {} given.'.fotmat(polarisation))
