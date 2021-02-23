@@ -10,11 +10,9 @@ from cherab.core import Plasma, Maxwellian
 from cherab.core.laser.node import Laser
 from cherab.core.laser.models.laserspectrum import ConstantSpectrum, GaussianSpectrum
 from cherab.core.laser.scattering import SeldenMatobaThomsonSpectrum
-from cherab.core.laser.models.model import UniformPowerDensity, ConstantBivariateGaussian
-from cherab.core.laser.models.model import TrivariateGaussian, GaussianBeamAxisymmetric
+from cherab.core.laser.models.profile import UniformEnergyDensity, ConstantBivariateGaussian
+from cherab.core.laser.models.profile import TrivariateGaussian, GaussianBeamAxisymmetric
 from cherab.core.laser.models.laserspectrum_base import LaserSpectrum
-
-from cherab.tools.plasmas.slab import build_slab_plasma
 
 from math import exp, sqrt, cos, sin
 from scipy.constants import pi, c, e, m_e, epsilon_0
@@ -40,7 +38,7 @@ class TestLaser(unittest.TestCase):
         with self.assertRaises(ValueError, msg="Laser has to be connected to laser spectrum and laser models and plasma before scattering model."):
             laser.models = [SeldenMatobaThomsonSpectrum()]
 
-        laser.laser_model = UniformPowerDensity()
+        laser.laser_profile = UniformEnergyDensity()
         laser.plasma = Plasma(parent=world)
         laser.laser_spectrum = ConstantSpectrum(min_wavelength=1059, max_wavelength=1061, bins=10)
         laser.models = [SeldenMatobaThomsonSpectrum()]
@@ -50,7 +48,7 @@ class TestLaser(unittest.TestCase):
         world = World()
         laser = Laser(length=0.5, radius=1., parent=world)
 
-        laser.laser_model = UniformPowerDensity()
+        laser.laser_profile = UniformEnergyDensity()
         laser.laser_spectrum = ConstantSpectrum(min_wavelength=1059, max_wavelength=1061, bins=10)
         laser.plasma = Plasma(parent=world)
         laser.models = [SeldenMatobaThomsonSpectrum()]
@@ -66,39 +64,37 @@ class TestLaser(unittest.TestCase):
 
         world = World()
 
-        laser_model = UniformPowerDensity()
+        laser_profile = UniformEnergyDensity()
         laser_spectrum = ConstantSpectrum(min_wavelength=1059, max_wavelength=1061, bins=10)
         plasma = Plasma(parent=world)
         models = [SeldenMatobaThomsonSpectrum()]
 
-        laser_model2 = UniformPowerDensity()
+        laser_profile2 = UniformEnergyDensity()
         laser_spectrum2 = ConstantSpectrum(min_wavelength=1059, max_wavelength=1061, bins=10)
         plasma2 = Plasma(parent=world)
         models2 = [SeldenMatobaThomsonSpectrum()]
 
         laser = Laser(length=1, radius=0.1, parent=world)
 
-        laser.laser_model
         laser.laser_spectrum = laser_spectrum
         laser.plasma = plasma
-        laser.laser_model = laser_model
+        laser.laser_profile = laser_profile
         laser.models = models
 
         for mod in list(laser.models):
-            self.assertIs(mod.laser_model, laser_model, msg="laser_model reference in emission model"
+            self.assertIs(mod.laser_profile, laser_profile, msg="laser_profile reference in emission model"
                           "is not set correctly.")
             self.assertIs(mod.plasma, plasma, msg="plasma reference in emission model"
                                                             "is not set correctly.")
             self.assertIs(mod.laser_spectrum, laser_spectrum, msg="laser_spectrum reference in emission model"
                                                             "is not set correctly.")
 
-        laser.laser_model
         laser.laser_spectrum = laser_spectrum2
         laser.plasma = plasma2
-        laser.laser_model = laser_model2
+        laser.laser_profile = laser_profile2
 
         for mod in list(laser.models):
-            self.assertIs(mod.laser_model, laser_model2, msg="laser_model reference in emission model"
+            self.assertIs(mod.laser_profile, laser_profile2, msg="laser_profile reference in emission model"
                                                             "is not set correctly.")
             self.assertIs(mod.plasma, plasma2, msg="plasma reference in emission model"
                                                   "is not set correctly.")
@@ -108,7 +104,7 @@ class TestLaser(unittest.TestCase):
         laser.models = models + models2
 
         for mod in list(laser.models):
-            self.assertIs(mod.laser_model, laser_model2, msg="laser_model reference in emission model"
+            self.assertIs(mod.laser_profile, laser_profile2, msg="laser_profile reference in emission model"
                                                              "is not set correctly.")
             self.assertIs(mod.plasma, plasma2, msg="plasma reference in emission model"
                                                    "is not set correctly.")
@@ -211,10 +207,10 @@ class TestLaserSpectrum(unittest.TestCase):
 
 class TestLaserModels(unittest.TestCase):
 
-    def test_uniform_power_density(self):
+    def test_uniform_energy_density(self):
         polarisation = Vector3D(1, 3, 8).normalise()
-        power_density = 2
-        model = UniformPowerDensity(power_density=power_density, polarization=polarisation)
+        energy_density = 2
+        model = UniformEnergyDensity(energy_density=energy_density, polarization=polarisation)
 
         # test polarisation
         pol_model = model.get_polarization(1, 1, 1)
@@ -226,14 +222,13 @@ class TestLaserModels(unittest.TestCase):
                          msg="Model polarization z vector component does not agreee with input value.")
 
         # test power
-        self.assertEqual(model.get_power_density(3, 4, 1), power_density,
+        self.assertEqual(model.get_energy_density(3, 4, 1), energy_density,
                          msg="Model power density distribution does not agree with input.")
 
     def test_bivariate_gaussian(self):
 
         pulse_energy = 2
         pulse_length = 1e-8
-        pulse_power = pulse_energy / pulse_length
         stddev_x = 0.03
         stddev_y = 0.06
         polarisation = Vector3D(2, 3, 4).normalise()
@@ -253,8 +248,8 @@ class TestLaserModels(unittest.TestCase):
         xlim = [-5 * stddev_x, 5 * stddev_x]
         ylim = [-5 * stddev_y, 5 * stddev_y]
         zlim = [0, pulse_length * c]
-        energy_integrated = nquad(model.get_power_density, [xlim, ylim, zlim])[0]
-        self.assertTrue(np.isclose(energy_integrated / pulse_power, 1, 1e-3),
+        energy_integrated = nquad(model.get_energy_density, [xlim, ylim, zlim])[0]
+        self.assertTrue(np.isclose(energy_integrated / pulse_energy, 1, 1e-3),
                         msg="Integrated laser energy of the model does not give results close to input energy")
 
         # Check laser power density profile
@@ -263,7 +258,7 @@ class TestLaserModels(unittest.TestCase):
         for ix, vx in enumerate(x):
             for iy, vy in enumerate(y):
                 tmp = _constant_bivariate_gaussian2d(vx, vy, pulse_energy, pulse_length, stddev_x, stddev_y)
-                tmp2 = model.get_power_density(vx, vy, 0)
+                tmp2 = model.get_energy_density(vx, vy, 0)
                 self.assertTrue(np.isclose(tmp, tmp2, 1e-9),
                                 msg="Model power density distribution for ({},{},{}) does not agree with input.".format(
                                     vx, vy, 0))
@@ -273,7 +268,6 @@ class TestLaserModels(unittest.TestCase):
         pulse_energy = 2
         pulse_length = 1e-8
         one_stddev = 0.682689492137
-        pulse_power = one_stddev * pulse_energy / pulse_length
         mean_z = 0
         stddev_x = 0.03
         stddev_y = 0.06
@@ -294,9 +288,9 @@ class TestLaserModels(unittest.TestCase):
         xlim = [-5 * stddev_x, 5 * stddev_x]
         ylim = [-5 * stddev_y, 5 * stddev_y]
         zlim = [mean_z - 5 * pulse_length * c, mean_z + 5 * pulse_length * c]
-        energy_integrated = nquad(model.get_power_density, [xlim, ylim, zlim])[0]
+        energy_integrated = nquad(model.get_energy_density, [xlim, ylim, zlim])[0]
 
-        self.assertTrue(np.isclose(energy_integrated / pulse_power, 1, 1e-3),
+        self.assertTrue(np.isclose(energy_integrated / pulse_energy, 1, 1e-3),
                         msg="Integrated laser energy of the model does not give results close to input energy")
 
         # Check laser power density profile
@@ -309,7 +303,7 @@ class TestLaserModels(unittest.TestCase):
                 for iz, vz in enumerate(z):
                     tmp = _constant_trivariate_gaussian3d(vx, vy, vz, pulse_energy, pulse_length, mean_z, stddev_x,
                                                           stddev_y)
-                    tmp2 = model.get_power_density(vx, vy, vz)
+                    tmp2 = model.get_energy_density(vx, vy, vz)
                     self.assertTrue(np.isclose(tmp, tmp2, 1e-9),
                                     msg="Model power density distribution for ({},{},{})"
                                         " does not agree with input.".format(vx, vy, vz))
@@ -318,7 +312,6 @@ class TestLaserModels(unittest.TestCase):
 
         pulse_energy = 2
         pulse_length = 1e-9
-        pulse_power = pulse_energy / pulse_length
         waist_z = 0
         stddev_waist = 0.003
         laser_wavelength = 1040
@@ -340,9 +333,9 @@ class TestLaserModels(unittest.TestCase):
         # Integrate over laser volume to check energy
         xlim = [-20 * stddev_waist, 20 * stddev_waist]
         zlim = [-1 * pulse_length / 2 * c, pulse_length / 2 * c]
-        energy_integrated = nquad(model.get_power_density, [xlim, xlim, zlim])[0]
+        energy_integrated = nquad(model.get_energy_density, [xlim, xlim, zlim])[0]
 
-        self.assertTrue(np.isclose(energy_integrated / pulse_power, 1, 1e-3),
+        self.assertTrue(np.isclose(energy_integrated / pulse_energy, 1, 1e-3),
                         msg="Integrated laser energy of the model does not give results close to input energy")
 
         # Check laser power density profile
@@ -355,7 +348,7 @@ class TestLaserModels(unittest.TestCase):
                 for iz, vz in enumerate(z):
                     tmp = _gaussian_beam_model(vx, vy, vz, pulse_energy, pulse_length, waist_z, stddev_waist,
                                                laser_wavelength * 1e-9)
-                    tmp2 = model.get_power_density(vx, vy, vz)
+                    tmp2 = model.get_energy_density(vx, vy, vz)
                     self.assertTrue(np.isclose(tmp, tmp2, 1e-9),
                                     msg="Model power density distribution for ({},{},{}) "
                                         "does not agree with input.".format(vx, vy, vz))
@@ -400,14 +393,14 @@ class TestScatteringModel(unittest.TestCase):
 
                 # setup laser
                 laser_spectrum = ConstantSpectrum(1039.8, 1040.2, 2)
-                laser_model = UniformPowerDensity()
+                laser_profile = UniformEnergyDensity()
                 scattering_model = SeldenMatobaThomsonSpectrum()
                 laser = Laser()
                 laser.parent = world
                 laser.length = 1
                 laser.radius = 0.015
                 laser.transform = translate(0.05, 0, -0.5)
-                laser.laser_model = laser_model
+                laser.laser_profile = laser_profile
                 laser.laser_spectrum = laser_spectrum
                 laser.plasma = plasma
                 laser.models = [scattering_model]
@@ -421,13 +414,13 @@ class TestScatteringModel(unittest.TestCase):
                 intensity_test = np.zeros_like(traced_spectrum.wavelengths)
 
                 dl = 2 * laser.radius / cos((scatangle - 90) / 180 * pi)  # ray-laser cross section length
-                for il, vl in enumerate(laser.laser_spectrum.wavelengths):
+                for _, vl in enumerate(laser.laser_spectrum.wavelengths):
                     for iwvl, vwvl in enumerate(traced_spectrum.wavelengths):
                         # normalized scattered spectrum shape
                         intensity_test[iwvl] += _selden_matoba_shape(vwvl, vte, scatangle, vl)
 
                         # multiply by scattered power along the ray path
-                        intensity_test[iwvl] *= (1 / laser_spectrum.bins * laser_model.power_density * dl *
+                        intensity_test[iwvl] *= (1 / laser_spectrum.bins * laser_profile.energy_density * dl *
                                                  e_density * scat_const / traced_spectrum.delta_wavelength)
 
                 for index, (vtest, vray) in enumerate(zip(intensity_test, traced_spectrum.samples)):
@@ -465,7 +458,7 @@ def _selden_matoba_shape(wavelength, te, scatangle, laser_wavelength):
 
 
 def _gaussian_beam_model(x, y, z, pulse_energy, pulse_length, waist_z, stddev_waist, wavelength):
-    laser_power_axis = pulse_energy / (pulse_length ** 2 * c)
+    laser_power_axis = pulse_energy / (pulse_length * c)
 
     n = 1  # refractive index
     rayleigh_distance = 2 * pi * stddev_waist ** 2 * n / wavelength
@@ -481,19 +474,17 @@ def _gaussian_beam_model(x, y, z, pulse_energy, pulse_length, waist_z, stddev_wa
 
 def _constant_trivariate_gaussian3d(x, y, z, pulse_energy, pulse_length, mean_z, stddev_x, stddev_y):
     stddev_z = pulse_length * c
-    one_stddev = 0.682689492137
-    normalisation = one_stddev * pulse_energy / pulse_length
-    return (normalisation / (sqrt((2 * pi) ** 3) * stddev_x * stddev_y * stddev_z) *
+    return (pulse_energy / (sqrt((2 * pi) ** 3) * stddev_x * stddev_y * stddev_z) *
             exp(-1 / 2 * ((x / stddev_x) ** 2 + (y / stddev_y) ** 2 + ((z - mean_z) / stddev_z) ** 2)))
 
 
 def _constant_axisymmetric_gaussian(x, y, pulse_energy, pulse_length, stddev):
     length = pulse_length * c
-    normalisation = pulse_energy / length / pulse_length
+    normalisation = pulse_energy / length
     return normalisation / (stddev ** 2 * 2 * pi) * exp(-1 / 2 * ((x ** 2 + y ** 2) / stddev ** 2))
 
 
 def _constant_bivariate_gaussian2d(x, y, pulse_energy, pulse_length, stddev_x, stddev_y):
     length = pulse_length * c
-    normalisation = pulse_energy / length / pulse_length
+    normalisation = pulse_energy / length
     return normalisation / (stddev_x * stddev_y * 2 * pi) * exp(-1 / 2 * ((x / stddev_x) ** 2 + (y / stddev_y) ** 2))
