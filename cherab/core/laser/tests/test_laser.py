@@ -9,7 +9,7 @@ from raysect.primitive import Box
 from cherab.core import Plasma, Maxwellian
 from cherab.core.laser.node import Laser
 from cherab.core.laser.models.laserspectrum import ConstantSpectrum, GaussianSpectrum
-from cherab.core.laser.scattering import SeldenMatobaThomsonSpectrum
+from cherab.core.laser.model import SeldenMatobaThomsonSpectrum
 from cherab.core.laser.models.profile import UniformEnergyDensity, ConstantBivariateGaussian
 from cherab.core.laser.models.profile import TrivariateGaussian, GaussianBeamAxisymmetric
 from cherab.core.laser.models.laserspectrum_base import LaserSpectrum

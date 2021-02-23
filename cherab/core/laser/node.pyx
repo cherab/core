@@ -4,7 +4,7 @@ from raysect.optical.material.emitter.inhomogeneous cimport NumericalIntegrator
 from raysect.core cimport translate, Material
 
 from cherab.core.laser.material cimport LaserMaterial
-from cherab.core.laser.scattering cimport LaserEmissionModel
+from cherab.core.laser.model cimport LaserModel
 from cherab.core.laser.models.laserspectrum_base import LaserSpectrum
 from cherab.core.utility import Notifier
 from libc.math cimport M_PI
@@ -30,13 +30,13 @@ cdef class ModelManager:
 
         # check contents of list are laser models
         for model in models:
-            if not isinstance(model, LaserEmissionModel):
-                raise TypeError('The model list must consist of only LaserEmissionModel objects.')
+            if not isinstance(model, LaserModel):
+                raise TypeError('The model list must consist of only LaserModel objects.')
 
         self._models = models
         self.notifier.notify()
 
-    cpdef object add(self, LaserEmissionModel model):
+    cpdef object add(self, LaserModel model):
 
         if not model:
             raise ValueError('Model must not be None type.')

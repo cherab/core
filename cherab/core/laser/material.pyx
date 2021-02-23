@@ -4,7 +4,7 @@ from raysect.optical.material.emitter cimport InhomogeneousVolumeEmitter
 from raysect.optical.material.emitter.inhomogeneous cimport VolumeIntegrator
 
 from cherab.core.laser.node cimport Laser
-from cherab.core.laser.scattering cimport LaserEmissionModel
+from cherab.core.laser.model cimport LaserModel
 
 cdef class LaserMaterial(InhomogeneousVolumeEmitter):
 
@@ -18,8 +18,8 @@ cdef class LaserMaterial(InhomogeneousVolumeEmitter):
         
         #validate and set models
         for model in models:
-            if not isinstance(model, LaserEmissionModel):
-                raise TypeError("Model supplied to laser are not LaserMaterial is not LaserEmissionModel")
+            if not isinstance(model, LaserModel):
+                raise TypeError("Model supplied to laser are not LaserMaterial is not LaserModel")
             model.plasma = laser.plasma
             model.laser_profile = laser.laser_profile
             model.laser_spectrum = laser.laser_spectrum
@@ -34,7 +34,7 @@ cdef class LaserMaterial(InhomogeneousVolumeEmitter):
         cdef:
             Point3D point_plasma, point_laser
             Vector3D direction_plasma, direction_laser
-            LaserEmissionModel model
+            LaserModel model
 
         point_laser = point.transform(self._laser_segment_to_laser_node)
         direction_laser = direction.transform(self._laser_segment_to_laser_node) # observation vector in the laser frame

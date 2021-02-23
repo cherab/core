@@ -5,7 +5,7 @@ from raysect.primitive cimport Cylinder
 from cherab.core.plasma cimport Plasma
 from cherab.core.laser.models.profile_base cimport LaserProfile
 from cherab.core.laser.models.laserspectrum_base cimport LaserSpectrum
-from cherab.core.laser.scattering cimport LaserEmissionModel
+from cherab.core.laser.model cimport LaserModel
 cdef class ModelManager:
 
     cdef:
@@ -14,7 +14,7 @@ cdef class ModelManager:
 
     cpdef object set(self, object models)
 
-    cpdef object add(self, LaserEmissionModel model)
+    cpdef object add(self, LaserModel model)
 
     cpdef object clear(self)
 

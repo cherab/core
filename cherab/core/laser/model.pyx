@@ -12,7 +12,7 @@ from libc.math cimport exp, sqrt, cos, M_PI
 cimport cython
 
 
-cdef class LaserEmissionModel:
+cdef class LaserModel:
 
     def __init__(self, Laser laser):
 
@@ -48,7 +48,7 @@ cdef class LaserEmissionModel:
 
         self._laser_spectrum = value
 
-cdef class SeldenMatobaThomsonSpectrum(LaserEmissionModel):
+cdef class SeldenMatobaThomsonSpectrum(LaserModel):
 
     def __init__(self):
         # from: Prunty, S. L. "A primer on the theory of Thomson scattering for high-temperature fusion plasmas."

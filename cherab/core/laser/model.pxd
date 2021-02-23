@@ -11,7 +11,7 @@ cimport cython
 #cdef double RE_SQUARED
 
 
-cdef class LaserEmissionModel:
+cdef class LaserModel:
     cdef:
         Plasma _plasma
         LaserSpectrum _laser_spectrum
@@ -23,7 +23,7 @@ cdef class LaserEmissionModel:
 
     cdef object __weakref__
 
-cdef class SeldenMatobaThomsonSpectrum(LaserEmissionModel):
+cdef class SeldenMatobaThomsonSpectrum(LaserModel):
     cdef:
         double re, _CONST_ALPHA, _CONST_TS, _RECIP_M_PI
 
