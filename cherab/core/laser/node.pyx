@@ -48,6 +48,7 @@ cdef class ModelManager:
         self._models = []
         self.notifier.notify()
 
+
 cdef class Laser(Node):
 
     def __init__(self, double length=1, double radius=0.05, object parent=None, AffineMatrix3D transform=None,
