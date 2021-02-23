@@ -61,7 +61,6 @@ cdef class Laser(Node):
 
         # change reporting and tracking
         self.notifier = Notifier()
-        self.notifier.add(self._configure_geometry)
 
         #setup model manager
         self._models = ModelManager()
@@ -96,7 +95,7 @@ cdef class Laser(Node):
             raise ValueError("Laser length has to be larger than 0.")
 
         self._length = value
-        self.notifier.notify()
+        self._configure_geometry()
 
     @property
     def radius(self):
@@ -109,7 +108,7 @@ cdef class Laser(Node):
             raise ValueError("Laser radius has to be larger than 0.")
 
         self._radius = value
-        self.notifier.notify()
+        self._configure_geometry()
 
     @property
     def plasma(self):
@@ -124,7 +123,7 @@ cdef class Laser(Node):
 
         self._plasma = value
         self._plasma.notifier.add(self._plasma_changed)
-        self.notifier.notify()
+        self._configure_geometry()
 
     @property
     def importance(self):
@@ -134,7 +133,7 @@ cdef class Laser(Node):
     def importance(self, double value):
         
         self._importance = value
-        self.notifier.notify()
+        self._configure_geometry()
 
     def _configure_geometry(self):
         """
@@ -182,7 +181,7 @@ cdef class Laser(Node):
     @laser_spectrum.setter
     def laser_spectrum(self, LaserSpectrum value):
         self._laser_spectrum = value
-        self.notifier.notify()
+        self._configure_geometry()
 
     @property
     def laser_profile(self):
@@ -193,7 +192,7 @@ cdef class Laser(Node):
 
         self._laser_profile = value
 
-        self.notifier.notify()
+        self._configure_geometry()
 
     @property
     def models(self):
@@ -212,7 +211,7 @@ cdef class Laser(Node):
             raise ValueError('The laser must have a reference to a laser spectrum object before specifying scattering model.')
 
         self._models.set(value)
-        self.notifier.notify()
+        self._configure_geometry()
 
     @property
     def integrator(self):
@@ -221,14 +220,14 @@ cdef class Laser(Node):
     @integrator.setter
     def integrator(self, VolumeIntegrator value):
         self._integrator = value
-        self.notifier.notify()
+        self._configure_geometry()
 
     def get_geometry(self):
         return self._geometry
 
     def _plasma_changed(self):
         """React to change of plasma and propagate the information."""
-        self.notifier.notify()
+        self._configure_geometry()
 
     def _modified(self):
-        self.notifier.notify()
+        self._configure_geometry()
