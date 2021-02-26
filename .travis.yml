@@ -3,12 +3,13 @@ python:
   - "3.6"
   - "3.7"
 env:
-  - NUMPY="numpy==1.15.0"
-  - NUMPY="numpy==1.16.6"
-  - NUMPY="numpy"
+  - NUMPY="1.15.0"
+  - NUMPY="1.16.6"
+  - NUMPY="1.19.2"
 install:
   - pip install cython>=0.28
-  - pip install "$NUMPY" scipy matplotlib
+  - pip install numpy=="$NUMPY"
+  - pip install scipy matplotlib
   - if [ "$TRAVIS_BRANCH" = "master" ]; then
        pip install raysect;
     else

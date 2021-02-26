@@ -138,7 +138,7 @@ cdef class ThermalCXPEC(_PECRate):
 
 
 cdef class BeamCXPEC:
-    """:math:`q^{eff}_{n\rightarrow n'}` [:math:`W.m^{3}.s^{-1}.str^{-1}`]
+    r""":math:`q^{eff}_{n\rightarrow n'}` [:math:`W.m^{3}`]
 
     Effective emission coefficient (or rate) for a charge-exchange line corresponding to a
     transition :math:`n\rightarrow n'` of ion :math:`Z^{(\alpha+1)+}` with electron donor
@@ -210,18 +210,46 @@ cdef class BeamPopulationRate(_BeamRate):
 
 
 cdef class BeamEmissionPEC(_BeamRate):
-    """:math:`bme(X^0(m_i))` [dimensionless]
+    """:math:`bme(X^0(m_i))` [:math:`W.m^3`]
 
-    Relative beam population of excited state :math:`m_i` over ground state for atom :math:`X^0`, :math:`bme(X^0(m_i))`.
+    The effective beam emission coefficient, :math:`bme(X^0(m_i))`.
 
     The rate :math:`bme(X^0(m_i))` is equivalent to the :math:`BME` rate as defined in
-    `adf22 <http://open.adas.ac.uk/adf22>`_ and is dimensionless.
+    `adf22 <http://open.adas.ac.uk/adf22>`_.
     """
     pass
 
 
+cdef class TotalRadiatedPower():
+    """The total radiated power in equilibrium conditions."""
+
+    def __init__(self, Element element):
+
+        self.element = element
+
+    def __call__(self, double electron_density, double electron_temperature):
+        """
+        Evaluate the radiated power rate at the given plasma conditions.
+
+        Calls the cython evaluate() method under the hood.
+
+        :param float electron_density: electron density in m^-3
+        :param float electron_temperature: electron temperature in eV
+        """
+        return self.evaluate(electron_density, electron_temperature)
+
+    cdef double evaluate(self, double electron_density, double electron_temperature) except? -1e999:
+        """
+        Evaluate the radiated power at the given plasma conditions.
+
+        :param float electron_density: electron density in m^-3
+        :param float electron_temperature: electron temperature in eV
+        """
+        raise NotImplementedError("The evaluate() virtual method must be implemented.")
+
+
 cdef class _RadiatedPower:
-    """Base class for radiated powers."""
+    """Base class for ionisation-resolved radiated powers."""
 
     def __init__(self, Element element, int charge):
 
@@ -247,11 +275,6 @@ cdef class _RadiatedPower:
         :param float electron_temperature: electron temperature in eV
         """
         raise NotImplementedError("The evaluate() virtual method must be implemented.")
-
-
-cdef class TotalRadiatedPower(_RadiatedPower):
-    """The total radiated power in equilibrium conditions."""
-    pass
 
 
 cdef class LineRadiationPower(_RadiatedPower):
