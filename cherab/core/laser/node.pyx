@@ -65,7 +65,6 @@ cdef class Laser(Node):
 
         #setup model manager
         self._models = ModelManager()
-        self._models.notifier.add(self._configure_geometry)
         
         # set material integrator
         self._integrator = NumericalIntegrator(step=1e-3)
@@ -175,6 +174,8 @@ cdef class Laser(Node):
                 self._geometry.append(segment)
         else:
             raise ValueError("Incorrect number of segments calculated.")
+        
+        self.notifier.notify()
 
     @property
     def laser_spectrum(self):
