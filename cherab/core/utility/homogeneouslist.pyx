@@ -7,7 +7,6 @@ cdef class HomogeneousList:
 
     def __init__(self, item_class):
 
-
         if not inspect.isclass(item_class):
             raise TypeError("item_class has to be a python class")
 
@@ -15,7 +14,6 @@ cdef class HomogeneousList:
         self._list = []
         self.length = 0
         self.notifier = Notifier()
-
 
     def __getitem__(self, item):
         return self._list[item]
@@ -42,7 +40,6 @@ cdef class HomogeneousList:
         if not isinstance(item, self.item_class):
                 raise TypeError('The item must be instance of {}.'.format(self.item_class))
 
-        
         self._list.append(item)
         self.length = len(self._list)
         self.notifier.notify()
@@ -56,7 +53,7 @@ cdef class HomogeneousList:
         self._list.remove(item)
         self.length = len(self._list)
         self.notifier.notify()
-        
+
     cpdef list get_list(self):
         return self._list
     
