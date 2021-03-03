@@ -72,6 +72,7 @@ TMC Members
 - Matt Carr (External consultant, diagnostic physics models)
 - Jack Lovell (Oak Ridge, USA)
 - Alex Meakins (External consultant, Architecture, software integrity)
+- Vlad Neverov (NRC Kurchatov Institute, Moscow)
 - Matej Tomes (Compass, IPP, Prague)
 
 
