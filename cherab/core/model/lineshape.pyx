@@ -903,7 +903,7 @@ cdef class BeamEmissionMultiplet(BeamLineShapeModel):
         # add Sigma lines to output
         s1_to_s0 = self._sigma1_to_sigma0.evaluate(ne)
         intensity_s0 = 1 / (s1_to_s0 + 1)
-        intensity_s1 = 1 / (1 + 2 / s1_to_s0)
+        intensity_s1 = 0.5 * s1_to_s0 * intensity_s0
 
         spectrum = add_gaussian_line(intensity_sig * intensity_s0, central_wavelength, sigma, spectrum)
         spectrum = add_gaussian_line(intensity_sig * intensity_s1, central_wavelength + stark_split, sigma, spectrum)
