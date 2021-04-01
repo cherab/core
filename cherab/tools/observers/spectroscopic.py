@@ -20,7 +20,7 @@
 import matplotlib.pyplot as plt
 from raysect.core import Node, AffineMatrix3D, translate, rotate_basis, Point3D, Vector3D
 from raysect.optical import Spectrum
-from raysect.optical.observer import SpectralRadiancePipeline0D, SightLine
+from raysect.optical.observer import Observer0D, FibreOptic, SpectralRadiancePipeline0D, SightLine
 
 
 class LineOfSightGroup(Node):
@@ -61,12 +61,12 @@ class LineOfSightGroup(Node):
     def sight_lines(self, value):
 
         if not isinstance(value, list):
-            raise TypeError("The sightlines attribute of LineOfSightGroup must be a list of SpectroscopicSightLines.")
+            raise TypeError("The sightlines attribute of LineOfSightGroup must be a list of SpectroscopicObserver0D.")
 
         for sight_line in value:
-            if not isinstance(sight_line, SpectroscopicSightLine):
+            if not isinstance(sight_line, SpectroscopicObserver0D):
                 raise TypeError("The sightlines attribute of LineOfSightGroup must be a list of "
-                                "SpectroscopicSightLines. Value {} is not a SpectroscopicSightLine.".format(sight_line))
+                                "SpectroscopicObserver0D. Value {} is not a SpectroscopicObserver0D.".format(sight_line))
 
         # Prevent external changes being made to this list
         value = value.copy()
@@ -77,8 +77,8 @@ class LineOfSightGroup(Node):
 
     def add_sight_line(self, sight_line):
 
-        if not isinstance(sight_line, SpectroscopicSightLine):
-            raise TypeError("The sightline argument must be of type SpectroscopicSightLine.")
+        if not isinstance(sight_line, SpectroscopicObserver0D):
+            raise TypeError("The sightline argument must be of type SpectroscopicObserver0D.")
 
         sight_line.parent = self
         self._sight_lines.append(sight_line)
@@ -101,24 +101,26 @@ class LineOfSightGroup(Node):
         plt.legend()
 
 
-class SpectroscopicSightLine:
+class SpectroscopicObserver0D:
 
     """
-    A simple line of sight observer.
+    A 0D spectroscopic observer (line of sight, optic fibre, etc.).
 
-    Fires a single ray oriented along the observer's z axis in world space.
-
+    :param Observer0D observer: A 0D observer.
     :param Point3D point: The observation point for this sight-line.
     :param Vector3D direction: The observation direction for this sight-line.
     """
 
-    def __init__(self, point, direction, parent=None, name=""):
+    def __init__(self, observer, point, direction, parent=None, name=""):
+
+        if not isinstance(observer, Observer0D):
+            raise TypeError("Argument 'observer' must be of type Observer0D.")
 
         if not isinstance(point, Point3D):
-            raise TypeError("point argument for SpectroscopicSightLine must be of type Point3D.")
+            raise TypeError("Argument 'point' must be of type Point3D.")
 
         if not isinstance(direction, Vector3D):
-            raise TypeError("direction argument for SpectroscopicSightLine must be of type Vector3D.")
+            raise TypeError("Argument 'direction' must be of type Vector3D.")
 
         self._point = Point3D(0, 0, 0)
         self._direction = Vector3D(1, 0, 0)
@@ -126,11 +128,29 @@ class SpectroscopicSightLine:
 
         self._spectral_pipeline = SpectralRadiancePipeline0D(accumulate=False)
         # TODO - carry over wavelength range and resolution settings
-        self._observer = SightLine(pipelines=[self._spectral_pipeline], parent=parent, name=name)
+        self._observer = observer
 
+        self._observer.pipelines = [self._spectral_pipeline]
+        self.parent = parent
         self.name = name
         self.point = point
         self.direction = direction
+
+    @property
+    def parent(self):
+        return self._observer.parent
+
+    @parent.setter
+    def parent(self, value):
+        self._observer.parent = value
+
+    @property
+    def name(self):
+        return self._observer.name
+
+    @name.setter
+    def name(self, value):
+        self._observer.name = value
 
     @property
     def point(self):
@@ -220,3 +240,58 @@ class SpectroscopicSightLine:
             plt.title(self.name)
             plt.xlabel('wavelength (nm)')
             plt.ylabel('radiance ({}/s/m^2/str/nm)'.format(unit))
+
+
+class SpectroscopicSightLine(SpectroscopicObserver0D):
+
+    """
+    A simple line of sight observer.
+
+    Fires a single ray oriented along the observer's z axis in world space.
+
+    :param Point3D point: The observation point for this sight-line.
+    :param Vector3D direction: The observation direction for this sight-line.
+    """
+
+    def __init__(self, point, direction, parent=None, name=""):
+
+        observer = SightLine()
+        super().__init__(observer, point, direction, parent=parent, name=name)
+
+
+class SpectroscopicFibreOptic(SpectroscopicObserver0D):
+
+    """
+    An optic fibre observer with non-zero acceptance angle.
+
+    Rays are sampled over a circular area at the fibre tip and a conical solid angle
+    defined by the acceptance_angle parameter.
+
+    :param Point3D point: The observation point for this sight-line.
+    :param Vector3D direction: The observation direction for this sight-line.
+    :param float acceptance_angle: The angle in degrees between the z axis and the cone surface which defines the fibres
+                                   solid angle sampling area.
+    :param float radius: The radius of the fibre tip in metres. This radius defines a circular area at the fibre tip
+                         which will be sampled over.
+    """
+
+    def __init__(self, point, direction, acceptance_angle=None, radius=None, parent=None, name=""):
+
+        observer = FibreOptic(acceptance_angle=acceptance_angle, radius=radius)
+        super().__init__(observer, point, direction, parent=parent, name=name)
+
+    @property
+    def acceptance_angle(self):
+        return self._observer.acceptance_angle
+
+    @acceptance_angle.setter
+    def acceptance_angle(self, value):
+        self._observer.acceptance_angle = value
+
+    @property
+    def radius(self):
+        return self._observer.radius
+
+    @radius.setter
+    def radius(self, value):
+        self._observer.radius = value
