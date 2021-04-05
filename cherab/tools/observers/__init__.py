@@ -20,4 +20,4 @@
 from .bolometry import BolometerCamera, BolometerFoil, BolometerSlit
 from .calcam import load_calcam_calibration
 from .intersections import find_wall_intersection
-from .spectroscopic import LineOfSightGroup, SpectroscopicSightLine
+from .spectroscopic import LineOfSightGroup, FibreOpticGroup, SpectroscopicSightLine, SpectroscopicFibreOptic
