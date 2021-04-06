@@ -35,7 +35,7 @@ class Observer0DGroup(Node):
     def __init__(self, parent=None, transform=None, name=''):
         super().__init__(parent=parent, transform=transform, name=name)
 
-        self._sight_lines = []
+        self._sight_lines = tuple()
 
     def __getitem__(self, item):
 
@@ -43,15 +43,19 @@ class Observer0DGroup(Node):
             try:
                 return self._sight_lines[item]
             except IndexError:
-                raise IndexError("Sight-line number {} not available in this LineOfSightGroup.".format(item))
+                raise IndexError("Sight-line number {} not available in this {} "
+                                 "with only {} sight-lines.".format(item, self.__class__.__name__, len(self._sight_lines)))
         elif isinstance(item, str):
-            for sight_line in self._sight_lines:
-                if sight_line.name == item:
-                    return sight_line
-            else:
-                raise ValueError("Sightline '{}' was not found in this LineOfSightGroup.".format(item))
+            sightlines = [sight_line for sight_line in self._sight_lines if sight_line.name == item]
+            if len(sightlines) == 1:
+                return sightlines[0]
+
+            if len(sightlines) == 0:
+                raise ValueError("Sight-line '{}' was not found in this {}.".format(item, self.__class__.__name__))
+
+            raise ValueError("Found {} sight-lines with name {} in this {}.".format(len(sightlines), item, self.__class__.__name__))
         else:
-            raise TypeError("LineOfSightGroup key must be of type int or str.")
+            raise TypeError("{} key must be of type int or str.".format(self.__class__.__name__))
 
     @property
     def names(self):
@@ -70,7 +74,7 @@ class Observer0DGroup(Node):
                     sight_line.name = v
             else:
                 raise ValueError("The length of 'names' ({}) "
-                                 "mismatches the number of sight lines ({}).".format(len(value), len(self._sight_lines)))
+                                 "mismatches the number of sight-lines ({}).".format(len(value), len(self._sight_lines)))
         else:
             raise TypeError("The names attribute must be a list or tuple.")
 
@@ -94,7 +98,7 @@ class Observer0DGroup(Node):
                     sight_line.point = v
             else:
                 raise ValueError("The length of 'point' ({}) "
-                                 "mismatches the number of sight lines ({}).".format(len(value), len(self._sight_lines)))
+                                 "mismatches the number of sight-lines ({}).".format(len(value), len(self._sight_lines)))
         else:
             for sight_line in self._sight_lines:
                 sight_line.point = value
@@ -119,7 +123,7 @@ class Observer0DGroup(Node):
                     sight_line.direction = v
             else:
                 raise ValueError("The length of 'direction' ({}) "
-                                 "mismatches the number of sight lines ({}).".format(len(value), len(self._sight_lines)))
+                                 "mismatches the number of sight-lines ({}).".format(len(value), len(self._sight_lines)))
         else:
             for sight_line in self._sight_lines:
                 sight_line.direction = value
@@ -144,7 +148,7 @@ class Observer0DGroup(Node):
                     sight_line.display_progress = v
             else:
                 raise ValueError("The length of 'display_progress' ({}) "
-                                 "mismatches the number of sight lines ({}).".format(len(value), len(self._sight_lines)))
+                                 "mismatches the number of sight-lines ({}).".format(len(value), len(self._sight_lines)))
         else:
             for sight_line in self._sight_lines:
                 sight_line.display_progress = value
@@ -169,7 +173,7 @@ class Observer0DGroup(Node):
                     sight_line.accumulate = v
             else:
                 raise ValueError("The length of 'accumulate' ({}) "
-                                 "mismatches the number of sight lines ({}).".format(len(value), len(self._sight_lines)))
+                                 "mismatches the number of sight-lines ({}).".format(len(value), len(self._sight_lines)))
         else:
             for sight_line in self._sight_lines:
                 sight_line.accumulate = value
@@ -194,7 +198,7 @@ class Observer0DGroup(Node):
                     sight_line.min_wavelength = v
             else:
                 raise ValueError("The length of 'min_wavelength' ({}) "
-                                 "mismatches the number of sight lines ({}).".format(len(value), len(self._sight_lines)))
+                                 "mismatches the number of sight-lines ({}).".format(len(value), len(self._sight_lines)))
         else:
             for sight_line in self._sight_lines:
                 sight_line.min_wavelength = value
@@ -219,7 +223,7 @@ class Observer0DGroup(Node):
                     sight_line.max_wavelength = v
             else:
                 raise ValueError("The length of 'max_wavelength' ({}) "
-                                 "mismatches the number of sight lines ({}).".format(len(value), len(self._sight_lines)))
+                                 "mismatches the number of sight-lines ({}).".format(len(value), len(self._sight_lines)))
         else:
             for sight_line in self._sight_lines:
                 sight_line.max_wavelength = value
@@ -244,7 +248,7 @@ class Observer0DGroup(Node):
                     sight_line.spectral_bins = v
             else:
                 raise ValueError("The length of 'spectral_bins' ({}) "
-                                 "mismatches the number of sight lines ({}).".format(len(value), len(self._sight_lines)))
+                                 "mismatches the number of sight-lines ({}).".format(len(value), len(self._sight_lines)))
         else:
             for sight_line in self._sight_lines:
                 sight_line.spectral_bins = value
@@ -269,7 +273,7 @@ class Observer0DGroup(Node):
                     sight_line.ray_extinction_prob = v
             else:
                 raise ValueError("The length of 'ray_extinction_prob' ({}) "
-                                 "mismatches the number of sight lines ({}).".format(len(value), len(self._sight_lines)))
+                                 "mismatches the number of sight-lines ({}).".format(len(value), len(self._sight_lines)))
         else:
             for sight_line in self._sight_lines:
                 sight_line.ray_extinction_prob = value
@@ -294,7 +298,7 @@ class Observer0DGroup(Node):
                     sight_line.ray_extinction_min_depth = v
             else:
                 raise ValueError("The length of 'ray_extinction_min_depth' ({}) "
-                                 "mismatches the number of sight lines ({}).".format(len(value), len(self._sight_lines)))
+                                 "mismatches the number of sight-lines ({}).".format(len(value), len(self._sight_lines)))
         else:
             for sight_line in self._sight_lines:
                 sight_line.ray_extinction_min_depth = value
@@ -319,7 +323,7 @@ class Observer0DGroup(Node):
                     sight_line.ray_max_depth = v
             else:
                 raise ValueError("The length of 'ray_max_depth' ({}) "
-                                 "mismatches the number of sight lines ({}).".format(len(value), len(self._sight_lines)))
+                                 "mismatches the number of sight-lines ({}).".format(len(value), len(self._sight_lines)))
         else:
             for sight_line in self._sight_lines:
                 sight_line.ray_max_depth = value
@@ -344,7 +348,7 @@ class Observer0DGroup(Node):
                     sight_line.ray_important_path_weight = v
             else:
                 raise ValueError("The length of 'ray_important_path_weight' ({}) "
-                                 "mismatches the number of sight lines ({}).".format(len(value), len(self._sight_lines)))
+                                 "mismatches the number of sight-lines ({}).".format(len(value), len(self._sight_lines)))
         else:
             for sight_line in self._sight_lines:
                 sight_line.ray_important_path_weight = value
@@ -369,7 +373,7 @@ class Observer0DGroup(Node):
                     sight_line.pixel_samples = v
             else:
                 raise ValueError("The length of 'pixel_samples' ({}) "
-                                 "mismatches the number of sight lines ({}).".format(len(value), len(self._sight_lines)))
+                                 "mismatches the number of sight-lines ({}).".format(len(value), len(self._sight_lines)))
         else:
             for sight_line in self._sight_lines:
                 sight_line.pixel_samples = value
@@ -394,7 +398,7 @@ class Observer0DGroup(Node):
                     sight_line.samples_per_task = v
             else:
                 raise ValueError("The length of 'samples_per_task' ({}) "
-                                 "mismatches the number of sight lines ({}).".format(len(value), len(self._sight_lines)))
+                                 "mismatches the number of sight-lines ({}).".format(len(value), len(self._sight_lines)))
         else:
             for sight_line in self._sight_lines:
                 sight_line.samples_per_task = value
@@ -440,28 +444,29 @@ class LineOfSightGroup(Observer0DGroup):
     @sight_lines.setter
     def sight_lines(self, value):
 
-        if not isinstance(value, list):
-            raise TypeError("The sightlines attribute of LineOfSightGroup must be a list of SpectroscopicSightLines.")
+        if not isinstance(value, (list, tuple)):
+            raise TypeError("The sight_lines attribute of LineOfSightGroup must be a list or tuple of SpectroscopicSightLines.")
 
         for sight_line in value:
             if not isinstance(sight_line, SpectroscopicSightLine):
-                raise TypeError("The sightlines attribute of LineOfSightGroup must be a list of "
+                raise TypeError("The sight_lines attribute of LineOfSightGroup must be a list or tuple of "
                                 "SpectroscopicSightLines. Value {} is not a SpectroscopicSightLine.".format(sight_line))
 
         # Prevent external changes being made to this list
-        value = value.copy()
         for sight_line in value:
             sight_line.parent = self
 
-        self._sight_lines = value
+        self._sight_lines = tuple(value)
 
     def add_sight_line(self, sight_line):
 
         if not isinstance(sight_line, SpectroscopicSightLine):
-            raise TypeError("The sightline argument must be of type SpectroscopicSightLine.")
+            raise TypeError("The sight_line argument must be of type SpectroscopicSightLine.")
 
         sight_line.parent = self
-        self._sight_lines.append(sight_line)
+        new_sight_lines = list(self._sight_lines)
+        new_sight_lines.append(sight_line)
+        self._sight_lines = tuple(new_sight_lines)
 
 
 class FibreOpticGroup(Observer0DGroup):
@@ -480,20 +485,19 @@ class FibreOpticGroup(Observer0DGroup):
     @sight_lines.setter
     def sight_lines(self, value):
 
-        if not isinstance(value, list):
-            raise TypeError("The sightlines attribute of LineOfSightGroup must be a list of SpectroscopicSightLines.")
+        if not isinstance(value, (list, tuple)):
+            raise TypeError("The sight_lines attribute of FibreOpticGroup must be a list or tuple of SpectroscopicFibreOptics.")
 
         for sight_line in value:
             if not isinstance(sight_line, SpectroscopicFibreOptic):
-                raise TypeError("The sightlines attribute of LineOfSightGroup must be a list of "
-                                "SpectroscopicSightLines. Value {} is not a SpectroscopicFibreOptic.".format(sight_line))
+                raise TypeError("The sight_lines attribute of FibreOpticGroup must be a list or tuple of "
+                                "SpectroscopicFibreOptics. Value {} is not a SpectroscopicFibreOptic.".format(sight_line))
 
         # Prevent external changes being made to this list
-        value = value.copy()
         for sight_line in value:
             sight_line.parent = self
 
-        self._sight_lines = value
+        self._sight_lines = tuple(value)
 
     def add_sight_line(self, sight_line):
 
@@ -501,7 +505,9 @@ class FibreOpticGroup(Observer0DGroup):
             raise TypeError("The sightline argument must be of type SpectroscopicFibreOptic.")
 
         sight_line.parent = self
-        self._sight_lines.append(sight_line)
+        new_sight_lines = list(self._sight_lines)
+        new_sight_lines.append(sight_line)
+        self._sight_lines = tuple(new_sight_lines)
 
     @property
     def acceptance_angle(self):
@@ -524,7 +530,7 @@ class FibreOpticGroup(Observer0DGroup):
                     sight_line.acceptance_angle = v
             else:
                 raise ValueError("The length of 'acceptance_angle' ({}) "
-                                 "mismatches the number of sight lines ({}).".format(len(value), len(self._sight_lines)))
+                                 "mismatches the number of sight-lines ({}).".format(len(value), len(self._sight_lines)))
         else:
             for sight_line in self._sight_lines:
                 sight_line.acceptance_angle = value
@@ -550,7 +556,7 @@ class FibreOpticGroup(Observer0DGroup):
                     sight_line.radius = v
             else:
                 raise ValueError("The length of 'radius' ({}) "
-                                 "mismatches the number of sight lines ({}).".format(len(value), len(self._sight_lines)))
+                                 "mismatches the number of sight-lines ({}).".format(len(value), len(self._sight_lines)))
         else:
             for sight_line in self._sight_lines:
                 sight_line.radius = value
@@ -702,7 +708,7 @@ class SpectroscopicSightLine(SightLine, _SpectroscopicObserver0DBase):
     @pipelines.setter
     def pipelines(self, value):
         if len(value) != 1:
-            raise ValueError("This observer supports only a single pipeline.")
+            raise ValueError("SpectroscopicSightLine observer supports only a single pipeline.")
         if not isinstance(value[0], SpectralRadiancePipeline0D):
             raise TypeError("Processing pipeline must be a SpectralRadiancePipeline0D instance.")
         # Cannot overwrite a private attribute of cythonised parent class, so use the setter from the parent class.
@@ -752,7 +758,7 @@ class SpectroscopicFibreOptic(FibreOptic, _SpectroscopicObserver0DBase):
     @pipelines.setter
     def pipelines(self, value):
         if len(value) != 1:
-            raise ValueError("This observer supports only a single pipeline.")
+            raise ValueError("SpectroscopicFibreOptic supports only a single pipeline.")
         if not isinstance(value[0], SpectralRadiancePipeline0D):
             raise TypeError("Processing pipeline must be a SpectralRadiancePipeline0D instance.")
         # Cannot overwrite a private attribute of cythonised parent class, so use the setter from the parent class.
