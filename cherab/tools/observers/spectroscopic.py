@@ -125,6 +125,56 @@ class Observer0DGroup(Node):
                 sight_line.direction = value
 
     @property
+    def display_progress(self):
+        """
+        Toggles the display of live render progress.
+
+        The same value can be shared between all sight lines,
+        or each sight line can be assigned with individual value.
+
+        :rtype: list
+        """
+        return [sight_line.display_progress for sight_line in self._sight_lines]
+
+    @display_progress.setter
+    def display_progress(self, value):
+        if isinstance(value, (list, tuple, ndarray)):
+            if len(value) == len(self._sight_lines):
+                for sight_line, v in zip(self._sight_lines, value):
+                    sight_line.display_progress = v
+            else:
+                raise ValueError("The length of 'display_progress' ({}) "
+                                 "mismatches the number of sight lines ({}).".format(len(value), len(self._sight_lines)))
+        else:
+            for sight_line in self._sight_lines:
+                sight_line.display_progress = value
+
+    @property
+    def accumulate(self):
+        """
+        Toggles whether to accumulate samples with subsequent calls to observe().
+
+        The same value can be shared between all sight lines,
+        or each sight line can be assigned with individual value.
+
+        :rtype: list
+        """
+        return [sight_line.accumulate for sight_line in self._sight_lines]
+
+    @accumulate.setter
+    def accumulate(self, value):
+        if isinstance(value, (list, tuple, ndarray)):
+            if len(value) == len(self._sight_lines):
+                for sight_line, v in zip(self._sight_lines, value):
+                    sight_line.accumulate = v
+            else:
+                raise ValueError("The length of 'accumulate' ({}) "
+                                 "mismatches the number of sight lines ({}).".format(len(value), len(self._sight_lines)))
+        else:
+            for sight_line in self._sight_lines:
+                sight_line.accumulate = value
+
+    @property
     def min_wavelength(self):
         """
         Lower wavelength bound for sampled spectral range.
@@ -361,6 +411,7 @@ class Observer0DGroup(Node):
                          or in ph/s/m2/str/nm (units='ph').
         :param float ymax: Upper limit of y-axis.
         """
+        plt.figure()
         for sight_line in self.sight_lines:
             sight_line.plot_spectra(unit=unit, extras=False)
 
@@ -510,6 +561,11 @@ class _SpectroscopicObserver0DBase:
 
     @property
     def point(self):
+        """
+        The observation point of the sight line.
+
+        :rtype: Point3D
+        """
         return self._point
 
     @point.setter
@@ -526,6 +582,11 @@ class _SpectroscopicObserver0DBase:
 
     @property
     def direction(self):
+        """
+        The observation direction of the sight line.
+
+        :rtype: Vector3D
+        """
         return self._direction
 
     @direction.setter
@@ -539,6 +600,24 @@ class _SpectroscopicObserver0DBase:
             up = Vector3D(1, 0, 0)
         self._direction = value
         self.transform = translate(self._point.x, self._point.y, self._point.z) * rotate_basis(value, up)
+
+    @property
+    def display_progress(self):
+        """ Toggles the display of live render progress."""
+        return self.pipelines[0].display_progress
+
+    @display_progress.setter
+    def display_progress(self, value):
+        self.pipelines[0].display_progress = value
+
+    @property
+    def accumulate(self):
+        """ Toggles whether to accumulate samples with subsequent calls to observe()."""
+        return self.pipelines[0].accumulate
+
+    @accumulate.setter
+    def accumulate(self, value):
+        self.pipelines[0].accumulate = value
 
     @property
     def observed_spectrum(self):
@@ -597,10 +676,10 @@ class SpectroscopicSightLine(SightLine, _SpectroscopicObserver0DBase):
     :param Vector3D direction: The observation direction for this sight-line.
     :param bool accumulate: Whether to accumulate samples with subsequent calls
                             to observe() (default=False).
-    :param bool display_progress: Toggles the display of live render progress (default=False).
+    :param bool display_progress: Toggles the display of live render progress (default=True).
     """
 
-    def __init__(self, point, direction, parent=None, name="", accumulate=False, display_progress=False):
+    def __init__(self, point, direction, parent=None, name="", accumulate=False, display_progress=True):
 
         self._point = Point3D(0, 0, 0)
         self._direction = Vector3D(1, 0, 0)
@@ -646,11 +725,11 @@ class SpectroscopicFibreOptic(FibreOptic, _SpectroscopicObserver0DBase):
                          which will be sampled over.
     :param bool accumulate: Whether to accumulate samples with subsequent calls
                             to observe() (default=False).
-    :param bool display_progress: Toggles the display of live render progress (default=False).
+    :param bool display_progress: Toggles the display of live render progress (default=True).
     """
 
     def __init__(self, point, direction, acceptance_angle=None, radius=None, parent=None, name="",
-                 accumulate=False, display_progress=False):
+                 accumulate=False, display_progress=True):
 
         self._point = Point3D(0, 0, 0)
         self._direction = Vector3D(1, 0, 0)
