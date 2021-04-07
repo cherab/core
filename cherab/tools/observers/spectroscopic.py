@@ -464,9 +464,7 @@ class LineOfSightGroup(Observer0DGroup):
             raise TypeError("The sight_line argument must be of type SpectroscopicSightLine.")
 
         sight_line.parent = self
-        new_sight_lines = list(self._sight_lines)
-        new_sight_lines.append(sight_line)
-        self._sight_lines = tuple(new_sight_lines)
+        self._sight_lines = self._sight_lines + (sight_line,)
 
 
 class FibreOpticGroup(Observer0DGroup):
@@ -505,9 +503,7 @@ class FibreOpticGroup(Observer0DGroup):
             raise TypeError("The sightline argument must be of type SpectroscopicFibreOptic.")
 
         sight_line.parent = self
-        new_sight_lines = list(self._sight_lines)
-        new_sight_lines.append(sight_line)
-        self._sight_lines = tuple(new_sight_lines)
+        self._sight_lines = self._sight_lines + (sight_line,)
 
     @property
     def acceptance_angle(self):
