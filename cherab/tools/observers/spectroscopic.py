@@ -21,7 +21,8 @@ from numpy import ndarray
 import matplotlib.pyplot as plt
 from raysect.core import Node, translate, rotate_basis, Point3D, Vector3D
 from raysect.optical import Spectrum
-from raysect.optical.observer import FibreOptic, SightLine, SpectralRadiancePipeline0D
+from raysect.optical.observer import FibreOptic, SightLine
+from raysect.optical.observer import SpectralRadiancePipeline0D, SpectralPowerPipeline0D, RadiancePipeline0D, PowerPipeline0D
 
 
 class Observer0DGroup(Node):
@@ -32,7 +33,7 @@ class Observer0DGroup(Node):
     Allows combined observation and display control simultaneously.
     """
 
-    def __init__(self, parent=None, transform=None, name=''):
+    def __init__(self, parent=None, transform=None, name=None):
         super().__init__(parent=parent, transform=transform, name=name)
 
         self._sight_lines = tuple()
@@ -79,29 +80,29 @@ class Observer0DGroup(Node):
             raise TypeError("The names attribute must be a list or tuple.")
 
     @property
-    def point(self):
+    def origin(self):
         """
-        The observation points for the sight lines.
+        The origin points for the sight lines.
 
         The same value can be shared between all sight lines,
         or each sight line can be assigned with individual value.
 
         :rtype: list
         """
-        return [sight_line.point for sight_line in self._sight_lines]
+        return [sight_line.origin for sight_line in self._sight_lines]
 
-    @point.setter
-    def point(self, value):
+    @origin.setter
+    def origin(self, value):
         if isinstance(value, (list, tuple)):
             if len(value) == len(self._sight_lines):
                 for sight_line, v in zip(self._sight_lines, value):
-                    sight_line.point = v
+                    sight_line.origin = v
             else:
-                raise ValueError("The length of 'point' ({}) "
+                raise ValueError("The length of 'origin' ({}) "
                                  "mismatches the number of sight-lines ({}).".format(len(value), len(self._sight_lines)))
         else:
             for sight_line in self._sight_lines:
-                sight_line.point = value
+                sight_line.origin = value
 
     @property
     def direction(self):
@@ -403,28 +404,110 @@ class Observer0DGroup(Node):
             for sight_line in self._sight_lines:
                 sight_line.samples_per_task = value
 
+    @property
+    def pipelines(self):
+        """
+        List of all pipelines connected to each sight-line in the group
+        """
+
+        return [sight_line.pipelines for sight_line in self._sight_lines]
+
+    def connect_pipelines(self, properties=[('spectral_radiance', None, None)]):
+        """
+        Connects pipelines of given kinds and names to each sight-line in the group.
+        Connected pipelines are non-accumulating by default.
+
+        :param list properties: 3-tuple list of pipeline properties in order (type, name, filter).
+                                Default is [('spectral_radiance', None, None)].
+                                The following pipeline types are supported:
+                                    'spectral_radiance' for SpectralRadiacnePipeline0D,
+                                    'spectral_power' for SpectralPowerPipeline0D,
+                                    'radiance' for RadiacnePipeline0D,
+                                    'power' for PowerPipeline0D.
+                                Filters are applied to the mono pipelines only, namely,
+                                'power' or 'radiance'. The values provided for spectral
+                                pipelines will be ignored. Must be an instance of SpectralFunction
+                                or None.
+
+        """
+
+        for sight_line in self._sight_lines:
+            pipelines = []
+            for kind, name, filter_func in properties:
+                kind = kind.lower()
+                if kind == 'spectral_radiance':
+                    pipelines.append(SpectralRadiancePipeline0D(accumulate=False, name=name))
+                elif kind == 'spectral_power':
+                    pipelines.append(SpectralPowerPipeline0D(accumulate=False, name=name))
+                elif kind == 'radiance':
+                    pipelines.append(RadiancePipeline0D(filter=filter_func, accumulate=False, name=name))
+                elif kind == 'power':
+                    pipelines.append(PowerPipeline0D(filter=filter_func, accumulate=False, name=name))
+            sight_line.pipelines = pipelines
+
     def observe(self):
         for sight_line in self._sight_lines:
             sight_line.observe()
 
-    def plot_spectra(self, unit='J', ymax=None):
+    def plot_spectra(self, item=0, unit='J', ymax=None):
         """
-        Plot the spectra observed by each line of sight in the group.
+        Plot the spectra observed by each line of sight in the group for a given pipeline.
 
-        :param str unit: Plots the spectrum in J/s/m2/str/nm (units='J'),
-                         or in ph/s/m2/str/nm (units='ph').
+        :param item: The index or name of the pipeline. Default: 0.
+        :param str unit: Plots the spectrum in J/s (units='J'),
+                         or in ph/s (units='ph').
         :param float ymax: Upper limit of y-axis.
         """
-        plt.figure()
+
+        pipelines = []
+        sight_lines = []
         for sight_line in self.sight_lines:
-            sight_line.plot_spectra(unit=unit, extras=False)
+            try:
+                pipelines.append(sight_line.get_pipeline(item))
+            except (ValueError, IndexError):
+                continue
+            else:
+                sight_lines.append(sight_line)
+
+        if len(pipelines) == 0:
+            raise ValueError("Pipeline {} was not found for any sight-line in this {}.".format((item, self.__class__.__name__)))
+
+        pipeline_types = set(type(pipeline) for pipeline in pipelines)
+        if len(pipeline_types) > 1:
+            raise ValueError("Pipelines {} have different types for different sight-lines.".format(item))
+
+        plt.figure()
+        for sight_line in sight_lines:
+            sight_line.plot_spectra(item=item, unit=unit, extras=False)
+
+        pipeline = pipelines[0]
+        # RadiancePipelines are the instances of PowerPipelines, so they need to be checked first
+        if isinstance(pipeline, RadiancePipeline0D):
+            units = '{}/s/m^2/str'.format(unit)
+        elif isinstance(pipeline, PowerPipeline0D):
+            units = '{}/s'.format(unit)
+        elif isinstance(pipeline, SpectralRadiancePipeline0D):
+            units = '{}/s/m^2/str/nm'.format(unit)
+        elif isinstance(pipeline, SpectralPowerPipeline0D):
+            units = '{}/s/nm'.format(unit)
+        else:
+            units = ''
 
         if ymax is not None:
             plt.ylim(ymax=ymax)
 
-        plt.title(self.name)
+        if isinstance(item, int):
+            # check if pipelines share the same name
+            if len(set(pipeline.name for pipeline in pipelines)) == 1:
+                plt.title('{}: {}'.format(self.name, pipelines[0].name))
+            else:
+                # pipelines have different names
+                plt.title('{}: pipeline {}'.format(self.name, item))
+        elif isinstance(item, str):
+            plt.title('{}: {}'.format(self.name, item))
+
         plt.xlabel('wavelength (nm)')
-        plt.ylabel('radiance ({}/s/m^2/str/nm)'.format(unit))
+        plt.ylabel('radiance ({})'.format(units))
         plt.legend()
 
 
@@ -562,24 +645,24 @@ class _SpectroscopicObserver0DBase:
     """A base class for spectroscopic 0D observers."""
 
     @property
-    def point(self):
+    def origin(self):
         """
-        The observation point of the sight line.
+        The origin point of the sight line.
 
         :rtype: Point3D
         """
-        return self._point
+        return self._origin
 
-    @point.setter
-    def point(self, value):
+    @origin.setter
+    def origin(self, value):
         if not isinstance(value, Point3D):
-            raise TypeError("Attribute 'point' must be of type Point3D.")
+            raise TypeError("Attribute 'origin' must be of type Point3D.")
 
         if self._direction.x != 0 or self._direction.y != 0 or self._direction.z != 1:
             up = Vector3D(0, 0, 1)
         else:
             up = Vector3D(1, 0, 0)
-        self._point = value
+        self._origin = value
         self.transform = translate(value.x, value.y, value.z) * rotate_basis(self._direction, up)
 
     @property
@@ -601,58 +684,102 @@ class _SpectroscopicObserver0DBase:
         else:
             up = Vector3D(1, 0, 0)
         self._direction = value
-        self.transform = translate(self._point.x, self._point.y, self._point.z) * rotate_basis(value, up)
+        self.transform = translate(self._origin.x, self._origin.y, self._origin.z) * rotate_basis(value, up)
 
     @property
     def display_progress(self):
         """ Toggles the display of live render progress."""
-        return self.pipelines[0].display_progress
+        display_progress_list = []
+        for pipeline in self.pipelines:
+            if isinstance(pipeline, SpectralPowerPipeline0D):
+                display_progress_list.append(pipeline.display_progress)
+            else:
+                display_progress_list.append(None)
+        return display_progress_list
 
     @display_progress.setter
     def display_progress(self, value):
-        self.pipelines[0].display_progress = value
+        for pipeline in self.pipelines:
+            if isinstance(pipeline, SpectralPowerPipeline0D):
+                pipeline.display_progress = value
 
     @property
     def accumulate(self):
         """ Toggles whether to accumulate samples with subsequent calls to observe()."""
-        return self.pipelines[0].accumulate
+        accumulate_list = []
+        for pipeline in self.pipelines:
+            if isinstance(pipeline, (PowerPipeline0D, SpectralPowerPipeline0D)):
+                accumulate_list.append(pipeline.accumulate)
+            else:
+                accumulate_list.append(None)
+        return accumulate_list
 
     @accumulate.setter
     def accumulate(self, value):
-        self.pipelines[0].accumulate = value
+        for pipeline in self.pipelines:
+            if isinstance(pipeline, (PowerPipeline0D, SpectralPowerPipeline0D)):
+                pipeline.accumulate = value
 
-    @property
-    def observed_spectrum(self):
+    def get_pipeline(self, item=0):
+        if isinstance(item, int):
+            try:
+                return self.pipelines[item]
+            except IndexError:
+                raise IndexError("Pipeline number {} not available in this {} "
+                                 "with only {} pipelines.".format(item, self.__class__.__name__, len(self.pipelines)))
+        elif isinstance(item, str):
+            pipelines = [pipeline for pipeline in self.pipelines if pipeline.name == item]
+            if len(pipelines) == 1:
+                return pipelines[0]
+
+            if len(pipelines) == 0:
+                raise ValueError("Pipeline '{}' was not found in this {}.".format(item, self.__class__.__name__))
+
+            raise ValueError("Found {} pipelines with name {} in this {}.".format(len(pipelines), item, self.__class__.__name__))
+        else:
+            raise TypeError("{} key must be of type int or str.".format(self.__class__.__name__))
+
+    def observed_spectrum(self, item=0):
         """
-        Returns observed spectrum.
+        Returns observed spectrum for a given pipeline.
+        :param item: The index or name of the pipeline. Default: 0.
 
         :rtype: Spectrum
         """
 
-        pipeline = self.pipelines[0]
-        if not pipeline.samples:
-            raise ValueError("No spectrum has been observed.")
-        spectrum = Spectrum(pipeline.min_wavelength, pipeline.max_wavelength, pipeline.bins)
-        spectrum.samples = pipeline.samples.mean
+        pipeline = self.get_pipeline(item)
+        if isinstance(pipeline, PowerPipeline0D):
+            spectrum = Spectrum(self.min_wavelength, self.max_wavelength, 1)
+            spectrum.samples[0] = pipeline.value.mean
+        elif isinstance(pipeline, SpectralPowerPipeline0D):
+            if not pipeline.samples:
+                raise ValueError("No spectrum has been observed.")
+            spectrum = Spectrum(pipeline.min_wavelength, pipeline.max_wavelength, pipeline.bins)
+            spectrum.samples = pipeline.samples.mean
+        else:
+            raise TypeError("Method 'observed_spectrum' supports only PowerPipeline0D, SpectralPowerPipeline0D and their instances. "
+                            "Pipeline {} of type {} is not supported.".format(item, self.__class__.__name__))
         return spectrum
 
-    def plot_spectra(self, unit='J', ymax=None, extras=True):
+    def plot_spectra(self, item=0, unit='J', ymax=None, extras=True):
         """
-        Plot the observed spectrum for selected pipeline.
+        Plot the observed spectrum for a given pipeline.
 
-        :param str unit: Plots the spectrum in J/s/m2/str/nm (units='J'),
-                         or in ph/s/m2/str/nm (units='ph').
+        :param item: The index or name of the pipeline. Default: 0.
+        :param str unit: Plots the spectrum in J/s (units='J'),
+                         or in ph/s (units='ph').
         :param float ymax: Upper limit of y-axis.
         :param bool extras: If True, set title, axis labels and ymax.
         """
 
         if unit == 'J':
-            # Spectrum objects are already in J/s/m2/str/nm
-            spectrum = self.observed_spectrum
+            # Spectrum objects are already in J/s
+            spectrum = self.observed_spectrum(item)
         elif unit == 'ph':
-            # turn the samples into ph/s/m2/str/nm
-            spectrum = self.observed_spectrum.new_spectrum()
-            spectrum.samples = self.observed_spectrum.to_photons()
+            # turn the samples into ph/s
+            spectrum_observed = self.observed_spectrum(item)
+            spectrum = spectrum_observed.new_spectrum()
+            spectrum.samples = spectrum_observed.to_photons()
         else:
             raise ValueError("unit must be 'J' or 'ph'.")
 
@@ -662,11 +789,25 @@ class _SpectroscopicObserver0DBase:
             plt.plot(spectrum.wavelengths, spectrum.samples, marker='o', ls='none', label=self.name)
 
         if extras:
+            pipeline = self.get_pipeline(item)
+            # RadiancePipelines are the instances of PowerPipelines, so they need to be checked first
+            if isinstance(pipeline, RadiancePipeline0D):
+                units = '{}/s/m^2/str'.format(unit)
+            elif isinstance(pipeline, PowerPipeline0D):
+                units = '{}/s'.format(unit)
+            elif isinstance(pipeline, SpectralRadiancePipeline0D):
+                units = '{}/s/m^2/str/nm'.format(unit)
+            elif isinstance(pipeline, SpectralPowerPipeline0D):
+                units = '{}/s/nm'.format(unit)
+            else:
+                units = ''
+
             if ymax is not None:
                 plt.ylim(ymax=ymax)
-            plt.title(self.name)
+
+            plt.title('{}: {}'.format(self.name, pipeline.name))
             plt.xlabel('wavelength (nm)')
-            plt.ylabel('radiance ({}/s/m^2/str/nm)'.format(unit))
+            plt.ylabel('radiance ({}})'.format(units))
 
 
 class SpectroscopicSightLine(SightLine, _SpectroscopicObserver0DBase):
@@ -674,41 +815,23 @@ class SpectroscopicSightLine(SightLine, _SpectroscopicObserver0DBase):
     """
     A simple line of sight observer.
 
-    :param Point3D point: The observation point for this sight-line.
+    :param Point3D origin: The origin point for this sight-line.
     :param Vector3D direction: The observation direction for this sight-line.
-    :param bool accumulate: Whether to accumulate samples with subsequent calls
-                            to observe() (default=False).
-    :param bool display_progress: Toggles the display of live render progress (default=True).
+    :param list pipelines: A list of pipelines that will process the resulting spectra
+                           from this observer.
+                           Default is [SpectralRadiancePipeline0D(accumulate=False)].
     """
 
-    def __init__(self, point, direction, parent=None, name="", accumulate=False, display_progress=True):
+    def __init__(self, origin, direction, pipelines=None, parent=None, name=None):
 
-        self._point = Point3D(0, 0, 0)
+        self._origin = Point3D(0, 0, 0)
         self._direction = Vector3D(1, 0, 0)
-        pipelines = [SpectralRadiancePipeline0D(accumulate=accumulate, display_progress=display_progress)]
+        pipelines = pipelines or [SpectralRadiancePipeline0D(accumulate=False)]
 
         super().__init__(pipelines=pipelines, parent=parent, name=name)
 
-        self.point = point
+        self.origin = origin
         self.direction = direction
-
-    @property
-    def pipelines(self):
-        """
-        A list of pipelines to process the output spectra of these observations.
-
-        :rtype: list
-        """
-        return super().pipelines
-
-    @pipelines.setter
-    def pipelines(self, value):
-        if len(value) != 1:
-            raise ValueError("SpectroscopicSightLine observer supports only a single pipeline.")
-        if not isinstance(value[0], SpectralRadiancePipeline0D):
-            raise TypeError("Processing pipeline must be a SpectralRadiancePipeline0D instance.")
-        # Cannot overwrite a private attribute of cythonised parent class, so use the setter from the parent class.
-        SightLine.pipelines.__set__(self, value)
 
 
 class SpectroscopicFibreOptic(FibreOptic, _SpectroscopicObserver0DBase):
@@ -719,43 +842,24 @@ class SpectroscopicFibreOptic(FibreOptic, _SpectroscopicObserver0DBase):
     Rays are sampled over a circular area at the fibre tip and a conical solid angle
     defined by the acceptance_angle parameter.
 
-    :param Point3D point: The observation point for this sight-line.
+    :param Point3D origin: The origin point for this sight-line.
     :param Vector3D direction: The observation direction for this sight-line.
+    :param list pipelines: A list of pipelines that will process the resulting spectra
+                           from this observer.
+                           Default is [SpectralRadiancePipeline0D(accumulate=False)].
     :param float acceptance_angle: The angle in degrees between the z axis and the cone surface which defines the fibres
                                    solid angle sampling area.
     :param float radius: The radius of the fibre tip in metres. This radius defines a circular area at the fibre tip
                          which will be sampled over.
-    :param bool accumulate: Whether to accumulate samples with subsequent calls
-                            to observe() (default=False).
-    :param bool display_progress: Toggles the display of live render progress (default=True).
     """
 
-    def __init__(self, point, direction, acceptance_angle=None, radius=None, parent=None, name="",
-                 accumulate=False, display_progress=True):
+    def __init__(self, origin, direction, pipelines=None, acceptance_angle=None, radius=None, parent=None, name=None):
 
-        self._point = Point3D(0, 0, 0)
+        self._origin = Point3D(0, 0, 0)
         self._direction = Vector3D(1, 0, 0)
-        pipelines = [SpectralRadiancePipeline0D(accumulate=accumulate, display_progress=display_progress)]
+        pipelines = pipelines or [SpectralRadiancePipeline0D(accumulate=False)]
 
         super().__init__(pipelines=pipelines, parent=parent, name=name, acceptance_angle=acceptance_angle, radius=radius)
 
-        self.point = point
+        self.origin = origin
         self.direction = direction
-
-    @property
-    def pipelines(self):
-        """
-        A list of pipelines to process the output spectra of these observations.
-
-        :rtype: list
-        """
-        return super().pipelines
-
-    @pipelines.setter
-    def pipelines(self, value):
-        if len(value) != 1:
-            raise ValueError("SpectroscopicFibreOptic supports only a single pipeline.")
-        if not isinstance(value[0], SpectralRadiancePipeline0D):
-            raise TypeError("Processing pipeline must be a SpectralRadiancePipeline0D instance.")
-        # Cannot overwrite a private attribute of cythonised parent class, so use the setter from the parent class.
-        FibreOptic.pipelines.__set__(self, value)
