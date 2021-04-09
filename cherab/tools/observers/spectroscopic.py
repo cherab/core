@@ -443,6 +443,10 @@ class Observer0DGroup(Node):
                     pipelines.append(RadiancePipeline0D(filter=filter_func, accumulate=False, name=name))
                 elif kind == 'power':
                     pipelines.append(PowerPipeline0D(filter=filter_func, accumulate=False, name=name))
+                else:
+                    supported_types = ('spectral_radiance', 'spectral_power', 'radiance', 'power')
+                    raise ValueError("Unsupported pipeline type: {}. "
+                                     "Only the following pipeline types are supported: {}.".format(kind, supported_types))
             sight_line.pipelines = pipelines
 
     def observe(self):
