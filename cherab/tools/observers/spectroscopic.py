@@ -412,41 +412,37 @@ class Observer0DGroup(Node):
 
         return [sight_line.pipelines for sight_line in self._sight_lines]
 
-    def connect_pipelines(self, properties=[('spectral_radiance', None, None)]):
+    def connect_pipelines(self, properties=[(SpectralRadiancePipeline0D, None, None)]):
         """
         Connects pipelines of given kinds and names to each sight-line in the group.
         Connected pipelines are non-accumulating by default.
 
-        :param list properties: 3-tuple list of pipeline properties in order (type, name, filter).
-                                Default is [('spectral_radiance', None, None)].
-                                The following pipeline types are supported:
-                                    'spectral_radiance' for SpectralRadiacnePipeline0D,
-                                    'spectral_power' for SpectralPowerPipeline0D,
-                                    'radiance' for RadiacnePipeline0D,
-                                    'power' for PowerPipeline0D.
+        :param list properties: 3-tuple list of pipeline properties in order (class, name, filter).
+                                Default is [(SpectralRadiancePipeline0D, None, None)].
+                                The following pipeline classes are supported:
+                                    SpectralRadiacnePipeline0D,
+                                    SpectralPowerPipeline0D,
+                                    RadiacnePipeline0D,
+                                    PowerPipeline0D.
                                 Filters are applied to the mono pipelines only, namely,
-                                'power' or 'radiance'. The values provided for spectral
-                                pipelines will be ignored. Must be an instance of SpectralFunction
-                                or None.
+                                PowerPipeline0D or RadiacnePipeline0D. The values provided for spectral
+                                pipelines will be ignored. The filter must be an instance of
+                                SpectralFunction or None.
 
         """
 
         for sight_line in self._sight_lines:
             pipelines = []
-            for kind, name, filter_func in properties:
-                kind = kind.lower()
-                if kind == 'spectral_radiance':
-                    pipelines.append(SpectralRadiancePipeline0D(accumulate=False, name=name))
-                elif kind == 'spectral_power':
-                    pipelines.append(SpectralPowerPipeline0D(accumulate=False, name=name))
-                elif kind == 'radiance':
-                    pipelines.append(RadiancePipeline0D(filter=filter_func, accumulate=False, name=name))
-                elif kind == 'power':
-                    pipelines.append(PowerPipeline0D(filter=filter_func, accumulate=False, name=name))
+            for PipelineClass, name, filter_func in properties:
+                if PipelineClass in (SpectralRadiancePipeline0D, SpectralPowerPipeline0D):
+                    pipelines.append(PipelineClass(accumulate=False, name=name))
+                elif PipelineClass in (RadiancePipeline0D, PowerPipeline0D):
+                    pipelines.append(PipelineClass(filter=filter_func, accumulate=False, name=name))
                 else:
-                    supported_types = ('spectral_radiance', 'spectral_power', 'radiance', 'power')
-                    raise ValueError("Unsupported pipeline type: {}. "
-                                     "Only the following pipeline types are supported: {}.".format(kind, supported_types))
+                    raise ValueError("Unsupported pipeline class: {}. "
+                                     "Only the following pipeline types are supported: "
+                                     "SpectralRadiancePipeline0D, SpectralPowerPipeline0D, "
+                                     "RadiancePipeline0D, PowerPipeline0D.".format(PipelineClass.__name__))
             sight_line.pipelines = pipelines
 
     def observe(self):
