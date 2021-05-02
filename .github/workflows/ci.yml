@@ -30,5 +30,7 @@ jobs:
     - name: Install Raysect from github
       if: github.ref != 'refs/heads/master'
       run: pip install git+https://github.com/raysect/source@development
-    - name: Run tests
+    - name: Build cherab
       run: dev/build.sh
+    - name: Run tests
+      run: dev/test.sh
