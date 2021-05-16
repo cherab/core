@@ -51,12 +51,14 @@ cdef class LaserModel:
 cdef class SeldenMatobaThomsonSpectrum(LaserModel):
 
     def __init__(self):
-        # from: Prunty, S. L. "A primer on the theory of Thomson scattering for high-temperature fusion plasmas."
-        # Physica Scripta 89.12 (2014): 128001.
-        self._CONST_ALPHA = ELECTRON_REST_MASS * SPEED_OF_LIGHT ** 2 / (2 * ELEMENTARY_CHARGE)  # rewritten for Te in eV
+        # Selden, A.C., 1980. Simple analytic form of the relativistic Thomson scattering spectrum. Physics Letters A, 79(5-6), pp.405-406.
+        self._CONST_ALPHA = ELECTRON_REST_MASS * SPEED_OF_LIGHT ** 2 / (2 * ELEMENTARY_CHARGE)  #constant alpha, rewritten for Te in eV
         
+        # from: Prunty, S. L. "A primer on the theory of Thomson scattering for high-temperature fusion plasmas."
         # Thomson scattering reaction rate from Prunty eq. (4.39)
-        self._CONST_TS = ELECTRON_CLASSICAL_RADIUS ** 2
+        # speed of light for correct normalisation of the scattered intensity calculation (from x-section to rate constant)
+        self._CONST_TS = ELECTRON_CLASSICAL_RADIUS ** 2 * SPEED_OF_LIGHT
+
 
         self._RECIP_M_PI = 1 / M_PI
 
@@ -94,10 +96,10 @@ cdef class SeldenMatobaThomsonSpectrum(LaserModel):
         if ne == 0:
             return spectrum
         #get laser volumetric power
-        laser_volumetric_power = self._laser_profile.get_energy_density(point_laser.x, point_laser.y, point_laser.z)
+        laser_energy_density = self._laser_profile.get_energy_density(point_laser.x, point_laser.y, point_laser.z)
 
         #terminate early if laser power is 0
-        if laser_volumetric_power == 0:
+        if laser_energy_density == 0:
             return spectrum
 
         pointing_vector = self._laser_profile.get_pointing(point_laser.x, point_laser.y, point_laser.z)
@@ -114,7 +116,7 @@ cdef class SeldenMatobaThomsonSpectrum(LaserModel):
         bins = self._laser_spectrum._bins
 
         for index in range(bins):
-            laser_energy_density = laser_spectrum_power_mv[index] * laser_volumetric_power 
+            laser_energy_density = laser_spectrum_power_mv[index] * laser_energy_density 
             if laser_energy_density > 0:
                 spectrum = self._add_spectral_contribution(ne, te, laser_energy_density, angle_scattering,
                                                            angle_polarization, laser_wavelength_mv[index], spectrum)
@@ -124,16 +126,15 @@ cdef class SeldenMatobaThomsonSpectrum(LaserModel):
     @cython.boundscheck(False)
     @cython.wraparound(False)
     @cython.cdivision(True)
-    cdef Spectrum _add_spectral_contribution(self, double ne, double te, double laser_power, double angle_scattering,
+    cdef Spectrum _add_spectral_contribution(self, double ne, double te, double laser_energy, double angle_scattering,
                                              double angle_polarization, double laser_wavelength, Spectrum spectrum):
 
         cdef:
             int index, nbins
             double alpha, epsilon, cos_anglescat, wavelength, min_wavelength, delta_wavelength, recip_delta_wavelength
-            double const_theta_epsilon, recip_laser_wavelength
+            double const_theta_epsilon, recip_laser_wavelength, scattered_power
 
         alpha = self._CONST_ALPHA / te
-
         # scattering angle of the photon = pi - observation_angle
         cos_anglescat = cos(angle_scattering * DEGREES_TO_RADIANS)
         
@@ -146,11 +147,14 @@ cdef class SeldenMatobaThomsonSpectrum(LaserModel):
         recip_delta_wavelength = 1 / delta_wavelength
         recip_laser_wavelength = 1 / laser_wavelength
 
+        #from d_lambda to d_epsilon:d_epsilon = d_lambda / laser_wavelength
+        scattered_power = ne * self._CONST_TS * laser_energy * recip_laser_wavelength
+
         for index in range(nbins):
             wavelength = min_wavelength + (0.5 + index) * delta_wavelength
             epsilon = (wavelength * recip_laser_wavelength) - 1
             spectrum_norm = self.seldenmatoba_spectral_shape(epsilon, const_theta, alpha)
-            spectrum.samples_mv[index] += spectrum_norm * ne * self._CONST_TS * laser_power * recip_delta_wavelength
+            spectrum.samples_mv[index] += spectrum_norm * scattered_power
 
         return spectrum
 

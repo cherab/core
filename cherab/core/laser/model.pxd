@@ -33,7 +33,7 @@ cdef class SeldenMatobaThomsonSpectrum(LaserModel):
 
     cdef double seldenmatoba_spectral_shape(self, double epsilon, double cos_theta, double alpha)
 
-    cdef Spectrum _add_spectral_contribution(self, double ne, double te, double laser_power, double angle_pointing,
+    cdef Spectrum _add_spectral_contribution(self, double ne, double te, double laser_energy, double angle_pointing,
                                              double angle_polarization, double laser_wavelength, Spectrum spectrum)
 
     cpdef Spectrum calculate_spectrum(self, double ne, double te, double laser_energy_density, double laser_wavelength,
