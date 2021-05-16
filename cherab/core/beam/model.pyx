@@ -40,7 +40,7 @@ cdef class BeamModel:
         return self._plasma
 
     @plasma.setter
-    def plasma(self, value):
+    def plasma(self, Plasma value not None):
 
         # disconnect from previous plasma's notifications
         if self._plasma:
@@ -58,7 +58,7 @@ cdef class BeamModel:
         return self._beam
 
     @beam.setter
-    def beam(self, value):
+    def beam(self, Beam value not None):
 
         # disconnect from previous beam's notifications
         if self._beam:
@@ -76,7 +76,7 @@ cdef class BeamModel:
         return self._atomic_data
 
     @atomic_data.setter
-    def atomic_data(self, value):
+    def atomic_data(self, AtomicData value not None):
 
         self._atomic_data = value
 
@@ -90,7 +90,7 @@ cdef class BeamModel:
         Models implementing this method must add their spectral response to the
         supplied spectrum object. The spectrum units are spectral radiance per
         meter (W/m^3/str/nm).
-                       
+
         :param beam_point: Point in beam space.
         :param plasma_point: Point in plasma space.
         :param beam_direction: Beam axis direction in plasma space.
@@ -138,7 +138,7 @@ cdef class BeamAttenuator:
         return self._plasma
 
     @plasma.setter
-    def plasma(self, value):
+    def plasma(self, Plasma value not None):
 
         # disconnect from previous plasma's notifications
         if self._plasma:
@@ -156,7 +156,7 @@ cdef class BeamAttenuator:
         return self._beam
 
     @beam.setter
-    def beam(self, value):
+    def beam(self, Beam value not None):
 
         # disconnect from previous beam's notifications
         if self._beam:
@@ -174,7 +174,7 @@ cdef class BeamAttenuator:
         return self._atomic_data
 
     @atomic_data.setter
-    def atomic_data(self, value):
+    def atomic_data(self, AtomicData value not None):
 
         self._atomic_data = value
 
@@ -184,13 +184,13 @@ cdef class BeamAttenuator:
     cpdef double density(self, double x, double y, double z) except? -1e999:
         """
         Returns the beam density at the specified point.
-        
+
         The point is specified in beam space.
-        
+
         :param x: x coordinate in meters.
-        :param y: y coordinate in meters. 
+        :param y: y coordinate in meters.
         :param z: z coordinate in meters.
-        :return: Density in m^-3. 
+        :return: Density in m^-3.
         """
         raise NotImplementedError("Virtual function density not defined.")
 

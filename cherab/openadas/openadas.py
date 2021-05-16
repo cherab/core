@@ -54,7 +54,7 @@ class OpenADAS(AtomicData):
 
         if isinstance(ion, Isotope):
             ion = ion.element
-        return repository.get_wavelength(ion, charge, transition)
+        return repository.get_wavelength(ion, charge, transition, repository_path=self._data_path)
 
     def ionisation_rate(self, ion, charge):
 
@@ -62,7 +62,7 @@ class OpenADAS(AtomicData):
             ion = ion.element
 
         try:
-            data = repository.get_ionisation_rate(ion, charge)
+            data = repository.get_ionisation_rate(ion, charge, repository_path=self._data_path)
 
         except RuntimeError:
             if self._missing_rates_return_null:
@@ -77,7 +77,7 @@ class OpenADAS(AtomicData):
             ion = ion.element
 
         try:
-            data = repository.get_recombination_rate(ion, charge)
+            data = repository.get_recombination_rate(ion, charge, repository_path=self._data_path)
 
         except RuntimeError:
             if self._missing_rates_return_null:
@@ -96,7 +96,8 @@ class OpenADAS(AtomicData):
 
         try:
             data = repository.get_thermal_cx_rate(donor_element, donor_charge,
-                                                  receiver_element, receiver_charge)
+                                                  receiver_element, receiver_charge,
+                                                  repository_path=self._data_path)
 
         except RuntimeError:
             if self._missing_rates_return_null:
@@ -124,8 +125,9 @@ class OpenADAS(AtomicData):
 
         try:
             # read data
-            wavelength = repository.get_wavelength(receiver_ion, receiver_charge - 1, transition)
-            data = repository.get_beam_cx_rates(donor_ion, receiver_ion, receiver_charge, transition)
+            wavelength = repository.get_wavelength(receiver_ion, receiver_charge - 1, transition, repository_path=self._data_path)
+            data = repository.get_beam_cx_rates(donor_ion, receiver_ion, receiver_charge, transition,
+                                                repository_path=self._data_path)
 
         except RuntimeError:
             if self._missing_rates_return_null:
@@ -156,7 +158,7 @@ class OpenADAS(AtomicData):
 
         try:
             # locate data file
-            data = repository.get_beam_stopping_rate(beam_ion, plasma_ion, charge)
+            data = repository.get_beam_stopping_rate(beam_ion, plasma_ion, charge, repository_path=self._data_path)
 
         except RuntimeError:
             if self._missing_rates_return_null:
@@ -185,7 +187,8 @@ class OpenADAS(AtomicData):
 
         try:
             # locate data file
-            data = repository.get_beam_population_rate(beam_ion, metastable, plasma_ion, charge)
+            data = repository.get_beam_population_rate(beam_ion, metastable, plasma_ion, charge,
+                                                       repository_path=self._data_path)
 
         except RuntimeError:
             if self._missing_rates_return_null:
@@ -214,8 +217,9 @@ class OpenADAS(AtomicData):
 
         try:
             # locate data file
-            data = repository.get_beam_emission_rate(beam_ion, plasma_ion, charge, transition)
-            wavelength = repository.get_wavelength(beam_ion, 0, transition)
+            data = repository.get_beam_emission_rate(beam_ion, plasma_ion, charge, transition,
+                                                     repository_path=self._data_path)
+            wavelength = repository.get_wavelength(beam_ion, 0, transition, repository_path=self._data_path)
 
         except RuntimeError:
             if self._missing_rates_return_null:
@@ -238,8 +242,8 @@ class OpenADAS(AtomicData):
             ion = ion.element
 
         try:
-            wavelength = repository.get_wavelength(ion, charge, transition)
-            data = repository.get_pec_excitation_rate(ion, charge, transition)
+            wavelength = repository.get_wavelength(ion, charge, transition, repository_path=self._data_path)
+            data = repository.get_pec_excitation_rate(ion, charge, transition, repository_path=self._data_path)
 
         except RuntimeError:
             if self._missing_rates_return_null:
@@ -261,8 +265,8 @@ class OpenADAS(AtomicData):
             ion = ion.element
 
         try:
-            wavelength = repository.get_wavelength(ion, charge, transition)
-            data = repository.get_pec_recombination_rate(ion, charge, transition)
+            wavelength = repository.get_wavelength(ion, charge, transition, repository_path=self._data_path)
+            data = repository.get_pec_recombination_rate(ion, charge, transition, repository_path=self._data_path)
 
         except (FileNotFoundError, KeyError):
             if self._missing_rates_return_null:
@@ -277,7 +281,7 @@ class OpenADAS(AtomicData):
             ion = ion.element
 
         try:
-            data = repository.get_line_radiated_power_rate(ion, charge)
+            data = repository.get_line_radiated_power_rate(ion, charge, repository_path=self._data_path)
 
         except RuntimeError:
             if self._missing_rates_return_null:
@@ -292,7 +296,7 @@ class OpenADAS(AtomicData):
             ion = ion.element
 
         try:
-            data = repository.get_continuum_radiated_power_rate(ion, charge)
+            data = repository.get_continuum_radiated_power_rate(ion, charge, repository_path=self._data_path)
 
         except RuntimeError:
             if self._missing_rates_return_null:
@@ -307,7 +311,7 @@ class OpenADAS(AtomicData):
             ion = ion.element
 
         try:
-            data = repository.get_cx_radiated_power_rate(ion, charge)
+            data = repository.get_cx_radiated_power_rate(ion, charge, repository_path=self._data_path)
 
         except RuntimeError:
             if self._missing_rates_return_null:
