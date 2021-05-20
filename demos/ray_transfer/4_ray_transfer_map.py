@@ -58,7 +58,7 @@ rtc.transform = translate(0, 0, -50.)
 rad_circle = 50.
 xsqr = np.linspace(-49.5, 49.5, 100) ** 2
 rad = np.sqrt(xsqr[:, None] + xsqr[None, :])
-voxel_map = np.zeros((100, 100), dtype=np.int)
+voxel_map = np.zeros((100, 100), dtype=np.int32)
 voxel_map[rad > 50.] = -1  # removing the area outside the circle
 for i in range(50):
     voxel_map[(rad < i + 1.) * (rad > i)] = i  # mapping multiple grid cells to a single light source
