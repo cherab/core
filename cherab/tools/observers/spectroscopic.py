@@ -750,7 +750,7 @@ class _SpectroscopicObserver0DBase:
         pipeline = self.get_pipeline(item)
         if isinstance(pipeline, PowerPipeline0D):
             spectrum = Spectrum(self.min_wavelength, self.max_wavelength, 1)
-            spectrum.samples[0] = pipeline.value.mean
+            spectrum.samples[0] = pipeline.value.mean / (self.max_wavelength - self.min_wavelength)
         elif isinstance(pipeline, SpectralPowerPipeline0D):
             if not pipeline.samples:
                 raise ValueError("No spectrum has been observed.")
@@ -786,7 +786,11 @@ class _SpectroscopicObserver0DBase:
         if spectrum.samples.size > 1:
             plt.plot(spectrum.wavelengths, spectrum.samples, label=self.name)
         else:
-            plt.plot(spectrum.wavelengths, spectrum.samples, marker='o', ls='none', label=self.name)
+            pipeline = self.get_pipeline(item)
+            if isinstance(pipeline, SpectralPowerPipeline0D):
+                plt.plot(spectrum.wavelengths, spectrum.samples, marker='o', ls='none', label=self.name)
+            elif isinstance(pipeline, PowerPipeline0D):
+                plt.plot(spectrum.wavelengths, spectrum.total(), marker='o', ls='none', label=self.name)
 
         if extras:
             pipeline = self.get_pipeline(item)
