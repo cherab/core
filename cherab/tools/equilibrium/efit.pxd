@@ -1,3 +1,5 @@
+# cython: language_level=3
+
 # Copyright 2016-2018 Euratom
 # Copyright 2016-2018 United Kingdom Atomic Energy Authority
 # Copyright 2016-2018 Centro de Investigaciones Energéticas, Medioambientales y Tecnológicas
@@ -30,18 +32,18 @@ cdef class EFITEquilibrium:
 
 
     cdef:
-        public Function2D psi, psi_normalised
-        public double psi_axis, psi_lcfs
-        public tuple r_range, z_range
-        public Point2D magnetic_axis
-        public tuple x_points, strike_points
-        public VectorFunction2D b_field, toroidal_vector, poloidal_vector, surface_normal
-        public Function2D inside_lcfs, inside_limiter
-        public Function1D psin_to_r
-        public double time
-        public np.ndarray lcfs_polygon, limiter_polygon
-        public np.ndarray psi_data, r_data, z_data
-        public Function1D q
+        readonly Function2D psi, psi_normalised
+        readonly double psi_axis, psi_lcfs
+        readonly tuple r_range, z_range
+        readonly Point2D magnetic_axis
+        readonly tuple x_points, strike_points
+        readonly VectorFunction2D b_field, toroidal_vector, poloidal_vector, surface_normal
+        readonly Function2D inside_lcfs, inside_limiter
+        readonly Function1D psin_to_r
+        readonly double time
+        readonly np.ndarray lcfs_polygon, limiter_polygon
+        readonly np.ndarray psi_data, r_data, z_data
+        readonly Function1D q
         double _b_vacuum_magnitude, _b_vacuum_radius
         Function1D _f_profile
         Function2D _dpsidr, _dpsidz
@@ -85,4 +87,3 @@ cdef class FluxCoordToCartesian(VectorFunction2D):
         Function1D _toroidal, _poloidal, _normal
         Function2D _psin
         Vector3D _value_outside_lcfs
-

@@ -310,9 +310,9 @@ cdef class RayTransferEmitter(InhomogeneousVolumeEmitter):
         if mask is not None:
             if mask.shape != self.grid_shape:
                 raise ValueError('Mask array must be of shape: %s.' % (' '.join(['%d' % i for i in self._grid_shape])))
-            mask = mask.astype(np.bool)
+            mask = mask.astype(bool)
         else:
-            mask = np.ones(self.grid_shape, dtype=np.bool)
+            mask = np.ones(self.grid_shape, dtype=bool)
         voxel_map = -1 * np.ones(mask.shape, dtype=np.int32)
         voxel_map[mask] = np.arange(mask.sum(), dtype=np.int32)
 

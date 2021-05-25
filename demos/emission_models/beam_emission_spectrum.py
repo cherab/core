@@ -21,14 +21,14 @@ from cherab.openadas import OpenADAS
 
 world = World()
 
-plasma = build_slab_plasma(width=1.0, height=3.0, peak_density=1e18,
+plasma = build_slab_plasma(width=1.0, height=3.0, peak_density=1e18, neutral_temperature=20.0,
                            impurities=[(carbon, 6, 0.005)], parent=world)
 plasma.b_field = Vector3D(0, 1.5, 0)
 plasma.atomic_data = OpenADAS(permit_extrapolation=True)
 
 # add background emission
-d_alpha = Line(hydrogen, 0, (3, 2))
-plasma.models = [ExcitationLine(d_alpha), RecombinationLine(d_alpha)]
+h_alpha = Line(hydrogen, 0, (3, 2))
+plasma.models = [ExcitationLine(h_alpha), RecombinationLine(h_alpha)]
 
 
 ####################
@@ -191,5 +191,5 @@ camera.spectral_rays = 1
 camera.spectral_bins = 15
 camera.pixel_samples = 50
 camera.observe()
-
+plt.ioff()
 plt.show()
