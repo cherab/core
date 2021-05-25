@@ -432,18 +432,7 @@ class Observer0DGroup(Node):
         """
 
         for sight_line in self._sight_lines:
-            pipelines = []
-            for PipelineClass, name, filter_func in properties:
-                if PipelineClass in (SpectralRadiancePipeline0D, SpectralPowerPipeline0D):
-                    pipelines.append(PipelineClass(accumulate=False, name=name))
-                elif PipelineClass in (RadiancePipeline0D, PowerPipeline0D):
-                    pipelines.append(PipelineClass(filter=filter_func, accumulate=False, name=name))
-                else:
-                    raise ValueError("Unsupported pipeline class: {}. "
-                                     "Only the following pipeline types are supported: "
-                                     "SpectralRadiancePipeline0D, SpectralPowerPipeline0D, "
-                                     "RadiancePipeline0D, PowerPipeline0D.".format(PipelineClass.__name__))
-            sight_line.pipelines = pipelines
+            sight_line.connect_pipelines(properties)
 
     def observe(self):
         for sight_line in self._sight_lines:
@@ -738,6 +727,38 @@ class _SpectroscopicObserver0DBase:
             raise ValueError("Found {} pipelines with name {} in this {}.".format(len(pipelines), item, self.__class__.__name__))
         else:
             raise TypeError("{} key must be of type int or str.".format(self.__class__.__name__))
+
+    def connect_pipelines(self, properties=[(SpectralRadiancePipeline0D, None, None)]):
+        """
+        Connects pipelines of given kinds and names to this sight line.
+        Connected pipelines are non-accumulating by default.
+
+        :param list properties: 3-tuple list of pipeline properties in order (class, name, filter).
+                                Default is [(SpectralRadiancePipeline0D, None, None)].
+                                The following pipeline classes are supported:
+                                    SpectralRadiacnePipeline0D,
+                                    SpectralPowerPipeline0D,
+                                    RadiacnePipeline0D,
+                                    PowerPipeline0D.
+                                Filters are applied to the mono pipelines only, namely,
+                                PowerPipeline0D or RadiacnePipeline0D. The values provided for spectral
+                                pipelines will be ignored. The filter must be an instance of
+                                SpectralFunction or None.
+
+        """
+
+        pipelines = []
+        for PipelineClass, name, filter_func in properties:
+            if PipelineClass in (SpectralRadiancePipeline0D, SpectralPowerPipeline0D):
+                pipelines.append(PipelineClass(accumulate=False, name=name))
+            elif PipelineClass in (RadiancePipeline0D, PowerPipeline0D):
+                pipelines.append(PipelineClass(filter=filter_func, accumulate=False, name=name))
+            else:
+                raise ValueError("Unsupported pipeline class: {}. "
+                                 "Only the following pipeline types are supported: "
+                                 "SpectralRadiancePipeline0D, SpectralPowerPipeline0D, "
+                                 "RadiancePipeline0D, PowerPipeline0D.".format(PipelineClass.__name__))
+        self.pipelines = pipelines
 
     def observed_spectrum(self, item=0):
         """
