@@ -438,19 +438,10 @@ class Observer0DGroup(Node):
         for sight_line in self._sight_lines:
             sight_line.observe()
 
-    def plot_spectra(self, item=0, unit='J', ymax=None):
-        """
-        Plot the spectra observed by each line of sight in the group for a given pipeline.
-
-        :param item: The index or name of the pipeline. Default: 0.
-        :param str unit: Plots the spectrum in J/s (units='J'),
-                         or in ph/s (units='ph').
-        :param float ymax: Upper limit of y-axis.
-        """
-
+    def _get_same_pipelines(self, item):
         pipelines = []
         sight_lines = []
-        for sight_line in self.sight_lines:
+        for sight_line in self._sight_lines:
             try:
                 pipelines.append(sight_line.get_pipeline(item))
             except (ValueError, IndexError):
@@ -465,39 +456,97 @@ class Observer0DGroup(Node):
         if len(pipeline_types) > 1:
             raise ValueError("Pipelines {} have different types for different sight-lines.".format(item))
 
-        plt.figure()
-        for sight_line in sight_lines:
-            sight_line.plot_spectra(item=item, unit=unit, extras=False)
+        return pipelines, sight_lines
 
-        pipeline = pipelines[0]
-        # RadiancePipelines are the instances of PowerPipelines, so they need to be checked first
-        if isinstance(pipeline, RadiancePipeline0D):
-            units = '{}/s/m^2/str'.format(unit)
-        elif isinstance(pipeline, PowerPipeline0D):
-            units = '{}/s'.format(unit)
-        elif isinstance(pipeline, SpectralRadiancePipeline0D):
-            units = '{}/s/m^2/str/nm'.format(unit)
-        elif isinstance(pipeline, SpectralPowerPipeline0D):
-            units = '{}/s/nm'.format(unit)
-        else:
-            units = ''
+    def plot_total_signal(self, item=0, ax=None):
+        """
+        Plots total (wavelength-integrated) signal for each sight line in the group.
 
-        if ymax is not None:
-            plt.ylim(ymax=ymax)
+        :param item: The index or name of the pipeline. Default: 0.
+        :param Axes ax: Existing matplotlib axes.
+
+        """
+
+        pipelines, sight_lines = self._get_same_pipelines(item)
+
+        if ax is None:
+            _, ax = plt.subplots(constrained_layout=True)
+
+        signal = []
+        tick_labels = []
+        for pipeline, sight_line in zip(pipelines, sight_lines):
+            if isinstance(pipeline, SpectralPowerPipeline0D):
+                spectrum = Spectrum(pipeline.min_wavelength, pipeline.max_wavelength, pipeline.bins)
+                spectrum.samples = pipeline.samples.mean
+                signal.append(spectrum.total())
+            else:
+                signal.append(pipeline.value.mean)
+
+            if sight_line.name and len(sight_line.name):
+                tick_labels.append(sight_line.name)
+            else:
+                tick_labels.append(self._sight_lines.index(sight_line))
+
+        if isinstance(pipeline, (SpectralRadiancePipeline0D, RadiancePipeline0D)):
+            ylabel = 'Radiance (W/m^2/str)'
+        else:  # SpectralPowerPipeline0D or PowerPipeline0D
+            ylabel = 'Power (W)'
+
+        ax.bar(list(range(len(signal))), signal, tick_label=tick_labels, label=item)
 
         if isinstance(item, int):
             # check if pipelines share the same name
-            if len(set(pipeline.name for pipeline in pipelines)) == 1:
-                plt.title('{}: {}'.format(self.name, pipelines[0].name))
+            if len(set(pipeline.name for pipeline in pipelines)) == 1 and pipelines[0].name and len(pipelines[0].name):
+                ax.set_title('{}: {}'.format(self.name, pipelines[0].name))
             else:
-                # pipelines have different names
-                plt.title('{}: pipeline {}'.format(self.name, item))
+                # pipelines have different names or name is not set
+                ax.set_title('{}: pipeline {}'.format(self.name, item))
         elif isinstance(item, str):
-            plt.title('{}: {}'.format(self.name, item))
+            ax.set_title('{}: {}'.format(self.name, item))
 
-        plt.xlabel('wavelength (nm)')
-        plt.ylabel('radiance ({})'.format(units))
-        plt.legend()
+        ax.set_ylabel(ylabel)
+        ax.set_xlabel('Line of sight')
+
+        return ax
+
+    def plot_spectra(self, item=0, in_photons=False, ax=None):
+        """
+        Plot the spectra observed by each line of sight in the group for a given pipeline.
+
+        :param item: The index or name of the pipeline. Default: 0.
+        :param bool in_photons: If True, plots the spectrum in photon/s/nm instead of W/nm.
+                                Default is False.
+        :param Axes ax: Existing matplotlib axes.
+        """
+
+        pipelines, sight_lines = self._get_same_pipelines(item)
+
+        if ax is None:
+            _, ax = plt.subplots(constrained_layout=True)
+
+        for sight_line in sight_lines:
+            sight_line.plot_spectrum(item=item, in_photons=in_photons, ax=ax, extras=False)
+
+        if isinstance(pipelines[0], SpectralRadiancePipeline0D):
+            ylabel = 'Spectral radiance (photon/s/m^2/str/nm)' if in_photons else 'Spectral radiance (W/m^2/str/nm)'
+        else:  # SpectralPowerPipeline0D
+            ylabel = 'Spectral power (photon/s/nm)' if in_photons else 'Spectral power (W/nm)'
+
+        if isinstance(item, int):
+            # check if pipelines share the same name
+            if len(set(pipeline.name for pipeline in pipelines)) == 1 and pipelines[0].name and len(pipelines[0].name):
+                ax.set_title('{}: {}'.format(self.name, pipelines[0].name))
+            else:
+                # pipelines have different names or name is not set
+                ax.set_title('{}: pipeline {}'.format(self.name, item))
+        elif isinstance(item, str):
+            ax.set_title('{}: {}'.format(self.name, item))
+
+        ax.set_xlabel('Wavelength (nm)')
+        ax.set_ylabel(ylabel)
+        ax.legend()
+
+        return ax
 
 
 class LineOfSightGroup(Observer0DGroup):
@@ -750,7 +799,7 @@ class _SpectroscopicObserver0DBase:
         pipelines = []
         for PipelineClass, name, filter_func in properties:
             if PipelineClass in (SpectralRadiancePipeline0D, SpectralPowerPipeline0D):
-                pipelines.append(PipelineClass(accumulate=False, name=name))
+                pipelines.append(PipelineClass(accumulate=False, display_progress=False, name=name))
             elif PipelineClass in (RadiancePipeline0D, PowerPipeline0D):
                 pipelines.append(PipelineClass(filter=filter_func, accumulate=False, name=name))
             else:
@@ -760,79 +809,60 @@ class _SpectroscopicObserver0DBase:
                                  "RadiancePipeline0D, PowerPipeline0D.".format(PipelineClass.__name__))
         self.pipelines = pipelines
 
-    def observed_spectrum(self, item=0):
+    def plot_spectrum(self, item=0, in_photons=False, ax=None, extras=True):
         """
-        Returns observed spectrum for a given pipeline.
-        :param item: The index or name of the pipeline. Default: 0.
+        Plot the observed spectrum for a given spectral pipeline.
 
-        :rtype: Spectrum
+        :param item: The index or name of the pipeline. Default: 0.
+        :param bool in_photons: If True, plots the spectrum in photon/s/nm instead of W/nm.
+                                Default is False.
+        :param Axes ax: Existing matplotlib axes.
+        :param bool extras: If True, set title and axis labels.
         """
 
         pipeline = self.get_pipeline(item)
-        if isinstance(pipeline, PowerPipeline0D):
-            spectrum = Spectrum(self.min_wavelength, self.max_wavelength, 1)
-            spectrum.samples[0] = pipeline.value.mean / (self.max_wavelength - self.min_wavelength)
-        elif isinstance(pipeline, SpectralPowerPipeline0D):
-            if not pipeline.samples:
-                raise ValueError("No spectrum has been observed.")
-            spectrum = Spectrum(pipeline.min_wavelength, pipeline.max_wavelength, pipeline.bins)
-            spectrum.samples = pipeline.samples.mean
-        else:
-            raise TypeError("Method 'observed_spectrum' supports only PowerPipeline0D, SpectralPowerPipeline0D and their instances. "
-                            "Pipeline {} of type {} is not supported.".format(item, self.__class__.__name__))
-        return spectrum
+        if not isinstance(pipeline, SpectralPowerPipeline0D):
+            raise TypeError('Pipeline {} is not a spectral pipeline. '
+                            'The plot_spectrum() method works only with spectral pipelines.'.format(item))
 
-    def plot_spectra(self, item=0, unit='J', ymax=None, extras=True):
-        """
-        Plot the observed spectrum for a given pipeline.
-
-        :param item: The index or name of the pipeline. Default: 0.
-        :param str unit: Plots the spectrum in J/s (units='J'),
-                         or in ph/s (units='ph').
-        :param float ymax: Upper limit of y-axis.
-        :param bool extras: If True, set title, axis labels and ymax.
-        """
-
-        if unit == 'J':
-            # Spectrum objects are already in J/s
-            spectrum = self.observed_spectrum(item)
-        elif unit == 'ph':
-            # turn the samples into ph/s
-            spectrum_observed = self.observed_spectrum(item)
+        spectrum_observed = Spectrum(pipeline.min_wavelength, pipeline.max_wavelength, pipeline.bins)
+        spectrum_observed.samples[:] = pipeline.samples.mean
+        if in_photons:
+            # turn the samples into photon/s
             spectrum = spectrum_observed.new_spectrum()
-            spectrum.samples = spectrum_observed.to_photons()
+            spectrum.samples[:] = spectrum_observed.to_photons()
+            unit = 'photon/s'
         else:
-            raise ValueError("unit must be 'J' or 'ph'.")
+            spectrum = spectrum_observed
+            unit = 'W'
+
+        if ax is None:
+            _, ax = plt.subplots(constrained_layout=True)
 
         if spectrum.samples.size > 1:
-            plt.plot(spectrum.wavelengths, spectrum.samples, label=self.name)
+            ax.plot(spectrum.wavelengths, spectrum.samples, label=self.name)
         else:
-            pipeline = self.get_pipeline(item)
-            if isinstance(pipeline, SpectralPowerPipeline0D):
-                plt.plot(spectrum.wavelengths, spectrum.samples, marker='o', ls='none', label=self.name)
-            elif isinstance(pipeline, PowerPipeline0D):
-                plt.plot(spectrum.wavelengths, spectrum.total(), marker='o', ls='none', label=self.name)
+            ax.plot(spectrum.wavelengths, spectrum.samples, marker='o', ls='none', label=self.name)
 
         if extras:
-            pipeline = self.get_pipeline(item)
-            # RadiancePipelines are the instances of PowerPipelines, so they need to be checked first
-            if isinstance(pipeline, RadiancePipeline0D):
-                units = '{}/s/m^2/str'.format(unit)
-            elif isinstance(pipeline, PowerPipeline0D):
-                units = '{}/s'.format(unit)
-            elif isinstance(pipeline, SpectralRadiancePipeline0D):
-                units = '{}/s/m^2/str/nm'.format(unit)
-            elif isinstance(pipeline, SpectralPowerPipeline0D):
-                units = '{}/s/nm'.format(unit)
-            else:
-                units = ''
+            if isinstance(pipeline, SpectralRadiancePipeline0D):
+                ylabel = 'Spectral radiance ({}/m^2/str/nm)'.format(unit)
+            else:  # SpectralPowerPipeline0D
+                ylabel = 'Spectral power ({}/nm)'.format(unit)
 
-            if ymax is not None:
-                plt.ylim(ymax=ymax)
+            if isinstance(item, int):
+                if pipeline.name and len(pipeline.name):
+                    ax.set_title('{}: {}'.format(self.name, pipeline.name))
+                else:
+                    # pipelines have different names or name is not set
+                    ax.set_title('{}: pipeline {}'.format(self.name, item))
+            elif isinstance(item, str):
+                ax.set_title('{}: {}'.format(self.name, item))
 
-            plt.title('{}: {}'.format(self.name, pipeline.name))
-            plt.xlabel('wavelength (nm)')
-            plt.ylabel('radiance ({}})'.format(units))
+            ax.set_xlabel('Wavelength (nm)')
+            ax.set_ylabel(ylabel)
+
+        return ax
 
 
 class SpectroscopicSightLine(SightLine, _SpectroscopicObserver0DBase):
