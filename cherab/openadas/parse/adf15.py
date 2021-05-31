@@ -184,12 +184,20 @@ def _scrape_metadata_full(file, element, charge):
 
     configuration_lines = []
     configuration_dict = {}
-
-    configuration_header_match = '^C\s*Configuration\s*\(2S\+1\)L\(w-1/2\)\s*Energy \(cm\*\*-1\)$'
-    while not re.match(configuration_header_match, lines[0], re.IGNORECASE):
+    # configuration header versions
+    configuration_headers = ['^C.*Configuration\s*\(2S\+1\)L\(w-1/2\)\s*Energy \(cm\*\*-1\)$',
+                             '^C\s*lv\s*Configuration\s*\(2S\+1\)L\(w-1/2\)\s*Energy\s*\(\s*cm\^-1\)$']
+    # compile versions into a single regexp using the | (or) regexp char
+    configuration_header_match = re.compile('|'.join(configuration_headers), re.IGNORECASE)
+    while not re.match(configuration_header_match, lines[0]):
         lines.pop(0)
-    pec_index_header_match = '^C\s*ISEL\s*WAVELENGTH\s*TRANSITION\s*TYPE'
-    while not re.match(pec_index_header_match, lines[0], re.IGNORECASE):
+    
+    # pec index header versions
+    pec_index_headers = ['^C\s*ISEL\s*WAVELENGTH\s*TRANSITION\s*TYPE',
+                         '^C\s*isel\s*wvlen\(A\)\s*transition\s*type']
+    # compile versions into a single regexp using the | (or) regexp char
+    pec_index_header_match = re.compile('|'.join(pec_index_headers), re.IGNORECASE)
+    while not re.match(pec_index_header_match, lines[0]):
         configuration_lines.append(lines[0])
         lines.pop(0)
     index_lines = lines
