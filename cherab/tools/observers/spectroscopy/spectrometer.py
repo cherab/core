@@ -244,22 +244,10 @@ class CzernyTurnerSpectrometer(Spectrometer):
         self._diffraction_angle = np.deg2rad(value)
         self._clear_spectral_settings()
 
-    def _update_spectral_settings(self):
-
-        resolution = self.resolution()
-
-        if resolution > 0:
-            self._min_wavelength = self._reference_wavelength - (self._reference_bin + 0.5) * resolution
-            self._max_wavelength = self._min_wavelength + self._spectral_bins * resolution
-        else:
-            self._min_wavelength = self._reference_wavelength + (self._spectral_bins - self._reference_bin - 0.5) * resolution
-            self._max_wavelength = self._min_wavelength - self._spectral_bins * resolution
-
+    @property
     def resolution(self):
         """
-        Calculates spectral resolution in nm.
-
-        :return: resolution
+        Spectral resolution in nm.
         """
         grating = self._grating
         m = self._diffraction_order
@@ -268,6 +256,17 @@ class CzernyTurnerSpectrometer(Spectrometer):
         fl = self._focal_length
 
         p = 0.5 * m * grating * self._reference_wavelength
-        resolution = dxdp * (np.sqrt(np.cos(angle)**2 - p * p) - p * np.tan(angle)) / (m * fl * grating)
+        _resolution = dxdp * (np.sqrt(np.cos(angle)**2 - p * p) - p * np.tan(angle)) / (m * fl * grating)
 
-        return resolution
+        return _resolution
+
+    def _update_spectral_settings(self):
+
+        resolution = self.resolution
+
+        if resolution > 0:
+            self._min_wavelength = self._reference_wavelength - (self._reference_bin + 0.5) * resolution
+            self._max_wavelength = self._min_wavelength + self._spectral_bins * resolution
+        else:
+            self._min_wavelength = self._reference_wavelength + (self._spectral_bins - self._reference_bin - 0.5) * resolution
+            self._max_wavelength = self._min_wavelength - self._spectral_bins * resolution
