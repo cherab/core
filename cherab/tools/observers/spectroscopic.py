@@ -20,6 +20,7 @@
 from numpy import ndarray
 import matplotlib.pyplot as plt
 from raysect.core import Node, translate, rotate_basis, Point3D, Vector3D
+from raysect.core.workflow import RenderEngine
 from raysect.optical import Spectrum
 from raysect.optical.observer import FibreOptic, SightLine
 from raysect.optical.observer import SpectralRadiancePipeline0D, SpectralPowerPipeline0D, RadiancePipeline0D, PowerPipeline0D
@@ -128,6 +129,38 @@ class Observer0DGroup(Node):
         else:
             for sight_line in self._sight_lines:
                 sight_line.direction = value
+
+    @property
+    def render_engine(self):
+        """
+        Rendering engine used by the sight lines.
+
+        The same rendering engine can be used by all sight lines,
+        or each sight line can use its own engine.
+        Note that if the engine is shared, changing its parameters
+        for one sight line in a group will affect all sight lines.
+
+        :rtype: list
+        """
+        return [sight_line.render_engine for sight_line in self._sight_lines]
+
+    @render_engine.setter
+    def render_engine(self, value):
+        if isinstance(value, (list, tuple)):
+            if len(value) == len(self._sight_lines):
+                for sight_line, v in zip(self._sight_lines, value):
+                    if isinstance(v, RenderEngine):
+                        sight_line.render_engine = v
+                    else:
+                        raise TypeError("The list 'render_engine' must contain only RenderEngine instances.")
+            else:
+                raise ValueError("The length of 'render_engine' ({}) "
+                                 "mismatches the number of sight-lines ({}).".format(len(value), len(self._sight_lines)))
+        else:
+            if not isinstance(value, RenderEngine):
+                raise TypeError("The list 'render_engine' must contain only RenderEngine instances.")
+            for sight_line in self._sight_lines:
+                sight_line.render_engine = value
 
     @property
     def display_progress(self):
