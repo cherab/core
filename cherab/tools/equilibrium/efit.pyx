@@ -537,7 +537,9 @@ cdef class FluxCoordToCartesian(VectorFunction2D):
         else:
 
             toroidal = new_vector3d(0, self._toroidal.evaluate(psi), 0)
-            poloidal = new_vector3d(f.x, 0, f.z).set_length(self._poloidal.evaluate(psi))
-            normal = new_vector3d(-f.z, 0, f.x).set_length(self._normal.evaluate(psi))
+            poloidal = new_vector3d(f.x, 0, f.z)
+            poloidal.set_length(self._poloidal.evaluate(psi))
+            normal = new_vector3d(-f.z, 0, f.x)
+            normal.set_length(self._normal.evaluate(psi))
 
         return new_vector3d(poloidal.x + normal.x, toroidal.y, poloidal.z + normal.z)
