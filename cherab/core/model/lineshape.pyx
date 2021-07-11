@@ -444,6 +444,8 @@ DEF HC_EV_NM = 1239.8419738620933  # (Planck constant in eV s) x (speed of light
 
 DEF PI_POLARISATION = 0
 DEF SIGMA_POLARISATION = 1
+DEF SIGMA_PLUS_POLARISATION = 1
+DEF SIGMA_MINUS_POLARISATION = -1
 DEF NO_POLARISATION = 2
 
 
@@ -737,9 +739,9 @@ cdef class ZeemanMultiplet(ZeemanLineShapeModel):
     :param float wavelength: The rest wavelength of the base emission line.
     :param Species target_species: The target plasma species that is emitting.
     :param Plasma plasma: The emitting plasma object.
-    :param zeeman_structure: A ``ZeemanStructure`` object that provides wavelengths and
-                             ratios of :math:`\pi`-/:math:`\sigma`-polarised components for any
-                             given magnetic field strength.
+    :param zeeman_structure: A ``ZeemanStructure`` object that provides wavelengths and ratios
+                             of :math:`\pi`-/:math:`\sigma^{+}`-/:math:`\sigma^{-}`-polarised
+                             components for any given magnetic field strength.
     :param str polarisation: Leaves only :math:`\pi`-/:math:`\sigma`-polarised components:
                              "pi" - leave only :math:`\pi`-polarised components,
                              "sigma" - leave only :math:`\sigma`-polarised components,
@@ -801,8 +803,15 @@ cdef class ZeemanMultiplet(ZeemanLineShapeModel):
 
         # adding sigma components of the Zeeman multiplet in case of NO_POLARISATION or SIGMA_POLARISATION
         if self._polarisation != PI_POLARISATION:
-            component_radiance = (0.5 * sin_sqr + cos_sqr) * radiance
-            multiplet_mv = self._zeeman_structure.evaluate(b_magn, SIGMA_POLARISATION)
+            component_radiance = (0.25 * sin_sqr + 0.5 * cos_sqr) * radiance
+
+            multiplet_mv = self._zeeman_structure.evaluate(b_magn, SIGMA_PLUS_POLARISATION)
+
+            for i in range(multiplet_mv.shape[1]):
+                shifted_wavelength = doppler_shift(multiplet_mv[MULTIPLET_WAVELENGTH, i], direction, ion_velocity)
+                spectrum = add_gaussian_line(component_radiance * multiplet_mv[MULTIPLET_RATIO, i], shifted_wavelength, sigma, spectrum)
+
+            multiplet_mv = self._zeeman_structure.evaluate(b_magn, SIGMA_MINUS_POLARISATION)
 
             for i in range(multiplet_mv.shape[1]):
                 shifted_wavelength = doppler_shift(multiplet_mv[MULTIPLET_WAVELENGTH, i], direction, ion_velocity)

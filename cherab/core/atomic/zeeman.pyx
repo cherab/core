@@ -29,7 +29,8 @@ DEF MULTIPLET_WAVELENGTH = 0
 DEF MULTIPLET_RATIO = 1
 
 DEF PI_POLARISATION = 0
-DEF SIGMA_POLARISATION = 1
+DEF SIGMA_PLUS_POLARISATION = 1
+DEF SIGMA_MINUS_POLARISATION = -1
 
 cdef class ZeemanStructure():
     r"""
@@ -41,18 +42,25 @@ cdef class ZeemanStructure():
                                wavelengths and ratios of individual :math:`\pi`-polarised
                                Zeeman components for a given magnetic field strength:
                                [(wvl_func1, ratio_func1), (wvl_func2, ratio_func2), ...]
-    :param list sigma_components: A list of 2-tuples of Function1D objects that provide the
-                                  wavelengths and ratios of individual :math:`\sigma`-polarised
-                                  Zeeman components for a given magnetic field strength:
-                                  [(wvl_func1, ratio_func1), (wvl_func2, ratio_func2), ...]
+    :param list sigma_plus_components: A list of 2-tuples of Function1D objects that provide the
+                                       wavelengths and ratios of individual
+                                       :math:`\sigma^{+}`-polarised Zeeman components for
+                                       a given magnetic field strength:
+                                       [(wvl_func1, ratio_func1), (wvl_func2, ratio_func2), ...]
+    :param list sigma_minus_components: A list of 2-tuples of Function1D objects that provide the
+                                        wavelengths and ratios of individual
+                                        :math:`\sigma^{-}`-polarised
+                                        Zeeman components for a given magnetic field strength:
+                                        [(wvl_func1, ratio_func1), (wvl_func2, ratio_func2), ...]
     """
 
-    def __init__(self, pi_components, sigma_components):
+    def __init__(self, pi_components, sigma_plus_components, sigma_minus_components):
 
         cdef tuple component
 
         self._pi_components = []
-        self._sigma_components = []
+        self._sigma_plus_components = []
+        self._sigma_minus_components = []
 
         for component in pi_components:
             if len(component) != 2:
@@ -60,17 +68,23 @@ cdef class ZeemanStructure():
             self._pi_components.append((autowrap_function1d(component[MULTIPLET_WAVELENGTH]),
                                         autowrap_function1d(component[MULTIPLET_RATIO])))
 
-        for component in sigma_components:
+        for component in sigma_plus_components:
             if len(component) != 2:
-                raise ValueError('Argument "sigma_components" must be a list of 2-tuples.')
-            self._sigma_components.append((autowrap_function1d(component[MULTIPLET_WAVELENGTH]),
-                                           autowrap_function1d(component[MULTIPLET_RATIO])))
+                raise ValueError('Argument "sigma_plus_components" must be a list of 2-tuples.')
+            self._sigma_plus_components.append((autowrap_function1d(component[MULTIPLET_WAVELENGTH]),
+                                                autowrap_function1d(component[MULTIPLET_RATIO])))
+
+        for component in sigma_minus_components:
+            if len(component) != 2:
+                raise ValueError('Argument "sigma_minus_components" must be a list of 2-tuples.')
+            self._sigma_minus_components.append((autowrap_function1d(component[MULTIPLET_WAVELENGTH]),
+                                                 autowrap_function1d(component[MULTIPLET_RATIO])))
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
     @cython.initializedcheck(False)
     @cython.cdivision(True)
-    cdef double[:, :] evaluate(self, double b, bint polarisation):
+    cdef double[:, :] evaluate(self, double b, int polarisation):
 
         cdef int i
         cdef np.npy_intp multiplet_shape[2]
@@ -85,8 +99,12 @@ cdef class ZeemanStructure():
 
         if polarisation == PI_POLARISATION:
             components = self._pi_components
+        elif polarisation == SIGMA_PLUS_POLARISATION:
+            components = self._sigma_plus_components
+        elif polarisation == SIGMA_MINUS_POLARISATION:
+            components = self._sigma_minus_components
         else:
-            components = self._sigma_components
+            raise ValueError('Argument "polarisation" must be 0, 1 or -1, {} given.'.format(polarisation))
 
         multiplet_shape[0] = 2
         multiplet_shape[1] = len(components)
@@ -115,7 +133,10 @@ cdef class ZeemanStructure():
         if polarisation.lower() == 'pi':
             return np.asarray(self.evaluate(b, PI_POLARISATION))
 
-        if polarisation.lower() == 'sigma':
-            return np.asarray(self.evaluate(b, SIGMA_POLARISATION))
+        if polarisation.lower() == 'sigma_plus':
+            return np.asarray(self.evaluate(b, SIGMA_PLUS_POLARISATION))
 
-        raise ValueError('Argument "polarisation" must be "pi" or "sigma", {} given.'.fotmat(polarisation))
+        if polarisation.lower() == 'sigma_minus':
+            return np.asarray(self.evaluate(b, SIGMA_MINUS_POLARISATION))
+
+        raise ValueError('Argument "polarisation" must be "pi", "sigma_plus" or "sigma_minus", {} given.'.fotmat(polarisation))
