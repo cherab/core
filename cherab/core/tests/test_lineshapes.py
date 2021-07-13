@@ -260,8 +260,8 @@ class TestLineShapes(unittest.TestCase):
         b_field = self.plasma.b_field(point.x, point.y, point.z)
         b_magn = b_field.length
         photon_energy = HC_EV_NM / wavelength
-        wl_sigma_plus = HC_EV_NM / (photon_energy - BOHR_MAGNETON * b_magn)
-        wl_sigma_minus = HC_EV_NM / (photon_energy + BOHR_MAGNETON * b_magn)
+        wl_sigma_minus = HC_EV_NM / (photon_energy - BOHR_MAGNETON * b_magn)
+        wl_sigma_plus = HC_EV_NM / (photon_energy + BOHR_MAGNETON * b_magn)
         cos_sqr = (b_field.dot(direction.normalise()) / b_magn)**2
         sin_sqr = 1. - cos_sqr
 

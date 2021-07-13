@@ -118,8 +118,8 @@ wavelength = plasma.atomic_data.wavelength(deuterium, 0, (3, 2))
 photon_energy = HC_EV_NM / wavelength
 
 pi_components = [(Constant1D(wavelength), Constant1D(1.0))]
-sigma_plus_components = [(HC_EV_NM / (photon_energy - BOHR_MAGNETON * Arg1D()), Constant1D(0.5))]
-sigma_minus_components = [(HC_EV_NM / (photon_energy + BOHR_MAGNETON * Arg1D()), Constant1D(0.5))]
+sigma_minus_components = [(HC_EV_NM / (photon_energy - BOHR_MAGNETON * Arg1D()), Constant1D(0.5))]
+sigma_plus_components = [(HC_EV_NM / (photon_energy + BOHR_MAGNETON * Arg1D()), Constant1D(0.5))]
 
 zeeman_structure = ZeemanStructure(pi_components, sigma_plus_components, sigma_minus_components)
 
