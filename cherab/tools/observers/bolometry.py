@@ -788,7 +788,7 @@ class BolometerIRVB(TargettedCCDArray):
         normal_vec = basis_x.cross(basis_y)
         self._slit = slit
         self._curvature_radius = curvature_radius
-        self._accumulate = accumulate
+        self._accumulate = None  # Will be set after pipeline is created.
 
         # setup root bolometer foil transform
         translation = translate(centre_point.x, centre_point.y, centre_point.z)
@@ -801,8 +801,9 @@ class BolometerIRVB(TargettedCCDArray):
         self.spectral_bins = 1
         self.quiet = True
 
-        # Update pipeline based on units
+        # Update pipeline based on units and accumulate.
         self.units = units
+        self.accumulate = accumulate
 
         # round off the detector corners, if applicable
         if self._curvature_radius > 0:
@@ -899,10 +900,12 @@ class BolometerIRVB(TargettedCCDArray):
 
     @accumulate.setter
     def accumulate(self, value):
+        self._accumulate = value
         for pipeline in self.pipelines:
             pipeline.accumulate = value
             # Discard any samples from previous accumulate behaviour
-            pipeline.value.clear()
+            if pipeline.frame is not None:
+                pipeline.frame.clear()
 
     def as_sightlines(self):
         """
