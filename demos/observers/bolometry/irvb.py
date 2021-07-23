@@ -77,10 +77,12 @@ bolometer_camera = BolometerCamera(camera_geometry=camera_box, parent=world,
 slit = BolometerSlit(slit_id="Example slit", centre_point=ORIGIN,
                      basis_x=XAXIS, dx=SLIT_WIDTH, basis_y=YAXIS, dy=SLIT_HEIGHT,
                      parent=bolometer_camera)
+
+# Make the foil. Its parent is the camera, so we specify the transform relative
+# to the camera body rather than in world space.
 foil_transform = translate(0, 0, -SLIT_SENSOR_SEPARATION)
 foil = BolometerIRVB(
-    name="IRVB foil", centre_point=ORIGIN.transform(foil_transform),
-    basis_x=XAXIS.transform(foil_transform), basis_y=YAXIS.transform(foil_transform),
+    name="IRVB foil", transform=foil_transform,
     width=FOIL_WIDTH, pixels=PIXELS, slit=slit, parent=bolometer_camera,
     units="power", accumulate=False, curvature_radius=FOIL_CORNER_CURVATURE)
 bolometer_camera.add_foil_detector(foil)

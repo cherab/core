@@ -709,12 +709,12 @@ class BolometerIRVB(TargettedCCDArray):
     oriented along the observer's z axis.
 
     :param str name: The name for this detector.
-    :param Point3D centre_point: The centre point of the detector.
-    :param Vector3D basis_x: The x basis vector for the detector.
     :param float width: The width of the detector along the x basis vector.
     :param tuple pixels: The number of pixels to divide the foil into.
       Pixels are square, so the height of the foil is determined by the
       width of the foil and the number of rows and columns of pixels.
+    :param BolometerSlit slit: The slit the IRVB views through.
+    :param AffineMatrix3D transform: The foil's transform relative to its parent.
     :param Node parent: The parent scenegraph node to which this detector belongs.
       Typically a BolometerCamera() or an optical World() object.
     :param bool units: The units in which to perform observations, can
@@ -739,22 +739,23 @@ class BolometerIRVB(TargettedCCDArray):
 
     .. code-block:: pycon
 
-       >>> from raysect.core import Point3D, Vector3D
+       >>> from raysect.core import Point3D, Vector3D, translate, rotate_basis
        >>> from raysect.optical import World
        >>> from cherab.tools.observers import BolometerIRVB
        >>>
        >>> world = World()
        >>>
-       >>> # construct basis vectors
+       >>> # construct transform, relative to parent's transform
+       >>> centre_point = Point3D(0, 0, -0.08)
        >>> basis_x = Vector3D(1, 0, 0)
        >>> basis_y = Vector3D(0, 1, 0)
-       >>> basis_z = Vector3D(0, 0, 1)
+       >>> normal = basis_x.cross(basis_y)
+       >>> transform = translate(*centre_point) * rotate_basis(normal, basis_y)
        >>>
        >>> # specify a detector, you need already created slit and camera objects
        >>> width = 0.0025
        >>> pixels = (10, 20)
-       >>> centre_point = Point3D(0, 0, -0.08)
-       >>> detector = BolometerIRVB("ch#1", centre_point, basis_x, basis_y, width, pixels, slit, parent=camera)
+       >>> detector = BolometerIRVB("irvb", width, pixels, slit, transform, parent=camera)
     """
 
     _PIPELINES = {_Units.POWER: PowerPipeline2D,
@@ -762,8 +763,8 @@ class BolometerIRVB(TargettedCCDArray):
     _SPECTRAL_PIPELINES = {_Units.POWER: SpectralPowerPipeline2D,
                            _Units.RADIANCE: SpectralRadiancePipeline2D}
 
-    def __init__(self, name, centre_point, basis_x, basis_y, width, pixels, slit,
-                 parent=None, units="power", accumulate=False, curvature_radius=0):
+    def __init__(self, name, width, pixels, slit, transform, parent=None,
+                 units="power", accumulate=False, curvature_radius=0):
 
         # perform validation of input parameters
         width = float(width)
@@ -773,30 +774,18 @@ class BolometerIRVB(TargettedCCDArray):
         if not isinstance(slit, BolometerSlit):
             raise TypeError("slit argument for BolometerIRVB must be of type BolometerSlit.")
 
-        centre_point = Point3D(*centre_point)
-
         curvature_radius = float(curvature_radius)
         if curvature_radius < 0:
             raise ValueError("curvature_radius argument for BolometerIRVB "
                              "must not be negative.")
 
-        basis_x = Vector3D(*basis_x)
-        basis_y = Vector3D(*basis_y)
-
-        basis_x = basis_x.normalise()
-        basis_y = basis_y.normalise()
-        normal_vec = basis_x.cross(basis_y)
         self._slit = slit
         self._curvature_radius = curvature_radius
         self._accumulate = None  # Will be set after pipeline is created.
 
-        # setup root bolometer foil transform
-        translation = translate(centre_point.x, centre_point.y, centre_point.z)
-        rotation = rotate_basis(normal_vec, basis_y)
-
         super().__init__([slit.target], pixels=pixels, width=width,
                          targetted_path_prob=0.99, parent=parent, pipelines=[],
-                         transform=translation * rotation, name=name)
+                         transform=transform, name=name)
         self.pixel_samples = 1000
         self.spectral_bins = 1
         self.quiet = True
