@@ -8,13 +8,14 @@ from raysect.primitive import Box
 
 from cherab.core import Plasma, Maxwellian
 from cherab.core.laser.node import Laser
+from cherab.core.laser.models.profile_base import LaserProfile
 from cherab.core.laser.models.laserspectrum import ConstantSpectrum, GaussianSpectrum
 from cherab.core.laser.model import SeldenMatobaThomsonSpectrum
 from cherab.core.laser.models.profile import UniformEnergyDensity, ConstantBivariateGaussian
 from cherab.core.laser.models.profile import TrivariateGaussian, GaussianBeamAxisymmetric
 from cherab.core.laser.models.laserspectrum_base import LaserSpectrum
 
-from math import exp, sqrt, cos, sin
+from math import exp, sqrt, cos, sin, radians
 from scipy.constants import pi, c, e, m_e, epsilon_0
 from scipy.integrate import nquad
 
@@ -33,12 +34,12 @@ class TestLaser(unittest.TestCase):
         for length in lengths:
             for radius in radii:
                 world = World()
-                laser = Laser(length=length, radius=radius, parent=world, importance=importance)
+                laser = Laser(parent=world, importance=importance)
 
         with self.assertRaises(ValueError, msg="Laser has to be connected to laser spectrum and laser models and plasma before scattering model."):
             laser.models = [SeldenMatobaThomsonSpectrum()]
 
-        laser.laser_profile = UniformEnergyDensity()
+        laser.laser_profile = UniformEnergyDensity(laser_length=length, laser_radius=radius, )
         laser.plasma = Plasma(parent=world)
         laser.laser_spectrum = ConstantSpectrum(min_wavelength=1059, max_wavelength=1061, bins=10)
         laser.models = [SeldenMatobaThomsonSpectrum()]
@@ -46,17 +47,16 @@ class TestLaser(unittest.TestCase):
     def test_laser_shape_change(self):
 
         world = World()
-        laser = Laser(length=0.5, radius=1., parent=world)
+        laser = Laser(parent=world)
 
-        laser.laser_profile = UniformEnergyDensity()
+        laser.laser_profile = UniformEnergyDensity(laser_length=0.5, laser_radius=1)
         laser.laser_spectrum = ConstantSpectrum(min_wavelength=1059, max_wavelength=1061, bins=10)
         laser.plasma = Plasma(parent=world)
         laser.models = [SeldenMatobaThomsonSpectrum()]
 
         self.assertEqual(len(laser.get_geometry()), 1, msg="Wrong nuber of laser segments, expected 1.")
 
-        laser.length = 1.05
-        laser.radius = 0.1
+        laser.laser_profile.laser_length = 10
 
         self.assertEqual(len(laser.get_geometry()), 5, msg="Wrong nuber of laser segments, expected 10.")
 
@@ -64,7 +64,7 @@ class TestLaser(unittest.TestCase):
 
         world = World()
 
-        laser_profile = UniformEnergyDensity()
+        laser_profile = UniformEnergyDensity(laser_length=1, laser_radius=0.1)
         laser_spectrum = ConstantSpectrum(min_wavelength=1059, max_wavelength=1061, bins=10)
         plasma = Plasma(parent=world)
         models = [SeldenMatobaThomsonSpectrum()]
@@ -74,7 +74,7 @@ class TestLaser(unittest.TestCase):
         plasma2 = Plasma(parent=world)
         models2 = [SeldenMatobaThomsonSpectrum()]
 
-        laser = Laser(length=1, radius=0.1, parent=world)
+        laser = Laser(parent=world)
 
         laser.laser_spectrum = laser_spectrum
         laser.plasma = plasma
@@ -255,8 +255,8 @@ class TestLaserModels(unittest.TestCase):
         # Check laser power density profile
         x = np.linspace(-3 * stddev_x, 3 * stddev_x, 30)
         y = np.linspace(-3 * stddev_y, 3 * stddev_y, 30)
-        for ix, vx in enumerate(x):
-            for iy, vy in enumerate(y):
+        for vx in x:
+            for vy in y:
                 tmp = _constant_bivariate_gaussian2d(vx, vy, pulse_energy, pulse_length, stddev_x, stddev_y)
                 tmp2 = model.get_energy_density(vx, vy, 0)
                 self.assertTrue(np.isclose(tmp, tmp2, 1e-9),
@@ -267,7 +267,6 @@ class TestLaserModels(unittest.TestCase):
 
         pulse_energy = 2
         pulse_length = 1e-8
-        one_stddev = 0.682689492137
         mean_z = 0
         stddev_x = 0.03
         stddev_y = 0.06
@@ -298,9 +297,9 @@ class TestLaserModels(unittest.TestCase):
         y = np.linspace(-3 * stddev_y, 3 * stddev_y, 30)
         z = np.linspace(-3 * pulse_length * c, 3 * pulse_length * c, 30)
 
-        for ix, vx in enumerate(x):
-            for iy, vy in enumerate(y):
-                for iz, vz in enumerate(z):
+        for vx in x:
+            for vy in y:
+                for vz in z:
                     tmp = _constant_trivariate_gaussian3d(vx, vy, vz, pulse_energy, pulse_length, mean_z, stddev_x,
                                                           stddev_y)
                     tmp2 = model.get_energy_density(vx, vy, vz)
@@ -343,9 +342,9 @@ class TestLaserModels(unittest.TestCase):
         y = np.linspace(-3 * stddev_waist, 3 * stddev_waist, 30)
         z = np.linspace(-3 * pulse_length * c, 3 * pulse_length * c, 30)
 
-        for ix, vx in enumerate(x):
-            for iy, vy in enumerate(y):
-                for iz, vz in enumerate(z):
+        for vx in x:
+            for vy in y:
+                for vz in z:
                     tmp = _gaussian_beam_model(vx, vy, vz, pulse_energy, pulse_length, waist_z, stddev_waist,
                                                laser_wavelength * 1e-9)
                     tmp2 = model.get_energy_density(vx, vy, vz)
@@ -363,17 +362,16 @@ class TestScatteringModel(unittest.TestCase):
 
         # calculate TS cross section and constants
         r_e = e ** 2 / (4 * pi * epsilon_0 * m_e * c ** 2)  # classical electron radius
-        ts_cx = 8 * pi / 3 * r_e ** 2  # Thomson scattering cross section
-        scat_const = ts_cx / 4 / pi  # constant for scattered power per unit solid angle
+        scat_const = r_e ** 2 * c  #r_e **2 is the differential cross section for TS, scattered power per unit solid angle
         ray_origin = Point3D(0, 0, 0)
 
         # angle of scattering
-        scattering_angle = [45, 90, 135]
-        for scatangle in scattering_angle:
+        observation_angle = [45, 90, 135]
+        for obsangle in observation_angle:
 
-            # pointing vector is in +z direction, angle of observation is scatangle - 90
-            x = cos((scatangle - 90) / 180 * pi)
-            z = sin((scatangle - 90) / 180 * pi)
+            # pointing vector is in +z direction, angle of observation is 180 - obsangle
+            z = cos((obsangle) / 180 * pi)
+            x = sin((obsangle) / 180 * pi)
             ray_direction = Vector3D(x, 0, z).normalise()
 
             # ray spectrum properties
@@ -389,16 +387,14 @@ class TestScatteringModel(unittest.TestCase):
             for vte in t_e:
                 # setup scene
                 world = World()
-                plasma = self._make_plasma(e_density, vte, zero_vector, world)
+                plasma = _make_plasma(e_density, vte, zero_vector, world)
 
                 # setup laser
                 laser_spectrum = ConstantSpectrum(1039.8, 1040.2, 2)
-                laser_profile = UniformEnergyDensity()
+                laser_profile = UniformEnergyDensity(laser_length=1, laser_radius=0.015)
                 scattering_model = SeldenMatobaThomsonSpectrum()
                 laser = Laser()
                 laser.parent = world
-                laser.length = 1
-                laser.radius = 0.015
                 laser.transform = translate(0.05, 0, -0.5)
                 laser.laser_profile = laser_profile
                 laser.laser_spectrum = laser_spectrum
@@ -411,44 +407,90 @@ class TestScatteringModel(unittest.TestCase):
                 traced_spectrum = ray.trace(world)
 
                 # calculate spectrum ray-tracing should deliver
+                dl = 2 * laser_profile.laser_radius / sin((obsangle) / 180 * pi)  # ray-laser cross section length
                 intensity_test = np.zeros_like(traced_spectrum.wavelengths)
-
-                dl = 2 * laser.radius / cos((scatangle - 90) / 180 * pi)  # ray-laser cross section length
-                for _, vl in enumerate(laser.laser_spectrum.wavelengths):
+                intensity_const = scat_const * e_density / laser_spectrum.bins * dl
+                
+                for vl in laser.laser_spectrum.wavelengths:
                     for iwvl, vwvl in enumerate(traced_spectrum.wavelengths):
-                        # normalized scattered spectrum shape
-                        intensity_test[iwvl] += _selden_matoba_shape(vwvl, vte, scatangle, vl)
-
-                        # multiply by scattered power along the ray path
-                        intensity_test[iwvl] *= (1 / laser_spectrum.bins * laser_profile.energy_density * dl *
-                                                 e_density * scat_const / traced_spectrum.delta_wavelength)
+                        intensity_test[iwvl] += _selden_matoba_shape(vwvl, vte, obsangle, vl) * intensity_const / vl
 
                 for index, (vtest, vray) in enumerate(zip(intensity_test, traced_spectrum.samples)):
-                    self.assertAlmostEqual(vtest, vray, 8,
-                                           msg="Traced and test spectrum value do not match: "
-                                               "scattering angle = {0} deg, Te = {1} eV, wavelength = {2} nm."
-                                           .format(scattering_angle, vte, traced_spectrum.wavelengths[index]))
 
-    def _make_plasma(self, e_density, e_temperature, velocity, parent=None):
-
-        plasma_box = Box(Point3D(0, -0.5, -0.5), Point3D(1, 0.5, 0.5))
-        plasma = Plasma(parent=parent)
-        plasma.geometry = plasma_box
-        e_distribution = Maxwellian(e_density, e_temperature, velocity, m_e)
-
-        plasma.electron_distribution = e_distribution
-        plasma.b_field = Vector3D(0, 0, 1)
-
-        return plasma
+                    if vray > 1e-30: # skip the test for too low valies of power spectral density
+                        rel_error = np.abs((vtest - vray) / vray)
+                        self.assertLess(rel_error, 1e-1,
+                                            msg="Traced and test spectrum value do not match: "
+                                                "scattering angle = {0} deg, Te = {1} eV, wavelength = {2} nm."
+                                            .format(180 - obsangle, vte, traced_spectrum.wavelengths[index]))
+                    
 
 
-def _selden_matoba_shape(wavelength, te, scatangle, laser_wavelength):
+class TestLaserProfile(unittest.TestCase):
+
+    def test_laser_change(self):
+        """Test correct assignment of laser_profile"""
+
+        laser_profile = LaserProfile()
+        laser1 = Laser()
+
+        laser1.laser_profile = laser_profile
+        
+        self.assertIs(laser_profile.laser, laser1, msg="laser_profile.laser not assigned properly when assigning laser_profile to laser")
+        self.assertTrue(laser_profile.notifier.is_present(laser1._configure_geometry), msg="callback to laser._configure_geometry not added properly")
+        
+        #try switching the laser
+        laser2 = Laser()
+        laser2.laser_profile = laser_profile
+        self.assertIs(laser_profile.laser, laser2, msg="laser_profile.laser not reassigned properly when assigning laser_profile to laser")
+        self.assertTrue(laser_profile.notifier.is_present(laser2._configure_geometry), msg="callback to laser._configure_geometry not added properly")
+        self.assertFalse(laser_profile.notifier.is_present(laser1._configure_geometry), msg="old callback to laser._configure_geometry not removed properly")
+
+    def test_geometry_change(self):
+        """Test if geometry gets correctly rebuilt after assigning a new laser_profile"""
+        
+        world = World()
+        plasma = Plasma(parent=world)
+
+        laser_profile = GaussianBeamAxisymmetric()
+        laser_profile2 = UniformEnergyDensity()
+        models = [SeldenMatobaThomsonSpectrum()]
+        spectrum = ConstantSpectrum(1060, 1062, 1)
+
+        laser1 = Laser()
+        laser1.parent = world
+        laser1.plasma = plasma
+        laser1.laser_profile = laser_profile
+        laser1.laser_spectrum = spectrum
+        laser1.models = models
+
+        geometry1 = laser1.get_geometry()
+        laser1.laser_profile = laser_profile2
+        geometry2 = laser1.get_geometry()
+
+        for g1, g2 in zip(geometry1, geometry2):
+            self.assertIsNot(g1, g2)
+
+def _make_plasma(e_density, e_temperature, velocity, parent=None):
+
+    plasma_box = Box(Point3D(0, -0.5, -0.5), Point3D(1, 0.5, 0.5))
+    plasma = Plasma(parent=parent)
+    plasma.geometry = plasma_box
+    e_distribution = Maxwellian(e_density, e_temperature, velocity, m_e)
+
+    plasma.electron_distribution = e_distribution
+    plasma.b_field = Vector3D(0, 0, 1)
+
+    return plasma
+
+
+def _selden_matoba_shape(wavelength, te, obsangle, laser_wavelength):
     epsilon = wavelength / laser_wavelength - 1
 
     alpha = m_e * c ** 2 / (2 * e * te)
 
-    scatangle = scatangle / 180 * pi
-    cos_scat = cos(scatangle)
+    scat_angle = 180 - obsangle
+    cos_scat = cos(radians(scat_angle))
 
     const_c = sqrt(alpha / pi) * (1 - 15 / 16 / alpha + 345 / 512 / alpha ** 2)
     const_a = (1 + epsilon) ** 3 * sqrt(2 * (1 - cos_scat) * (1 + epsilon) + epsilon ** 2)
