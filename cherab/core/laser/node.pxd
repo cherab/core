@@ -22,7 +22,7 @@ cdef class Laser(Node):
 
     cdef:
         readonly object notifier
-        double _length, _radius, _importance
+        double _importance
         Plasma _plasma
         ModelManager  _models
         LaserProfile _laser_profile

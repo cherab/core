@@ -4,8 +4,13 @@ from raysect.core.math.function.vector3d cimport Function3D as VectorFunction3D
 from raysect.optical cimport SpectralFunction, Spectrum, InterpolatedSF, Point3D, Vector3D
 
 from cherab.core.laser.node cimport Laser
+from cherab.core.utility import Notifier
 
 cdef class LaserProfile:
+
+    def __init__(self):
+
+        self.notifier = Notifier()
 
     def set_polarization_function(self, VectorFunction3D function):
         self._polarization3d = function
@@ -15,7 +20,7 @@ cdef class LaserProfile:
 
     def set_energy_density_function(self, Function3D function):
         self._energy_density3d = function
-
+    
     cpdef Vector3D get_pointing(self, double x, double y, double z):
         """
         Returns the pointing vector of the light at the specified point.
@@ -59,9 +64,32 @@ cdef class LaserProfile:
 
         return self._energy_density3d.evaluate(x, y, z)
 
+    @property
+    def laser(self):
+        return self._laser
+    
+    @laser.setter
+    def laser(self, value):
+        if not isinstance(value, Laser):
+            raise TypeError("Value has to instance of Laser class.")
+        
+        if self._laser is not None:
+            self.notifier.remove(self._laser._configure_geometry)
+        
+        self._laser = value
+        self.notifier.add(self._laser._configure_geometry)
+        self._change()
+        
+        self.notifier.notify()
+
+    cpdef list generate_geometry(self):
+        """returns list of raysect primitives composing the laser geometry"""
+
+        raise NotImplementedError("Virtual function density not defined.")
+    
     def _change(self):
         """
-        Called if the plasma, beam or the atomic data source properties change.
+        Called if the laser properties change.
 
         If the model caches calculation data that would be invalidated if its
         source data changes then this method may be overridden to clear the

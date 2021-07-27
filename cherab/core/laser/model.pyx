@@ -82,7 +82,7 @@ cdef class SeldenMatobaThomsonSpectrum(LaserModel):
                             Vector3D observation_laser, Spectrum spectrum):
         cdef:
             double angle_scattering, angle_pointing, angle_polarization
-            double te, ne, laser_energy_density
+            double te, ne, laser_energy_density, laser_energy
             double[::1] laser_wavelength_mv, laser_spectrum_power_mv
             int bins
             Vector3D pointing_vector
@@ -116,9 +116,9 @@ cdef class SeldenMatobaThomsonSpectrum(LaserModel):
         bins = self._laser_spectrum._bins
 
         for index in range(bins):
-            laser_energy_density = laser_spectrum_power_mv[index] * laser_energy_density 
-            if laser_energy_density > 0:
-                spectrum = self._add_spectral_contribution(ne, te, laser_energy_density, angle_scattering,
+            laser_energy = laser_spectrum_power_mv[index] * laser_energy_density 
+            if laser_energy > 0:
+                spectrum = self._add_spectral_contribution(ne, te, laser_energy, angle_scattering,
                                                            angle_polarization, laser_wavelength_mv[index], spectrum)
 
         return spectrum
@@ -131,8 +131,8 @@ cdef class SeldenMatobaThomsonSpectrum(LaserModel):
 
         cdef:
             int index, nbins
-            double alpha, epsilon, cos_anglescat, wavelength, min_wavelength, delta_wavelength, recip_delta_wavelength
-            double const_theta_epsilon, recip_laser_wavelength, scattered_power
+            double alpha, epsilon, cos_anglescat, wavelength, min_wavelength, delta_wavelength
+            double const_theta, recip_laser_wavelength, scattered_power, spectrum_norm
 
         alpha = self._CONST_ALPHA / te
         # scattering angle of the photon = pi - observation_angle
@@ -144,7 +144,6 @@ cdef class SeldenMatobaThomsonSpectrum(LaserModel):
         nbins = spectrum.bins
         min_wavelength = spectrum.min_wavelength
         delta_wavelength = spectrum.delta_wavelength
-        recip_delta_wavelength = 1 / delta_wavelength
         recip_laser_wavelength = 1 / laser_wavelength
 
         #from d_lambda to d_epsilon:d_epsilon = d_lambda / laser_wavelength

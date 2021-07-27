@@ -51,8 +51,8 @@ cdef class ModelManager:
 
 cdef class Laser(Node):
 
-    def __init__(self, double length=1, double radius=0.05, object parent=None, AffineMatrix3D transform=None,
-                 double importance=0., str name=None):
+    def __init__(self, object parent=None, AffineMatrix3D transform=None,
+                 double importance=1., str name=None):
 
         super().__init__(parent, transform, name)
 
@@ -61,17 +61,12 @@ cdef class Laser(Node):
 
         # change reporting and tracking
         self.notifier = Notifier()
-        self.notifier.add(self._configure_geometry)
 
         #setup model manager
         self._models = ModelManager()
         
         # set material integrator
         self._integrator = NumericalIntegrator(step=1e-3)
-
-        # laser beam properties
-        self.length = length                         # [m]
-        self.radius = radius                         # [m]
 
         self._importance = importance
         self._configure_geometry()
@@ -80,36 +75,8 @@ cdef class Laser(Node):
         """
         Sets initial values of the laser shape to avoid errors.
         """
-        self._length = 1
-        self._radius = 0.5
         self._importance = 0.
         self._geometry = []
-
-    @property
-    def length(self):
-        return self._length
-
-    @length.setter
-    def length(self, value):
-
-        if value <= 0:
-            raise ValueError("Laser length has to be larger than 0.")
-
-        self._length = value
-        self._configure_geometry()
-
-    @property
-    def radius(self):
-        return self._radius
-
-    @radius.setter
-    def radius(self, value):
-
-        if value <= 0:
-            raise ValueError("Laser radius has to be larger than 0.")
-
-        self._radius = value
-        self._configure_geometry()
 
     @property
     def plasma(self):
@@ -123,7 +90,7 @@ cdef class Laser(Node):
             self._plasma.notifier.remove(self._plasma_changed)
 
         self._plasma = value
-        self._plasma.notifier.add(self._plasma_changed)
+        #self._plasma.notifier.add(self._plasma_changed)
         self._configure_geometry()
 
     @property
@@ -148,34 +115,25 @@ cdef class Laser(Node):
         # no further work if there are no emission models
         if not list(self._models):
             return
+        
+        #no further work if there is no laser profile connected
+        if self._laser_profile is None:
+            return
 
         # clear geometry to remove segments
         for i in self._geometry:
             i.parent = None
-        self._geometry[:] = []
+        self._geometry = []
 
-        radius = self.radius  # radius of segments
-        n_segments = int(self.length // (2 * radius))  # number of segments
+        #get geometry from laser_profile
+        primitives = self._laser_profile.generate_geometry()
 
-        #length of segment is either length / n_segments if length > radius or length i f length < radius
-        if n_segments > 1:
-            segment_length = self.length / n_segments
-            for i in range(n_segments):
-                segment = Cylinder(name="Laser segment {0:d}".format(i), radius=radius, height=segment_length,
-                                    transform=translate(0, 0, i * segment_length), parent=self)
-                segment.material = LaserMaterial(self, segment, list(self._models), self._integrator)
+        #assign material and parent
+        for i in primitives:
+            i.parent = self
+            i.material = LaserMaterial(self, i, list(self._models), self._integrator)
 
-                self._geometry.append(segment)
-        elif 0 <= n_segments < 2:
-                segment = Cylinder(name="Laser segment {0:d}".format(0), radius=radius, height=self.length,
-                                    parent=self)
-                segment.material = LaserMaterial(self, segment, list(self._models), self._integrator)
-
-                self._geometry.append(segment)
-        else:
-            raise ValueError("Incorrect number of segments calculated.")
-        
-        self.notifier.notify()
+        self._geometry = primitives
 
     @property
     def laser_spectrum(self):
@@ -194,6 +152,7 @@ cdef class Laser(Node):
     def laser_profile(self, object value):
 
         self._laser_profile = value
+        self._laser_profile.laser = self
 
         self._configure_geometry()
 
