@@ -65,22 +65,22 @@ class PolychromatorFilter(InterpolatedSF):
 
     @property
     def window(self):
-        """ Size of the filtering window in nm."""
+        # Size of the filtering window in nm.
         return self._window
 
     @property
     def flat_top(self):
-        """ Size of the flat top part of the filter in nm."""
+        # Size of the flat top part of the filter in nm.
         return self._flat_top
 
     @property
     def wavelength(self):
-        """ Central wavelength of the filter in nm."""
+        # Central wavelength of the filter in nm.
         return self._wavelength
 
     @property
     def name(self):
-        """ Filter name."""
+        # Filter name.
         return self._name
 
 
@@ -91,6 +91,7 @@ class Polychromator(SpectroscopicInstrument):
     :param list filters: List of the `PolychromatorFilter` instances.
     :param int min_bins_per_window: Minimal number of spectral bins
                                     per filtering window. Default is 10.
+    :param str name: Polychromator name.
     """
 
     def __init__(self, filters, min_bins_per_window=10, name=''):
@@ -100,14 +101,11 @@ class Polychromator(SpectroscopicInstrument):
 
     @property
     def min_bins_per_window(self):
-        """
-        Minimal number of spectral bins per filtering window.
-        """
+        # Minimal number of spectral bins per filtering window.
         return self._min_bins_per_window
 
     @min_bins_per_window.setter
     def min_bins_per_window(self, value):
-
         value = int(value)
         if value <= 0:
             raise ValueError("Attribute 'min_bins_per_window' must be positive.")
@@ -117,9 +115,7 @@ class Polychromator(SpectroscopicInstrument):
 
     @property
     def filters(self):
-        """
-        List of the PolychromatorFilter instances.
-        """
+        # List of the PolychromatorFilter instances.
         return self._filters
 
     @filters.setter

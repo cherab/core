@@ -21,6 +21,12 @@ class SpectroscopicInstrument:
     This is an abstract class.
 
     :param str name: Instrument name.
+
+    :ivar list pipeline_properties: The list of properties (class, name, filter) of
+                                    the pipelines used with this instrument.
+    :ivar float min_wavelength: Lower wavelength bound for spectral range.
+    :ivar float max_wavelength: Upper wavelength bound for spectral range.
+    :ivar int spectral_bins: The number of spectral samples over the wavelength range.
     """
 
     def __init__(self, name=''):
@@ -29,7 +35,7 @@ class SpectroscopicInstrument:
 
     @property
     def name(self):
-        """ Instrument name."""
+        # Instrument name.
         return self._name
 
     @name.setter
@@ -39,10 +45,8 @@ class SpectroscopicInstrument:
 
     @property
     def pipeline_properties(self):
-        """
-        The list of properties (class, name, filter) of the pipelines used with
-        this instrument.
-        """
+        # The list of properties (class, name, filter) of the pipelines used with
+        # this instrument.
         if self._pipeline_properties is None:
             self._update_pipeline_properties()
 
@@ -50,7 +54,7 @@ class SpectroscopicInstrument:
 
     @property
     def min_wavelength(self):
-        """ Lower wavelength bound for spectral range."""
+        # Lower wavelength bound for spectral range.
         if self._min_wavelength is None:
             self._update_spectral_settings()
 
@@ -58,7 +62,7 @@ class SpectroscopicInstrument:
 
     @property
     def max_wavelength(self):
-        """ Upper wavelength bound for spectral range."""
+        # Upper wavelength bound for spectral range.
         if self._max_wavelength is None:
             self._update_spectral_settings()
 
@@ -66,7 +70,7 @@ class SpectroscopicInstrument:
 
     @property
     def spectral_bins(self):
-        """ The number of spectral samples over the wavelength range."""
+        # The number of spectral samples over the wavelength range.
         if self._spectral_bins is None:
             self._update_spectral_settings()
 

@@ -45,14 +45,11 @@ class Spectrometer(SpectroscopicInstrument):
 
     @property
     def spectral_bins(self):
-        """
-        The number of spectral samples over the wavelength range.
-        """
+        # The number of spectral samples over the wavelength range.
         return self._spectral_bins
 
     @spectral_bins.setter
     def spectral_bins(self, value):
-
         value = int(value)
         if value <= 0:
             raise ValueError("Attribute 'spectral_bins' must be > 0.")
@@ -62,14 +59,11 @@ class Spectrometer(SpectroscopicInstrument):
 
     @property
     def reference_wavelength(self):
-        """
-        Wavelength (in nm) corresponding to the centre of reference bin.
-        """
+        # Wavelength (in nm) corresponding to the centre of reference bin.
         return self._reference_wavelength
 
     @reference_wavelength.setter
     def reference_wavelength(self, value):
-
         if value <= 0:
             raise ValueError("Attribute 'reference_wavelength' must be > 0.")
 
@@ -78,14 +72,11 @@ class Spectrometer(SpectroscopicInstrument):
 
     @property
     def reference_bin(self):
-        """
-        Reference bin index.
-        """
+        # Reference bin index.
         return self._reference_bin
 
     @reference_bin.setter
     def reference_bin(self, value):
-
         value = int(value)
 
         self._reference_bin = value
@@ -114,6 +105,8 @@ class SurveySpectrometer(Spectrometer):
     :param int reference_bin: Reference bin index. Can be negative to specify the offset.
                               Default is None (spectral_bins // 2).
     :param str name: Spectrometer name.
+
+    :ivar float resolution: Spectral resolution in nm (can be negative).
     """
 
     def __init__(self, resolution, spectral_bins, reference_wavelength, reference_bin=None, name=''):
@@ -122,16 +115,11 @@ class SurveySpectrometer(Spectrometer):
 
     @property
     def resolution(self):
-        """
-        Spectrometer resolution.
-        """
+        # Spectral resolution in nm (can be negative).
         return self._resolution
 
     @resolution.setter
     def resolution(self, value):
-        """
-        Spectral resolution in nm (can be negative).
-        """
         if value == 0:
             raise ValueError("Attribute 'resolution' must be non-zero.")
 
@@ -162,6 +150,8 @@ class CzernyTurnerSpectrometer(Spectrometer):
                                        the centre of reference bin.
     :param int reference_bin: Reference bin index. Default is None (spectral_bins // 2).
     :param str name: Spectrometer name.
+
+    :ivar float resolution: Spectral resolution in nm (can be negative).
     """
 
     def __init__(self, diffraction_order, grating, focal_length, pixel_spacing, diffraction_angle, spectral_bins,
@@ -175,12 +165,11 @@ class CzernyTurnerSpectrometer(Spectrometer):
 
     @property
     def diffraction_order(self):
-        """ Diffraction order."""
+        # Diffraction order.
         return self._diffraction_order
 
     @diffraction_order.setter
     def diffraction_order(self, value):
-
         value = int(value)
         if value <= 0:
             raise ValueError("Attribute 'diffraction_order' must be positive.")
@@ -190,12 +179,11 @@ class CzernyTurnerSpectrometer(Spectrometer):
 
     @property
     def grating(self):
-        """ Diffraction grating in nm-1."""
+        # Diffraction grating in nm-1.
         return self._grating
 
     @grating.setter
     def grating(self, value):
-
         if value <= 0:
             raise ValueError("Attribute 'grating' must be positive.")
 
@@ -204,12 +192,11 @@ class CzernyTurnerSpectrometer(Spectrometer):
 
     @property
     def focal_length(self):
-        """ Focal length in nm."""
+        # Focal length in nm.
         return self._focal_length
 
     @focal_length.setter
     def focal_length(self, value):
-
         if value <= 0:
             raise ValueError("Attribute 'focal_length' must be positive.")
 
@@ -218,12 +205,11 @@ class CzernyTurnerSpectrometer(Spectrometer):
 
     @property
     def pixel_spacing(self):
-        """ Pixel to pixel spacing on CCD in nm."""
+        # Pixel to pixel spacing on CCD in nm.
         return self._pixel_spacing
 
     @pixel_spacing.setter
     def pixel_spacing(self, value):
-
         if value == 0:
             raise ValueError("Attribute 'pixel_spacing' must be non-zero.")
 
@@ -232,12 +218,11 @@ class CzernyTurnerSpectrometer(Spectrometer):
 
     @property
     def diffraction_angle(self):
-        """ Angle between incident and diffracted light in degrees."""
+        # Angle between incident and diffracted light in degrees.
         return np.rad2deg(self._diffraction_angle)
 
     @diffraction_angle.setter
     def diffraction_angle(self, value):
-
         if value <= 0:
             raise ValueError("Attribute 'diffraction_angle' must be positive.")
 
@@ -246,9 +231,7 @@ class CzernyTurnerSpectrometer(Spectrometer):
 
     @property
     def resolution(self):
-        """
-        Spectral resolution in nm.
-        """
+        # Spectral resolution in nm (can be negative).
         grating = self._grating
         m = self._diffraction_order
         dxdp = self._pixel_spacing
