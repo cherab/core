@@ -32,6 +32,31 @@ class Observer0DGroup(Node):
 
     A scene-graph object regrouping a series of observers as a scene-graph parent.
     Allows combined observation and display control simultaneously.
+    Note that for any property except `names` and `pipelines`, the same value can be shared between
+    all sight lines, or each sight line can be assigned with individual value.
+
+    :ivar list names: A list of sight-line names.
+    :ivar list pipelines: A list of all pipelines connected to each sight-line in the group.
+    :ivar list/Point3D origin: The origin points for the sight lines.
+    :ivar list/Vector3D direction: The observation directions for the sight lines.
+    :ivar list/RenderEngine render_engine: Rendering engine used by the sight lines.
+                                           Note that if the engine is shared, changing its
+                                           parameters for one sight line in a group will affect
+                                           all sight lines.
+    :ivar list/bool display_progress: Toggles the display of live render progress.
+    :ivar list/bool accumulate: Toggles whether to accumulate samples with subsequent
+                                observations.
+    :ivar list/float min_wavelength: Lower wavelength bound for sampled spectral range.
+    :ivar list/float max_wavelength: Upper wavelength bound for sampled spectral range.
+    :ivar list/int spectral_bins: The number of spectral samples over the wavelength range.
+    :ivar list/float ray_extinction_prob: Probability of ray extinction after every material
+                                          intersection.
+    :ivar list/float ray_extinction_min_depth: Minimum number of paths before russian roulette
+                                               style ray extinction.
+    :ivar list/int ray_max_depth: Maximum number of Ray paths before terminating Ray.
+    :ivar list/float ray_important_path_weight: Relative weight of important path sampling.
+    :ivar list/int pixel_samples: The number of samples to take per pixel.
+    :ivar list/int samples_per_task: Minimum number of samples to request per task.
     """
 
     def __init__(self, parent=None, transform=None, name=None):
@@ -61,11 +86,7 @@ class Observer0DGroup(Node):
 
     @property
     def names(self):
-        """
-        A list of sight-line names.
-
-        :rtype: list
-        """
+        # A list of sight-line names.
         return [sight_line.name for sight_line in self._sight_lines]
 
     @names.setter
@@ -82,14 +103,7 @@ class Observer0DGroup(Node):
 
     @property
     def origin(self):
-        """
-        The origin points for the sight lines.
-
-        The same value can be shared between all sight lines,
-        or each sight line can be assigned with individual value.
-
-        :rtype: list
-        """
+        # The origin points for the sight lines.
         return [sight_line.origin for sight_line in self._sight_lines]
 
     @origin.setter
@@ -107,14 +121,7 @@ class Observer0DGroup(Node):
 
     @property
     def direction(self):
-        """
-        The observation directions for the sight lines.
-
-        The same value can be shared between all sight lines,
-        or each sight line can be assigned with individual value.
-
-        :rtype: list
-        """
+        # The observation directions for the sight lines.
         return [sight_line.direction for sight_line in self._sight_lines]
 
     @direction.setter
@@ -132,16 +139,7 @@ class Observer0DGroup(Node):
 
     @property
     def render_engine(self):
-        """
-        Rendering engine used by the sight lines.
-
-        The same rendering engine can be used by all sight lines,
-        or each sight line can use its own engine.
-        Note that if the engine is shared, changing its parameters
-        for one sight line in a group will affect all sight lines.
-
-        :rtype: list
-        """
+        # Rendering engine used by the sight lines.
         return [sight_line.render_engine for sight_line in self._sight_lines]
 
     @render_engine.setter
@@ -164,14 +162,7 @@ class Observer0DGroup(Node):
 
     @property
     def display_progress(self):
-        """
-        Toggles the display of live render progress.
-
-        The same value can be shared between all sight lines,
-        or each sight line can be assigned with individual value.
-
-        :rtype: list
-        """
+        # Toggles the display of live render progress.
         return [sight_line.display_progress for sight_line in self._sight_lines]
 
     @display_progress.setter
@@ -189,14 +180,7 @@ class Observer0DGroup(Node):
 
     @property
     def accumulate(self):
-        """
-        Toggles whether to accumulate samples with subsequent calls to observe().
-
-        The same value can be shared between all sight lines,
-        or each sight line can be assigned with individual value.
-
-        :rtype: list
-        """
+        # Toggles whether to accumulate samples with subsequent calls to observe().
         return [sight_line.accumulate for sight_line in self._sight_lines]
 
     @accumulate.setter
@@ -214,14 +198,7 @@ class Observer0DGroup(Node):
 
     @property
     def min_wavelength(self):
-        """
-        Lower wavelength bound for sampled spectral range.
-
-        The same value can be shared between all sight lines,
-        or each sight line can be assigned with individual value.
-
-        :rtype: list
-        """
+        # Lower wavelength bound for sampled spectral range.
         return [sight_line.min_wavelength for sight_line in self._sight_lines]
 
     @min_wavelength.setter
@@ -239,14 +216,7 @@ class Observer0DGroup(Node):
 
     @property
     def max_wavelength(self):
-        """
-        Upper wavelength bound for sampled spectral range.
-
-        The same value can be shared between all sight lines,
-        or each sight line can be assigned with individual value.
-
-        :rtype: list
-        """
+        # Upper wavelength bound for sampled spectral range.
         return [sight_line.max_wavelength for sight_line in self._sight_lines]
 
     @max_wavelength.setter
@@ -264,14 +234,7 @@ class Observer0DGroup(Node):
 
     @property
     def spectral_bins(self):
-        """
-        The number of spectral samples over the wavelength range.
-
-        The same value can be shared between all sight lines,
-        or each sight line can be assigned with individual value.
-
-        :rtype: list
-        """
+        # The number of spectral samples over the wavelength range.
         return [sight_line.spectral_bins for sight_line in self._sight_lines]
 
     @spectral_bins.setter
@@ -289,14 +252,7 @@ class Observer0DGroup(Node):
 
     @property
     def ray_extinction_prob(self):
-        """
-        Probability of ray extinction after every material intersection.
-
-        The same value can be shared between all sight lines,
-        or each sight line can be assigned with individual value.
-
-        :rtype: list
-        """
+        # Probability of ray extinction after every material intersection.
         return [sight_line.ray_extinction_prob for sight_line in self._sight_lines]
 
     @ray_extinction_prob.setter
@@ -314,14 +270,7 @@ class Observer0DGroup(Node):
 
     @property
     def ray_extinction_min_depth(self):
-        """
-        Minimum number of paths before russian roulette style ray extinction.
-
-        The same value can be shared between all sight lines,
-        or each sight line can be assigned with individual value.
-
-        :rtype: list
-        """
+        # Minimum number of paths before russian roulette style ray extinction.
         return [sight_line.ray_extinction_min_depth for sight_line in self._sight_lines]
 
     @ray_extinction_min_depth.setter
@@ -339,14 +288,7 @@ class Observer0DGroup(Node):
 
     @property
     def ray_max_depth(self):
-        """
-        Maximum number of Ray paths before terminating Ray.
-
-        The same value can be shared between all sight lines,
-        or each sight line can be assigned with individual value.
-
-        :rtype: list
-        """
+        # Maximum number of Ray paths before terminating Ray.
         return [sight_line.ray_max_depth for sight_line in self._sight_lines]
 
     @ray_max_depth.setter
@@ -364,14 +306,7 @@ class Observer0DGroup(Node):
 
     @property
     def ray_important_path_weight(self):
-        """
-        Relative weight of important path sampling.
-
-        The same value can be shared between all sight lines,
-        or each sight line can be assigned with individual value.
-
-        :rtype: list
-        """
+        # Relative weight of important path sampling.
         return [sight_line.ray_important_path_weight for sight_line in self._sight_lines]
 
     @ray_important_path_weight.setter
@@ -389,14 +324,7 @@ class Observer0DGroup(Node):
 
     @property
     def pixel_samples(self):
-        """
-        The number of samples to take per pixel.
-
-        The same value can be shared between all sight lines,
-        or each sight line can be assigned with individual value.
-
-        :rtype: list
-        """
+        # The number of samples to take per pixel.
         return [sight_line.pixel_samples for sight_line in self._sight_lines]
 
     @pixel_samples.setter
@@ -414,14 +342,7 @@ class Observer0DGroup(Node):
 
     @property
     def samples_per_task(self):
-        """
-        Minimum number of samples to request per task.
-
-        The same value can be shared between all sight lines,
-        or each sight line can be assigned with individual value.
-
-        :rtype: list
-        """
+        # Minimum number of samples to request per task.
         return [sight_line.samples_per_task for sight_line in self._sight_lines]
 
     @samples_per_task.setter
@@ -439,10 +360,7 @@ class Observer0DGroup(Node):
 
     @property
     def pipelines(self):
-        """
-        List of all pipelines connected to each sight-line in the group
-        """
-
+        # A list of all pipelines connected to each sight-line in the group.
         return [sight_line.pipelines for sight_line in self._sight_lines]
 
     def connect_pipelines(self, properties=[(SpectralRadiancePipeline0D, None, None)]):
@@ -468,6 +386,9 @@ class Observer0DGroup(Node):
             sight_line.connect_pipelines(properties)
 
     def observe(self):
+        """
+        Starts the observation.
+        """
         for sight_line in self._sight_lines:
             sight_line.observe()
 
@@ -495,7 +416,7 @@ class Observer0DGroup(Node):
         """
         Plots total (wavelength-integrated) signal for each sight line in the group.
 
-        :param item: The index or name of the pipeline. Default: 0.
+        :param str/int item: The index or name of the pipeline. Default: 0.
         :param Axes ax: Existing matplotlib axes.
 
         """
@@ -546,7 +467,7 @@ class Observer0DGroup(Node):
         """
         Plot the spectra observed by each line of sight in the group for a given pipeline.
 
-        :param item: The index or name of the pipeline. Default: 0.
+        :param str/int item: The index or name of the pipeline. Default: 0.
         :param bool in_photons: If True, plots the spectrum in photon/s/nm instead of W/nm.
                                 Default is False.
         :param Axes ax: Existing matplotlib axes.
@@ -589,6 +510,9 @@ class LineOfSightGroup(Observer0DGroup):
     A scene-graph object regrouping a series of 'SpectroscopicSightLine'
     observers as a scene-graph parent. Allows combined observation and display
     control simultaneously.
+
+    :ivar list sight_lines: A list of lines of sight (SpectroscopicSightLine instances)
+                            in this group.
     """
 
     @property
@@ -613,6 +537,11 @@ class LineOfSightGroup(Observer0DGroup):
         self._sight_lines = tuple(value)
 
     def add_sight_line(self, sight_line):
+        """
+        Adds new line of sight to the group.
+
+        :param SpectroscopicSightLine sight_line: Sight line to add.
+        """
 
         if not isinstance(sight_line, SpectroscopicSightLine):
             raise TypeError("The sight_line argument must be of type SpectroscopicSightLine.")
@@ -628,6 +557,17 @@ class FibreOpticGroup(Observer0DGroup):
     A scene-graph object regrouping a series of 'SpectroscopicFibreOptic'
     observers as a scene-graph parent. Allows combined observation and display
     control simultaneously.
+
+    :ivar list sight_lines: A list of fibre optics (SpectroscopicFibreOptic instances) in this
+                            group.
+    :ivar list/float acceptance_angle: The angle in degrees between the z axis and the cone
+                                       surface which defines the fibres solid angle sampling
+                                       area. The same value can be shared between all sight lines,
+                                       or each sight line can be assigned with individual value.
+    :ivar list/float radius: The radius of the fibre tip in metres. This radius defines a circular
+                             area at the fibre tip which will be sampled over. The same value
+                             can be shared between all sight lines, or each sight line can be
+                             assigned with individual value.
     """
 
     @property
@@ -652,6 +592,11 @@ class FibreOpticGroup(Observer0DGroup):
         self._sight_lines = tuple(value)
 
     def add_sight_line(self, sight_line):
+        """
+        Adds new fibre optic to the group.
+
+        :param SpectroscopicFibreOptic sight_line: Fibre optic to add.
+        """
 
         if not isinstance(sight_line, SpectroscopicFibreOptic):
             raise TypeError("The sightline argument must be of type SpectroscopicFibreOptic.")
@@ -661,15 +606,8 @@ class FibreOpticGroup(Observer0DGroup):
 
     @property
     def acceptance_angle(self):
-        """
-        The angle in degrees between the z axis and the cone surface which defines the fibres
-        solid angle sampling area.
-
-        The same value can be shared between all sight lines,
-        or each sight line can be assigned with individual value.
-
-        :rtype: list
-        """
+        # The angle in degrees between the z axis and the cone surface which defines the fibres
+        # solid angle sampling area.
         return [sight_line.acceptance_angle for sight_line in self._sight_lines]
 
     @acceptance_angle.setter
@@ -687,15 +625,8 @@ class FibreOpticGroup(Observer0DGroup):
 
     @property
     def radius(self):
-        """
-        The radius of the fibre tip in metres. This radius defines a circular area at the fibre tip
-        which will be sampled over.
-
-        The same value can be shared between all sight lines,
-        or each sight line can be assigned with individual value.
-
-        :rtype: list
-        """
+        # The radius of the fibre tip in metres. This radius defines a circular area at the fibre tip
+        # which will be sampled over.
         return [sight_line.radius for sight_line in self._sight_lines]
 
     @radius.setter
@@ -713,15 +644,25 @@ class FibreOpticGroup(Observer0DGroup):
 
 
 class _SpectroscopicObserver0DBase:
-    """A base class for spectroscopic 0D observers."""
+    """
+    A base class for spectroscopic 0D observers.
+
+    The observer allows to control some of the pipeline properties
+    without accessing the pipelines. It has a built-in plotting method.
+
+    Multiple spectroscopic 0D observers can can be combined into a group.
+
+    :ivar Point3D origin: The origin point of the sight line.
+    :ivar Vector3D direction: The observation direction of the sight line.
+    :ivar bool display_progress: Toggles the display of live render progress.
+    :ivar bool accumulate: Toggles whether to accumulate samples with subsequent
+                           calls to observe().
+
+    """
 
     @property
     def origin(self):
-        """
-        The origin point of the sight line.
-
-        :rtype: Point3D
-        """
+        # The origin point of the sight line.
         return self._origin
 
     @origin.setter
@@ -738,11 +679,7 @@ class _SpectroscopicObserver0DBase:
 
     @property
     def direction(self):
-        """
-        The observation direction of the sight line.
-
-        :rtype: Vector3D
-        """
+        # The observation direction of the sight line.
         return self._direction
 
     @direction.setter
@@ -759,7 +696,7 @@ class _SpectroscopicObserver0DBase:
 
     @property
     def display_progress(self):
-        """ Toggles the display of live render progress."""
+        # Toggles the display of live render progress.
         display_progress_list = []
         for pipeline in self.pipelines:
             if isinstance(pipeline, SpectralPowerPipeline0D):
@@ -776,7 +713,7 @@ class _SpectroscopicObserver0DBase:
 
     @property
     def accumulate(self):
-        """ Toggles whether to accumulate samples with subsequent calls to observe()."""
+        # Toggles whether to accumulate samples with subsequent calls to observe().
         accumulate_list = []
         for pipeline in self.pipelines:
             if isinstance(pipeline, (PowerPipeline0D, SpectralPowerPipeline0D)):
@@ -792,6 +729,13 @@ class _SpectroscopicObserver0DBase:
                 pipeline.accumulate = value
 
     def get_pipeline(self, item=0):
+        """
+        Gets a pipeline by its name or index.
+
+        :param str/int item: The name of the pipeline or its index in the list.
+
+        :rtype: Pipeline0D
+        """
         if isinstance(item, int):
             try:
                 return self.pipelines[item]
@@ -846,11 +790,13 @@ class _SpectroscopicObserver0DBase:
         """
         Plot the observed spectrum for a given spectral pipeline.
 
-        :param item: The index or name of the pipeline. Default: 0.
+        :param str/int item: The index or name of the pipeline. Default: 0.
         :param bool in_photons: If True, plots the spectrum in photon/s/nm instead of W/nm.
                                 Default is False.
         :param Axes ax: Existing matplotlib axes.
         :param bool extras: If True, set title and axis labels.
+
+        :rtype: matplotlib.pyplot.axes
         """
 
         pipeline = self.get_pipeline(item)
@@ -903,6 +849,8 @@ class SpectroscopicSightLine(SightLine, _SpectroscopicObserver0DBase):
     """
     A simple line of sight observer.
 
+    Multiple `SpectroscopicSightLine` observers can can be combined into `LineOfSightGroup`.
+
     :param Point3D origin: The origin point for this sight-line.
     :param Vector3D direction: The observation direction for this sight-line.
     :param list pipelines: A list of pipelines that will process the resulting spectra
@@ -930,15 +878,17 @@ class SpectroscopicFibreOptic(FibreOptic, _SpectroscopicObserver0DBase):
     Rays are sampled over a circular area at the fibre tip and a conical solid angle
     defined by the acceptance_angle parameter.
 
+    Multiple `SpectroscopicFibreOptic` observers can can be combined into `FibreOpticGroup`.
+
     :param Point3D origin: The origin point for this sight-line.
     :param Vector3D direction: The observation direction for this sight-line.
     :param list pipelines: A list of pipelines that will process the resulting spectra
                            from this observer.
                            Default is [SpectralRadiancePipeline0D(accumulate=False)].
-    :param float acceptance_angle: The angle in degrees between the z axis and the cone surface which defines the fibres
-                                   solid angle sampling area.
-    :param float radius: The radius of the fibre tip in metres. This radius defines a circular area at the fibre tip
-                         which will be sampled over.
+    :param float acceptance_angle: The angle in degrees between the z axis and the cone surface
+                                   which defines the fibres solid angle sampling area.
+    :param float radius: The radius of the fibre tip in metres. This radius defines a circular
+                         area at the fibre tip which will be sampled over.
     """
 
     def __init__(self, origin, direction, pipelines=None, acceptance_angle=None, radius=None, parent=None, name=None):
