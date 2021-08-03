@@ -20,7 +20,7 @@ import unittest
 import numpy as np
 
 from raysect.optical.observer.pipeline import RadiancePipeline0D, SpectralRadiancePipeline0D
-from cherab.tools.observers.spectroscopy import PolychromatorFilter, Polychromator, CzernyTurnerSpectrometer, SurveySpectrometer
+from cherab.tools.spectroscopy import PolychromatorFilter, Polychromator, CzernyTurnerSpectrometer, SurveySpectrometer
 
 
 class TestPolychromatorFilter(unittest.TestCase):

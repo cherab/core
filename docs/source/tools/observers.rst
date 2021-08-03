@@ -62,33 +62,3 @@ bolometer etendue :math:`G`, which is given by:
 .. autoclass:: cherab.tools.observers.bolometry.BolometerFoil
    :members:
 
-
-.. _observers_spectroscopic_instruments:
-
-Spectroscopic instruments
--------------------------
-
-Spectroscopic instruments such as polychromators, survey and high-resolution spectrometers
-simplify the setup of rendering pipelines and observers' spectral properties. The Cherab core
-package provides base classes for spectroscopic instruments, so machine-specific packages
-can build more advance instruments from them, such as instruments with spectral properties
-based on the actual experimental setup for a given shot/pulse.
-
-.. autoclass:: cherab.tools.observers.spectroscopy.SpectroscopicInstrument
-   :members:
-
-.. autoclass:: cherab.tools.observers.spectroscopy.PolychromatorFilter
-   :members:
-
-.. autoclass:: cherab.tools.observers.spectroscopy.Polychromator
-   :members:
-
-.. autoclass:: cherab.tools.observers.spectroscopy.Spectrometer
-   :members:
-
-.. autoclass:: cherab.tools.observers.spectroscopy.SurveySpectrometer
-   :members:
-
-.. autoclass:: cherab.tools.observers.spectroscopy.CzernyTurnerSpectrometer
-   :members:
-

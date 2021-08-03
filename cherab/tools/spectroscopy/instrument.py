@@ -1,5 +1,7 @@
 
-# Copyright 2014-2017 United Kingdom Atomic Energy Authority
+# Copyright 2016-2021 Euratom
+# Copyright 2016-2021 United Kingdom Atomic Energy Authority
+# Copyright 2016-2021 Centro de Investigaciones Energéticas, Medioambientales y Tecnológicas
 #
 # Licensed under the EUPL, Version 1.1 or – as soon they will be approved by the
 # European Commission - subsequent versions of the EUPL (the "Licence");
@@ -24,6 +26,7 @@ class SpectroscopicInstrument:
 
     :ivar list pipeline_properties: The list of properties (class, name, filter) of
                                     the pipelines used with this instrument.
+    :ivar list pipelines: The list of pipelines. Each call returns a list with new instances.
     :ivar float min_wavelength: Lower wavelength bound for spectral range.
     :ivar float max_wavelength: Upper wavelength bound for spectral range.
     :ivar int spectral_bins: The number of spectral samples over the wavelength range.
@@ -51,6 +54,18 @@ class SpectroscopicInstrument:
             self._update_pipeline_properties()
 
         return self._pipeline_properties
+
+    @property
+    def pipelines(self):
+        # The list of pipelines. Each call returns a list with new instances.
+        pl_list = []
+        for (pl_class, pl_name, pl_filter) in self.pipeline_properties:
+            if pl_filter is None:
+                pl_list.append(pl_class(name=pl_name))
+            else:
+                pl_list.append(pl_class(name=pl_name, filter=pl_filter))
+
+        return pl_list
 
     @property
     def min_wavelength(self):

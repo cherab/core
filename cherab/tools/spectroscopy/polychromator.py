@@ -1,5 +1,7 @@
 
-# Copyright 2014-2017 United Kingdom Atomic Energy Authority
+# Copyright 2016-2021 Euratom
+# Copyright 2016-2021 United Kingdom Atomic Energy Authority
+# Copyright 2016-2021 Centro de Investigaciones Energéticas, Medioambientales y Tecnológicas
 #
 # Licensed under the EUPL, Version 1.1 or – as soon they will be approved by the
 # European Commission - subsequent versions of the EUPL (the "Licence");
@@ -31,7 +33,6 @@ class PolychromatorFilter(InterpolatedSF):
     :param float flat_top: Size of the flat top part of the filter in nm.
                            Default is None (equal to window).
     :param str name: Filter name (e.g. "H-alpha filter"). Default is ''.
-
     """
 
     def __init__(self, wavelength, window=3., flat_top=None, name=''):
@@ -92,6 +93,22 @@ class Polychromator(SpectroscopicInstrument):
     :param int min_bins_per_window: Minimal number of spectral bins
                                     per filtering window. Default is 10.
     :param str name: Polychromator name.
+
+    .. code-block:: pycon
+
+       >>> from raysect.optical import World
+       >>> from raysect.optical.observer import FibreOptic
+       >>> from cherab.tools.spectroscopy import Polychromator, PolychromatorFilter
+       >>>
+       >>> world = World()
+       >>> h_alpha_filter = PolychromatorFilter(656.1, name='H-alpha filter')
+       >>> ciii_465nm_filter = PolychromatorFilter(464.8, name='CIII 465 nm filter')
+       >>> polychromator = Polychromator([h_alpha_filter, ciii_465nm_filter], name='MyPolychromator')
+       >>> fibreoptic = FibreOptic(name="MyFibreOptic", parent=world)
+       >>> fibreoptic.min_wavelength = polychromator.min_wavelength
+       >>> fibreoptic.max_wavelength = polychromator.max_wavelength
+       >>> fibreoptic.spectral_bins = polychromator.spectral_bins
+       >>> fibreoptic.pipelines = polychromator.pipelines
     """
 
     def __init__(self, filters, min_bins_per_window=10, name=''):

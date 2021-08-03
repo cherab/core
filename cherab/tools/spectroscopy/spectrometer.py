@@ -1,5 +1,7 @@
 
-# Copyright 2014-2017 United Kingdom Atomic Energy Authority
+# Copyright 2016-2021 Euratom
+# Copyright 2016-2021 United Kingdom Atomic Energy Authority
+# Copyright 2016-2021 Centro de Investigaciones Energéticas, Medioambientales y Tecnológicas
 #
 # Licensed under the EUPL, Version 1.1 or – as soon they will be approved by the
 # European Commission - subsequent versions of the EUPL (the "Licence");
@@ -107,6 +109,32 @@ class SurveySpectrometer(Spectrometer):
     :param str name: Spectrometer name.
 
     :ivar float resolution: Spectral resolution in nm (can be negative).
+
+    .. code-block:: pycon
+
+       >>> from numpy import ceil
+       >>> from raysect.optical import World
+       >>> from raysect.optical.observer import FibreOptic
+       >>> from cherab.tools.spectroscopy import SurveySpectrometer, Polychromator, PolychromatorFilter
+       >>>
+       >>> world = World()
+       >>> fibreoptic = FibreOptic(name="MyFibreOptic", parent=world)
+       >>> # Here, the fibre optic is "connected" to both survey spectrometer and polychromator.
+       >>>
+       >>> # setting up the polychromator
+       >>> h_alpha_filter = PolychromatorFilter(656.1, name='H-alpha filter')
+       >>> ciii_465nm_filter = PolychromatorFilter(464.8, name='CIII 465 nm filter')
+       >>> polychromator = Polychromator([h_alpha_filter, ciii_465nm_filter], name='MyPolychromator')
+       >>>
+       >>> # setting up the survey spectrometer
+       >>> spectrometer = SurveySpectrometer(0.1, 1024, 500, name='MySpectrometer')
+       >>>
+       >>> fibreoptic.min_wavelength = min(spectrometer.min_wavelength, polychromator.min_wavelength)
+       >>> fibreoptic.max_wavelength = max(spectrometer.max_wavelength, polychromator.max_wavelength)
+       >>> bin_width = min((spectrometer.max_wavelength - spectrometer.min_wavelength) / spectrometer.spectral_bins,
+       >>>                 (polychromator.max_wavelength - polychromator.min_wavelength) / polychromator.spectral_bins)
+       >>> fibreoptic.spectral_bins = int(ceil((fibreoptic.max_wavelength - fibreoptic.min_wavelength) / bin_width))
+       >>> fibreoptic.pipelines = spectrometer.pipelines + polychromator.pipelines
     """
 
     def __init__(self, resolution, spectral_bins, reference_wavelength, reference_bin=None, name=''):
@@ -152,6 +180,21 @@ class CzernyTurnerSpectrometer(Spectrometer):
     :param str name: Spectrometer name.
 
     :ivar float resolution: Spectral resolution in nm (can be negative).
+
+    .. code-block:: pycon
+
+       >>> from raysect.optical import World
+       >>> from raysect.optical.observer import FibreOptic
+       >>> from cherab.tools.spectroscopy import CzernyTurnerSpectrometer
+       >>>
+       >>> world = World()
+       >>> hires_spectrometer = CzernyTurnerSpectrometer(1, 2.e-3, 1.e9, 2.e4, 10., 512, 600.,
+       >>>                                               name='MySpectrometer')
+       >>> fibreoptic = FibreOptic(name="MyFibreOptic", parent=world)
+       >>> fibreoptic.min_wavelength = hires_spectrometer.min_wavelength
+       >>> fibreoptic.max_wavelength = hires_spectrometer.max_wavelength
+       >>> fibreoptic.spectral_bins = hires_spectrometer.spectral_bins
+       >>> fibreoptic.pipelines = hires_spectrometer.pipelines
     """
 
     def __init__(self, diffraction_order, grating, focal_length, pixel_spacing, diffraction_angle, spectral_bins,
