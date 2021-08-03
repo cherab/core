@@ -134,7 +134,7 @@ class SurveySpectrometer(Spectrometer):
        >>> bin_width = min((spectrometer.max_wavelength - spectrometer.min_wavelength) / spectrometer.spectral_bins,
        >>>                 (polychromator.max_wavelength - polychromator.min_wavelength) / polychromator.spectral_bins)
        >>> fibreoptic.spectral_bins = int(ceil((fibreoptic.max_wavelength - fibreoptic.min_wavelength) / bin_width))
-       >>> fibreoptic.pipelines = spectrometer.pipelines + polychromator.pipelines
+       >>> fibreoptic.pipelines = spectrometer.pipelines() + polychromator.pipelines()
     """
 
     def __init__(self, resolution, spectral_bins, reference_wavelength, reference_bin=None, name=''):
@@ -194,7 +194,7 @@ class CzernyTurnerSpectrometer(Spectrometer):
        >>> fibreoptic.min_wavelength = hires_spectrometer.min_wavelength
        >>> fibreoptic.max_wavelength = hires_spectrometer.max_wavelength
        >>> fibreoptic.spectral_bins = hires_spectrometer.spectral_bins
-       >>> fibreoptic.pipelines = hires_spectrometer.pipelines
+       >>> fibreoptic.pipelines = hires_spectrometer.pipelines()
     """
 
     def __init__(self, diffraction_order, grating, focal_length, pixel_spacing, diffraction_angle, spectral_bins,

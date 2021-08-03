@@ -108,7 +108,7 @@ class Polychromator(SpectroscopicInstrument):
        >>> fibreoptic.min_wavelength = polychromator.min_wavelength
        >>> fibreoptic.max_wavelength = polychromator.max_wavelength
        >>> fibreoptic.spectral_bins = polychromator.spectral_bins
-       >>> fibreoptic.pipelines = polychromator.pipelines
+       >>> fibreoptic.pipelines = polychromator.pipelines()
     """
 
     def __init__(self, filters, min_bins_per_window=10, name=''):

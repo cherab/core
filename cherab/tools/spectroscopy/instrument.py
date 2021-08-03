@@ -26,7 +26,6 @@ class SpectroscopicInstrument:
 
     :ivar list pipeline_properties: The list of properties (class, name, filter) of
                                     the pipelines used with this instrument.
-    :ivar list pipelines: The list of pipelines. Each call returns a list with new instances.
     :ivar float min_wavelength: Lower wavelength bound for spectral range.
     :ivar float max_wavelength: Upper wavelength bound for spectral range.
     :ivar int spectral_bins: The number of spectral samples over the wavelength range.
@@ -55,9 +54,9 @@ class SpectroscopicInstrument:
 
         return self._pipeline_properties
 
-    @property
     def pipelines(self):
-        # The list of pipelines. Each call returns a list with new instances.
+        """ Returns a list of new pipelines according to `pipeline_properties`."""
+
         pl_list = []
         for (pl_class, pl_name, pl_filter) in self.pipeline_properties:
             if pl_filter is None:
