@@ -106,13 +106,13 @@ n_element_profile_1d = double_parabola(psin_1d, 1e17, 1e17, 2, 2, 1) + normal(ps
 n_element2_profile_1d = double_parabola(psin_1d, 5e17, 1e17, 2, 2, 1)
 n_tcx_donor_profile_1d = exp_decay(psin_1d, 10, 3e16, 1)
 
-t_e_1d = Interpolator1DArray(psin_1d, t_e_profile_1d, 'cubic', 'none', 0)
-n_e_1d = Interpolator1DArray(psin_1d, n_e_profile_1d, 'cubic', 'none', 0)
+t_e_1d = Interpolator1DArray(psin_1d, t_e_profile_1d, 'linear', 'none', 0)
+n_e_1d = Interpolator1DArray(psin_1d, n_e_profile_1d, 'linear', 'none', 0)
 
-t_element_1d = Interpolator1DArray(psin_1d, t_element_profile_1d, 'cubic', 'none', 0)
-n_element_1d = Interpolator1DArray(psin_1d, n_element_profile_1d, 'cubic', 'none', 0)
-n_element2_1d = Interpolator1DArray(psin_1d, n_element2_profile_1d, 'cubic', 'none', 0)
-n_tcx_donor_1d = Interpolator1DArray(psin_1d, n_tcx_donor_profile_1d, 'cubic', 'none', 0)
+t_element_1d = Interpolator1DArray(psin_1d, t_element_profile_1d, 'linear', 'none', 0)
+n_element_1d = Interpolator1DArray(psin_1d, n_element_profile_1d, 'linear', 'none', 0)
+n_element2_1d = Interpolator1DArray(psin_1d, n_element2_profile_1d, 'linear', 'none', 0)
+n_tcx_donor_1d = Interpolator1DArray(psin_1d, n_tcx_donor_profile_1d, 'linear', 'none', 0)
 
 psin_2d = np.zeros(equilibrium.psi_data.shape)
 
@@ -252,7 +252,7 @@ for key, item in element_bulk_abundance.items():
     ax.contour(equilibrium.r_data, equilibrium.z_data, equilibrium.psi_data.T, colors="white")
     ax.plot(equilibrium.limiter_polygon[:, 0], equilibrium.limiter_polygon[:, 1], "k-")
     ax.plot(equilibrium.lcfs_polygon[:, 0], equilibrium.lcfs_polygon[:, 1], "r-")
-    ax.set_title("{} {}+".format(element.symbol, key))
+    ax.set_title("{} {}+".format(element_bulk.symbol, key))
     ax.set_aspect(1)
 
 plt.show()

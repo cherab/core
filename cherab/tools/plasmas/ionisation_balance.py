@@ -399,7 +399,6 @@ def _fractional_abundance(atomic_data: AtomicData, element: Element, n_e,
 
     density = np.zeros((element.atomic_number + 1, *n_e.shape))
     for index in np.ndindex(*n_e.shape):
-        print(index, element, n_e[index], t_e[index], tcx_donor_n[index])
         density[(Ellipsis, *index)] = _fractional_abundance_point(element, n_e[index], t_e[index],
                                                                   coef_ion, coef_recom, coef_tcx,
                                                                   tcx_donor_n[index])

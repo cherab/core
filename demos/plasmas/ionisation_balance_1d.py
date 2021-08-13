@@ -96,7 +96,7 @@ for key in abundance_fractional_profile.keys():
     ax.plot(psin_1d, abundance_fractional_profile_tcx[key], "--", label="{0} {1}+ (tcx)".format(element.symbol, key),
             color=colors[key])
 
-ax.legend(loc=6)
+ax.legend(loc=6, ncol=2)
 ax.set_xlabel("$\Psi_n$")
 ax.set_ylabel("fractional abundance [a.u.]")
 plt.title('Fractional Abundance VS $\Psi_n$')
@@ -116,7 +116,7 @@ for key in density_element_profiles.keys():
     ax.plot(psin_1d, density_element_profiles_tcx[key], "--", label="{0} {1}+ (tcx)".format(element.symbol, key),
             color=colors[key])
 
-ax.legend(loc=6)
+ax.legend(loc=2, ncol=2)
 ax.set_xlabel("$\Psi_n$")
 ax.set_ylabel("ion density [m$^{-3}]$")
 
@@ -155,7 +155,7 @@ for key3 in density_element3_profiles_tcx.keys():
 ax.plot(psin_1d, n_e_profile, "kx", label="input n_e")
 ax.plot(psin_1d, n_e_recalculated, "k-", label="recalculated n_e")
 
-ax.legend(loc=6)
+ax.legend(loc=1, ncol=2)
 ax.set_xlabel("$\Psi_n$")
 ax.set_ylabel("ion density [m$^{-3}]$")
 
@@ -177,3 +177,5 @@ interpolators_element3_1d_density = interpolators1d_match_plasma_neutrality(adas
                                                                             n_e, t_e, tcx_donor=donor_element,
                                                                             tcx_donor_n=n_tcx_donor,
                                                                             tcx_donor_charge=0)
+
+plt.show()
