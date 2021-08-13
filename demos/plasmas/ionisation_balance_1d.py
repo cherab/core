@@ -3,9 +3,9 @@ from collections.abc import Iterable
 import matplotlib._color_data as mcd
 import matplotlib.pyplot as plt
 import numpy as np
+from raysect.core.math.function.float import Interpolator1DArray
 
 from cherab.core.atomic import neon, hydrogen, helium
-from cherab.core.math import Interpolate1DCubic
 from cherab.openadas import OpenADAS
 from cherab.tools.plasmas.ionisation_balance import (fractional_abundance,
                                                      interpolators1d_fractional, from_elementdensity,
@@ -67,13 +67,13 @@ n_element_profile = double_parabola(psin_1d, 1e17, 1e17, 2, 2) + normal(psin_1d,
 n_element2_profile = double_parabola(psin_1d, 5e17, 1e17, 2, 2)
 n_tcx_donor_profile = exp_decay(psin_1d, 10, 3e16)
 
-t_e = Interpolate1DCubic(psin_1d, t_e_profile)
-n_e = Interpolate1DCubic(psin_1d, n_e_profile)
+t_e = Interpolator1DArray(psin_1d, t_e_profile, 'cubic', 'none', 0)
+n_e = Interpolator1DArray(psin_1d, n_e_profile, 'cubic', 'none', 0)
 
-t_element = Interpolate1DCubic(psin_1d, t_element_profile)
-n_element = Interpolate1DCubic(psin_1d, n_element_profile)
-n_element2 = Interpolate1DCubic(psin_1d, n_element2_profile)
-n_tcx_donor = Interpolate1DCubic(psin_1d, n_tcx_donor_profile)
+t_element = Interpolator1DArray(psin_1d, t_element_profile, 'cubic', 'none', 0)
+n_element = Interpolator1DArray(psin_1d, n_element_profile, 'cubic', 'none', 0)
+n_element2 = Interpolator1DArray(psin_1d, n_element2_profile, 'cubic', 'none', 0)
+n_tcx_donor = Interpolator1DArray(psin_1d, n_tcx_donor_profile, 'cubic', 'none', 0)
 
 # load adas atomic database and define elements
 adas = OpenADAS(permit_extrapolation=True)

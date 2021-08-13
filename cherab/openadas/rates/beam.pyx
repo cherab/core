@@ -1,6 +1,6 @@
-# Copyright 2016-2018 Euratom
-# Copyright 2016-2018 United Kingdom Atomic Energy Authority
-# Copyright 2016-2018 Centro de Investigaciones Energéticas, Medioambientales y Tecnológicas
+# Copyright 2016-2021 Euratom
+# Copyright 2016-2021 United Kingdom Atomic Energy Authority
+# Copyright 2016-2021 Centro de Investigaciones Energéticas, Medioambientales y Tecnológicas
 #
 # Licensed under the EUPL, Version 1.1 or – as soon they will be approved by the
 # European Commission - subsequent versions of the EUPL (the "Licence");
@@ -19,9 +19,30 @@
 from cherab.core.utility.conversion import PhotonToJ
 
 cimport cython
-from cherab.core.math cimport Interpolate1DCubic, Interpolate2DCubic
+from libc.math cimport INFINITY
+from raysect.core.math.function.float cimport Interpolator1DArray, Interpolator2DArray, Constant1D, Constant2D
 
 # todo: clarify variables
+
+cdef class FunctionY2D(Function2D):
+    cdef Function1D _function
+
+    def __init__(self, Function1D function):
+        self._function = function
+
+    cdef double evaluate(self, double x, double y) except? -1e999:
+        return self._function(y)
+
+
+cdef class FunctionX2D(Function2D):
+    cdef Function1D _function
+
+    def __init__(self, Function1D function):
+        self._function = function
+
+    cdef double evaluate(self, double x, double y) except? -1e999:
+        return self._function(x)
+
 
 cdef class BeamStoppingRate(CoreBeamStoppingRate):
     """
@@ -49,8 +70,17 @@ cdef class BeamStoppingRate(CoreBeamStoppingRate):
         self.temperature_range = t.min(), t.max()
 
         # interpolate
-        self._npl_eb = Interpolate2DCubic(e, n, sen, tolerate_single_value=True, extrapolate=extrapolate, extrapolation_type="quadratic")
-        self._tp = Interpolate1DCubic(t, st, tolerate_single_value=True, extrapolate=extrapolate, extrapolation_type="quadratic")
+        extrapolation_type_2d = 'nearest' if extrapolate else 'none'
+        extrapolation_type_1d = 'quadratic' if extrapolate else 'none'
+        if len(e) == 1 and len(n) == 1:
+            self._npl_eb = Constant2D(sen[0, 0])
+        elif len(e) == 1:
+            self._npl_eb = FunctionY2D(Interpolator1DArray(n, sen[0], 'cubic', extrapolation_type_1d, INFINITY))
+        elif len(n) == 1:
+            self._npl_eb = FunctionX2D(Interpolator1DArray(e, sen[:, 0], 'cubic', extrapolation_type_1d, INFINITY))
+        else:
+            self._npl_eb = Interpolator2DArray(e, n, sen, 'cubic', extrapolation_type_2d, INFINITY, INFINITY)
+        self._tp = Interpolator1DArray(t, st, 'cubic', extrapolation_type_1d, INFINITY)
 
     cpdef double evaluate(self, double energy, double density, double temperature) except? -1e999:
         """
@@ -113,8 +143,17 @@ cdef class BeamPopulationRate(CoreBeamPopulationRate):
         self.temperature_range = t.min(), t.max()
 
         # interpolate
-        self._npl_eb = Interpolate2DCubic(e, n, sen, tolerate_single_value=True, extrapolate=extrapolate, extrapolation_type="quadratic")
-        self._tp = Interpolate1DCubic(t, st, tolerate_single_value=True, extrapolate=extrapolate, extrapolation_type="quadratic")
+        extrapolation_type_2d = 'nearest' if extrapolate else 'none'
+        extrapolation_type_1d = 'quadratic' if extrapolate else 'none'
+        if len(e) == 1 and len(n) == 1:
+            self._npl_eb = Constant2D(sen[0, 0])
+        elif len(e) == 1:
+            self._npl_eb = FunctionY2D(Interpolator1DArray(n, sen[0], 'cubic', extrapolation_type_1d, INFINITY))
+        elif len(n) == 1:
+            self._npl_eb = FunctionX2D(Interpolator1DArray(e, sen[:, 0], 'cubic', extrapolation_type_1d, INFINITY))
+        else:
+            self._npl_eb = Interpolator2DArray(e, n, sen, 'cubic', extrapolation_type_2d, INFINITY, INFINITY)
+        self._tp = Interpolator1DArray(t, st, 'cubic', extrapolation_type_1d, INFINITY)
 
     cpdef double evaluate(self, double energy, double density, double temperature) except? -1e999:
         """
@@ -178,8 +217,17 @@ cdef class BeamEmissionPEC(CoreBeamEmissionPEC):
         self.temperature_range = t.min(), t.max()
 
         # interpolate
-        self._npl_eb = Interpolate2DCubic(e, n, sen, tolerate_single_value=True, extrapolate=extrapolate, extrapolation_type="quadratic")
-        self._tp = Interpolate1DCubic(t, st, tolerate_single_value=True, extrapolate=extrapolate, extrapolation_type="quadratic")
+        extrapolation_type_2d = 'nearest' if extrapolate else 'none'
+        extrapolation_type_1d = 'quadratic' if extrapolate else 'none'
+        if len(e) == 1 and len(n) == 1:
+            self._npl_eb = Constant2D(sen[0, 0])
+        elif len(e) == 1:
+            self._npl_eb = FunctionY2D(Interpolator1DArray(n, sen[0], 'cubic', extrapolation_type_1d, INFINITY))
+        elif len(n) == 1:
+            self._npl_eb = FunctionX2D(Interpolator1DArray(e, sen[:, 0], 'cubic', extrapolation_type_1d, INFINITY))
+        else:
+            self._npl_eb = Interpolator2DArray(e, n, sen, 'cubic', extrapolation_type_2d, INFINITY, INFINITY)
+        self._tp = Interpolator1DArray(t, st, 'cubic', extrapolation_type_1d, INFINITY)
 
     cpdef double evaluate(self, double energy, double density, double temperature) except? -1e999:
         """

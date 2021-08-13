@@ -1,7 +1,7 @@
 
-# Copyright 2016-2018 Euratom
-# Copyright 2016-2018 United Kingdom Atomic Energy Authority
-# Copyright 2016-2018 Centro de Investigaciones Energéticas, Medioambientales y Tecnológicas
+# Copyright 2016-2021 Euratom
+# Copyright 2016-2021 United Kingdom Atomic Energy Authority
+# Copyright 2016-2021 Centro de Investigaciones Energéticas, Medioambientales y Tecnológicas
 #
 # Licensed under the EUPL, Version 1.1 or – as soon they will be approved by the
 # European Commission - subsequent versions of the EUPL (the "Licence");
@@ -21,10 +21,11 @@
 import numpy as np
 from scipy.optimize import lsq_linear
 from collections.abc import Iterable
+from raysect.core.math.function.float import Function1D, Function2D, Interpolator1DArray, Interpolator2DArray
 
 from cherab.core import AtomicData
 from cherab.core.atomic import Element
-from cherab.core.math import Interpolate1DLinear, Function1D, Function2D, Interpolate2DLinear, AxisymmetricMapper
+from cherab.core.math import AxisymmetricMapper
 from cherab.tools.equilibrium import EFITEquilibrium
 
 
@@ -398,6 +399,7 @@ def _fractional_abundance(atomic_data: AtomicData, element: Element, n_e,
 
     density = np.zeros((element.atomic_number + 1, *n_e.shape))
     for index in np.ndindex(*n_e.shape):
+        print(index, element, n_e[index], t_e[index], tcx_donor_n[index])
         density[(Ellipsis, *index)] = _fractional_abundance_point(element, n_e[index], t_e[index],
                                                                   coef_ion, coef_recom, coef_tcx,
                                                                   tcx_donor_n[index])
@@ -626,7 +628,7 @@ def interpolators1d_fractional(atomic_data: AtomicData, element: Element, free_v
     # use profiles to create interpolators for profiles
     fractional_interpolators = {}
     for key, item in fractional_profiles.items():
-        fractional_interpolators[key] = Interpolate1DLinear(free_variable, item)
+        fractional_interpolators[key] = Interpolator1DArray(free_variable, item, 'linear', 'none', 0)
 
     return fractional_interpolators
 
@@ -657,7 +659,7 @@ def interpolators2d_fractional(atomic_data: AtomicData, element: Element, free_v
     # use profiles to create interpolators for profiles
     fractional_interpolators = {}
     for key, item in fractional_profiles.items():
-        fractional_interpolators[key] = Interpolate2DLinear(*free_variable, item)
+        fractional_interpolators[key] = Interpolator2DArray(*free_variable, item, 'linear', 'none', 0, 0)
 
     return fractional_interpolators
 
@@ -690,7 +692,7 @@ def interpolators1d_from_elementdensity(atomic_data: AtomicData, element: Elemen
 
     density_interpolators = {}
     for key, value in densities.items():
-        density_interpolators[key] = Interpolate1DLinear(free_variable, value)
+        density_interpolators[key] = Interpolator1DArray(free_variable, value, 'linear', 'none', 0)
 
     return density_interpolators
 
@@ -725,7 +727,7 @@ def interpolators1d_match_plasma_neutrality(atomic_data: AtomicData, element: El
     # use profiles to create interpolators for profiles
     density_interpolators = {}
     for key, item in density_profiles.items():
-        density_interpolators[key] = Interpolate1DLinear(free_variable, item)
+        density_interpolators[key] = Interpolator1DArray(free_variable, item, 'linear', 'none', 0)
 
     return density_interpolators
 
@@ -757,7 +759,7 @@ def interpolators2d_from_elementdensity(atomic_data: AtomicData, element: Elemen
 
     density_interpolators = {}
     for key, value in densities.items():
-        density_interpolators[key] = Interpolate2DLinear(*free_variable, value)
+        density_interpolators[key] = Interpolator2DArray(*free_variable, value, 'linear', 'none', 0, 0)
 
     return density_interpolators
 
@@ -792,7 +794,7 @@ def interpolators2d_match_plasma_neutrality(atomic_data: AtomicData, element: El
     # use profiles to create interpolators for profiles
     density_interpolators = {}
     for key, item in density_profiles.items():
-        density_interpolators[key] = Interpolate2DLinear(*free_variable, item)
+        density_interpolators[key] = Interpolator2DArray(*free_variable, item, 'linear', 'none', 0, 0)
 
     return density_interpolators
 

@@ -29,7 +29,8 @@ This file will demonstrate how to:
 
 
 import matplotlib.pyplot as plt
-from cherab.core.math import sample2d, Slice3D, Interpolate1DCubic
+from raysect.core.math.function.float import Interpolator1DArray
+from cherab.core.math import sample2d, Slice3D
 from cherab.tools.equilibrium import example_equilibrium, plot_equilibrium
 
 
@@ -107,7 +108,7 @@ plt.title('3D Temperature (x-y slice, array)')
 
 # In this example we interpolate the temperature data manually to produce a continuous function
 # and then map that function around the flux surfaces to give the same result
-te_psin = Interpolate1DCubic([0, 0.5, 0.9, 1.0], [2500, 2000, 1000, 0])
+te_psin = Interpolator1DArray([0, 0.5, 0.9, 1.0], [2500, 2000, 1000, 0], 'cubic', 'none', 0)
 
 # map to produce 2D and 3D temperature profiles
 temperature_2d = equilibrium.map2d(te_psin)

@@ -1,6 +1,6 @@
-# Copyright 2016-2018 Euratom
-# Copyright 2016-2018 United Kingdom Atomic Energy Authority
-# Copyright 2016-2018 Centro de Investigaciones Energéticas, Medioambientales y Tecnológicas
+# Copyright 2016-2021 Euratom
+# Copyright 2016-2021 United Kingdom Atomic Energy Authority
+# Copyright 2016-2021 Centro de Investigaciones Energéticas, Medioambientales y Tecnológicas
 #
 # Licensed under the EUPL, Version 1.1 or – as soon they will be approved by the
 # European Commission - subsequent versions of the EUPL (the "Licence");
@@ -19,7 +19,8 @@
 from cherab.core.utility.conversion import Cm3ToM3, PerCm3ToPerM3, PhotonToJ
 
 cimport cython
-from cherab.core.math cimport Interpolate1DCubic
+from libc.math cimport INFINITY
+from raysect.core.math.function.float cimport Interpolator1DArray, Constant1D
 
 
 cdef class BeamCXPEC(CoreBeamCXPEC):
@@ -61,11 +62,12 @@ cdef class BeamCXPEC(CoreBeamCXPEC):
         self.b_field_range = bmag.min(), bmag.max()
 
         # interpolate the rate data
-        self._eb = Interpolate1DCubic(eb, qeb, tolerate_single_value=True, extrapolate=extrapolate, extrapolation_type="quadratic")
-        self._ti = Interpolate1DCubic(ti, qti, tolerate_single_value=True, extrapolate=extrapolate, extrapolation_type="quadratic")
-        self._ni = Interpolate1DCubic(ni, qni, tolerate_single_value=True, extrapolate=extrapolate, extrapolation_type="quadratic")
-        self._zeff = Interpolate1DCubic(zeff, qzeff, tolerate_single_value=True, extrapolate=extrapolate, extrapolation_type="quadratic")
-        self._b = Interpolate1DCubic(bmag, qbmag, tolerate_single_value=True, extrapolate=extrapolate, extrapolation_type="quadratic")
+        extrapolation_type = 'quadratic' if extrapolate else 'none'
+        self._eb = Interpolator1DArray(eb, qeb, 'cubic', extrapolation_type, INFINITY) if len(qeb) > 1 else Constant1D(qeb[0])
+        self._ti = Interpolator1DArray(ti, qti, 'cubic', extrapolation_type, INFINITY) if len(qti) > 1 else Constant1D(qti[0])
+        self._ni = Interpolator1DArray(ni, qni, 'cubic', extrapolation_type, INFINITY) if len(qni) > 1 else Constant1D(qni[0])
+        self._zeff = Interpolator1DArray(zeff, qzeff, 'cubic', extrapolation_type, INFINITY) if len(qzeff) > 1 else Constant1D(qzeff[0])
+        self._b = Interpolator1DArray(bmag, qbmag, 'cubic', extrapolation_type, INFINITY) if len(qbmag) > 1 else Constant1D(qbmag[0])
 
     cpdef double evaluate(self, double energy, double temperature, double density, double z_effective, double b_field) except? -1e999:
         """

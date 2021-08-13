@@ -23,9 +23,9 @@ import numpy as np
 cimport numpy as np
 
 from raysect.optical cimport AffineMatrix3D, Point3D, Vector3D, new_point3d
+from raysect.core.math.function.float cimport Interpolator1DArray
 from cherab.core.utility import EvAmuToMS, EvToJ
 from cherab.core.atomic cimport BeamStoppingRate, AtomicData
-from cherab.core.math cimport Interpolate1DLinear
 from cherab.core.plasma cimport Plasma
 from cherab.core.beam cimport Beam
 from cherab.core.species cimport Species
@@ -178,7 +178,7 @@ cdef class SingleRayAttenuator(BeamAttenuator):
         self._tanydiv = tan(DEGREES_TO_RADIANS * self._beam.divergence_y)
 
         # a tiny degree of extrapolation is permitted to handle numerical accuracy issues with the end of the array
-        self._density = Interpolate1DLinear(beam_z, beam_density, extrapolate=True, extrapolation_range=1e-9)
+        self._density = Interpolator1DArray(beam_z, beam_density, 'linear', 'nearest', extrapolation_range=1e-9)
 
     @cython.cdivision(True)
     @cython.boundscheck(False)

@@ -1,7 +1,7 @@
 
-# Copyright 2016-2018 Euratom
-# Copyright 2016-2018 United Kingdom Atomic Energy Authority
-# Copyright 2016-2018 Centro de Investigaciones Energéticas, Medioambientales y Tecnológicas
+# Copyright 2016-2021 Euratom
+# Copyright 2016-2021 United Kingdom Atomic Energy Authority
+# Copyright 2016-2021 Centro de Investigaciones Energéticas, Medioambientales y Tecnológicas
 #
 # Licensed under the EUPL, Version 1.1 or – as soon they will be approved by the
 # European Commission - subsequent versions of the EUPL (the "Licence");
@@ -18,7 +18,7 @@
 # under the Licence.
 
 
-from cherab.core.math.interpolators.interpolators2d cimport Interpolate2DCubic
+from cherab.core.math cimport Function2D
 from cherab.core.atomic.rates cimport LineRadiationPower as CoreLineRadiationPower
 from cherab.core.atomic.rates cimport ContinuumPower as CoreContinuumPower
 from cherab.core.atomic.rates cimport CXRadiationPower as CoreCXRadiationPower
@@ -29,7 +29,7 @@ cdef class LineRadiationPower(CoreLineRadiationPower):
     cdef:
         readonly dict raw_data
         readonly tuple density_range, temperature_range
-        Interpolate2DCubic _rate
+        Function2D _rate
 
 
 cdef class NullLineRadiationPower(CoreLineRadiationPower):
@@ -41,7 +41,7 @@ cdef class ContinuumPower(CoreContinuumPower):
     cdef:
         readonly dict raw_data
         readonly tuple density_range, temperature_range
-        Interpolate2DCubic _rate
+        Function2D _rate
 
 
 cdef class NullContinuumPower(CoreContinuumPower):
@@ -53,7 +53,7 @@ cdef class CXRadiationPower(CoreCXRadiationPower):
     cdef:
         readonly dict raw_data
         readonly tuple density_range, temperature_range
-        Interpolate2DCubic _rate
+        Function2D _rate
 
 
 cdef class NullCXRadiationPower(CoreCXRadiationPower):
