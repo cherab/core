@@ -18,7 +18,7 @@
 
 cimport numpy as np
 from raysect.optical cimport Vector3D
-from raysect.core.math.function.float cimport Function1D
+from cherab.core.math cimport Function1D
 from cherab.core.beam cimport BeamAttenuator
 
 
