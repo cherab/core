@@ -20,29 +20,10 @@ from cherab.core.utility.conversion import PhotonToJ
 
 cimport cython
 from libc.math cimport INFINITY
-from raysect.core.math.function.float cimport Interpolator1DArray, Interpolator2DArray, Constant1D, Constant2D
+from raysect.core.math.function.float cimport Interpolator1DArray, Interpolator2DArray, Constant1D, Constant2D, Arg2D
+from cherab.core.math cimport IsoMapper2D
 
 # todo: clarify variables
-
-cdef class FunctionY2D(Function2D):
-    cdef Function1D _function
-
-    def __init__(self, Function1D function):
-        self._function = function
-
-    cdef double evaluate(self, double x, double y) except? -1e999:
-        return self._function(y)
-
-
-cdef class FunctionX2D(Function2D):
-    cdef Function1D _function
-
-    def __init__(self, Function1D function):
-        self._function = function
-
-    cdef double evaluate(self, double x, double y) except? -1e999:
-        return self._function(x)
-
 
 cdef class BeamStoppingRate(CoreBeamStoppingRate):
     """
@@ -75,9 +56,9 @@ cdef class BeamStoppingRate(CoreBeamStoppingRate):
         if len(e) == 1 and len(n) == 1:
             self._npl_eb = Constant2D(sen[0, 0])
         elif len(e) == 1:
-            self._npl_eb = FunctionY2D(Interpolator1DArray(n, sen[0], 'cubic', extrapolation_type_1d, INFINITY))
+            self._npl_eb = IsoMapper2D(Arg2D('y'), Interpolator1DArray(n, sen[0], 'cubic', extrapolation_type_1d, INFINITY))
         elif len(n) == 1:
-            self._npl_eb = FunctionX2D(Interpolator1DArray(e, sen[:, 0], 'cubic', extrapolation_type_1d, INFINITY))
+            self._npl_eb = IsoMapper2D(Arg2D('x'), Interpolator1DArray(e, sen[:, 0], 'cubic', extrapolation_type_1d, INFINITY))
         else:
             self._npl_eb = Interpolator2DArray(e, n, sen, 'cubic', extrapolation_type_2d, INFINITY, INFINITY)
         self._tp = Interpolator1DArray(t, st, 'cubic', extrapolation_type_1d, INFINITY)
@@ -148,9 +129,9 @@ cdef class BeamPopulationRate(CoreBeamPopulationRate):
         if len(e) == 1 and len(n) == 1:
             self._npl_eb = Constant2D(sen[0, 0])
         elif len(e) == 1:
-            self._npl_eb = FunctionY2D(Interpolator1DArray(n, sen[0], 'cubic', extrapolation_type_1d, INFINITY))
+            self._npl_eb = IsoMapper2D(Arg2D('y'), Interpolator1DArray(n, sen[0], 'cubic', extrapolation_type_1d, INFINITY))
         elif len(n) == 1:
-            self._npl_eb = FunctionX2D(Interpolator1DArray(e, sen[:, 0], 'cubic', extrapolation_type_1d, INFINITY))
+            self._npl_eb = IsoMapper2D(Arg2D('x'), Interpolator1DArray(e, sen[:, 0], 'cubic', extrapolation_type_1d, INFINITY))
         else:
             self._npl_eb = Interpolator2DArray(e, n, sen, 'cubic', extrapolation_type_2d, INFINITY, INFINITY)
         self._tp = Interpolator1DArray(t, st, 'cubic', extrapolation_type_1d, INFINITY)
@@ -222,9 +203,9 @@ cdef class BeamEmissionPEC(CoreBeamEmissionPEC):
         if len(e) == 1 and len(n) == 1:
             self._npl_eb = Constant2D(sen[0, 0])
         elif len(e) == 1:
-            self._npl_eb = FunctionY2D(Interpolator1DArray(n, sen[0], 'cubic', extrapolation_type_1d, INFINITY))
+            self._npl_eb = IsoMapper2D(Arg2D('y'), Interpolator1DArray(n, sen[0], 'cubic', extrapolation_type_1d, INFINITY))
         elif len(n) == 1:
-            self._npl_eb = FunctionX2D(Interpolator1DArray(e, sen[:, 0], 'cubic', extrapolation_type_1d, INFINITY))
+            self._npl_eb = IsoMapper2D(Arg2D('x'), Interpolator1DArray(e, sen[:, 0], 'cubic', extrapolation_type_1d, INFINITY))
         else:
             self._npl_eb = Interpolator2DArray(e, n, sen, 'cubic', extrapolation_type_2d, INFINITY, INFINITY)
         self._tp = Interpolator1DArray(t, st, 'cubic', extrapolation_type_1d, INFINITY)
