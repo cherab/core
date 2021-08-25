@@ -41,7 +41,7 @@ cdef class LineRadiationPower(CoreLineRadiationPower):
         self.temperature_range = te.min(), te.max()
 
         # interpolate rate
-        extrapolation_type = 'nearest' if extrapolate else 'none'
+        extrapolation_type = 'linear' if extrapolate else 'none'
         self._rate = Interpolator2DArray(ne, te, rate, 'cubic', extrapolation_type, INFINITY, INFINITY)
 
     cdef double evaluate(self, double electron_density, double electron_temperature) except? -1e999:
@@ -79,7 +79,7 @@ cdef class ContinuumPower(CoreContinuumPower):
         self.temperature_range = te.min(), te.max()
 
         # interpolate rate
-        extrapolation_type = 'nearest' if extrapolate else 'none'
+        extrapolation_type = 'linear' if extrapolate else 'none'
         self._rate = Interpolator2DArray(ne, te, rate, 'cubic', extrapolation_type, INFINITY, INFINITY)
 
     cdef double evaluate(self, double electron_density, double electron_temperature) except? -1e999:
@@ -117,7 +117,7 @@ cdef class CXRadiationPower(CoreCXRadiationPower):
         self.temperature_range = te.min(), te.max()
 
         # interpolate rate
-        extrapolation_type = 'nearest' if extrapolate else 'none'
+        extrapolation_type = 'linear' if extrapolate else 'none'
         self._rate = Interpolator2DArray(ne, te, rate, 'cubic', extrapolation_type, INFINITY, INFINITY)
 
     cdef double evaluate(self, double electron_density, double electron_temperature) except? -1e999:

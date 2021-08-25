@@ -51,7 +51,7 @@ cdef class BeamStoppingRate(CoreBeamStoppingRate):
         self.temperature_range = t.min(), t.max()
 
         # interpolate
-        extrapolation_type_2d = 'nearest' if extrapolate else 'none'
+        extrapolation_type_2d = 'linear' if extrapolate else 'none'
         extrapolation_type_1d = 'quadratic' if extrapolate else 'none'
         if len(e) == 1 and len(n) == 1:
             self._npl_eb = Constant2D(sen[0, 0])
@@ -124,7 +124,7 @@ cdef class BeamPopulationRate(CoreBeamPopulationRate):
         self.temperature_range = t.min(), t.max()
 
         # interpolate
-        extrapolation_type_2d = 'nearest' if extrapolate else 'none'
+        extrapolation_type_2d = 'linear' if extrapolate else 'none'
         extrapolation_type_1d = 'quadratic' if extrapolate else 'none'
         if len(e) == 1 and len(n) == 1:
             self._npl_eb = Constant2D(sen[0, 0])
@@ -198,7 +198,7 @@ cdef class BeamEmissionPEC(CoreBeamEmissionPEC):
         self.temperature_range = t.min(), t.max()
 
         # interpolate
-        extrapolation_type_2d = 'nearest' if extrapolate else 'none'
+        extrapolation_type_2d = 'linear' if extrapolate else 'none'
         extrapolation_type_1d = 'quadratic' if extrapolate else 'none'
         if len(e) == 1 and len(n) == 1:
             self._npl_eb = Constant2D(sen[0, 0])
