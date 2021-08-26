@@ -43,7 +43,7 @@ cdef class IonisationRate(CoreIonisationRate):
         self.temperature_range = te.min(), te.max()
 
         # interpolate rate
-        extrapolation_type = 'nearest' if extrapolate else 'none'
+        extrapolation_type = 'linear' if extrapolate else 'none'
         self._rate = Interpolator2DArray(ne, te, rate, 'cubic', extrapolation_type, INFINITY, INFINITY)
 
     cpdef double evaluate(self, double density, double temperature) except? -1e999:
@@ -82,7 +82,7 @@ cdef class RecombinationRate(CoreRecombinationRate):
         self.temperature_range = te.min(), te.max()
 
         # interpolate rate
-        extrapolation_type = 'nearest' if extrapolate else 'none'
+        extrapolation_type = 'linear' if extrapolate else 'none'
         self._rate = Interpolator2DArray(ne, te, rate, 'cubic', extrapolation_type, INFINITY, INFINITY)
 
 
@@ -122,7 +122,7 @@ cdef class ThermalCXRate(CoreThermalCXRate):
         self.temperature_range = te.min(), te.max()
 
         # interpolate rate
-        extrapolation_type = 'nearest' if extrapolate else 'none'
+        extrapolation_type = 'linear' if extrapolate else 'none'
         self._rate = Interpolator2DArray(ne, te, rate, 'cubic', extrapolation_type, INFINITY, INFINITY)
 
     cpdef double evaluate(self, double density, double temperature) except? -1e999:
