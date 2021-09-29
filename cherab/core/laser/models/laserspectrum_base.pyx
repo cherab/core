@@ -11,6 +11,37 @@ cimport numpy as np
 
 
 cdef class LaserSpectrum(Function1D):
+    """
+    Laser spectrum base class.
+
+    This is an abstract class and cannot be used for observing.
+    
+    A 1D function holding information about the spectral properties
+    of a laser.  The scattered spectrum is calculated as an iteration
+    over the laser spectrum.
+
+
+    .. warning::
+        When adding a LaserSpectrum, a special care should be given
+        to the integral power of the laser spectrum. During the
+        scattering calculation, the spectral power can be multiplied
+        by the power spatial distribution [W * m ** -3] of the laser
+        power from the LaserProfile. If the integral power
+        of the LaserSpectrum is not 1, unexpected values 
+        might be obtained.
+
+    .. note::
+        It is expected that majority of the fusion applications can
+        neglect the influence of the spectral properties of the
+        laser and can use laser spectrum with a single 
+        bin, which can simulate a infinitely narrow laser spectrum.
+
+    :param float min_wavelength: The minimum wavelength of the laser
+      spectrum in nm.
+    :param float max_wavelength: The maximum wavelength of the laser
+      spectrum in nm.
+    :param int bins: The number of spectral bins.
+    """
 
     def __init__(self, double min_wavelength, double max_wavelength, int bins):
 
@@ -107,7 +138,7 @@ cdef class LaserSpectrum(Function1D):
 
         for index in range(self._bins):
             self._power_spectral_density_mv[index] = self.evaluate(self._wavelengths_mv[index])
-            self._power_mv[index] = self._power_spectral_density_mv[index] * self._delta_wavelength
+            self._power_mv[index] = self._power_spectral_density_mv[index] * self._delta_wavelength # power in the spectral bin for scattering calculations
             self._photons_mv[index] = self._power_spectral_density_mv[index] / self._photon_energy(self._wavelengths_mv[index])
 
     cdef double _photon_energy(self, double wavelength):
