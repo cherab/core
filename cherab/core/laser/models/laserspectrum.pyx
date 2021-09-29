@@ -2,12 +2,31 @@ from cherab.core.laser.models.laserspectrum_base cimport LaserSpectrum
 from libc.math cimport sqrt, exp, M_PI
 
 cdef class ConstantSpectrum(LaserSpectrum):
+    """
+    A laser spectrum with constant power.
+
+    Has a constant, non-zero distribution of power spectral density
+    between the min_wavelength and max_wavelength. The integral value
+    of the power is 1 W.
+
+    .. note::
+        The ConstantSpectrum class is suitable for approximation
+        of an infinitely thin laser spectrum, e.g.:
+        ConstantSpectrum(1063.9, 1064.1, 1)
+    """
 
     def __init__(self, double min_wavelength, double max_wavelength, int bins):
 
         super().__init__(min_wavelength, max_wavelength, bins)
 
     cdef double evaluate(self, double x) except? -1e999:
+    """
+    Returns the spectral power density for the given wavelength.
+
+    :param float x: Wavelength in nm.
+
+    :return: Power spectral density in W/nm. 
+    """
 
         cdef:
             double spectrum_width
@@ -19,6 +38,17 @@ cdef class ConstantSpectrum(LaserSpectrum):
             return 0
 
 cdef class GaussianSpectrum(LaserSpectrum):
+    """
+    A laser spectrum with a normally distributed power spectral density.
+
+    Has a Gaussian-like spectral shape. The inegral value of power is 1 W.
+
+    :param float mean: The mean value of the Gaussian distribution
+      of the laser spectrum in nm, can be thought of as the central
+      wavelength of the laser.
+    :param float stddev: Standard deviation of the Gaussian
+      distribution of the laser spectrum.
+    """
 
     def __init__(self, double min_wavelength, double max_wavelength, int bins, double mean, double stddev):
 
@@ -51,4 +81,11 @@ cdef class GaussianSpectrum(LaserSpectrum):
         self._mean = value
 
     cdef double evaluate(self, double x) except? -1e999:
+    """
+    Returns the spectral power density for the given wavelength.
+
+    :param float x: Wavelength in nm.
+
+    :return: Power spectral density in W/nm. 
+    """
         return self._normalisation * exp(-0.5 * ((x - self._mean) * self._recip_stddev) ** 2)
