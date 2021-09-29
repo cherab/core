@@ -7,25 +7,74 @@ from cherab.core.laser.node cimport Laser
 from cherab.core.utility import Notifier
 
 cdef class LaserProfile:
+    """
+    LaserProfile base class.
+
+    This is an abstract class and cannot be used for observing.
+    
+    Provides information about spatial properties of the laser beam:
+    direction of the laser propagation (direction 
+    of the Poynting vector), polarisation of the ligth as the direction
+    of the electric component vector and volumetric energy density of 
+    the laser light.
+
+    .. warning::
+        When combining a LaserProfile with a LaserSpectrum for a laser,
+        a special care has to be given to obtain the correct power
+        of the scattered spectrum. Scattering models can multiply
+        both the spectral power density given by the LaserProfile and
+        the volumetric energy density given by the LaserProfile.
+        Combination of incompatible cases may yield incorrect
+        values of scattered power.
+
+    :ivar Laser laser: The Laser scenegraph node the LaserProfile
+      is connected to.
+    """
 
     def __init__(self):
 
         self.notifier = Notifier()
 
     def set_polarization_function(self, VectorFunction3D function):
+    """
+    Assigns the 3D vector function describing the polarisation vector.
+
+    The polarisation is given as the direction of the electric
+    component of the electromagnetic wave.
+
+    The function is specified in the laser space.
+
+    :param VectorFunction3D function: A 3D vector function describing
+      the polarisation vector.
+    """
         self._polarization3d = function
 
     def set_pointing_function(self, VectorFunction3D function):
+    """
+    Assings the 3D vector function describing the direction of the laser propagation.
+
+    The direction of the laser light propagation is the direction
+    of the Poynting vector.
+
+    :param VectorFunction3D function: A 3D vector function describing
+      the laser light propagation direction 
+    """
         self._pointing3d = function
 
     def set_energy_density_function(self, Function3D function):
+        """
+        Assigns the 3D scalar function describing the laser energy distribution.
+
+        The laser power distribution is the value of the volumetric
+        energy density of the laser light.
+        """
         self._energy_density3d = function
     
     cpdef Vector3D get_pointing(self, double x, double y, double z):
         """
-        Returns the pointing vector of the light at the specified point.
+        Returns the laser light propagation direction.
 
-        The point is specified in the laser beam space.
+        At the point (x, y, z) in the laser space.
 
         :param x: x coordinate in meters.
         :param y: y coordinate in meters.
@@ -37,9 +86,11 @@ cdef class LaserProfile:
 
     cpdef Vector3D get_polarization(self, double x, double y, double z):
         """
-        Returns vector denoting the laser polarisation.
+        Returns a vector denoting the laser polarisation.
 
-        The point is specified in the laser beam space.
+        The polarisation direction is the direction of the electric
+        component of the electromagnetic wave for the point (x, y, z)
+        in the laser space.
 
         :param x: x coordinate in meters.
         :param y: y coordinate in meters.
@@ -51,10 +102,9 @@ cdef class LaserProfile:
 
     cpdef double get_energy_density(self, double x, double y, double z):
         """
-        Returns the volumetric power density of the laser light at the specified point.
-        The return value is a sum for all laser wavelengths.
-
-        The point is specified in the laser beam space.
+        Returns the volumetric energy density of the laser light in W * m **-3.
+        
+        At the point (x, y, z) in the laser space.
 
         :param x: x coordinate in meters in the laser frame.
         :param y: y coordinate in meters in the laser frame.
