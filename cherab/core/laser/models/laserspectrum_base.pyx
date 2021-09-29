@@ -32,15 +32,22 @@ cdef class LaserSpectrum(Function1D):
 
     .. note::
         It is expected that majority of the fusion applications can
-        neglect the influence of the spectral properties of the
+        neglect the influence of the spectral shape of the
         laser and can use laser spectrum with a single 
-        bin, which can simulate a infinitely narrow laser spectrum.
+        bin, which approximates an infinitely narrow laser spectrum.
 
     :param float min_wavelength: The minimum wavelength of the laser
       spectrum in nm.
     :param float max_wavelength: The maximum wavelength of the laser
       spectrum in nm.
     :param int bins: The number of spectral bins.
+
+    :ivar ndarray wavelengths: The wavelengt coordinate vector in nm.
+    :ivar ndarray power_spectral_density: The values of the power
+      spectral density in W / nm.
+    :ivar ndarray photos: The values corresponding to the number
+      of photons.
+    :ivar float delta_wavelength: Spectral width of the bins in nm.
     """
 
     def __init__(self, double min_wavelength, double max_wavelength, int bins):
