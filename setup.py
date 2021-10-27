@@ -97,6 +97,13 @@ setup(
         "Programming Language :: Python :: 3",
         "Topic :: Scientific/Engineering :: Physics"
     ],
+    url="https://github.com/cherab",
+    project_urls=dict(
+        Tracker="https://github.com/cherab/core/issues"
+        Documentation="https://cherab.github.io/documentation/"
+    ),
+    long_description="file: README.md",
+    long_description_content_type="text/markdown",
     install_requires=['numpy', 'scipy', 'matplotlib', 'raysect==0.6.0', 'cython>=0.28'],
     packages=find_packages(),
     include_package_data=True,
