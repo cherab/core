@@ -27,7 +27,6 @@ from cherab.openadas.parse import *
 from cherab.core.utility import RecursiveDict, PerCm3ToPerM3, Cm3ToM3
 
 
-ADAS_DOWNLOAD_CACHE = os.path.expanduser('~/.cherab/openadas/download_cache')
 OPENADAS_FILE_URL = 'http://open.adas.ac.uk/download/'
 
 
