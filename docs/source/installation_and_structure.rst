@@ -6,7 +6,7 @@ Installation and Project Structure
 Prerequisites
 ~~~~~~~~~~~~~
 
-The Cherab package requires Python 3.5+, numpy, scipy, matplotlib and `Raysect <http://www.raysect.org>`_.
+The Cherab package requires Python 3.5+, numpy, scipy, matplotlib and `Raysect <https://raysect.github.io/documentation/>`_.
 Scipy version 0.13 or higher is recommended. IPython is recommended for interactive use.
 
 Project Structure
@@ -25,7 +25,7 @@ applications.
    **Caption:** A high level diagram illustrating the structure of the Cherab framework.
 
 **1. Ray-tracing Engine:** Cherab was built on top of a ray-tracing engine to provide all the core
-ray-tracing functionality, mesh handling, etc. `Raysect <http://www.raysect.org>`_ is currently
+ray-tracing functionality, mesh handling, etc. `Raysect <https://raysect.github.io/documentation/>`_ is currently
 the only ray-tracing engine supported, but the framework has been designed such that this
 component is interchangeable. Support for other ray-tracers may be added in the future.
 
