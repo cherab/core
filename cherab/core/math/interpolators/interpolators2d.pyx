@@ -333,6 +333,9 @@ cdef class _Interpolate2DBase(Function2D):
 
 cdef class Interpolate2DLinear(_Interpolate2DBase):
     """
+    .. deprecated:: 1.2.1
+       Use `raysect.math.function.float.Interpolator2DArray` instead.
+
     Interpolates 2D data using linear interpolation.
 
     Inherits from Function2D, implements `__call__(x, y)`.
@@ -496,6 +499,9 @@ cdef class Interpolate2DLinear(_Interpolate2DBase):
 
 cdef class Interpolate2DCubic(_Interpolate2DBase):
     """
+    .. deprecated:: 1.2.1
+       Use `raysect.math.function.float.Interpolator2DArray` instead.
+
     Interpolates 2D data using cubic interpolation.
 
     Inherits from Function2D, implements `__call__(x, y)`.
