@@ -19,6 +19,7 @@
 
 
 import unittest
+import os
 from collections.abc import Iterable
 import numpy as np
 from raysect.core.math.function.float import Function1D, Function2D, Interpolator1DArray, Interpolator2DArray
@@ -152,7 +153,8 @@ class TestIonizationBalance1D(unittest.TestCase):
     psi_value = 0.9
 
     # load adas atomic database and define elements
-    atomic_data = OpenADAS(permit_extrapolation=True)
+    repository_path = os.path.join(os.path.dirname(__file__), 'data/openadas')
+    atomic_data = OpenADAS(data_path=repository_path, permit_extrapolation=True)
 
     element = neon
     element2 = helium
