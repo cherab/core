@@ -331,7 +331,7 @@ cdef class _Interpolate3DBase(Function3D):
 cdef class Interpolate3DLinear(_Interpolate3DBase):
     """
     .. deprecated:: 1.2.1
-       Use `raysect.math.function.float.Interpolator3DArray` instead.
+       Use `raysect.core.math.function.float.Interpolator3DArray` instead.
 
     Interpolates 3D data using linear interpolation.
 
@@ -493,7 +493,7 @@ cdef class Interpolate3DLinear(_Interpolate3DBase):
 cdef class Interpolate3DCubic(_Interpolate3DBase):
     """
     .. deprecated:: 1.2.1
-       Use `raysect.math.function.float.Interpolator3DArray` instead.
+       Use `raysect.core.math.function.float.Interpolator3DArray` instead.
 
     Interpolates 3D data using cubic interpolation.
 
