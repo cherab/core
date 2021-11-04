@@ -23,7 +23,7 @@ import matplotlib.pyplot as plt
 from scipy.constants import electron_mass, atomic_mass
 from scipy.spatial import Delaunay
 
-from raysect.core.math import Interpolator2DMesh
+from raysect.core.math.function.float import Interpolator2DMesh
 from raysect.primitive import Cylinder
 from raysect.optical import World, translate, Point3D, Vector3D, rotate_basis, Spectrum
 from raysect.optical.observer import PinholeCamera, PowerPipeline2D

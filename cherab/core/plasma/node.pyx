@@ -20,12 +20,12 @@
 from cherab.core.utility import Notifier
 
 from cherab.core.species import SpeciesNotFound
-from raysect.optical cimport AffineMatrix3D
+from raysect.optical cimport AffineMatrix3D, Vector3D
 from raysect.optical.material.emitter.inhomogeneous cimport NumericalIntegrator
 
 from cherab.core.math cimport Function3D, autowrap_function3d
 from cherab.core.math cimport VectorFunction3D, autowrap_vectorfunction3d
-from cherab.core.distribution cimport DistributionFunction
+from cherab.core.distribution cimport DistributionFunction, ZeroDistribution
 from cherab.core.plasma.material cimport PlasmaMaterial
 cimport cython
 
@@ -323,8 +323,8 @@ cdef class Plasma(Node):
         self.notifier = Notifier()
 
         # plasma properties
-        self._b_field = None
-        self._electron_distribution = None
+        self.b_field = None
+        self.electron_distribution = None
 
         # setup plasma composition handler and pass through notifications
         self._composition = Composition()
@@ -350,7 +350,12 @@ cdef class Plasma(Node):
 
     @b_field.setter
     def b_field(self, object value):
-        self._b_field = autowrap_vectorfunction3d(value)
+        # assign Vector3D(0, 0, 0) if None is passed
+        if value is None:
+            self._b_field = autowrap_vectorfunction3d(Vector3D(0, 0, 0))
+        else:
+            self._b_field = autowrap_vectorfunction3d(value)
+
         self._modified()
 
     # cython fast access
@@ -362,8 +367,13 @@ cdef class Plasma(Node):
         return self._electron_distribution
 
     @electron_distribution.setter
-    def electron_distribution(self, value):
-        self._electron_distribution = value
+    def electron_distribution(self, DistributionFunction value):
+        # assign ZeroDistribution if None value passed
+        if value is None:
+            self._electron_distribution = ZeroDistribution()
+        else:
+            self._electron_distribution = value
+
         self._modified()
 
     # cython fast access

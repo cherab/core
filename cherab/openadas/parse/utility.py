@@ -17,14 +17,17 @@
 # under the Licence.
 
 import numpy as np
-from cherab.core.utility.conversion import Cm3ToM3, PerCm3ToPerM3
+from cherab.core.utility.conversion import PerCm3ToPerM3
 
 
-def parse_adas2x_rate(file):
+def parse_adas2x_rate(file, normalisation=1):
     """
     Read and parse data from the supplied adf21/22 file stream.
 
     :param file: A file stream.
+    :param normalisation: Normalisation factor applied to rate coefficients. Equals to 1E-6
+                          (cm3 to m3) for beam emission and beam stopping rates and 1 for beam
+                          population coefficient.
     :return: A dictionary.
     """
 
@@ -79,13 +82,13 @@ def parse_adas2x_rate(file):
         'n': PerCm3ToPerM3.to(np.array(raw['DT'], np.float64)),
         't': np.array(raw['TT'], np.float64),
 
-        'sen': Cm3ToM3.to(np.array(raw['SV'], np.float64)),
-        'st': Cm3ToM3.to(np.array(raw['SVT'], np.float64)),
+        'sen': normalisation * np.array(raw['SV'], np.float64),
+        'st': normalisation * np.array(raw['SVT'], np.float64),
 
         'eref': raw['EREF'],
         'nref': PerCm3ToPerM3.to(raw['DREF']),
         'tref': raw['TREF'],
-        'sref': Cm3ToM3.to(raw['SVREF'])
+        'sref': normalisation * raw['SVREF']
     }
 
 
