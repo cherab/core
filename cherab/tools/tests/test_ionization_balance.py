@@ -38,9 +38,6 @@ from cherab.tools.plasmas.ionisation_balance import (fractional_abundance, from_
 from cherab.tools.equilibrium import example_equilibrium
 
 
-SKIP_IONISAION_BALANCE_TEST = True
-
-
 def double_parabola(r, centre, edge, p, q):
     return (centre - edge) * np.power((1 - np.power((r - r.min()) / (r.max() - r.min()), p)), q) + edge
 
@@ -71,7 +68,6 @@ def exp_decay(r, lamb, max_val):
     return max_val * np.exp((r - r.max()) * lamb)
 
 
-@unittest.skipIf(SKIP_IONISAION_BALANCE_TEST, "Skipped because SKIP_IONISAION_BALANCE_TEST is True.")
 class TestIonizationBalance1D(unittest.TestCase):
 
     # create plasma profiles and interpolators
