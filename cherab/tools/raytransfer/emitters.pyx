@@ -45,10 +45,6 @@ cdef class RayTransferIntegrator(VolumeIntegrator):
     :ivar int min_samples: The minimum number of samples to use over integration range.
     """
 
-    cdef:
-        double _step
-        int _min_samples
-
     def __init__(self, double step=0.001, int min_samples=2):
         self.step = step
         self.min_samples = min_samples
@@ -260,14 +256,6 @@ cdef class RayTransferEmitter(InhomogeneousVolumeEmitter):
     :ivar int bins: Number of light sources (the size of spectral array must be equal to this value).
     """
 
-    cdef:
-        int[3] _grid_shape
-        double[3] _grid_steps
-        int _bins
-        np.ndarray _voxel_map
-        public:
-            int[:, :, ::1] voxel_map_mv
-
     def __init__(self, tuple grid_shape, tuple grid_steps, np.ndarray voxel_map=None, np.ndarray mask=None, VolumeIntegrator integrator=None):
 
         cdef:
@@ -411,8 +399,6 @@ cdef class CylindricalRayTransferEmitter(RayTransferEmitter):
         >>> camera.min_wavelength = 600.
         >>> camera.max_wavelength = 601.
     """
-    cdef:
-        double _dr, _dphi, _dz, _period, _rmin
 
     def __init__(self, tuple grid_shape, tuple grid_steps, np.ndarray voxel_map=None, np.ndarray mask=None, VolumeIntegrator integrator=None,
                  double rmin=0):
@@ -539,9 +525,6 @@ cdef class CartesianRayTransferEmitter(RayTransferEmitter):
         >>> camera.min_wavelength = 600.
         >>> camera.max_wavelength = 601.
     """
-
-    cdef:
-        double _dx, _dy, _dz
 
     def __init__(self, tuple grid_shape, tuple grid_steps, np.ndarray voxel_map=None, np.ndarray mask=None, VolumeIntegrator integrator=None):
 
