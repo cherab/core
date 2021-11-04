@@ -27,7 +27,6 @@ from cherab.openadas.parse import *
 from cherab.core.utility import RecursiveDict, PerCm3ToPerM3, Cm3ToM3
 
 
-ADAS_DOWNLOAD_CACHE = os.path.expanduser('~/.cherab/openadas/download_cache')
 OPENADAS_FILE_URL = 'http://open.adas.ac.uk/download/'
 
 
@@ -83,7 +82,7 @@ def install_adf11scd(element, file_path, download=False, repository_path=None, a
     """
 
     print('Installing {}...'.format(file_path))
-    path = _locate_adas_file(file_path, download, adas_path)
+    path = _locate_adas_file(file_path, download, adas_path, repository_path)
     if not path:
         raise ValueError('Could not locate the specified ADAS file.')
 
@@ -107,7 +106,7 @@ def install_adf11acd(element, file_path, download=False, repository_path=None, a
     """
 
     print('Installing {}...'.format(file_path))
-    path = _locate_adas_file(file_path, download, adas_path)
+    path = _locate_adas_file(file_path, download, adas_path, repository_path)
     if not path:
         raise ValueError('Could not locate the specified ADAS file.')
 
@@ -135,7 +134,7 @@ def install_adf11ccd(donor_element, donor_charge, receiver_element, file_path, d
     """
 
     print('Installing {}...'.format(file_path))
-    path = _locate_adas_file(file_path, download, adas_path)
+    path = _locate_adas_file(file_path, download, adas_path, repository_path)
     if not path:
         raise ValueError('Could not locate the specified ADAS file.')
 
@@ -162,7 +161,7 @@ def install_adf11plt(element, file_path, download=False, repository_path=None, a
     """
 
     print('Installing {}...'.format(file_path))
-    path = _locate_adas_file(file_path, download, adas_path)
+    path = _locate_adas_file(file_path, download, adas_path, repository_path)
     if not path:
         raise ValueError('Could not locate the specified ADAS file.')
 
@@ -186,7 +185,7 @@ def install_adf11prb(element, file_path, download=False, repository_path=None, a
     """
 
     print('Installing {}...'.format(file_path))
-    path = _locate_adas_file(file_path, download, adas_path)
+    path = _locate_adas_file(file_path, download, adas_path, repository_path)
     if not path:
         raise ValueError('Could not locate the specified ADAS file.')
 
@@ -210,7 +209,7 @@ def install_adf11prc(element, file_path, download=False, repository_path=None, a
     """
 
     print('Installing {}...'.format(file_path))
-    path = _locate_adas_file(file_path, download, adas_path)
+    path = _locate_adas_file(file_path, download, adas_path, repository_path)
     if not path:
         raise ValueError('Could not locate the specified ADAS file.')
 
@@ -237,7 +236,7 @@ def install_adf12(donor_ion, donor_metastable, receiver_ion, receiver_charge, fi
     """
 
     print('Installing {}...'.format(file_path))
-    path = _locate_adas_file(file_path, download, adas_path)
+    path = _locate_adas_file(file_path, download, adas_path, repository_path)
     if not path:
         raise ValueError('Could not locate the specified ADAS file.')
 
@@ -259,7 +258,7 @@ def install_adf15(element, ionisation, file_path, download=False, repository_pat
     """
 
     print('Installing {}...'.format(file_path))
-    path = _locate_adas_file(file_path, download, adas_path)
+    path = _locate_adas_file(file_path, download, adas_path, repository_path)
     if not path:
         raise ValueError('Could not locate the specified ADAS file.')
 
@@ -280,7 +279,7 @@ def install_adf21(beam_species, target_ion, target_charge, file_path, download=F
     # """
 
     print('Installing {}...'.format(file_path))
-    path = _locate_adas_file(file_path, download, adas_path)
+    path = _locate_adas_file(file_path, download, adas_path, repository_path)
     if not path:
         raise ValueError('Could not locate the specified ADAS file.')
 
@@ -301,7 +300,7 @@ def install_adf22bmp(beam_species, beam_metastable, target_ion, target_charge, f
     # """
 
     print('Installing {}...'.format(file_path))
-    path = _locate_adas_file(file_path, download, adas_path)
+    path = _locate_adas_file(file_path, download, adas_path, repository_path)
     if not path:
         raise ValueError('Could not locate the specified ADAS file.')
 
@@ -322,7 +321,7 @@ def install_adf22bme(beam_species, target_ion, target_charge, transition, file_p
     # """
 
     print('Installing {}...'.format(file_path))
-    path = _locate_adas_file(file_path, download, adas_path)
+    path = _locate_adas_file(file_path, download, adas_path, repository_path)
     if not path:
         raise ValueError('Could not locate the specified ADAS file.')
 
@@ -331,9 +330,10 @@ def install_adf22bme(beam_species, target_ion, target_charge, transition, file_p
     repository.update_beam_emission_rates(rate, repository_path)
 
 
-def _locate_adas_file(file_path, download=False, adas_path=None):
+def _locate_adas_file(file_path, download=False, adas_path=None, repository_path=None):
 
     path = None
+    repository_path = repository_path or repository.utility.DEFAULT_REPOSITORY_PATH
 
     # is file in adas path?
     if adas_path:
@@ -343,7 +343,7 @@ def _locate_adas_file(file_path, download=False, adas_path=None):
 
     # download file?
     if not path and download:
-        target = os.path.join(ADAS_DOWNLOAD_CACHE, file_path)
+        target = os.path.join(repository_path, "_download_cache", file_path)
 
         # is file in cache? if not download...
         if os.path.isfile(target):
