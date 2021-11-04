@@ -12,7 +12,7 @@ jobs:
       fail-fast: false
       matrix:
         numpy-version: ["1.15.0", "1.16.6", "1.19.2"]
-        python-version: ["3.6", "3.7"]
+        python-version: ["3.6", "3.7", "3.8"]
     steps:
     - name: Checkout code
       uses: actions/checkout@v2
