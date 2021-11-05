@@ -16,6 +16,8 @@
 # See the Licence for the specific language governing permissions and limitations
 # under the Licence.
 
+# cython: language_level=3
+
 from raysect.optical cimport Spectrum, Point3D, Vector3D
 from cherab.core.utility.constants cimport RECIP_4_PI, ELEMENTARY_CHARGE, SPEED_OF_LIGHT, PLANCK_CONSTANT
 from libc.math cimport sqrt, log, exp
@@ -23,6 +25,8 @@ cimport cython
 
 
 cdef double PH_TO_J_FACTOR = PLANCK_CONSTANT * SPEED_OF_LIGHT * 1e9
+
+cdef double EXP_FACTOR = PH_TO_J_FACTOR / ELEMENTARY_CHARGE
 
 
 # todo: doppler shift?
@@ -42,6 +46,10 @@ cdef class Bremsstrahlung(PlasmaModel):
     def __repr__(self):
         return '<PlasmaModel - Bremsstrahlung>'
 
+    @cython.cdivision(True)
+    @cython.initializedcheck(False)
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
     cpdef Spectrum emission(self, Point3D point, Vector3D direction, Spectrum spectrum):
 
         cdef:
@@ -50,10 +58,10 @@ cdef class Bremsstrahlung(PlasmaModel):
             double lower_sample, upper_sample
             int i
 
-        ne = self._plasma.electron_distribution.density(point.x, point.y, point.z)
+        ne = self._plasma.get_electron_distribution().density(point.x, point.y, point.z)
         if ne == 0:
             return spectrum
-        te = self._plasma.electron_distribution.effective_temperature(point.x, point.y, point.z)
+        te = self._plasma.get_electron_distribution().effective_temperature(point.x, point.y, point.z)
         if te == 0:
             return spectrum
         z_effective = self._plasma.z_effective(point.x, point.y, point.z)
@@ -86,15 +94,14 @@ cdef class Bremsstrahlung(PlasmaModel):
         :return: 
         """
 
-        cdef double gaunt_factor, radiance, prefactor, exp_factor, ph_to_j
+        cdef double gaunt_factor, radiance, pre_factor
 
         # gaunt factor
-        gaunt_factor = 0.6183 * log(te) - 0.0821
+        gaunt_factor = max(1., 0.6183 * log(te) - 0.0821)
 
         # bremsstrahlung equation W/m^3/str/nm
         pre_factor = 0.95e-19 * RECIP_4_PI * gaunt_factor * ne * ne * zeff / (sqrt(te) * wvl)
-        exp_factor = - PLANCK_CONSTANT * SPEED_OF_LIGHT / te
-        radiance =  pre_factor * exp(exp_factor / wvl) * PH_TO_J_FACTOR
+        radiance =  pre_factor * exp(- EXP_FACTOR / (te * wvl)) * PH_TO_J_FACTOR
 
         # convert to W/m^3/str/nm
         return radiance / wvl

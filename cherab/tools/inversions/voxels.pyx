@@ -29,12 +29,12 @@ from raysect.core cimport (Node, Point2D, Vector2D, Point3D, Vector3D, Primitive
                            rotate_z, AffineMatrix3D, new_point2d, new_point3d,
                            new_vector2d, new_vector3d)
 from raysect.core.math cimport triangulate2d, translate, rotate_basis, AffineMatrix3D
-from raysect.core.math.function cimport Function3D, autowrap_function3d
 from raysect.core.math.cython.utility cimport winding2d, find_index, maximum, minimum, peak_to_peak
 from raysect.core.math.random cimport uniform, point_triangle
 from raysect.primitive cimport Mesh, Cylinder, Cone, Intersect, Subtract, Union
 from raysect.optical.material cimport UnityVolumeEmitter, HomogeneousVolumeEmitter, Material
 from raysect.optical cimport Spectrum, World, Primitive, Ray
+from cherab.core.math.function cimport Function3D, autowrap_function3d
 from cherab.tools.primitives.axisymmetric_mesh cimport axisymmetric_mesh_from_polygon
 
 

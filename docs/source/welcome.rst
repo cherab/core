@@ -2,7 +2,7 @@
 Welcome
 =======
 
-Welcome to the CHERAB project. A python library for forward modelling
+Welcome to the Cherab project. A python library for forward modelling
 diagnostics based on spectroscopic plasma emission.
 
 Please note that these documentation pages are under heavy development
@@ -50,7 +50,7 @@ prior to this point, please contact the JET project.
 Citations
 ---------
 
-CHERAB does not yet have a published overview paper, one is planned in the near future.
+Cherab does not yet have a published overview paper, one is planned in the near future.
 Until then you can cite:
 
 "M. Carr, A. Meakins, A. Baciero, M. Bernert, A. Callarelli, A. Field, C. Giroud, J. Harrison,
@@ -61,14 +61,14 @@ Northern Ireland UK."
 You can also cite the code base itself:
 
 "Dr Carine Giroud, Dr Alex Meakins, Dr Matthew Carr, Dr Alfonso Baciero, & Mr Corentin Bertrand.
-(2018, March 23). CHERAB Spectroscopy Modelling Framework (Version v0.1.0).
+(2018, March 23). Cherab Spectroscopy Modelling Framework (Version v0.1.0).
 Zenodo. http://doi.org/10.5281/zenodo.1206142"
 
 
 Publications
 ------------
 
-Noteable publications on or using the CHERAB framework:
+Noteable publications on or using the Cherab framework:
 
 * M. Carr, A. Meakins, A. Baciero, M. Bernert, A. Callarelli, A. Field, C. Giroud,
   J. Harrison, N. Hawkes, S. Henderson and B. Lipschultz,

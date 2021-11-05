@@ -57,7 +57,7 @@ cdef class AtomicData:
 
     cpdef BeamPopulationRate beam_population_rate(self, Element beam_ion, int metastable, Element plasma_ion, int charge):
         """
-        Returns a list of applicable beam population coefficients in m^3/s.
+        Returns a list of applicable dimensionless beam population coefficients.
         """
 
         raise NotImplementedError("The beam_population() virtual method is not implemented for this atomic data source.")

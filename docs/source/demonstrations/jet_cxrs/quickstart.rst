@@ -7,8 +7,8 @@ Quickstart Example
 Preamble
 --------
 
-This is a commented demo file about how to use CHERAB. It aims to give an
-example with the main steps for a basic use of CHERAB. We start by importing
+This is a commented demo file about how to use Cherab. It aims to give an
+example with the main steps for a basic use of Cherab. We start by importing
 the classes used in this demo.::
 
     # External imports
@@ -110,7 +110,7 @@ To set up a real plasma, we need to feed `plasma` with profiles and composition.
 
 Now we are looking for information about the plasma (temperature, density, etc)
 in the PPF system. Here they are generally given as profile arrays along
-normalised psi values. As CHERAB need any plasma input given as a 3D function
+normalised psi values. As Cherab need any plasma input given as a 3D function
 the first step is to get normalised psi as a 3D function through the `DataSource`
 object: ::
 
@@ -135,7 +135,7 @@ instead of error integers (so the content is exactly the same):  ::
 
 Here a personal DDA is used. We use ppfget to read Data Types as they don't have a
 time axis. However one should use ppfgts to read Data Types at a specific time (`TIME`)
-if it contains a time axis as CHERAB require data at a specific time only: ::
+if it contains a time axis as Cherab require data at a specific time only: ::
 
     # normalised psi coordinates
     psi_coord = np.array(ppfget(PULSE, 'PRFL', 'C6')[3], dtype=np.float64)
@@ -196,16 +196,16 @@ Notes:
 
 1. Here we use the same temperature and velocity for all species, but it is not
    a requirement at all.
-2. In CHERAB, information about species are often given through an `Element`
+2. In Cherab, information about species are often given through an `Element`
    object from the elements submodule (cherab.atomic.elements). eg the mass of
    deuterium (in amu) is given by `elements.deuterium.atomic_weight`.
-3. From here units become important. In CHERAB, any density must be given in
+3. From here units become important. In Cherab, any density must be given in
    m^-3, any temperature in eV and any velocity in m/s. These units must be
    used to create the species distributions.
 
 Now the distributions have been defined, we must associate them to a species.
 Species are created from an element, a ionisation and a distribution. Electron
-distribution will be used directly by CHERAB so we don't need to create a species
+distribution will be used directly by Cherab so we don't need to create a species
 for electrons: ::
 
     d_species = Species(elements.deuterium, 1, d_distribution)

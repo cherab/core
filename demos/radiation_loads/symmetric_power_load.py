@@ -236,6 +236,6 @@ for i in range(num_radial_points - 1):
 print()
 print()
 print("Total radiated power => {:.4G} MW".format(emitted_total_power/1e6))
-print("CHERAB total detected power => {:.4G} MW".format(observed_total_power/1e6))
+print("Cherab total detected power => {:.4G} MW".format(observed_total_power/1e6))
 
 plt.show()

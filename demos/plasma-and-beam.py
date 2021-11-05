@@ -29,13 +29,12 @@ from raysect.optical.observer import PinholeCamera
 from raysect.optical.material.emitter import Checkerboard
 
 from cherab.core import Plasma, Beam, Species, Maxwellian
-from cherab.core.math import Constant3D, ConstantVector3D
 from cherab.core.atomic import elements, Line
 from cherab.openadas import OpenADAS
 from cherab.core.model import SingleRayAttenuator, BeamCXLine
-from gaussian_volume import GaussianVolume
+from cherab.tools.plasmas import GaussianVolume
 
-integration_step = 0.01
+integration_step = 0.1
 
 # setup scenegraph
 world = World()
@@ -57,7 +56,7 @@ ne10_density = GaussianVolume(0.01 * ion_density, sigma)
 e_density = GaussianVolume((0.94 + 0.04*2 + 0.01*6 + 0.01*10) * ion_density, sigma)
 temperature = 10 + GaussianVolume(240, sigma)
 # temperature = 1000 + GaussianVolume(4000, sigma)
-bulk_velocity = ConstantVector3D(Vector3D(200e3, 0, 0))
+bulk_velocity = Vector3D(200e3, 0, 0)
 
 d_distribution = Maxwellian(d_density, temperature, bulk_velocity, elements.deuterium.atomic_weight * atomic_mass)
 he2_distribution = Maxwellian(he2_density, temperature, bulk_velocity, elements.helium.atomic_weight * atomic_mass)
@@ -71,7 +70,7 @@ c6_species = Species(elements.carbon, 6, c6_distribution)
 ne10_species = Species(elements.neon, 10, ne10_distribution)
 
 # define species
-plasma.b_field = ConstantVector3D(Vector3D(1.0, 1.0, 1.0))
+plasma.b_field = Vector3D(1.0, 1.0, 1.0)
 plasma.electron_distribution = e_distribution
 plasma.composition = [d_species, he2_species, c6_species, ne10_species]
 
@@ -83,7 +82,7 @@ from cherab.core.model import ExcitationLine, RecombinationLine
 plasma.geometry = Sphere(sigma * 5.0)
 plasma.geometry_transform = None
 plasma.integrator.step = integration_step
-plasma.integrator.min_samples = 4
+plasma.integrator.min_samples = 5
 plasma.atomic_data = adas
 
 # Setup elements.deuterium lines
@@ -148,7 +147,7 @@ beam.models = [
     BeamCXLine(Line(elements.neon, 9, (12, 11))),
 ]
 beam.integrator.step = integration_step
-beam.integrator.min_samples = 10
+beam.integrator.min_samples = 5
 
 beam = Beam(parent=world, transform=translate(1.0, 0.0, 0) * rotate(90, 0, 0))
 beam.plasma = plasma
@@ -171,7 +170,7 @@ beam.models = [
     BeamCXLine(Line(elements.neon, 9, (12, 11))),
 ]
 beam.integrator.step = integration_step
-beam.integrator.min_samples = 10
+beam.integrator.min_samples = 5
 
 # LENS ------------------------------------------------------------------------
 

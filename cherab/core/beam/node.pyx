@@ -76,7 +76,7 @@ cdef class Beam(Node):
     """
     A scene-graph object representing a Gaussian mono-energetic beam.
 
-    The CHERAB beam object holds all the properties and state of a mono-energetic
+    The Cherab beam object holds all the properties and state of a mono-energetic
     particle beam to which beam attenuation and emission models may be attached.
     The Beam object is defined in terms of its power, energy, geometric properties
     and the plasma it interacts with.
@@ -102,7 +102,7 @@ cdef class Beam(Node):
 
     Any change to the beam object properties and models
     will result in a automatic notification being sent to objects that register
-    with the Beam objects' Notifier. All CHERAB models and associated scene-graph
+    with the Beam objects' Notifier. All Cherab models and associated scene-graph
     objects automatically handle the notifications internally to clear
     cached data. If you need to keep track of beam changes in your own classes,
     a callback can be registered with the beam Notifier which will be called in
@@ -220,6 +220,9 @@ cdef class Beam(Node):
         :param z: z coordinate in meters.
         :return: Beam density in m^-3
         """
+
+        if self._attenuator is None:
+            raise ValueError('The beam must have an attenuator model to provide density values.')
 
         # todo: make z > length return 0 as a non-default toggle. It should throw an error by default to warn users they are requesting data outside the domain.
         if z < 0 or z > self._length:

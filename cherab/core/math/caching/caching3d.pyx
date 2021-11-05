@@ -63,23 +63,21 @@ cdef class Caching3D(Function3D):
        >>> from numpy import sqrt
        >>> from time import sleep
        >>> from cherab.core.math import Caching3D
-       >>> from raysect.core.math.function.function3d import PythonFunction3D
        >>>
        >>> def expensive_radius(x, y, z):
        >>>     sleep(5)
        >>>     return sqrt(x**2 + y**2 + z**2)
-       >>> f3 = PythonFunction3D(expensive_radius)
        >>>
-       >>> f3 = Caching3D(f3, (-5, 5, -5, 5, -5, 5), (0.1, 0.1, 0.1))
+       >>> f1 = Caching3D(expensive_radius, (-5, 5, -5, 5, -5, 5), (0.1, 0.1, 0.1))
        >>>
        >>> # if you try this, first two executions will be slow, third will be fast
        >>> # Note: the first execution might be particularly slow, this is because it
        >>> # sets up the caching structures on first execution.
-       >>> f3(1.5, 1.5, 1.5)
+       >>> f1(1.5, 1.5, 1.5)
        2.598076
-       >>> f3(1.6, 1.5, 1.5)
+       >>> f1(1.6, 1.5, 1.5)
        2.657066
-       >>> f3(1.55, 1.5, 1.5)
+       >>> f1(1.55, 1.5, 1.5)
        2.627260
     """
 

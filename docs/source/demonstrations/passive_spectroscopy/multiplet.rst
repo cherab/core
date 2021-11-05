@@ -5,7 +5,7 @@ Multiplet Line Ratios
 =====================
 
 Some lines split into multiple components, requiring a higher spectroscopy
-resolution than is normally modelled in CHERAB. It is possible to add the
+resolution than is normally modelled in Cherab. It is possible to add the
 experimentally measured multiplet ratios by using the MultipletLineShape()
 class. The ratios between the multiplet lines will be constant, but the total
 emissivity of the multiplet will match the original emissivity as specified

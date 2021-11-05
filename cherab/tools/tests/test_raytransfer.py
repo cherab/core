@@ -31,39 +31,41 @@ class TestRayTransferCylinder(unittest.TestCase):
 
     def test_mask_2d(self):
         rtc = RayTransferCylinder(radius_outer=8., height=10., n_radius=4, n_height=10, radius_inner=4.)
-        mask = np.zeros((4, 10), dtype=np.bool)
+        mask = np.zeros((4, 10), dtype=bool)
         mask[:, 3:6] = True
-        rtc.mask = mask
-        voxel_map_ref = -1 * np.ones((4, 10), dtype=np.int)
+        rtc.mask = mask[:, None, :]
+        voxel_map_ref = -1 * np.ones((4, 10), dtype=np.int32)
         voxel_map_ref[:, 3:6] = np.arange(12, dtype=int).reshape((4, 3))
-        self.assertTrue(np.all(voxel_map_ref == rtc.voxel_map) and rtc.bins == 12)
+        self.assertTrue(np.all(voxel_map_ref == rtc.voxel_map[:, 0, :]) and rtc.bins == 12)
 
     def test_voxel_map_2d(self):
         rtc = RayTransferCylinder(radius_outer=8., height=10., n_radius=4, n_height=10, radius_inner=4.)
-        voxel_map = -1 * np.ones((4, 10), dtype=np.int)
+        voxel_map = -1 * np.ones((4, 10), dtype=np.int32)
         voxel_map[1, 3:5] = 0
         voxel_map[2, 3:5] = 1
         voxel_map[1, 5:7] = 2
         voxel_map[2, 5:7] = 3
-        rtc.voxel_map = voxel_map
-        mask_ref = np.zeros((4, 10), dtype=np.bool)
+        rtc.voxel_map = voxel_map[:, None, :]
+        mask_ref = np.zeros((4, 10), dtype=bool)
         mask_ref[1:3, 3:7] = True
         inv_vmap_ref = [(np.array([1, 1]), np.array([3, 4])), (np.array([2, 2]), np.array([3, 4])),
                         (np.array([1, 1]), np.array([5, 6])), (np.array([2, 2]), np.array([5, 6]))]
-        self.assertTrue(np.all(mask_ref == rtc.mask) and np.all(np.array(inv_vmap_ref) == np.array(rtc.invert_voxel_map())) and rtc.bins == 4)
+        self.assertTrue(np.all(mask_ref == rtc.mask[:, 0, :]) and
+                        np.all(np.array(inv_vmap_ref) == np.array(rtc.invert_voxel_map())[:, ::2, :]) and
+                        rtc.bins == 4)
 
     def test_mask_3d(self):
         rtc = RayTransferCylinder(radius_outer=8., height=10., n_radius=4, n_height=10, radius_inner=4., n_polar=10, period=10.)
-        mask = np.zeros((4, 10, 10), dtype=np.bool)
+        mask = np.zeros((4, 10, 10), dtype=bool)
         mask[1:3, 3:8, 4:6] = True
         rtc.mask = mask
-        voxel_map_ref = -1 * np.ones((4, 10, 10), dtype=np.int)
+        voxel_map_ref = -1 * np.ones((4, 10, 10), dtype=np.int32)
         voxel_map_ref[1:3, 3:8, 4:6] = np.arange(20, dtype=int).reshape((2, 5, 2))
         self.assertTrue(np.all(voxel_map_ref == rtc.voxel_map) and rtc.bins == 20)
 
     def test_voxel_map_3d(self):
         rtc = RayTransferCylinder(radius_outer=8., height=10., n_radius=4, n_height=10, radius_inner=4., n_polar=10, period=10.)
-        voxel_map = -1 * np.ones((4, 10, 10), dtype=np.int)
+        voxel_map = -1 * np.ones((4, 10, 10), dtype=np.int32)
         voxel_map[1, 3:5, 3:5] = 0
         voxel_map[2, 3:5, 3:5] = 1
         voxel_map[1, 5:7, 3:5] = 2
@@ -73,7 +75,7 @@ class TestRayTransferCylinder(unittest.TestCase):
         voxel_map[1, 5:7, 5:7] = 6
         voxel_map[2, 5:7, 5:7] = 7
         rtc.voxel_map = voxel_map
-        mask_ref = np.zeros((4, 10, 10), dtype=np.bool)
+        mask_ref = np.zeros((4, 10, 10), dtype=bool)
         mask_ref[1:3, 3:7, 3:7] = True
         inv_vmap_ref = [(np.array([1, 1, 1, 1]), np.array([3, 3, 4, 4]), np.array([3, 4, 3, 4])),
                         (np.array([2, 2, 2, 2]), np.array([3, 3, 4, 4]), np.array([3, 4, 3, 4])),
@@ -122,16 +124,16 @@ class TestRayTransferBox(unittest.TestCase):
 
     def test_mask(self):
         rtb = RayTransferBox(xmax=10., ymax=10., zmax=10., nx=10, ny=10, nz=10)
-        mask = np.zeros((10, 10, 10), dtype=np.bool)
+        mask = np.zeros((10, 10, 10), dtype=bool)
         mask[5:7, 5:7, 5:7] = True
         rtb.mask = mask
-        voxel_map_ref = -1 * np.ones((10, 10, 10), dtype=np.int)
+        voxel_map_ref = -1 * np.ones((10, 10, 10), dtype=np.int32)
         voxel_map_ref[5:7, 5:7, 5:7] = np.arange(8, dtype=int).reshape((2, 2, 2))
         self.assertTrue(np.all(voxel_map_ref == rtb.voxel_map) and rtb.bins == 8)
 
     def test_voxel_map(self):
         rtb = RayTransferBox(xmax=10., ymax=10., zmax=10., nx=10, ny=10, nz=10)
-        voxel_map = -1 * np.ones((10, 10, 10), dtype=np.int)
+        voxel_map = -1 * np.ones((10, 10, 10), dtype=np.int32)
         voxel_map[:2, :2, :2] = 0
         voxel_map[:2, :2, 8:] = 1
         voxel_map[:2, 8:, :2] = 2
@@ -141,7 +143,7 @@ class TestRayTransferBox(unittest.TestCase):
         voxel_map[8:, 8:, :2] = 6
         voxel_map[8:, 8:, 8:] = 7
         rtb.voxel_map = voxel_map
-        mask_ref = np.zeros((10, 10, 10), dtype=np.bool)
+        mask_ref = np.zeros((10, 10, 10), dtype=bool)
         mask_ref[:2, :2, :2] = True
         mask_ref[:2, :2, 8:] = True
         mask_ref[:2, 8:, :2] = True
@@ -206,7 +208,7 @@ class TestCylindricalRayTransferEmitter(unittest.TestCase):
         Testing against ToroidalVoxelGrid.
         """
         world = World()
-        material = CylindricalRayTransferEmitter((2, 2), (1., 1.), rmin=2., integrator=NumericalIntegrator(0.0001))
+        material = CylindricalRayTransferEmitter((2, 1, 2), (1., 360., 1.), rmin=2., integrator=NumericalIntegrator(0.0001))
         primitive = Subtract(Cylinder(3.999999, 1.999999), Cylinder(2.0, 1.999999),
                              material=material, parent=world)
         ray = Ray(origin=Point3D(4., 1., 2.), direction=Vector3D(-4., -1., -2.) / np.sqrt(21.),
@@ -228,7 +230,7 @@ class TestCylindricalRayTransferEmitter(unittest.TestCase):
         CylindricalRayTransferEmitter works with NumericalIntegrator in 3D case.
         """
         world = World()
-        material = CylindricalRayTransferEmitter((2, 3, 2), (1., 30., 1.), period=90., integrator=NumericalIntegrator(0.0001))
+        material = CylindricalRayTransferEmitter((2, 3, 2), (1., 30., 1.), integrator=NumericalIntegrator(0.0001))
         primitive = Subtract(Cylinder(1.999999, 1.999999), Cylinder(0.000001, 1.999999),
                              material=material, parent=world)
         ray = Ray(origin=Point3D(np.sqrt(2.), np.sqrt(2.), 2.), direction=Vector3D(-1., -1., -np.sqrt(2.)) / 2.,

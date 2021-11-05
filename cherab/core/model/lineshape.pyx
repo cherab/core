@@ -21,12 +21,10 @@
 import numpy as np
 cimport numpy as np
 from libc.math cimport sqrt, erf, M_SQRT2, floor, ceil, fabs
-from raysect.core.math.function cimport autowrap_function1d, autowrap_function2d
 from raysect.optical.spectrum cimport new_spectrum
 
-
 from cherab.core cimport Plasma
-from cherab.core.math cimport Constant1D, Constant2D
+from cherab.core.math.function cimport autowrap_function1d, autowrap_function2d
 from cherab.core.utility.constants cimport ATOMIC_MASS, ELEMENTARY_CHARGE, SPEED_OF_LIGHT
 
 cimport cython
@@ -170,11 +168,11 @@ cdef class GaussianLine(LineShapeModel):
     @cython.cdivision(True)
     cpdef Spectrum add_line(self, double radiance, Point3D point, Vector3D direction, Spectrum spectrum):
 
-        cdef double te, sigma, shifted_wavelength
+        cdef double ts, sigma, shifted_wavelength
         cdef Vector3D ion_velocity
 
-        te = self.plasma.get_electron_distribution().effective_temperature(point.x, point.y, point.z)
-        if te <= 0.0:
+        ts = self.target_species.distribution.effective_temperature(point.x, point.y, point.z)
+        if ts <= 0.0:
             return spectrum
 
         ion_velocity = self.target_species.distribution.bulk_velocity(point.x, point.y, point.z)
@@ -183,7 +181,7 @@ cdef class GaussianLine(LineShapeModel):
         shifted_wavelength = doppler_shift(self.wavelength, direction, ion_velocity)
 
         # calculate the line width
-        sigma = thermal_broadening(self.wavelength, te, self.line.element.atomic_weight)
+        sigma = thermal_broadening(self.wavelength, ts, self.line.element.atomic_weight)
 
         return add_gaussian_line(radiance, shifted_wavelength, sigma, spectrum)
 
@@ -245,17 +243,17 @@ cdef class MultipletLineShape(LineShapeModel):
     @cython.initializedcheck(False)
     cpdef Spectrum add_line(self, double radiance, Point3D point, Vector3D direction, Spectrum spectrum):
 
-        cdef double te, sigma, shifted_wavelength, component_wavelength, component_radiance
+        cdef double ts, sigma, shifted_wavelength, component_wavelength, component_radiance
         cdef Vector3D ion_velocity
 
-        te = self.plasma.get_electron_distribution().effective_temperature(point.x, point.y, point.z)
-        if te <= 0.0:
+        ts = self.target_species.distribution.effective_temperature(point.x, point.y, point.z)
+        if ts <= 0.0:
             return spectrum
 
         ion_velocity = self.target_species.distribution.bulk_velocity(point.x, point.y, point.z)
 
         # calculate the line width
-        sigma = thermal_broadening(self.wavelength, te, self.line.element.atomic_weight)
+        sigma = thermal_broadening(self.wavelength, ts, self.line.element.atomic_weight)
 
         for i in range(self._number_of_lines):
 
@@ -461,7 +459,7 @@ cdef class BeamEmissionMultiplet(BeamLineShapeModel):
         # add Sigma lines to output
         s1_to_s0 = self._sigma1_to_sigma0.evaluate(ne)
         intensity_s0 = 1 / (s1_to_s0 + 1)
-        intensity_s1 = 1 / (1 + 2 / s1_to_s0)
+        intensity_s1 = 0.5 * s1_to_s0 * intensity_s0
 
         spectrum = add_gaussian_line(intensity_sig * intensity_s0, central_wavelength, sigma, spectrum)
         spectrum = add_gaussian_line(intensity_sig * intensity_s1, central_wavelength + stark_split, sigma, spectrum)

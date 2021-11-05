@@ -62,21 +62,19 @@ cdef class Caching2D(Function2D):
        >>> from numpy import sqrt
        >>> from time import sleep
        >>> from cherab.core.math import Caching2D
-       >>> from raysect.core.math.function.function2d import PythonFunction2D
        >>>
        >>> def expensive_radius(x, y):
        >>>     sleep(5)
        >>>     return sqrt(x**2 + y**2)
-       >>> f2 = PythonFunction2D(expensive_radius)
        >>>
-       >>> f2 = Caching2D(f2, (-5, 5, -5, 5), (0.1, 0.1))
+       >>> f1 = Caching2D(expensive_radius, (-5, 5, -5, 5), (0.1, 0.1))
        >>>
        >>> # if you try this, first two executions will be slow, third will be fast
-       >>> f2(1.5, 1.5)
+       >>> f1(1.5, 1.5)
        2.121320343595476
-       >>> f2(1.6, 1.5)
+       >>> f1(1.6, 1.5)
        2.19317121996626
-       >>> f2(1.55, 1.5)
+       >>> f1(1.55, 1.5)
        2.156964925578382
     """
 

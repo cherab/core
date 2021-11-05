@@ -6,7 +6,7 @@ from raysect.optical import World, translate, rotate_basis, Vector3D, Point3D, R
 from raysect.optical.observer import PinholeCamera
 
 from cherab.core import Beam
-from cherab.core.math import sample3d, ConstantVector3D
+from cherab.core.math import sample3d
 from cherab.core.atomic import hydrogen, deuterium, carbon, Line
 from cherab.core.model import SingleRayAttenuator, BeamEmissionLine, \
     ExcitationLine, RecombinationLine
@@ -21,14 +21,14 @@ from cherab.openadas import OpenADAS
 
 world = World()
 
-plasma = build_slab_plasma(width=1.0, height=3.0, peak_density=1e18,
+plasma = build_slab_plasma(width=1.0, height=3.0, peak_density=1e18, neutral_temperature=20.0,
                            impurities=[(carbon, 6, 0.005)], parent=world)
-plasma.b_field = ConstantVector3D(Vector3D(0, 1.5, 0))
+plasma.b_field = Vector3D(0, 1.5, 0)
 plasma.atomic_data = OpenADAS(permit_extrapolation=True)
 
 # add background emission
-d_alpha = Line(hydrogen, 0, (3, 2))
-plasma.models = [ExcitationLine(d_alpha), RecombinationLine(d_alpha)]
+h_alpha = Line(hydrogen, 0, (3, 2))
+plasma.models = [ExcitationLine(h_alpha), RecombinationLine(h_alpha)]
 
 
 ####################
@@ -191,5 +191,5 @@ camera.spectral_rays = 1
 camera.spectral_bins = 15
 camera.pixel_samples = 50
 camera.observe()
-
+plt.ioff()
 plt.show()

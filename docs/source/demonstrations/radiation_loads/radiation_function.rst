@@ -7,10 +7,10 @@ Defining A Radiation Function
 
 When calculating surface radiation loads on reactor components it is necessary
 to define a radiation function. This could be some output from a physics code,
-or perhaps an analytic function. In CHERAB, the source function will always be
+or perhaps an analytic function. In Cherab, the source function will always be
 prescribed as a 3D function regardless of the data source.
 
-All emission models in CHERAB and Raysect are fully spectral. It is possible to
+All emission models in Cherab and Raysect are fully spectral. It is possible to
 create arbitrary radiation functions using the Material interface in Raysect.
 However it is often sufficient to specify a simple total radiated power
 function in terms of W/m^2 for many physics applications. In such cases, the

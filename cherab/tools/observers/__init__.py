@@ -17,6 +17,8 @@
 # See the Licence for the specific language governing permissions and limitations
 # under the Licence.
 
+from .bolometry import BolometerCamera, BolometerFoil, BolometerSlit, BolometerIRVB
 from .calcam import load_calcam_calibration
 from .intersections import find_wall_intersection
-from .spectroscopic import LineOfSightGroup, SpectroscopicSightLine
+from .spectroscopy import SpectroscopicSightLine, SpectroscopicFibreOptic
+from .group import SightLineGroup, FibreOpticGroup

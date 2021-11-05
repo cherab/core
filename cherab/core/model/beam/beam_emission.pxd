@@ -17,6 +17,7 @@
 # under the Licence.
 
 
+from raysect.core.math cimport Vector3D
 from cherab.core cimport Line
 from cherab.core.math cimport Function1D, Function2D
 from cherab.core.beam cimport BeamModel
@@ -32,5 +33,7 @@ cdef class BeamEmissionLine(BeamModel):
         BeamLineShapeModel _lineshape
         Function2D _sigma_to_pi
         Function1D _sigma1_to_sigma0, _pi2_to_pi3, _pi4_to_pi3
+    
+    cdef double _beam_emission_rate(self, double x, double y, double z, Vector3D beam_velocity) except? -1e999
 
     cdef int _populate_cache(self) except -1

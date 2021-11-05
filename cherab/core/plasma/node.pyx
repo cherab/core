@@ -20,12 +20,12 @@
 from cherab.core.utility import Notifier
 
 from cherab.core.species import SpeciesNotFound
-from raysect.optical cimport AffineMatrix3D
+from raysect.optical cimport AffineMatrix3D, Vector3D
 from raysect.optical.material.emitter.inhomogeneous cimport NumericalIntegrator
 
 from cherab.core.math cimport Function3D, autowrap_function3d
 from cherab.core.math cimport VectorFunction3D, autowrap_vectorfunction3d
-from cherab.core.distribution cimport DistributionFunction
+from cherab.core.distribution cimport DistributionFunction, ZeroDistribution
 from cherab.core.plasma.material cimport PlasmaMaterial
 cimport cython
 
@@ -202,7 +202,7 @@ cdef class Plasma(Node):
     """
     A scene-graph object representing a plasma.
 
-    The CHERAB Plasma object holds all the properties and state of a plasma
+    The Cherab Plasma object holds all the properties and state of a plasma
     and can optionally have emission models attached to it.
 
     To define a Plasma object you need to define the plasma composition,
@@ -238,7 +238,7 @@ cdef class Plasma(Node):
 
     Any change to the plasma object including adding/removing of species or models
     will result in a automatic notification being sent to objects that register
-    with the Plasma objects' Notifier. All CHERAB models and associated scene-graph
+    with the Plasma objects' Notifier. All Cherab models and associated scene-graph
     objects such as Beams automatically handle the notifications internally to clear
     cached data. If you need to keep track of plasma changes in your own classes,
     a callback can be registered with the plasma Notifier which will be called in
@@ -281,7 +281,6 @@ cdef class Plasma(Node):
        >>> from raysect.optical import World
        >>>
        >>> from cherab.core import Plasma, Species, Maxwellian
-       >>> from cherab.core.math import Constant3D, ConstantVector3D
        >>> from cherab.core.atomic import deuterium
        >>> from cherab.openadas import OpenADAS
        >>>
@@ -293,14 +292,14 @@ cdef class Plasma(Node):
        >>>
        >>>
        >>> # Setup basic distribution functions for the species
-       >>> d0_density = Constant3D(1E17)
-       >>> d0_temperature = Constant3D(1)
-       >>> bulk_velocity = ConstantVector3D(Vector3D(0, 0, 0))
+       >>> d0_density = 1E17
+       >>> d0_temperature = 1
+       >>> bulk_velocity = Vector3D(0, 0, 0)
        >>> d0_distribution = Maxwellian(d0_density, d0_temperature, bulk_velocity, deuterium.atomic_weight * atomic_mass)
        >>> d0_species = Species(deuterium, 0, d0_distribution)
        >>>
-       >>> d1_density = Constant3D(1E18)
-       >>> d1_temperature = Constant3D(10)
+       >>> d1_density = 1E18
+       >>> d1_temperature = 10
        >>> d1_distribution = Maxwellian(d1_density, d1_temperature, bulk_velocity, deuterium.atomic_weight * atomic_mass)
        >>> d1_species = Species(deuterium, 1, d1_distribution)
        >>>
@@ -310,7 +309,7 @@ cdef class Plasma(Node):
        >>> plasma = Plasma(parent=world)
        >>> plasma.atomic_data = adas
        >>> plasma.geometry = Sphere(2.0)
-       >>> plasma.b_field = ConstantVector3D(Vector3D(1.0, 1.0, 1.0))
+       >>> plasma.b_field = Vector3D(1.0, 1.0, 1.0)
        >>> plasma.composition = [d0_species, d1_species]
        >>> plasma.electron_distribution = e_distribution
     """
@@ -324,8 +323,8 @@ cdef class Plasma(Node):
         self.notifier = Notifier()
 
         # plasma properties
-        self._b_field = None
-        self._electron_distribution = None
+        self.b_field = None
+        self.electron_distribution = None
 
         # setup plasma composition handler and pass through notifications
         self._composition = Composition()
@@ -351,7 +350,12 @@ cdef class Plasma(Node):
 
     @b_field.setter
     def b_field(self, object value):
-        self._b_field = autowrap_vectorfunction3d(value)
+        # assign Vector3D(0, 0, 0) if None is passed
+        if value is None:
+            self._b_field = autowrap_vectorfunction3d(Vector3D(0, 0, 0))
+        else:
+            self._b_field = autowrap_vectorfunction3d(value)
+
         self._modified()
 
     # cython fast access
@@ -363,8 +367,13 @@ cdef class Plasma(Node):
         return self._electron_distribution
 
     @electron_distribution.setter
-    def electron_distribution(self, value):
-        self._electron_distribution = value
+    def electron_distribution(self, DistributionFunction value):
+        # assign ZeroDistribution if None value passed
+        if value is None:
+            self._electron_distribution = ZeroDistribution()
+        else:
+            self._electron_distribution = value
+
         self._modified()
 
     # cython fast access

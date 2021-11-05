@@ -9,9 +9,9 @@ information or data about the rate is specified in the core API, instead all oth
 implementation details are deferred to the atomic data provider.
 
 The reason for this design is that it allows rate objects to be used throughout all the
-CHERAB emission models without knowing how this data will be provided or calculated.
+Cherab emission models without knowing how this data will be provided or calculated.
 For example, some atomic data providers might use interpolated data while others could
-provide theoretical equations. CHERAB emission models only need to know how to call
+provide theoretical equations. Cherab emission models only need to know how to call
 them after they have been instantiated.
 
 
@@ -106,7 +106,7 @@ method.
    >>> from cherab.openadas import OpenADAS
    >>>
    >>> # initialise the atomic data provider
-   >>> adas = OpenADAS()
+   >>> adas = OpenADAS(permit_extrapolation=True)
    >>>
    >>> # Request beam stopping rate and sample
    >>> bms = adas.beam_stopping_rate(deuterium, carbon, 6)
@@ -116,38 +116,15 @@ method.
    >>> # Sample the beam population rate
    >>> bmp = adas.beam_population_rate(deuterium, 2, carbon, 6)
    >>> bmp(50000, 1E19, 1)
-   7.599066e-10
+   7.599066e-4
    >>>
    >>> # Sample the beam emission rate
    >>> bme = adas.beam_emission_pec(deuterium, deuterium, 1, (3, 2))
    >>> bme(50000, 1E19, 1)
    8.651598e-34
 
-.. class:: cherab.core.atomic.rates.BeamCXRate
-
-   :math:`q^{eff}_{n\rightarrow n'}` [:math:`photon.m^{3}.s^{-1}.str^{-1}`]
-
-   Effective emission coefficient (or rate) for a charge-exchange line corresponding to a
-   transition :math:`n\rightarrow n'` of ion :math:`Z^{(\alpha+1)+}` with electron donor
-   :math:`H^0` in metastable state :math:`m_{i}`. Equivalent to
-   :math:`q^{eff}_{n\rightarrow n'}` in `adf12 <http://open.adas.ac.uk/adf12>`_.
-
-   .. function:: __call__(energy, temperature, density, z_effective, b_field)
-
-      Returns the associated beam CX rate at the specified plasma conditions.
-
-      This function just wraps the cython evaluate() method.
-
-   .. function:: evaluate(energy, temperature, density, z_effective, b_field)
-
-      Returns the beam CX rate for the supplied parameters.
-
-      :param float energy: Interaction energy in eV/amu.
-      :param float temperature: Receiver ion temperature in eV.
-      :param float density: Receiver ion density in m^-3
-      :param float z_effective: Plasma Z-effective.
-      :param float b_field: Magnetic field magnitude in Tesla.
-      :return: The effective rate
+.. autoclass:: cherab.core.atomic.rates.BeamCXPEC
+   :members: __call__, evaluate
 
 Some example code for requesting beam CX rate object and sampling it with the __call__() method.
 
@@ -157,9 +134,9 @@ Some example code for requesting beam CX rate object and sampling it with the __
    >>> from cherab.openadas import OpenADAS
    >>>
    >>> # initialise the atomic data provider
-   >>> adas = OpenADAS()
+   >>> adas = OpenADAS(permit_extrapolation=True)
    >>>
-   >>> cxr = adas.beam_cx_rate(deuterium, carbon, 6, (8, 7))
+   >>> cxr = adas.beam_cx_pec(deuterium, carbon, 6, (8, 7))
    >>> cxr_n1, cxr_n2 = cxr
    >>> cxr_n1(50000, 100, 1E19, 1, 1)
    5.826619e-33

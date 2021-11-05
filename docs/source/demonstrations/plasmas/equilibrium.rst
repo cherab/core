@@ -10,10 +10,10 @@ This demonstration shows how to define plasma distributions in terms of 1D
 flux functions using the EFITEquilibrium's mapping utilities.
 
 The :class:`~cherab.tools.equilibrium.efit.EFITEquilibrium` class is the workhorse class
-for working with tokamak equilibria in CHERAB. To use equilibria in your code you
+for working with tokamak equilibria in Cherab. To use equilibria in your code you
 should extract the appropriate data from your equilibrium code of choice and instantiate
 this class directly for a given time slice. We include an example equilibrium with the
-CHERAB tools module for the tutorials and experimentation.
+Cherab tools module for the tutorials and experimentation.
 
 
 .. literalinclude:: ../../../../demos/equilibrium/equilibrium.py
