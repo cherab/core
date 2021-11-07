@@ -36,29 +36,29 @@ cdef class LaserProfile:
         self.notifier = Notifier()
 
     def set_polarization_function(self, VectorFunction3D function):
-    """
-    Assigns the 3D vector function describing the polarisation vector.
+        """
+        Assigns the 3D vector function describing the polarisation vector.
 
-    The polarisation is given as the direction of the electric
-    component of the electromagnetic wave.
+        The polarisation is given as the direction of the electric
+        component of the electromagnetic wave.
 
-    The function is specified in the laser space.
+        The function is specified in the laser space.
 
-    :param VectorFunction3D function: A 3D vector function describing
-      the polarisation vector.
-    """
+        :param VectorFunction3D function: A 3D vector function describing
+          the polarisation vector.
+        """
         self._polarization3d = function
 
     def set_pointing_function(self, VectorFunction3D function):
-    """
-    Assings the 3D vector function describing the direction of the laser propagation.
+        """
+        Assings the 3D vector function describing the direction of the laser propagation.
 
-    The direction of the laser light propagation is the direction
-    of the Poynting vector.
+        The direction of the laser light propagation is the direction
+        of the Poynting vector.
 
-    :param VectorFunction3D function: A 3D vector function describing
-      the laser light propagation direction 
-    """
+        :param VectorFunction3D function: A 3D vector function describing
+          the laser light propagation direction 
+        """
         self._pointing3d = function
 
     def set_energy_density_function(self, Function3D function):
@@ -102,7 +102,7 @@ cdef class LaserProfile:
 
     cpdef double get_energy_density(self, double x, double y, double z):
         """
-        Returns the volumetric energy density of the laser light in W * m **-3.
+        Returns the volumetric energy density of the laser light in W*m^-3.
         
         At the point (x, y, z) in the laser space.
 
