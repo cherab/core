@@ -20,13 +20,13 @@ cdef class ConstantSpectrum(LaserSpectrum):
         super().__init__(min_wavelength, max_wavelength, bins)
 
     cdef double evaluate(self, double x) except? -1e999:
-    """
-    Returns the spectral power density for the given wavelength.
+        """
+        Returns the spectral power density for the given wavelength.
 
-    :param float x: Wavelength in nm.
+        :param float x: Wavelength in nm.
 
-    :return: Power spectral density in W/nm. 
-    """
+        :return: Power spectral density in W/nm. 
+        """
 
         cdef:
             double spectrum_width
@@ -48,6 +48,12 @@ cdef class GaussianSpectrum(LaserSpectrum):
       wavelength of the laser.
     :param float stddev: Standard deviation of the Gaussian
       distribution of the laser spectrum.
+    
+    :ivar float stddev: Standard deviation of the Gaussian
+      distribution of the laser spectrum.
+    :ivar float mean: The mean value of the Gaussian distribution
+      of the laser spectrum in nm, can be thought of as the central
+      wavelength of the laser.
     """
 
     def __init__(self, double min_wavelength, double max_wavelength, int bins, double mean, double stddev):
@@ -81,11 +87,11 @@ cdef class GaussianSpectrum(LaserSpectrum):
         self._mean = value
 
     cdef double evaluate(self, double x) except? -1e999:
-    """
-    Returns the spectral power density for the given wavelength.
+        """
+        Returns the spectral power density for the given wavelength.
 
-    :param float x: Wavelength in nm.
+        :param float x: Wavelength in nm.
 
-    :return: Power spectral density in W/nm. 
-    """
+        :return: Power spectral density in W/nm. 
+        """
         return self._normalisation * exp(-0.5 * ((x - self._mean) * self._recip_stddev) ** 2)
