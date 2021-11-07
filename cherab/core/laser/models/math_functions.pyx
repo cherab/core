@@ -6,6 +6,18 @@ from libc.math cimport sqrt, exp, pi
 
 
 cdef class ConstantAxisymmetricGaussian3D(Function3D):
+    """
+    A function with a 2D Gaussian in the x-y plane and equal standard deviations in x and y directions.
+
+    .. math::
+    F(x, y, z) = \\frac{1}{2 * \\pi \\sigma^2} exp\\left(-\\frac{x^2 + y^2}{2 * \\sigma^2}\\right)
+
+    The function value has a Gaussian shape in the x-y plane with the standard deviations in
+    x and y direction being equal. The integral over an x-y plane is equal to 1 
+    and the mean values in x and y directions are equal to 0.
+
+    :param float stddev: The standard deviation in both the x and y directions.
+    """
 
     def __init__(self, stddev):
 
@@ -35,6 +47,19 @@ cdef class ConstantAxisymmetricGaussian3D(Function3D):
 
 
 cdef class ConstantBivariateGaussian3D(Function3D):
+    """
+    A function with a 2D Gaussian in the x-y plane.
+
+    .. math::
+    F(x, y, z) = \\frac{1}{2 * \\pi \\sigma_x \\sigma_y} exp\\left(-\\frac{x^2 + y^2}{2 * \\sigma_x \\sigma_y}\\right)
+
+    The function value has a Gaussian shape in the x-y plane. The integral over an x-y plane is equal to 1
+    and the mean values in x and y directions are equal to 0.
+    The correlation between the standard deviations in x and y directions is equal to 0.
+
+    :param float stddev_x: The standard deviation in the x directions.
+    :param float stddev_y: The standard deviation in the y directions.
+    """
 
     def __init__(self, stddev_x, stddev_y):
 
@@ -85,6 +110,20 @@ cdef class ConstantBivariateGaussian3D(Function3D):
 
 
 cdef class TrivariateGaussian3D(Function3D):
+    """
+    A function with a 3D Gaussian shape.
+
+    .. math::
+    F(x, y, z) = \\frac{1}{\\sqrt{2 \\pi^3} \\sigma_x \\sigma_y \\sigma_z} exp\\left(-\\frac{x^2}{2 \\sigma_x^2} -\\frac{y^2}{2 \\sigma_y^2} - \\frac{(z - \\mu_z)^2}{2 \\sigma_z^2}\\right)
+
+    The integral over the whole 3D space is equal to 1.The correlation between the standard deviations in x and y directions is equal to 0. The mean value in the
+    x and y directions are equal to 0.
+
+    :param float mean_z: Mean value in the z direction.
+    :param float stddev_x: The standard deviation in the x directions.
+    :param float stddev_y: The standard deviation in the y directions.
+    :param float stddev_z: The standard deviation in the z directions.
+    """
 
     def __init__(self, mean_z, stddev_x, stddev_y, stddev_z):
 
@@ -157,11 +196,29 @@ cdef class TrivariateGaussian3D(Function3D):
 
     cdef double evaluate(self, double x, double y, double z) except? -1e999:
         return self._normalisation * exp(x ** 2 * self._kx +
-                                                          y ** 2 * self._ky +
-                                                          (z - self._mean_z) ** 2 * self._kz)
+                                         y ** 2 * self._ky +
+                                        (z - self._mean_z) ** 2 * self._kz)
 
 
 cdef class GaussianBeamModel(Function3D):
+    """
+    A Gaussian beam function (https://en.wikipedia.org/wiki/Gaussian_beam)
+
+    .. math::
+      F(x, y, z) = \\frac{1}{2 \\pi \\sigma^2_z} exp\\left( -\\frac{x^2 + y^2}{2 \\sigma_z(z)^2 }\\right)
+
+    where the standard deviation in the z direction
+
+    .. math::
+      \\sigma_z(z) = \\sigma_0 \\sqrt{1 + \\left(\\frac{z - z_0}{z_R}\\right)^2}
+
+    is a function of position and the
+
+    .. math::
+      z_R = \\frac{\\pi \\omega_0^2 n}{\\lambda_l}
+
+    is the Rayleigh range.
+    """
 
     def __init__(self, double wavelength, double waist_z, double stddev_waist):
 
@@ -187,8 +244,7 @@ cdef class GaussianBeamModel(Function3D):
         self._cache_constants()
 
     @property
-    def waist_z(self):
-        return self._waist_z
+    def waist_z(self):GaussianBeamModel
 
     @waist_z.setter
     def waist_z(self, double value):
