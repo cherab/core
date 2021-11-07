@@ -40,8 +40,13 @@ cdef class LaserSpectrum(Function1D):
       spectrum in nm.
     :param float max_wavelength: The maximum wavelength of the laser
       spectrum in nm.
-    :param int bins: The number of spectral bins.
+    :param int bins: The number of spectral bins of the laser spectrum.
 
+    :ivar float min_wavelength: The minimum wavelength of the laser
+      spectrum in nm.
+    :ivar float max_wavelength: The maximum wavelength of the laser
+      spectrum in nm.
+    :ivar int bins: The number of specral bins of the laser spectrum
     :ivar ndarray wavelengths: The wavelengt coordinate vector in nm.
     :ivar ndarray power_spectral_density: The values of the power
       spectral density in W / nm.
