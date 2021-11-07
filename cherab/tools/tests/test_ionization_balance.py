@@ -153,7 +153,7 @@ class TestIonizationBalance1D(unittest.TestCase):
     psi_value = 0.9
 
     # load adas atomic database and define elements
-    repository_path = os.path.join(os.path.dirname(__file__), 'data/openadas')
+    repository_path = os.path.join(os.path.dirname(__file__), 'data/atomic_rates_mockup')
     atomic_data = OpenADAS(data_path=repository_path, permit_extrapolation=True)
 
     element = neon
