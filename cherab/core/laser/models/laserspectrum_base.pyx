@@ -48,6 +48,7 @@ cdef class LaserSpectrum(Function1D):
     :ivar ndarray photos: The values corresponding to the number
       of photons.
     :ivar float delta_wavelength: Spectral width of the bins in nm.
+    
     """
 
     def __init__(self, double min_wavelength, double max_wavelength, int bins):
