@@ -43,24 +43,24 @@ class _SpectroscopicObserver0DBase:
     @property
     def origin(self):
         # The origin point of the sight line.
-        return self._origin
+        return Point3D(0, 0, 0).transform(self.transform)
 
     @origin.setter
     def origin(self, value):
         if not isinstance(value, Point3D):
             raise TypeError("Attribute 'origin' must be of type Point3D.")
-
-        if self._direction.x != 0 or self._direction.y != 0 or self._direction.z != 1:
+        
+        direction = self.direction
+        if direction.x != 0 or direction.y != 0 or direction.z != 1:
             up = Vector3D(0, 0, 1)
         else:
             up = Vector3D(1, 0, 0)
-        self._origin = value
-        self.transform = translate(value.x, value.y, value.z) * rotate_basis(self._direction, up)
+        self.transform = translate(value.x, value.y, value.z) * rotate_basis(direction, up)
 
     @property
     def direction(self):
         # The observation direction of the sight line.
-        return self._direction
+        return Vector3D(0, 0, 1).transform(self.transform)
 
     @direction.setter
     def direction(self, value):
@@ -71,8 +71,8 @@ class _SpectroscopicObserver0DBase:
             up = Vector3D(0, 0, 1)
         else:
             up = Vector3D(1, 0, 0)
-        self._direction = value
-        self.transform = translate(self._origin.x, self._origin.y, self._origin.z) * rotate_basis(value, up)
+        origin = self.origin
+        self.transform = translate(origin.x, origin.y, origin.z) * rotate_basis(value, up)
 
     @property
     def display_progress(self):
