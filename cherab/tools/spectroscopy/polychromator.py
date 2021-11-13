@@ -26,7 +26,78 @@ from .instrument import SpectroscopicInstrument
 
 class PolychromatorFilter(InterpolatedSF):
     """
-    Defines a symmetrical trapezoidal polychromator filter as a Raysect's InterpolatedSF.
+    Defines a polychromator filter as a Raysect's InterpolatedSF.
+
+    :param object wavelengths: 1D array of wavelengths in nanometers.
+    :param object samples: 1D array of spectral samples.
+    :param bool normalise: True/false toggle for whether to normalise the
+                           spectral function so its integral equals 1.
+    :param str name: Filter name (e.g. "H-alpha filter"). Default is ''.
+
+    :ivar float min_wavelength: Lower wavelength bound of the filter's spectral range in nm.
+    :ivar float max_wavelength: Upper wavelength bound of the filter's spectral range in nm.
+    """
+
+    def __init__(self, wavelengths, samples, normalise=False, name=''):
+
+        wavelengths = np.array(wavelengths, dtype=np.float64)
+        samples = np.array(samples, dtype=np.float64)
+
+        if wavelengths.ndim != 1:
+            raise ValueError("Wavelength array must be 1D.")
+
+        if samples.shape[0] != wavelengths.shape[0]:
+            raise ValueError("Wavelength and sample arrays must be the same length.")
+
+        indices = np.argsort(wavelengths)
+        wavelengths = wavelengths[indices]
+        samples = samples[indices]
+
+        self._min_wavelength = wavelengths[0]
+        self._max_wavelength = wavelengths[-1]
+        self._window = self._max_wavelength - self._min_wavelength
+        self._central_wavelength = 0.5 * (self._max_wavelength + self._min_wavelength)
+
+        # setting the ends of the filter to zero, if they are not
+        if samples[0] != 0:
+            wavelengths = np.insert(wavelengths, 0, wavelengths[0] * (1. - 1.e-15))
+            samples = np.insert(samples, 0, 0)
+        if samples[-1] != 0:
+            wavelengths = np.append(wavelengths, wavelengths[-1] * (1. + 1.e-15))
+            samples = np.append(samples, 0)
+
+        super().__init__(wavelengths, samples, normalise)
+        self._name = str(name)
+
+    @property
+    def name(self):
+        # Filter name.
+        return self._name
+
+    @property
+    def min_wavelength(self):
+        # Lower wavelength bound of the filter's spectral range in nm.
+        return self._min_wavelength
+
+    @property
+    def max_wavelength(self):
+        # Upper wavelength bound of the filter's spectral range in nm.
+        return self._max_wavelength
+
+    @property
+    def window(self):
+        # Size of the filtering window in nm.
+        return self._window
+
+    @property
+    def central_wavelength(self):
+        # Central wavelength of the filter in nm.
+        return self._central_wavelength
+
+
+class TrapezoidalFilter(PolychromatorFilter):
+    """
+    Symmetrical trapezoidal polychromator filter.
 
     :param float wavelength: Central wavelength of the filter in nm.
     :param float window: Size of the filtering window in nm. Default is 3.
@@ -35,54 +106,37 @@ class PolychromatorFilter(InterpolatedSF):
     :param str name: Filter name (e.g. "H-alpha filter"). Default is ''.
     """
 
-    def __init__(self, wavelength, window=3., flat_top=None, name=''):
+    def __init__(self, central_wavelength, window=3., flat_top=None, name=''):
 
-        if wavelength <= 0:
-            raise ValueError("Argument 'wavelength' must be positive.")
+        if central_wavelength <= 0:
+            raise ValueError("Argument 'central_wavelength' must be positive.")
 
         if window <= 0:
             raise ValueError("Argument 'window' must be positive.")
 
-        flat_top = flat_top or window - 1.e-15
+        flat_top = flat_top or window
 
         if flat_top <= 0:
             raise ValueError("Argument 'flat_top' must be positive.")
         if flat_top > window:
             raise ValueError("Argument 'flat_top' must be less or equal than 'window'.")
-        if flat_top == window:
-            flat_top = window - 1.e-15
 
-        self._window = window
         self._flat_top = flat_top
-        self._wavelength = wavelength
-        self._name = str(name)
 
-        wavelengths = [wavelength - 0.5 * window,
-                       wavelength - 0.5 * flat_top,
-                       wavelength + 0.5 * flat_top,
-                       wavelength + 0.5 * window]
+        if flat_top == window:
+            flat_top -= flat_top * 1.e-15
+
+        wavelengths = [central_wavelength - 0.5 * window,
+                       central_wavelength - 0.5 * flat_top,
+                       central_wavelength + 0.5 * flat_top,
+                       central_wavelength + 0.5 * window]
         samples = [0, 1, 1, 0]
-        super().__init__(wavelengths, samples, normalise=False)
-
-    @property
-    def window(self):
-        # Size of the filtering window in nm.
-        return self._window
+        super().__init__(wavelengths, samples, normalise=False, name=name)
 
     @property
     def flat_top(self):
         # Size of the flat top part of the filter in nm.
         return self._flat_top
-
-    @property
-    def wavelength(self):
-        # Central wavelength of the filter in nm.
-        return self._wavelength
-
-    @property
-    def name(self):
-        # Filter name.
-        return self._name
 
 
 class Polychromator(SpectroscopicInstrument):
@@ -98,17 +152,17 @@ class Polychromator(SpectroscopicInstrument):
 
        >>> from raysect.optical import World
        >>> from raysect.optical.observer import FibreOptic
-       >>> from cherab.tools.spectroscopy import Polychromator, PolychromatorFilter
+       >>> from cherab.tools.spectroscopy import Polychromator, TrapezoidalFilter
        >>>
        >>> world = World()
-       >>> h_alpha_filter = PolychromatorFilter(656.1, name='H-alpha filter')
-       >>> ciii_465nm_filter = PolychromatorFilter(464.8, name='CIII 465 nm filter')
+       >>> h_alpha_filter = TrapezoidalFilter(656.1, name='H-alpha filter')
+       >>> ciii_465nm_filter = TrapezoidalFilter(464.8, name='CIII 465 nm filter')
        >>> polychromator = Polychromator([h_alpha_filter, ciii_465nm_filter], name='MyPolychromator')
        >>> fibreoptic = FibreOptic(name="MyFibreOptic", parent=world)
        >>> fibreoptic.min_wavelength = polychromator.min_wavelength
        >>> fibreoptic.max_wavelength = polychromator.max_wavelength
        >>> fibreoptic.spectral_bins = polychromator.spectral_bins
-       >>> fibreoptic.pipelines = polychromator.pipelines()
+       >>> fibreoptic.pipelines = polychromator.new_pipelines()
     """
 
     def __init__(self, filters, min_bins_per_window=10, name=''):
@@ -155,8 +209,8 @@ class Polychromator(SpectroscopicInstrument):
         step = np.inf
         for poly_filter in self._filters:
             step = min(step, poly_filter.window / self._min_bins_per_window)
-            min_wavelength = min(min_wavelength, poly_filter.wavelength - 0.5 * poly_filter.window)
-            max_wavelength = max(max_wavelength, poly_filter.wavelength + 0.5 * poly_filter.window)
+            min_wavelength = min(min_wavelength, poly_filter.min_wavelength)
+            max_wavelength = max(max_wavelength, poly_filter.max_wavelength)
 
         self._min_wavelength = min_wavelength
         self._max_wavelength = max_wavelength

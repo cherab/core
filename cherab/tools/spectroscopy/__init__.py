@@ -18,5 +18,5 @@
 # under the Licence.
 
 from .instrument import SpectroscopicInstrument
-from .polychromator import PolychromatorFilter, Polychromator
+from .polychromator import PolychromatorFilter, TrapezoidalFilter, Polychromator
 from .spectrometer import Spectrometer, CzernyTurnerSpectrometer, SurveySpectrometer
