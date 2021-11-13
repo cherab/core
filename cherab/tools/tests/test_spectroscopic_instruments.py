@@ -20,7 +20,7 @@ import unittest
 import numpy as np
 
 from raysect.optical.observer.pipeline import RadiancePipeline0D, SpectralRadiancePipeline0D
-from cherab.tools.spectroscopy import PolychromatorFilter, Polychromator, CzernyTurnerSpectrometer, SurveySpectrometer
+from cherab.tools.spectroscopy import TrapezoidalFilter, PolychromatorFilter, Polychromator, CzernyTurnerSpectrometer, SurveySpectrometer
 
 
 class TestPolychromatorFilter(unittest.TestCase):
@@ -29,10 +29,25 @@ class TestPolychromatorFilter(unittest.TestCase):
     """
 
     def test_spectrum(self):
+        wavelengths = [658, 654, 656]  # unsorted
+        samples = [0.5, 0.5, 1]  # non-zero at the ends
+        poly_filter = PolychromatorFilter(wavelengths, samples, name='test_filter')
+        wavelengths = np.linspace(653., 659., 7)
+        spectrum_true = np.array([0, 0.5, 0.75, 1., 0.75, 0.5, 0])
+        spectrum_test = np.array([poly_filter(wvl) for wvl in wavelengths])
+        self.assertTrue(np.all(spectrum_true == spectrum_test))
+
+
+class TestTrapezoidalFilter(unittest.TestCase):
+    """
+    Test for TrapezoidalFilter class.
+    """
+
+    def test_spectrum(self):
         wavelength = 500.
         window = 6.
         flat_top = 2.
-        poly_filter = PolychromatorFilter(wavelength, window, flat_top, 'test_filter')
+        poly_filter = TrapezoidalFilter(wavelength, window, flat_top, 'test_filter')
         wavelengths = np.linspace(496., 504., 9)
         spectrum_true = np.array([0, 0, 0.5, 1., 1., 1., 0.5, 0, 0])
         spectrum_test = np.array([poly_filter(wvl) for wvl in wavelengths])
@@ -44,10 +59,9 @@ class TestPolychromator(unittest.TestCase):
     Test cases for Polychromator class.
     """
 
-    def setUp(self):
-        self.poly_filters_default = [PolychromatorFilter(400., 6., 2., 'filter 1'),
-                                     PolychromatorFilter(700., 8., 4., 'filter 2')]
-        self.min_bins_per_window_default = 10
+    poly_filters_default = (TrapezoidalFilter(400., 6., 2., 'filter 1'),
+                            TrapezoidalFilter(700., 8., 4., 'filter 2'))
+    min_bins_per_window_default = 10
 
     def test_pipeline_properties(self):
         polychromator = Polychromator(self.poly_filters_default, self.min_bins_per_window_default, 'test polychromator')
@@ -68,8 +82,8 @@ class TestPolychromator(unittest.TestCase):
         """ Checks if the spectral properties are updated correctly when the filters are replaced."""
         polychromator = Polychromator(self.poly_filters_default, self.min_bins_per_window_default)
         polychromator.min_bins_per_window = 20
-        polychromator.filters = [PolychromatorFilter(500., 5., 2., 'filter 1'),
-                                 PolychromatorFilter(600., 7., 4., 'filter 2')]
+        polychromator.filters = [TrapezoidalFilter(500., 5., 2., 'filter 1'),
+                                 TrapezoidalFilter(600., 7., 4., 'filter 2')]
         min_wavelength_true = 497.5
         max_wavelength_true = 603.5
         spectral_bins_true = 424
@@ -109,14 +123,13 @@ class TestCzernyTurnerSpectrometer(unittest.TestCase):
     Test cases for CzernyTurnerSpectrometer class.
     """
 
-    def setUp(self):
-        self.diffraction_order = 1
-        self.grating = 2.e-3
-        self.focal_length = 1.e9
-        self.pixel_spacing = 2.e4
-        self.diffraction_angle = 10.
-        self.spectral_bins = 512
-        self.reference_bin = 255
+    diffraction_order = 1
+    grating = 2.e-3
+    focal_length = 1.e9
+    pixel_spacing = 2.e4
+    diffraction_angle = 10.
+    spectral_bins = 512
+    reference_bin = 255
 
     def test_resolution(self):
         wavelengths = [350., 550., 750.]
