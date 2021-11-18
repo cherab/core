@@ -19,8 +19,9 @@
 import unittest
 import numpy as np
 
+from raysect.optical import Spectrum
 from raysect.optical.observer.pipeline import RadiancePipeline0D, SpectralRadiancePipeline0D
-from cherab.tools.spectroscopy import TrapezoidalFilter, PolychromatorFilter, Polychromator, CzernyTurnerSpectrometer, SurveySpectrometer
+from cherab.tools.spectroscopy import TrapezoidalFilter, PolychromatorFilter, Polychromator, CzernyTurnerSpectrometer, Spectrometer
 
 
 class TestPolychromatorFilter(unittest.TestCase):
@@ -92,30 +93,35 @@ class TestPolychromator(unittest.TestCase):
                         polychromator.spectral_bins == spectral_bins_true)    
 
 
-class TestSurveySpectrometer(unittest.TestCase):
+class TestSpectrometer(unittest.TestCase):
     """
-    Test cases for SurveySpectrometer class.
+    Test cases for Spectrometer class.
     """
 
     def test_pipeline_properties(self):
-        resolution = 0.1
-        reference_wavelength = 500
-        reference_bin = 50
-        spectral_bins = 200
-        spectrometer = SurveySpectrometer(resolution, spectral_bins, reference_wavelength, reference_bin, name='test spectrometer')
+        wavelength_to_pixel = ([400., 400.5],)
+        spectrometer = Spectrometer(wavelength_to_pixel, name='test spectrometer')
         pipeline_properties_true = [(SpectralRadiancePipeline0D, 'test spectrometer', None)]
         self.assertSequenceEqual(pipeline_properties_true, spectrometer.pipeline_properties)
 
     def test_spectral_properties(self):
-        resolution = 0.1
-        reference_wavelength = 500
-        reference_bin = 50
-        spectral_bins = 200
-        spectrometer = SurveySpectrometer(resolution, spectral_bins, reference_wavelength, reference_bin, name='test spectrometer')
-        min_wavelength_true = 494.95
-        max_wavelength_true = 514.95
+        wavelength_to_pixel = ([400., 400.5, 401.5, 402., 404.], [600., 600.5, 601.5, 602., 604., 607.])
+        spectrometer = Spectrometer(wavelength_to_pixel, min_bins_per_pixel=2, name='test spectrometer')
+        min_wavelength_true = 400.
+        max_wavelength_true = 607.
+        spectra_bins_true = 828
         self.assertTrue(spectrometer.min_wavelength == min_wavelength_true and
-                        spectrometer.max_wavelength == max_wavelength_true)
+                        spectrometer.max_wavelength == max_wavelength_true and
+                        spectrometer.spectral_bins == spectra_bins_true)
+
+    def test_calibration(self):
+        wavelength_to_pixel = ([400., 400.5, 401.5, 402., 404.],)
+        spectrometer = Spectrometer(wavelength_to_pixel, name='test spectrometer')
+        spectrum = Spectrum(399, 405, 12)
+        s, ds = np.linspace(0, 6., 13, retstep=True)
+        spectrum.samples[:] = s[:-1] + 0.5 * ds
+        calibrated_spectra = spectrometer.calibrate(spectrum)
+        self.assertTrue(np.all(calibrated_spectra[0] == np.array([1.25, 2., 2.75, 4.])))
 
 
 class TestCzernyTurnerSpectrometer(unittest.TestCase):
@@ -128,30 +134,27 @@ class TestCzernyTurnerSpectrometer(unittest.TestCase):
     focal_length = 1.e9
     pixel_spacing = 2.e4
     diffraction_angle = 10.
-    spectral_bins = 512
-    reference_bin = 255
+    accommodated_spectra = ((400., 64), (500., 32))
+    min_bins_per_pixel = 2
 
     def test_resolution(self):
-        wavelengths = [350., 550., 750.]
+        wavelengths = np.array([350., 550., 750.])
         resolutions_true = np.array([8.587997e-3, 7.199328e-3, 5.0599164e-3])
         spectrometer = CzernyTurnerSpectrometer(self.diffraction_order, self.grating, self.focal_length, self.pixel_spacing,
-                                                self.diffraction_angle, self.spectral_bins, 500., self.reference_bin,
-                                                name='test spectrometer')
-        resolutions = []
-        for wvl in wavelengths:
-            spectrometer.reference_wavelength = wvl
-            resolutions.append(spectrometer.resolution)
+                                                self.diffraction_angle, self.accommodated_spectra, name='test spectrometer')
+        resolutions = spectrometer.resolution(wavelengths)
         self.assertTrue(np.all(np.abs(resolutions / resolutions_true - 1.) < 1.e-7))
 
     def test_spectral_properties(self):
-        wavelength = 500.
-        min_wavelength_true = 498.0575
-        max_wavelength_true = 501.9501
+        min_wavelength_true = 400
+        max_wavelength_true = 500.24326
+        spectra_bins_true = 26377
         spectrometer = CzernyTurnerSpectrometer(self.diffraction_order, self.grating, self.focal_length, self.pixel_spacing,
-                                                self.diffraction_angle, self.spectral_bins, wavelength, self.reference_bin,
-                                                name='test spectrometer')
-        self.assertTrue(abs(spectrometer.min_wavelength - min_wavelength_true) < 1.e-4 and
-                        abs(spectrometer.max_wavelength - max_wavelength_true) < 1.e-4)
+                                                self.diffraction_angle, self.accommodated_spectra,
+                                                min_bins_per_pixel=self.min_bins_per_pixel, name='test spectrometer')
+        self.assertTrue(spectrometer.min_wavelength == min_wavelength_true and
+                        spectrometer.spectral_bins == spectra_bins_true and
+                        abs(spectrometer.max_wavelength - max_wavelength_true) < 1.e-5)
 
 
 if __name__ == '__main__':

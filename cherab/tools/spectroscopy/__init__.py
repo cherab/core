@@ -19,4 +19,4 @@
 
 from .instrument import SpectroscopicInstrument
 from .polychromator import PolychromatorFilter, TrapezoidalFilter, Polychromator
-from .spectrometer import Spectrometer, CzernyTurnerSpectrometer, SurveySpectrometer
+from .spectrometer import Spectrometer, CzernyTurnerSpectrometer

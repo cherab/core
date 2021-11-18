@@ -18,6 +18,7 @@
 # under the Licence.
 
 import numpy as np
+from raysect.optical import Spectrum
 from raysect.optical.observer import SpectralRadiancePipeline0D
 
 from .instrument import SpectroscopicInstrument
@@ -25,161 +26,165 @@ from .instrument import SpectroscopicInstrument
 
 class Spectrometer(SpectroscopicInstrument):
     """
-    Spectrometer base class.
-    This is an abstract class.
+    Spectrometer that can accommodate multiple spectra.
 
-    :param int spectral_bins: The number of spectral samples over the wavelength range.
-    :param float reference_wavelength: Wavelength (in nm) corresponding to
-                                       the centre of reference bin.
-    :param int reference_bin: Reference bin index. Can be negative to specify the offset.
-                              Default is None (spectral_bins // 2).
+    Spectrometer is initialized with a sequence of calibration arrays (one array per accommodated
+    spectrum) containing the wavelengths of the pixel borders. Namely, the values
+    :math:`w_{k}^{i}` and :math:`w_{k}^{i+1}` define the spectral range of the pixel :math:`p_i`
+    of the `k`-th spectrum. After the spectrum is ray-traced, it can be recalibrated with
+    `spectrometer.calibrate(spectrum)`.
+
+    Note that Raysect cannot raytrace the spectra with non-constant spectral resolution.
+    Thus, the actual number of spectral bins of raytraced spectrum is defined with
+    `min_bins_per_pixel` attribute.
+
+    :param tuple wavelength_to_pixel: Wavelength-to-pixel calibration arrays.
+    :param int min_bins_per_pixel: Minimal number of spectral bins
+                                   per pixel. Default is 1.
     :param str name: Spectrometer name.
+
+    :ivar tuple wavelengths: Central wavelengths of the pixels.
+
+    .. code-block:: pycon
+
+       >>> from raysect.optical import World, Spectrum
+       >>> from raysect.optical.observer import FibreOptic
+       >>> from cherab.tools.spectroscopy import Spectrometer
+       >>> from matplotlib import pyplot as plt
+       >>>
+       >>> wavelength_to_pixel = ([400., 400.5, 401.5, 402., 404.],
+       >>>                        [600., 600.5, 601.5, 602., 604., 607.])
+       >>> spectrometer = Spectrometer(wavelength_to_pixel, min_bins_per_pixel=5,
+       >>>                             name='MySpectrometer')
+       >>>
+       >>> world = World()
+       >>> fibreoptic = FibreOptic(name="MyFibreOptic", parent=world)
+       >>> fibreoptic.min_wavelength = spectrometer.min_wavelength
+       >>> fibreoptic.max_wavelength = spectrometer.max_wavelength
+       >>> fibreoptic.spectral_bins = spectrometer.spectral_bins
+       >>> fibreoptic.pipelines = spectrometer.new_pipelines()
+       >>> ...
+       >>> fibreoptic.observe()
+       >>> spectrum = Spectrum(fibreoptic.min_wavelength, fibreoptic.max_wavelength, fibreoptic.spectral_bins)
+       >>> spectrum.samples[:] = fibreoptic.pipelines[0].mean
+       >>> calibrated_spectra = spectrometer.calibrate(spectrum)
+       >>> wavelengths = spectrometer.wavelengths
+       >>>
+       >>> plt.plot(wavelengths[0], calibrated_spectra[0])
+       >>> plt.show()
     """
 
-    def __init__(self, spectral_bins, reference_wavelength, reference_bin=None, name=''):
+    def __init__(self, wavelength_to_pixel, min_bins_per_pixel=1, name=''):
+
+        self.min_bins_per_pixel = min_bins_per_pixel
+        self.wavelength_to_pixel = wavelength_to_pixel
         super().__init__(name)
-        self.spectral_bins = spectral_bins
-        if reference_bin is None:
-            self.reference_bin = self._spectral_bins // 2
-        else:
-            self.reference_bin = reference_bin
-        self.reference_wavelength = reference_wavelength
 
     @property
-    def spectral_bins(self):
-        # The number of spectral samples over the wavelength range.
-        return self._spectral_bins
+    def wavelength_to_pixel(self):
+        # Wavelength-to-pixel calibration arrays.
+        return self._wavelength_to_pixel
 
-    @spectral_bins.setter
-    def spectral_bins(self, value):
-        value = int(value)
-        if value <= 0:
-            raise ValueError("Attribute 'spectral_bins' must be > 0.")
-
-        self._spectral_bins = value
+    @wavelength_to_pixel.setter
+    def wavelength_to_pixel(self, value):
+        _wavelength_to_pixel = []
+        _wavelengths = []
+        for wl2pix in value:
+            wl2pix = np.array(wl2pix, dtype=float)
+            if wl2pix.ndim != 1:
+                raise ValueError('Attribute wavelength_to_pixel must only contain one-dimensional arrays.')
+            if wl2pix.size < 2:
+                raise ValueError('Attribute wavelength_to_pixel must only contain arrays of at least 2 elements.')
+            if np.any(np.diff(wl2pix) <= 0):
+                raise ValueError('Attribute wavelength_to_pixel must only contain monotonically increasing arrays.')
+            wl2pix.flags.writeable = False
+            _wavelength_to_pixel.append(wl2pix)
+            wl_center = 0.5 * (wl2pix[1:] + wl2pix[:-1])
+            wl_center.flags.writeable = False
+            _wavelengths.append(wl_center)
+        self._wavelength_to_pixel = tuple(_wavelength_to_pixel)
+        self._wavelengths = tuple(_wavelengths)
         self._clear_spectral_settings()
 
     @property
-    def reference_wavelength(self):
-        # Wavelength (in nm) corresponding to the centre of reference bin.
-        return self._reference_wavelength
-
-    @reference_wavelength.setter
-    def reference_wavelength(self, value):
-        if value <= 0:
-            raise ValueError("Attribute 'reference_wavelength' must be > 0.")
-
-        self._reference_wavelength = value
-        self._clear_spectral_settings()
+    def wavelengths(self):
+        # Central wavelengths of the pixels.
+        return self._wavelengths
 
     @property
-    def reference_bin(self):
-        # Reference bin index.
-        return self._reference_bin
+    def min_bins_per_pixel(self):
+        # Minimal number of spectral bins per pixel.
+        return self._min_bins_per_pixel
 
-    @reference_bin.setter
-    def reference_bin(self, value):
+    @min_bins_per_pixel.setter
+    def min_bins_per_pixel(self, value):
         value = int(value)
+        if value <= 0:
+            raise ValueError("Attribute 'min_bins_per_pixel' must be positive.")
 
-        self._reference_bin = value
+        self._min_bins_per_pixel = value
         self._clear_spectral_settings()
 
     def _update_pipeline_properties(self):
         self._pipeline_properties = [(SpectralRadiancePipeline0D, self._name, None)]
 
-    def _clear_spectral_settings(self):
-        self._min_wavelength = None
-        self._max_wavelength = None
-
-
-class SurveySpectrometer(Spectrometer):
-    """
-    Survey spectrometer with a constant spectral resolution.
-
-    Note: survey spectrometers usually have non-constant spectral resolution
-    in the supported wavelength range. However, Raysect does not support
-    the observers with variable spectral resolution.
-
-    :param float resolution: Spectral resolution in nm (can be negative).
-    :param int spectral_bins: The number of spectral samples over the wavelength range.
-    :param float reference_wavelength: Wavelength (in nm) corresponding to
-                                       the centre of reference bin.
-    :param int reference_bin: Reference bin index. Can be negative to specify the offset.
-                              Default is None (spectral_bins // 2).
-    :param str name: Spectrometer name.
-
-    :ivar float resolution: Spectral resolution in nm (can be negative).
-
-    .. code-block:: pycon
-
-       >>> from numpy import ceil
-       >>> from raysect.optical import World
-       >>> from raysect.optical.observer import FibreOptic
-       >>> from cherab.tools.spectroscopy import SurveySpectrometer, Polychromator, PolychromatorFilter
-       >>>
-       >>> world = World()
-       >>> fibreoptic = FibreOptic(name="MyFibreOptic", parent=world)
-       >>> # Here, the fibre optic is "connected" to both survey spectrometer and polychromator.
-       >>>
-       >>> # setting up the polychromator
-       >>> h_alpha_filter = PolychromatorFilter(656.1, name='H-alpha filter')
-       >>> ciii_465nm_filter = PolychromatorFilter(464.8, name='CIII 465 nm filter')
-       >>> polychromator = Polychromator([h_alpha_filter, ciii_465nm_filter], name='MyPolychromator')
-       >>>
-       >>> # setting up the survey spectrometer
-       >>> spectrometer = SurveySpectrometer(0.1, 1024, 500, name='MySpectrometer')
-       >>>
-       >>> fibreoptic.min_wavelength = min(spectrometer.min_wavelength, polychromator.min_wavelength)
-       >>> fibreoptic.max_wavelength = max(spectrometer.max_wavelength, polychromator.max_wavelength)
-       >>> bin_width = min((spectrometer.max_wavelength - spectrometer.min_wavelength) / spectrometer.spectral_bins,
-       >>>                 (polychromator.max_wavelength - polychromator.min_wavelength) / polychromator.spectral_bins)
-       >>> fibreoptic.spectral_bins = int(ceil((fibreoptic.max_wavelength - fibreoptic.min_wavelength) / bin_width))
-       >>> fibreoptic.pipelines = spectrometer.pipelines() + polychromator.pipelines()
-    """
-
-    def __init__(self, resolution, spectral_bins, reference_wavelength, reference_bin=None, name=''):
-        super().__init__(spectral_bins, reference_wavelength, reference_bin, name)
-        self.resolution = resolution
-
-    @property
-    def resolution(self):
-        # Spectral resolution in nm (can be negative).
-        return self._resolution
-
-    @resolution.setter
-    def resolution(self, value):
-        if value == 0:
-            raise ValueError("Attribute 'resolution' must be non-zero.")
-
-        self._resolution = value
-        self._clear_spectral_settings()
-
     def _update_spectral_settings(self):
+        self._min_wavelength = min(wl2pix[0] for wl2pix in self._wavelength_to_pixel)
+        self._max_wavelength = max(wl2pix[-1] for wl2pix in self._wavelength_to_pixel)
+        step = min(np.diff(wl2pix).min() for wl2pix in self._wavelength_to_pixel) / self._min_bins_per_pixel
+        self._spectral_bins = int(np.ceil((self._max_wavelength - self._min_wavelength) / step))
 
-        if self._resolution > 0:
-            self._min_wavelength = self._reference_wavelength - (self._reference_bin + 0.5) * self._resolution
-            self._max_wavelength = self._min_wavelength + self._spectral_bins * self._resolution
-        else:
-            self._min_wavelength = self._reference_wavelength + (self._spectral_bins - self._reference_bin - 0.5) * self._resolution
-            self._max_wavelength = self._min_wavelength - self._spectral_bins * self._resolution
+    def calibrate(self, spectrum):
+        """
+        Calibrates the spectrum according to the `wavelength_to_pixel` arrays
+        by averaging it over the pixel widths.
+
+        :param Spectrum spectrum: Spectrum to calibrate.
+
+        :returns: A tuple of calibrated spectra as ndarrays.
+        """
+        if not isinstance(spectrum, Spectrum):
+            raise TypeError('Argument spectrum must be a Spectrum instance.')
+        if spectrum.min_wavelength > self.min_wavelength or spectrum.max_wavelength < self.max_wavelength:
+            raise ValueError('Unable to calibrate the spectrum. '
+                             'The spectrum has narrower range ({}, {}) than the spectrometer ({}, {}).'.format(spectrum.min_wavelength,
+                                                                                                               spectrum.max_wavelength,
+                                                                                                               self.min_wavelength,
+                                                                                                               self.max_wavelength))
+        calibrated_spectra = []
+        for wl2pix in self.wavelength_to_pixel:
+            calibrated_spectrum = np.zeros(wl2pix.size - 1)
+            for i in range(wl2pix.size - 1):
+                calibrated_spectrum[i] = spectrum.integrate(wl2pix[i], wl2pix[i + 1]) / (wl2pix[i + 1] - wl2pix[i])
+            calibrated_spectra.append(calibrated_spectrum)
+
+        return calibrated_spectra
 
 
 class CzernyTurnerSpectrometer(Spectrometer):
     """
-    Czerny-Turner high-resolution spectrometer.
+    Czerny-Turner spectrometer.
+
+    The Czerny-Turner spectrometer is initialized with the parameters of the diffraction scheme
+    and a sequence of accommodated spectra, each of which is determined by the lower wavelength
+    bound and the number of pixels.
+
+    This spectrometer automatically fills the wavelength-to-pixel calibration arrays
+    according to the parameters of the diffraction scheme.
 
     :param int diffraction_order: Diffraction order.
     :param float grating: Diffraction grating in nm-1.
     :param float focal_length: Focal length in nm.
     :param float pixel_spacing: Pixel to pixel spacing on CCD in nm.
     :param float diffraction_angle: Angle between incident and diffracted light in degrees.
-    :param int spectral_bins: The number of spectral samples over the wavelength range.
-    :param float reference_wavelength: Wavelength (in nm) corresponding to
-                                       the centre of reference bin.
-    :param int reference_bin: Reference bin index. Default is None (spectral_bins // 2).
+    :param tuple accommodated_spectra: A sequence of (`min_wavelength`, `pixels`) pairs, specifying
+                                       the lower wavelength bound and the number of pixels
+                                       of accommodated spectra.
+    :param int min_bins_per_pixel: Minimal number of spectral bins
+                                   per pixel. Default is 1.
     :param str name: Spectrometer name.
 
-    :ivar float resolution: Spectral resolution in nm (can be negative).
+    :ivar tuple wavelength_to_pixel: Wavelength-to-pixel calibration arrays.
 
     .. code-block:: pycon
 
@@ -188,23 +193,26 @@ class CzernyTurnerSpectrometer(Spectrometer):
        >>> from cherab.tools.spectroscopy import CzernyTurnerSpectrometer
        >>>
        >>> world = World()
-       >>> hires_spectrometer = CzernyTurnerSpectrometer(1, 2.e-3, 1.e9, 2.e4, 10., 512, 600.,
+       >>> hires_spectrometer = CzernyTurnerSpectrometer(1, 2.e-3, 1.e9, 2.e4, 10.,
+       >>>                                               ((600., 512), (700., 128)),
        >>>                                               name='MySpectrometer')
        >>> fibreoptic = FibreOptic(name="MyFibreOptic", parent=world)
        >>> fibreoptic.min_wavelength = hires_spectrometer.min_wavelength
        >>> fibreoptic.max_wavelength = hires_spectrometer.max_wavelength
        >>> fibreoptic.spectral_bins = hires_spectrometer.spectral_bins
-       >>> fibreoptic.pipelines = hires_spectrometer.pipelines()
+       >>> fibreoptic.pipelines = hires_spectrometer.new_pipelines()
     """
 
-    def __init__(self, diffraction_order, grating, focal_length, pixel_spacing, diffraction_angle, spectral_bins,
-                 reference_wavelength, reference_bin=None, name=''):
-        super().__init__(spectral_bins, reference_wavelength, reference_bin, name)
+    def __init__(self, diffraction_order, grating, focal_length, pixel_spacing, diffraction_angle,
+                 accommodated_spectra, min_bins_per_pixel=1, name=''):
         self.diffraction_order = diffraction_order
         self.grating = grating
         self.focal_length = focal_length
         self.pixel_spacing = pixel_spacing
         self.diffraction_angle = diffraction_angle
+        self.accommodated_spectra = accommodated_spectra
+        self.min_bins_per_pixel = min_bins_per_pixel
+        self.name = name
 
     @property
     def diffraction_order(self):
@@ -253,8 +261,8 @@ class CzernyTurnerSpectrometer(Spectrometer):
 
     @pixel_spacing.setter
     def pixel_spacing(self, value):
-        if value == 0:
-            raise ValueError("Attribute 'pixel_spacing' must be non-zero.")
+        if value <= 0:
+            raise ValueError("Attribute 'pixel_spacing' must be positive.")
 
         self._pixel_spacing = value
         self._clear_spectral_settings()
@@ -273,26 +281,53 @@ class CzernyTurnerSpectrometer(Spectrometer):
         self._clear_spectral_settings()
 
     @property
-    def resolution(self):
-        # Spectral resolution in nm (can be negative).
+    def accommodated_spectra(self):
+        return self._accommodated_spectra
+
+    @accommodated_spectra.setter
+    def accommodated_spectra(self, value):
+        _wavelength_to_pixel = []
+        _wavelengths = []
+        for min_wavelength, pixels in value:
+            if min_wavelength <= 0:
+                raise ValueError('The value of min_wavelength in accommodated_spectra must be positive.')
+            if pixels <= 0:
+                raise ValueError('The value of pixels in accommodated_spectra must be positive.')
+            pixels = int(pixels)
+            wl2pix = np.zeros(pixels + 1)
+            wl2pix[0] = min_wavelength
+            for i in range(1, pixels + 1):
+                wl2pix[i] = wl2pix[i - 1] + self.resolution(wl2pix[i - 1])
+            wl2pix.flags.writeable = False
+            _wavelength_to_pixel.append(wl2pix)
+            wl_center = 0.5 * (wl2pix[1:] + wl2pix[:-1])
+            wl_center.flags.writeable = False
+            _wavelengths.append(wl_center)
+        self._accommodated_spectra = value
+        self._wavelength_to_pixel = tuple(_wavelength_to_pixel)
+        self._wavelengths = tuple(_wavelengths)
+        self._clear_spectral_settings()
+
+    @property
+    def wavelength_to_pixel(self):
+        # Wavelength-to-pixel calibration arrays.
+        return self._wavelength_to_pixel
+
+    def resolution(self, wavelength):
+        """
+        Calculates spectral resolution in nm for a given wavelength.
+
+        :param wavelength: Wavelength in nm.
+
+        :returns: Resolution in nm.
+        """
         grating = self._grating
         m = self._diffraction_order
         dxdp = self._pixel_spacing
         angle = self._diffraction_angle
         fl = self._focal_length
 
-        p = 0.5 * m * grating * self._reference_wavelength
+        p = 0.5 * m * grating * wavelength
         _resolution = dxdp * (np.sqrt(np.cos(angle)**2 - p * p) - p * np.tan(angle)) / (m * fl * grating)
 
         return _resolution
-
-    def _update_spectral_settings(self):
-
-        resolution = self.resolution
-
-        if resolution > 0:
-            self._min_wavelength = self._reference_wavelength - (self._reference_bin + 0.5) * resolution
-            self._max_wavelength = self._min_wavelength + self._spectral_bins * resolution
-        else:
-            self._min_wavelength = self._reference_wavelength + (self._spectral_bins - self._reference_bin - 0.5) * resolution
-            self._max_wavelength = self._min_wavelength - self._spectral_bins * resolution
