@@ -238,7 +238,7 @@ class OpenADAS(AtomicData):
                 return NullBeamEmissionPEC()
             raise
 
-        wavelength = self.wavelength(beam_ion, charge, transition)
+        wavelength = self.wavelength(beam_ion, 0, transition)
 
         # load and interpolate data
         return BeamEmissionPEC(data, wavelength, extrapolate=self._permit_extrapolation)
