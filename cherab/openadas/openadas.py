@@ -134,19 +134,19 @@ class OpenADAS(AtomicData):
         if isinstance(donor_ion, Isotope):
             donor_ion = donor_ion.element
 
-        if isinstance(receiver_ion, Isotope):
-            receiver_ion = receiver_ion.element
+        receiver_ion_element = receiver_ion.element if isinstance(receiver_ion, Isotope) else receiver_ion
 
         try:
             # read data
-            wavelength = repository.get_wavelength(receiver_ion, receiver_charge - 1, transition, repository_path=self._data_path)
-            data = repository.get_beam_cx_rates(donor_ion, receiver_ion, receiver_charge, transition,
+            data = repository.get_beam_cx_rates(donor_ion, receiver_ion_element, receiver_charge, transition,
                                                 repository_path=self._data_path)
 
         except RuntimeError:
             if self._missing_rates_return_null:
                 return [NullBeamCXPEC()]
             raise
+
+        wavelength = self.wavelength(receiver_ion, receiver_charge - 1, transition)
 
         # load and interpolate the relevant transition data from each file
         rates = []
@@ -223,22 +223,22 @@ class OpenADAS(AtomicData):
         """
 
         # extract element from isotope
-        if isinstance(beam_ion, Isotope):
-            beam_ion = beam_ion.element
+        beam_ion_element = beam_ion.element if isinstance(beam_ion, Isotope) else beam_ion
 
         if isinstance(plasma_ion, Isotope):
             plasma_ion = plasma_ion.element
 
         try:
             # locate data file
-            data = repository.get_beam_emission_rate(beam_ion, plasma_ion, charge, transition,
+            data = repository.get_beam_emission_rate(beam_ion_element, plasma_ion, charge, transition,
                                                      repository_path=self._data_path)
-            wavelength = repository.get_wavelength(beam_ion, 0, transition, repository_path=self._data_path)
 
         except RuntimeError:
             if self._missing_rates_return_null:
                 return NullBeamEmissionPEC()
             raise
+
+        wavelength = self.wavelength(beam_ion, charge, transition)
 
         # load and interpolate data
         return BeamEmissionPEC(data, wavelength, extrapolate=self._permit_extrapolation)
@@ -252,17 +252,17 @@ class OpenADAS(AtomicData):
         :return:
         """
 
-        if isinstance(ion, Isotope):
-            ion = ion.element
+        ion_element = ion.element if isinstance(ion, Isotope) else ion
 
         try:
-            wavelength = repository.get_wavelength(ion, charge, transition, repository_path=self._data_path)
-            data = repository.get_pec_excitation_rate(ion, charge, transition, repository_path=self._data_path)
+            data = repository.get_pec_excitation_rate(ion_element, charge, transition, repository_path=self._data_path)
 
         except RuntimeError:
             if self._missing_rates_return_null:
                 return NullImpactExcitationPEC()
             raise
+
+        wavelength = self.wavelength(ion, charge, transition)
 
         return ImpactExcitationPEC(wavelength, data, extrapolate=self._permit_extrapolation)
 
@@ -275,17 +275,17 @@ class OpenADAS(AtomicData):
         :return:
         """
 
-        if isinstance(ion, Isotope):
-            ion = ion.element
+        ion_element = ion.element if isinstance(ion, Isotope) else ion
 
         try:
-            wavelength = repository.get_wavelength(ion, charge, transition, repository_path=self._data_path)
-            data = repository.get_pec_recombination_rate(ion, charge, transition, repository_path=self._data_path)
+            data = repository.get_pec_recombination_rate(ion_element, charge, transition, repository_path=self._data_path)
 
         except (FileNotFoundError, KeyError):
             if self._missing_rates_return_null:
                 return NullRecombinationPEC()
             raise
+
+        wavelength = self.wavelength(ion, charge, transition)
 
         return RecombinationPEC(wavelength, data, extrapolate=self._permit_extrapolation)
 
