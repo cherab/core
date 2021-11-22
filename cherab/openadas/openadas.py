@@ -154,7 +154,7 @@ class OpenADAS(AtomicData):
             raise
 
         # obtain isotope's rest wavelength for a given transition
-        # the wavelength is used ot convert the PEC from photons/s/m3 to Watts/m3
+        # the wavelength is used ot convert the PEC from photons/s/m3 to W/m3
         wavelength = self.wavelength(receiver_ion, receiver_charge - 1, transition)
 
         # load and interpolate the relevant transition data from each file
@@ -249,7 +249,7 @@ class OpenADAS(AtomicData):
             raise
 
         # obtain isotope's rest wavelength for a given transition
-        # the wavelength is used ot convert the PEC from photons/s/m3 to Watts/m3
+        # the wavelength is used ot convert the PEC from photons/s/m3 to W/m3
         wavelength = self.wavelength(beam_ion, 0, transition)
 
         # load and interpolate data
@@ -278,7 +278,7 @@ class OpenADAS(AtomicData):
             raise
 
         # obtain isotope's rest wavelength for a given transition
-        # the wavelength is used ot convert the PEC from photons/s/m3 to Watts/m3
+        # the wavelength is used ot convert the PEC from photons/s/m3 to W/m3
         wavelength = self.wavelength(ion, charge, transition)
 
         return ImpactExcitationPEC(wavelength, data, extrapolate=self._permit_extrapolation)
@@ -306,7 +306,7 @@ class OpenADAS(AtomicData):
             raise
 
         # obtain isotope's rest wavelength for a given transition
-        # the wavelength is used ot convert the PEC from photons/s/m3 to Watts/m3
+        # the wavelength is used ot convert the PEC from photons/s/m3 to W/m3
         wavelength = self.wavelength(ion, charge, transition)
 
         return RecombinationPEC(wavelength, data, extrapolate=self._permit_extrapolation)
