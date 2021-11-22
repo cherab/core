@@ -15,51 +15,6 @@ from cherab.tools.plasmas.slab import build_constant_slab_plasma
 
 class TestSpecies(unittest.TestCase):
 
-    def setUp(self):
-
-        # set up spectral lines and shape arguments
-        self.line_d = Line(deuterium, 0, (3, 2))
-        self.line_he = Line(helium, 0, ("1s1 3d1 1d2.0", "1s1 2p1 1p1.0"))
-        self.lineshape_args = [[[668.0, 664.0, 660.0],
-                               [0.5, 0.3, 0.2]]]
-
-        # set up plasma population properties
-        self.ti_d = 1e3
-        self.ni_d = 1e19
-        self.v_d = Vector3D(0, 0, 0)
-
-        self.ti_he = 1e3
-        self.ni_he = 5e19
-        self.v_he = Vector3D(0, 0, 0)
-        self.te = 10
-
-        # set up radiation models
-        self.models = [ExcitationLine(self.line_d),
-                       RecombinationLine(self.line_d),
-                       ExcitationLine(self.line_he, lineshape=MultipletLineShape,
-                                      lineshape_args=self.lineshape_args),
-                       RecombinationLine(self.line_he, lineshape=MultipletLineShape,
-                                         lineshape_args=self.lineshape_args),
-                       TotalRadiatedPower(helium, 0),
-                       Bremsstrahlung()
-                      ]
-
-        # set up plasma species
-        self.plasma_species = [(deuterium, 0, self.ni_d, self.ti_d, self.v_d),
-                (deuterium, 1, self.ni_d, self.ti_d, self.v_d),
-                (helium, 0, self.ni_he, self.ti_he, self.v_he),
-                (helium, 1, self.ni_he, self.ti_he, self.v_he)
-                ]
-
-        # set up plasma
-        self.world = World()
-        self.atomic_data = OpenADAS()
-        self.plasma = build_constant_slab_plasma(electron_temperature=self.te,
-                                    plasma_species=self.plasma_species)
-        self.plasma.atomic_data=self.atomic_data
-        self.plasma.models = self.models
-        self.plasma.parent = self.world
-
     def test_pickle_models(self):
         """
         Test pickling a copy of plasma radiation models.
@@ -76,25 +31,84 @@ class TestSpecies(unittest.TestCase):
         ray = Ray(origin, direction, min_wavelength=655, max_wavelength=670, bins=1e3)
         ray_pickled = ray.copy()
 
+        # set up spectral lines and shape arguments
+        line_d = Line(deuterium, 0, (3, 2))
+        line_he = Line(helium, 0, ("1s1 3d1 1d2.0", "1s1 2p1 1p1.0"))
+        lineshape_args = [[[668.0, 664.0, 660.0],
+                               [0.5, 0.3, 0.2]]]
+
+        # set up plasma population properties
+        ti_d = 1e3
+        ni_d = 1e19
+        v_d = Vector3D(0, 0, 0)
+
+        ti_he = 1e3
+        ni_he = 5e19
+        v_he = Vector3D(0, 0, 0)
+        te = 10
+
+        # set up radiation models
+        models = [ExcitationLine(line_d),
+                       RecombinationLine(line_d),
+                       ExcitationLine(line_he, lineshape=MultipletLineShape,
+                                      lineshape_args=lineshape_args),
+                       RecombinationLine(line_he, lineshape=MultipletLineShape,
+                                         lineshape_args=lineshape_args),
+                       TotalRadiatedPower(helium, 0),
+                       Bremsstrahlung()
+                      ]
+
+        # set up plasma species
+        plasma_species = [(deuterium, 0, ni_d, ti_d, v_d),
+                (deuterium, 1, ni_d, ti_d, v_d),
+                (helium, 0, ni_he, ti_he, v_he),
+                (helium, 1, ni_he, ti_he, v_he)
+                ]
+
+        # set up plasma
+        world = World()
+        atomic_data = OpenADAS()
+        plasma = build_constant_slab_plasma(electron_temperature=te,
+                                    plasma_species=plasma_species)
+        plasma.atomic_data = atomic_data
+        plasma.models = models
+        plasma.parent = world
+
+        # pickle plasma's radiation models
+        model_pickle = pickle.dumps(list(plasma.models))
+
+        # remove objects to test weakrefs
+        del world
+        del plasma
+        del atomic_data
+        del plasma_species
+        del models
+
+        with self.assertRaises(UnboundLocalError, msg="not all objects were successfully removed"):
+            world
+            plasma
+            atomic_data
+            plasma_species
+            models
+
         # initialise separete scenegraph
         world = World()
         atomic_data = OpenADAS()
 
-        plasma_species = [(deuterium, 0, self.ni_d, self.ti_d, self.v_d),
-                        (deuterium, 1, self.ni_d, self.ti_d, self.v_d),
-                        (helium, 0, self.ni_he, self.ti_he, self.v_he),
-                        (helium, 1, self.ni_he, self.ti_he, self.v_he)
+        plasma_species = [(deuterium, 0, ni_d, ti_d, v_d),
+                        (deuterium, 1, ni_d, ti_d, v_d),
+                        (helium, 0, ni_he, ti_he, v_he),
+                        (helium, 1, ni_he, ti_he, v_he)
                         ]
-        plasma = build_constant_slab_plasma(electron_temperature=self.te,
+        plasma = build_constant_slab_plasma(electron_temperature=te,
                                             plasma_species=plasma_species)
         plasma.atomic_data=atomic_data
         plasma.parent = world
 
-        # use unpickled-pickled copy of the self.plasma.models
-        dumps = pickle.dumps(list(self.plasma.models))
-        plasma.models = pickle.loads(dumps)
+        # use unpickle copy of the self.plasma.models
+        plasma.models = pickle.loads(model_pickle)
 
-        spect = ray.trace(self.world)
+        spect = ray.trace(world)
         spect_pickled = ray_pickled.trace(world)
 
         self.assertEqual((spect.samples - spect_pickled.samples).max(), 0,
