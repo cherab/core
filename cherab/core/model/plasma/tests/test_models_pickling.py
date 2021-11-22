@@ -113,3 +113,4 @@ class TestSpecies(unittest.TestCase):
 
         self.assertEqual((spect.samples - spect_pickled.samples).max(), 0,
                            msg="Observed spectra have to be equal.")
+                           
