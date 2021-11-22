@@ -58,5 +58,15 @@ cdef class Line:
         self.charge = charge
         self.transition = transition
 
+    def __getstate__(self):
+        return {"element": self.element,
+                "charge": self.charge,
+                "transition": self.transition}
+    
+    def __setstate__(self, state):
+        self.element = state["element"]
+        self.charge = state["charge"]
+        self.transition = state["transition"]
+        
     def __repr__(self):
         return '<Line: {}, {}, {}>'.format(self.element.name, self.charge, self.transition)

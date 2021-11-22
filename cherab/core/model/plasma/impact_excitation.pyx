@@ -47,6 +47,22 @@ cdef class ExcitationLine(PlasmaModel):
         # ensure that cache is initialised
         self._change()
 
+    def __getstate__(self):
+        state = super().__getstate__()
+        state["line"] = self._line
+        state["lineshape_class"] = self._lineshape_class
+        state["lineshape_args"] = self._lineshape_args
+        state["lineshape_kwargs"] = self._lineshape_kwargs
+        return state
+    
+    def __setstate__(self, state):
+        super().__setstate__(state)
+        self._line = state["line"]
+        self._lineshape_class = state["lineshape_class"]
+        self._lineshape_args = state["lineshape_args"]
+        self._lineshape_kwargs = state["lineshape_kwargs"]
+        self._change()
+
     def __repr__(self):
         return '<ExcitationLine: element={}, charge={}, transition={}>'.format(self._line.element.name, self._line.charge, self._line.transition)
 

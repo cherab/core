@@ -57,6 +57,37 @@ cdef class Element:
     def __repr__(self):
         return '<Element: {}>'.format(self.name)
 
+    def __hash__(self):
+        return hash((self.name, self.symbol, self.atomic_number, self.atomic_weight))
+
+    def __richcmp__(self, object other, int op):
+
+        cdef Element e
+
+        if not isinstance(other, Element):
+            return NotImplemented
+
+        e = <Element> other
+        if op == 2:     # __eq__()
+            return self.name == e.name and self.symbol == e.symbol and self.atomic_number == e.atomic_number and self.atomic_weight == e.atomic_weight
+        elif op == 3:   # __ne__()
+            return self.name != e.name or self.symbol != e.symbol or self.atomic_number != e.atomic_number or self.atomic_weight != e.atomic_weight
+        else:
+            return NotImplemented
+
+    def __getstate__(self):
+        return {"name": self.name,
+                "symbol": self.symbol, 
+                "atomic_number": self.atomic_number,
+                "atomic_weight": self.atomic_weight
+                }
+
+    def __setstate__(self, state):
+        self.name = state["name"]
+        self.symbol = state["symbol"]
+        self.atomic_number = state["atomic_number"]
+        self.atomic_weight = state["atomic_weight"]
+
 
 cdef class Isotope(Element):
     """
@@ -91,9 +122,41 @@ cdef class Isotope(Element):
         self.mass_number = mass_number
         self.element = element
 
-
     def __repr__(self):
         return '<Isotope: {}>'.format(self.name)
+
+    def __hash__(self):
+        return hash((self.name, self.symbol, self.atomic_number, self.atomic_weight, self.mass_number))
+
+    def __richcmp__(self, object other, int op):
+
+        cdef Isotope e
+
+        if not isinstance(other, Isotope):
+            return NotImplemented
+
+        e = <Isotope> other
+        if op == 2:     # __eq__()
+            return (self.name == e.name and self.symbol == e.symbol and
+                    self.atomic_number == e.atomic_number and self.atomic_weight == e.atomic_weight and
+                    self.element == e.element and self.mass_number == e.mass_number)
+        elif op == 3:   # __ne__()
+            return (self.name != e.name or self.symbol != e.symbol or
+                    self.atomic_number != e.atomic_number or self.atomic_weight != e.atomic_weight or
+                    self.element != e.element or self.mass_number != e.mass_number)
+        else:
+            return NotImplemented
+
+    def __getstate__(self):
+        state = super().__getstate__()
+        state["mass_number"] = self.mass_number
+        state["element"] = self.element
+        return state
+
+    def __setstate__(self, state):
+        super().__setstate__(state)
+        self.mass_number = state["mass_number"]
+        self.element = state["element"]
 
 
 def _build_element_index():

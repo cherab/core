@@ -38,6 +38,18 @@ cdef class TotalRadiatedPower(PlasmaModel):
         # ensure that cache is initialised
         self._change()
 
+    def __getstate__(self):
+        state = super().__getstate__()
+        state["element"] = self._element
+        state["charge"] = self._charge
+        return state
+    
+    def __setstate__(self, state):
+        super().__setstate__(state)
+        self._element = state["element"]
+        self._charge = state["charge"]
+        self._change()
+
     cpdef Spectrum emission(self, Point3D point, Vector3D direction, Spectrum spectrum):
 
         cdef:

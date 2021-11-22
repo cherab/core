@@ -42,6 +42,11 @@ cdef class Bremsstrahlung(PlasmaModel):
 
     where the emission :math:`\\epsilon (\\lambda)` is in units of radiance (ph/s/sr/m^3/nm).
     """
+    def __getstate__(self):
+        return super().__getstate__()
+
+    def __setstate__(self, state):
+        super().__setstate__(state)
 
     def __repr__(self):
         return '<PlasmaModel - Bremsstrahlung>'

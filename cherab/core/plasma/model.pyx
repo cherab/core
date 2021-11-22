@@ -49,6 +49,15 @@ cdef class PlasmaModel:
         if self._plasma:
             self._plasma.notifier.add(self._change)
 
+    def __getstate__(self):
+        # overide the default dictionary to avoid pickle errors
+        # plasma and atomic data are automatically set upon model's assignment to plasma
+        return {}
+    
+    def __setstate__(self, state):
+        # plasma and atomic data are automatically set upon model's assignment to plasma
+        pass
+    
     @property
     def plasma(self):
         return self._plasma
