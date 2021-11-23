@@ -83,33 +83,50 @@ cdef class SeldenMatobaThomsonSpectrum(LaserModel):
         cdef:
             double angle_scattering, angle_pointing, angle_polarization
             double te, ne, laser_energy_density, laser_energy
+            double plasma_x, plasma_y, plasma_z, laser_x, laser_y, laser_z
             double[::1] laser_wavelength_mv, laser_spectrum_power_mv
             int bins
-            Vector3D pointing_vector
+            Vector3D pointing_vector, polarisation_vector
             Py_ssize_t index
 
+        plasma_x = point_plasma.x
+        plasma_y = point_plasma.y
+        plasma_z = point_plasma.z
+
         # get electron parameters for the plasma point
-        te = self._plasma.get_electron_distribution().effective_temperature(point_plasma.x, point_plasma.y, point_plasma.z)
-        ne = self._plasma.get_electron_distribution().density(point_plasma.x, point_plasma.y, point_plasma.z)
+        te = self._plasma.get_electron_distribution().effective_temperature(plasma_x, plasma_y, plasma_z)
+        
+        #terminate early if electron temperature is 0
+        if ne <= 0:
+            return spectrum
+        
+        ne = self._plasma.get_electron_distribution().density(plasma_x, plasma_y, plasma_z)
         
         #terminate early if electron density is 0
-        if ne == 0:
+        if ne <= 0:
             return spectrum
+
+        laser_x = point_laser.x
+        laser_y = point_laser.y
+        laser_z = point_laser.z
+
         #get laser volumetric power
-        laser_energy_density = self._laser_profile.get_energy_density(point_laser.x, point_laser.y, point_laser.z)
+        laser_energy_density = self._laser_profile.get_energy_density(laser_x, laser_y, laser_z)
 
         #terminate early if laser power is 0
         if laser_energy_density == 0:
             return spectrum
 
-        pointing_vector = self._laser_profile.get_pointing(point_laser.x, point_laser.y, point_laser.z)
+        pointing_vector = self._laser_profile.get_pointing(laser_x, laser_y, laser_z)
 
         #angle between observation and pointing vector
         angle_pointing = observation_laser.angle(pointing_vector)  # angle between observation and pointing vector of laser
 
         angle_scattering = (180. - angle_pointing)  # scattering direction is the opposite to obervation direction
 
-        angle_polarization = 90.
+        # angle between polarisation and observation
+        polarisation_vector = self._laser_profile.get_polarization(laser_x, laser_y, laser_z)
+        angle_polarization = observation_laser.angle(polarisation_vector)
 
         laser_wavelength_mv = self._laser_spectrum._wavelengths_mv
         laser_spectrum_power_mv = self._laser_spectrum._power_mv  # power in spectral bins (PSD * delta wavelength)
@@ -133,6 +150,7 @@ cdef class SeldenMatobaThomsonSpectrum(LaserModel):
             int index, nbins
             double alpha, epsilon, cos_anglescat, wavelength, min_wavelength, delta_wavelength
             double const_theta, recip_laser_wavelength, scattered_power, spectrum_norm
+            double cos2_angle_polarisation
 
         alpha = self._CONST_ALPHA / te
         # scattering angle of the photon = pi - observation_angle
@@ -145,9 +163,10 @@ cdef class SeldenMatobaThomsonSpectrum(LaserModel):
         min_wavelength = spectrum.min_wavelength
         delta_wavelength = spectrum.delta_wavelength
         recip_laser_wavelength = 1 / laser_wavelength
+        cos_angle_polarisation = cos(angle_polarization) ** 2
 
         #from d_lambda to d_epsilon:d_epsilon = d_lambda / laser_wavelength
-        scattered_power = ne * self._CONST_TS * laser_energy * recip_laser_wavelength
+        scattered_power = ne * self._CONST_TS * laser_energy * recip_laser_wavelength * cos_angle_polarisation
 
         for index in range(nbins):
             wavelength = min_wavelength + (0.5 + index) * delta_wavelength
