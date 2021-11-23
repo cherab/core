@@ -54,8 +54,8 @@ class SpectroscopicInstrument:
 
         return self._pipeline_properties
 
-    def new_pipelines(self):
-        """ Returns a list of new pipelines according to `pipeline_properties`."""
+    def create_pipelines(self):
+        """ Returns a list of new pipelines created according to `pipeline_properties`."""
 
         pl_list = []
         for (pl_class, pl_name, pl_filter) in self.pipeline_properties:

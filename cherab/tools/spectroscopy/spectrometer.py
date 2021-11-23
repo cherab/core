@@ -62,7 +62,7 @@ class Spectrometer(SpectroscopicInstrument):
        >>> fibreoptic.min_wavelength = spectrometer.min_wavelength
        >>> fibreoptic.max_wavelength = spectrometer.max_wavelength
        >>> fibreoptic.spectral_bins = spectrometer.spectral_bins
-       >>> fibreoptic.pipelines = spectrometer.new_pipelines()
+       >>> fibreoptic.pipelines = spectrometer.create_pipelines()
        >>> ...
        >>> fibreoptic.observe()
        >>> spectrum = Spectrum(fibreoptic.min_wavelength, fibreoptic.max_wavelength, fibreoptic.spectral_bins)
@@ -200,7 +200,7 @@ class CzernyTurnerSpectrometer(Spectrometer):
        >>> fibreoptic.min_wavelength = hires_spectrometer.min_wavelength
        >>> fibreoptic.max_wavelength = hires_spectrometer.max_wavelength
        >>> fibreoptic.spectral_bins = hires_spectrometer.spectral_bins
-       >>> fibreoptic.pipelines = hires_spectrometer.new_pipelines()
+       >>> fibreoptic.pipelines = hires_spectrometer.create_pipelines()
     """
 
     def __init__(self, diffraction_order, grating, focal_length, pixel_spacing, diffraction_angle,
