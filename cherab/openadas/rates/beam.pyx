@@ -183,6 +183,7 @@ cdef class BeamEmissionPEC(CoreBeamEmissionPEC):
     @cython.cdivision(True)
     def __init__(self, dict data, double wavelength, bint extrapolate=False):
 
+        self.wavelength = wavelength
         self.raw_data = data
 
         # unpack
