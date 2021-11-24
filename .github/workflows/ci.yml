@@ -27,12 +27,8 @@ jobs:
         python-version: ${{ matrix.python-version }}
     - name: Install Python dependencies
       run: python -m pip install cython>=0.28 numpy==${{ matrix.numpy-version }} scipy matplotlib
-    - name: Install Raysect from pypi on master branch
-      if: github.ref == 'refs/heads/master'
+    - name: Install Raysect from pypi
       run: pip install raysect
-    - name: Install Raysect from github
-      if: github.ref != 'refs/heads/master'
-      run: pip install git+https://github.com/raysect/source@development
     - name: Build cherab
       run: dev/build.sh
     - name: Run tests
