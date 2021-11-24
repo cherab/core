@@ -13,10 +13,26 @@ cimport cython
 
 
 cdef class LaserModel:
+    """
+    Laser spectrum base class.
 
-    def __init__(self, Laser laser):
+    This is an abstract class and cannot be used for observing.
 
-        self.laser = laser
+    Calculates the contribution to a spectrum caused by a laser.
+
+    :param laser_profile: LaserProfile object
+    :param plasma: Plasma object
+    :param laser_spectrum: LaserSpectrum object
+
+    :ivar laser_profile: LaserProfile object
+    :ivar plasma: Plasma object
+    :ivar laser_spectrum: LaserSpectrum object
+    """
+    def __init__(self, LaserProfile laser_profile=None, LaserSpectrum laser_spectrum=None, Plasma plasma=None):
+
+        self._laser_profile = laser_profile
+        self._laser_spectrum = laser_spectrum
+        self._plasma = plasma
 
     cpdef Spectrum emission(self, Point3D point_plasma, Vector3D observation_plasma, Point3D point_laser, Vector3D observation_laser,
                             Spectrum spectrum):
@@ -49,13 +65,45 @@ cdef class LaserModel:
         self._laser_spectrum = value
 
 cdef class SeldenMatobaThomsonSpectrum(LaserModel):
+    """
+    Thomson Scattering based on Selden-Matoba.
 
-    def __init__(self):
+    The class calculates Thomson scattering of the laser to the spectrum. The model of the scattered spectrum used is based on
+    the semi-empirical model by Selden and the Thomson scattering cross-section is taken from Matoba articles. The spectral contribution
+    of the scattered laser light c is calculated as a sum of contributions of all laser wavelengths
+
+    .. math::
+         c(\lambda) =  c r_e^2 n_e cos^2\\theta \\sum_{\\lambda_L} \\frac{E_L(\\lambda_l) S(\\frac{\\lambda}{\\lambda_L} - 1, \\varphi, T_e)}{\\lambda_L},
+    
+
+    where :math:`\\lambda` is the spectrum's wavelength, :math:`r_e` is the classical electron radius, :math:`n_e` is the electron delsity,
+    :math:`\\theta` is the angle between the laser polarisation and scattering vectors, :math:`c` is the vacuum speed of light
+    :math:`\\lambda_L` is the laser wavelength, :math:`E_L` is the laser energy density, :math:`\\varphi` is the scattering angle and :math:`T_e` is the electron
+    temperature. The scattering function S is taken from the Matoba article. The multiplication by the speed of light is added to transfer the Thomson scattering
+    cross section into a reaction rate.
+
+    .. seealso::
+         The Prunty article provides a thorough introduction into the phyiscs of Thomson scattering. The articles by Selden and Matoba were used to build
+         this model.
+         
+         :Selden: `Selden, A.C., 1980. Simple analytic form of the relativistic Thomson scattering spectrum. Physics Letters A, 79(5-6), pp.405-406.`
+         :Matoba: `Matoba, T., et al., 1979. Analytical approximations in the theory of relativistic Thomson scattering for high temperature fusion plasma.
+                  Japanese Journal of Applied Physics, 18(6), p.1127.`
+         :Prunty: `Prunty, S.L., 2014. A primer on the theory of Thomson scattering for high-temperature fusion plasmas. Physica Scripta, 89(12), p.128001.`
+
+    """
+
+    def __init__(self, LaserProfile laser_profile=None, LaserSpectrum laser_spectrum=None, Plasma plasma=None):
+
+        super().__init__(laser_profile, laser_spectrum, plasma)
+
         # Selden, A.C., 1980. Simple analytic form of the relativistic Thomson scattering spectrum. Physics Letters A, 79(5-6), pp.405-406.
         self._CONST_ALPHA = ELECTRON_REST_MASS * SPEED_OF_LIGHT ** 2 / (2 * ELEMENTARY_CHARGE)  #constant alpha, rewritten for Te in eV
         
         # from: Prunty, S. L. "A primer on the theory of Thomson scattering for high-temperature fusion plasmas."
-        # Thomson scattering reaction rate from Prunty eq. (4.39)
+        # TS cross section equiation ~ 3.28 or
+        # Matoba, T., et al., 1979. Analytical approximations in the theory of relativistic Thomson scattering for high temperature fusion plasma.
+        # Japanese Journal of Applied Physics, 18(6), p.1127., TS cross section equiation 18 
         # speed of light for correct normalisation of the scattered intensity calculation (from x-section to rate constant)
         self._CONST_TS = ELECTRON_CLASSICAL_RADIUS ** 2 * SPEED_OF_LIGHT
 
@@ -150,7 +198,7 @@ cdef class SeldenMatobaThomsonSpectrum(LaserModel):
             int index, nbins
             double alpha, epsilon, cos_anglescat, wavelength, min_wavelength, delta_wavelength
             double const_theta, recip_laser_wavelength, scattered_power, spectrum_norm
-            double cos2_angle_polarisation
+            double cos2_angle_pol
 
         alpha = self._CONST_ALPHA / te
         # scattering angle of the photon = pi - observation_angle
@@ -163,10 +211,10 @@ cdef class SeldenMatobaThomsonSpectrum(LaserModel):
         min_wavelength = spectrum.min_wavelength
         delta_wavelength = spectrum.delta_wavelength
         recip_laser_wavelength = 1 / laser_wavelength
-        cos_angle_polarisation = cos(angle_polarization) ** 2
+        cos2_angle_pol = cos(angle_polarization) ** 2
 
         #from d_lambda to d_epsilon:d_epsilon = d_lambda / laser_wavelength
-        scattered_power = ne * self._CONST_TS * laser_energy * recip_laser_wavelength * cos_angle_polarisation
+        scattered_power = ne * self._CONST_TS * laser_energy * recip_laser_wavelength * cos2_angle_pol
 
         for index in range(nbins):
             wavelength = min_wavelength + (0.5 + index) * delta_wavelength
@@ -177,8 +225,23 @@ cdef class SeldenMatobaThomsonSpectrum(LaserModel):
         return spectrum
 
     cpdef Spectrum calculate_spectrum(self, double ne, double te, double laser_energy_density, double laser_wavelength,
-                                      double observation_angle, Spectrum spectrum):
+                                      double observation_angle, double angle_polarization, Spectrum spectrum):
+        """
+        Calculates scattered spectrum for the given parameters.
+        
+        The method returns the Thomson scattered spectrum given the plasma parameters, without the need of specifying
+        plasma or laser.
 
+        :param float ne: Plasma electron density in m**-3
+        :param float te: Plasma electron temperature in eV
+        :param float laser_energy_density: Energy density of the laser light in J * m**-3
+        :param float laser_wavelength: The laser light wavelength in nm
+        :param float observation_angle: The angle of observation is the angle between the observation direction and the direction
+                                        of the Poynting vector.
+        :param float angle_polarization: The angle between the observation direction and the polarisation direction of the laser light.
+        
+        :return: Spectrum
+        """
         # check for nonzero laser power, ne, te, wavelength
         if not ne > 0 or not te > 0 or not laser_energy_density > 0:
             return spectrum
@@ -186,8 +249,7 @@ cdef class SeldenMatobaThomsonSpectrum(LaserModel):
             raise ValueError("laser wavelength has to be larger than 0")
 
         angle_scattering = (180. - observation_angle)  # scattering direction is the opposite to obervation direction
-        angle_polarisation = 90.
 
-        return self._add_spectral_contribution(ne, te, laser_energy_density, angle_scattering, angle_polarisation, laser_wavelength, spectrum)
+        return self._add_spectral_contribution(ne, te, laser_energy_density, angle_scattering, angle_polarization, laser_wavelength, spectrum)
 
     
