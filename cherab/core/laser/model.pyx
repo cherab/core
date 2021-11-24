@@ -174,7 +174,7 @@ cdef class SeldenMatobaThomsonSpectrum(LaserModel):
 
         # angle between polarisation and observation
         polarisation_vector = self._laser_profile.get_polarization(laser_x, laser_y, laser_z)
-        angle_polarization = observation_laser.angle(polarisation_vector)
+        angle_polarization = 180. - observation_laser.angle(polarisation_vector) # scattering direction is the opposite to obervation direction
 
         laser_wavelength_mv = self._laser_spectrum._wavelengths_mv
         laser_spectrum_power_mv = self._laser_spectrum._power_mv  # power in spectral bins (PSD * delta wavelength)
