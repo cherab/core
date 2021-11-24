@@ -31,8 +31,8 @@ class SpectroscopicSightLine(SightLine, _SpectroscopicObserver0DBase):
 
     Multiple `SpectroscopicSightLine` observers can be combined into `SightLineGroup`.
 
-    :param Point3D origin: The origin point for this sight-line.
-    :param Vector3D direction: The observation direction for this sight-line.
+    :param Point3D origin: The origin point for this sight-line. (optional)
+    :param Vector3D direction: The observation direction for this sight-line. (optional)
     :param list pipelines: A list of pipelines that will process the resulting spectra
                            from this observer.
                            Default is [SpectralRadiancePipeline0D(accumulate=False)].
@@ -54,13 +54,14 @@ class SpectroscopicSightLine(SightLine, _SpectroscopicObserver0DBase):
        >>> plt.show()
     """
 
-    def __init__(self, origin, direction, pipelines=None, parent=None, name=None):
+    def __init__(self, origin=None, direction=None, pipelines=None, parent=None, name=None):
 
-        self._origin = Point3D(0, 0, 0)
-        self._direction = Vector3D(1, 0, 0)
         pipelines = pipelines or [SpectralRadiancePipeline0D(accumulate=False)]
 
         super().__init__(pipelines=pipelines, parent=parent, name=name)
 
-        self.origin = origin
-        self.direction = direction
+        if origin is not None:
+            self.origin = origin
+
+        if direction is not None:
+            self.direction = direction
