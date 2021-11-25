@@ -18,11 +18,12 @@
 # under the Licence.
 
 from numpy import ndarray
+from cherab.tools.observers.group.base import Observer0DGroup
 from cherab.tools.observers.spectroscopy import SpectroscopicFibreOptic
-from .base import Observer0DGroup
+from .spectroscopic import SpectroscopicObserver0DGroup
 
 
-class FibreOpticGroup(Observer0DGroup):
+class FibreOpticGroup(SpectroscopicObserver0DGroup):
     """
     A group of fibre optics under a single scene-graph node.
 
@@ -69,13 +70,8 @@ class FibreOpticGroup(Observer0DGroup):
        >>> plt.show()
     """
 
-    @property
-    def sight_lines(self):
-        return self._sight_lines
-
-    @sight_lines.setter
-    def sight_lines(self, value):
-
+    @Observer0DGroup.observers.setter
+    def observers(self, value):
         if not isinstance(value, (list, tuple)):
             raise TypeError("The sight_lines attribute of FibreOpticGroup must be a list or tuple of SpectroscopicFibreOptics.")
 
@@ -88,55 +84,53 @@ class FibreOpticGroup(Observer0DGroup):
         for sight_line in value:
             sight_line.parent = self
 
-        self._sight_lines = tuple(value)
-
-    def add_sight_line(self, sight_line):
+        self._observers = tuple(value)
+    
+    def add_observer(self, fibre):
         """
         Adds new fibre optic to the group.
 
-        :param SpectroscopicFibreOptic sight_line: Fibre optic to add.
+        :param SpectroscopicFibreOptic fibre: Fibre optic to add.
         """
-
-        if not isinstance(sight_line, SpectroscopicFibreOptic):
-            raise TypeError("The sightline argument must be of type SpectroscopicFibreOptic.")
-
-        sight_line.parent = self
-        self._sight_lines = self._sight_lines + (sight_line,)
+        if not isinstance(fibre, SpectroscopicFibreOptic):
+            raise TypeError("The fiber argument must be of type SpectroscopicFibreOptic.")
+        fibre.parent = self
+        self._observers = self._observers + (fibre, )
 
     @property
     def acceptance_angle(self):
         # The angle in degrees between the z axis and the cone surface which defines the fibres
         # solid angle sampling area.
-        return [sight_line.acceptance_angle for sight_line in self._sight_lines]
+        return [sight_line.acceptance_angle for sight_line in self._observers]
 
     @acceptance_angle.setter
     def acceptance_angle(self, value):
         if isinstance(value, (list, tuple, ndarray)):
-            if len(value) == len(self._sight_lines):
-                for sight_line, v in zip(self._sight_lines, value):
+            if len(value) == len(self._observers):
+                for sight_line, v in zip(self._observers, value):
                     sight_line.acceptance_angle = v
             else:
                 raise ValueError("The length of 'acceptance_angle' ({}) "
-                                 "mismatches the number of sight-lines ({}).".format(len(value), len(self._sight_lines)))
+                                 "mismatches the number of sight-lines ({}).".format(len(value), len(self._observers)))
         else:
-            for sight_line in self._sight_lines:
+            for sight_line in self._observers:
                 sight_line.acceptance_angle = value
 
     @property
     def radius(self):
         # The radius of the fibre tip in metres. This radius defines a circular area at the fibre tip
         # which will be sampled over.
-        return [sight_line.radius for sight_line in self._sight_lines]
+        return [sight_line.radius for sight_line in self._observers]
 
     @radius.setter
     def radius(self, value):
         if isinstance(value, (list, tuple, ndarray)):
-            if len(value) == len(self._sight_lines):
-                for sight_line, v in zip(self._sight_lines, value):
+            if len(value) == len(self._observers):
+                for sight_line, v in zip(self._observers, value):
                     sight_line.radius = v
             else:
                 raise ValueError("The length of 'radius' ({}) "
-                                 "mismatches the number of sight-lines ({}).".format(len(value), len(self._sight_lines)))
+                                 "mismatches the number of sight-lines ({}).".format(len(value), len(self._observers)))
         else:
-            for sight_line in self._sight_lines:
+            for sight_line in self._observers:
                 sight_line.radius = value

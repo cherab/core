@@ -18,10 +18,11 @@
 # under the Licence.
 
 from cherab.tools.observers.spectroscopy import SpectroscopicSightLine
+from .spectroscopic import SpectroscopicObserver0DGroup
 from .base import Observer0DGroup
 
 
-class SightLineGroup(Observer0DGroup):
+class SightLineGroup(SpectroscopicObserver0DGroup):
     """
     A group of spectroscopic sight-lines under a single scene-graph node.
 
@@ -58,11 +59,7 @@ class SightLineGroup(Observer0DGroup):
        >>> plt.show()
     """
 
-    @property
-    def sight_lines(self):
-        return self._sight_lines
-
-    @sight_lines.setter
+    @Observer0DGroup.observers.setter
     def sight_lines(self, value):
 
         if not isinstance(value, (list, tuple)):
@@ -77,9 +74,9 @@ class SightLineGroup(Observer0DGroup):
         for sight_line in value:
             sight_line.parent = self
 
-        self._sight_lines = tuple(value)
+        self._observers = tuple(value)
 
-    def add_sight_line(self, sight_line):
+    def add_observer(self, sight_line):
         """
         Adds new line of sight to the group.
 
@@ -90,4 +87,4 @@ class SightLineGroup(Observer0DGroup):
             raise TypeError("The sight_line argument must be of type SpectroscopicSightLine.")
 
         sight_line.parent = self
-        self._sight_lines = self._sight_lines + (sight_line,)
+        self._observers = self._observers + (sight_line,)
