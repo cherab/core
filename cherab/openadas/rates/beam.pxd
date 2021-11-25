@@ -55,6 +55,7 @@ cdef class NullBeamPopulationRate(CoreBeamPopulationRate):
 cdef class BeamEmissionPEC(CoreBeamEmissionPEC):
 
     cdef readonly:
+        double wavelength
         dict raw_data
         Function2D _npl_eb
         Function1D _tp
