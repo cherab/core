@@ -19,3 +19,5 @@
 
 from .fibreoptic import FibreOpticGroup
 from .sightline import SightLineGroup
+from .targetedpixel import TargettedPixelGroup
+from .pixel import PixelGroup
