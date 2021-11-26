@@ -45,7 +45,7 @@ class PixelGroup(Observer0DGroup):
         for sight_line in value:
             if not isinstance(sight_line, Pixel):
                 raise TypeError("The sight_lines attribute of LineOfSightGroup must be a list or tuple of "
-                                "SpectroscopicSightLines. Value {} is not a SpectroscopicSightLine.".format(sight_line))
+                                "Pixel. Value {} is not a Pixel.".format(sight_line))
 
         # Prevent external changes being made to this list
         for sight_line in value:
@@ -57,11 +57,11 @@ class PixelGroup(Observer0DGroup):
         """
         Adds new line of sight to the group.
 
-        :param SpectroscopicSightLine sight_line: Sight line to add.
+        :param Pixel pixel: Pixel to add.
         """
 
         if not isinstance(pixel, Pixel):
-            raise TypeError("The sight_line argument must be of type SpectroscopicSightLine.")
+            raise TypeError("The pixel argument must be of type Pixel.")
 
         pixel.parent = self
         self._sight_lines = self._sight_lines + (pixel,)

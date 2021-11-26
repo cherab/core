@@ -23,18 +23,18 @@ from raysect.optical.observer import TargettedPixel
 from .base import Observer0DGroup
 
 
-class TargetedPixelGroup(Observer0DGroup):
+class TargettedPixelGroup(Observer0DGroup):
     """
-    A group of targeted pixel under a single scene-graph node.
+    A group of targetted pixel under a single scene-graph node.
 
-    A scene-graph object regrouping a series of 'TargetedPixel'
+    A scene-graph object regrouping a series of 'TargettedPixel'
     observers as a scene-graph parent. Allows combined observation and display
     control simultaneously.
 
     :ivar list x_width: Width of pixel along local x axis
     :ivar list y_width: Width of pixel along local y axis
     :ivar list targets: Targets for preferential sampling
-    :ivar list targeted_path_prob: Probability of ray being casted at the target
+    :ivar list targetted_path_prob: Probability of ray being casted at the target
 
     """
 
@@ -42,12 +42,12 @@ class TargetedPixelGroup(Observer0DGroup):
     def observers(self, value):
 
         if not isinstance(value, (list, tuple)):
-            raise TypeError("The observers attribute of TargetedPixelGroup must be a list or tuple of TargetedPixels.")
+            raise TypeError("The observers attribute of TargettedPixelGroup must be a list or tuple of TargettedPixel.")
 
         for observer in value:
             if not isinstance(observer, TargettedPixel):
-                raise TypeError("The observers attribute of TargetedPixelGroup must be a list or tuple of "
-                                "SpectroscopicSightLines. Value {} is not a SpectroscopicSightLine.".format(observer))
+                raise TypeError("The observers attribute of TargettedPixelGroup must be a list or tuple of "
+                                "TargettedPixel. Value {} is not a TargettedPixel.".format(observer))
 
         # Prevent external changes being made to this list
         for observer in value:
@@ -59,11 +59,11 @@ class TargetedPixelGroup(Observer0DGroup):
         """
         Adds new line of sight to the group.
 
-        :param TargetedPixel observer: Targeted pixel to add.
+        :param TargettedPixel observer: Targetted pixel to add.
         """
 
         if not isinstance(observer, TargettedPixel):
-            raise TypeError("The observer argument must be of type TargetedPixel.")
+            raise TypeError("The observer argument must be of type TargettedPixel.")
 
         observer.parent = self
         self._observers = self._observers + (observer,)
