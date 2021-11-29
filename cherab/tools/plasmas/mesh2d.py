@@ -97,18 +97,18 @@ def plasma_from_2d_profiles(vertex_coords, triangles, electron_density, electron
     plasma.geometry = Subtract(Cylinder(radius, height), Cylinder(inner_radius, height))
     plasma.geometry_transform = translate(0, 0, minz)
 
-    electron_density = AxisymmetricMapper(plasma_mesh2d['electron_density'])
-    electron_temperature = AxisymmetricMapper(plasma_mesh2d['electron_temperature'])
-    electron_velocity = ConstantVector3D(Vector3D(0, 0, 0))
-    plasma.electron_distribution = Maxwellian(electron_density, electron_temperature, electron_velocity, electron_mass)
+    electron_density_3d = AxisymmetricMapper(plasma_mesh2d['electron_density'])
+    electron_temperature_3d = AxisymmetricMapper(plasma_mesh2d['electron_temperature'])
+    electron_velocity_3d = ConstantVector3D(Vector3D(0, 0, 0))
+    plasma.electron_distribution = Maxwellian(electron_density_3d, electron_temperature_3d, electron_velocity_3d, electron_mass)
 
     for species in plasma_mesh2d['species_density'].keys():
-        density = AxisymmetricMapper(plasma_mesh2d['species_density'][species])
-        temperature = AxisymmetricMapper(plasma_mesh2d['species_temperature'][species])
-        velocity = ConstantVector3D(Vector3D(0, 0, 0))
+        density_3d = AxisymmetricMapper(plasma_mesh2d['species_density'][species])
+        temperature_3d = AxisymmetricMapper(plasma_mesh2d['species_temperature'][species])
+        velocity_3d = ConstantVector3D(Vector3D(0, 0, 0))
         species_type = species[0]
         charge = species[1]
-        distribution = Maxwellian(density, temperature, velocity, species_type.atomic_weight * atomic_mass)
+        distribution = Maxwellian(density_3d, temperature_3d, velocity_3d, species_type.atomic_weight * atomic_mass)
 
         plasma.composition.add(Species(species_type, charge, distribution))
 
