@@ -72,10 +72,12 @@ class OpenADAS(AtomicData):
 
     def ionisation_rate(self, ion, charge):
 
+        # extract element from isotope because there are no isotope rates in ADAS
         if isinstance(ion, Isotope):
             ion = ion.element
 
         try:
+            # read ionisation rate from json file in the repository
             data = repository.get_ionisation_rate(ion, charge, repository_path=self._data_path)
 
         except RuntimeError:
@@ -87,10 +89,12 @@ class OpenADAS(AtomicData):
 
     def recombination_rate(self, ion, charge):
 
+        # extract element from isotope because there are no isotope rates in ADAS
         if isinstance(ion, Isotope):
             ion = ion.element
 
         try:
+            # read recombination rate from json file in the repository
             data = repository.get_recombination_rate(ion, charge, repository_path=self._data_path)
 
         except RuntimeError:
@@ -102,6 +106,7 @@ class OpenADAS(AtomicData):
 
     def thermal_cx_rate(self, donor_element, donor_charge, receiver_element, receiver_charge):
 
+        # extract elements from isotopes because there are no isotope rates in ADAS
         if isinstance(donor_element, Isotope):
             donor_element = donor_element.element
 
@@ -109,6 +114,7 @@ class OpenADAS(AtomicData):
             receiver_element = receiver_element.element
 
         try:
+            # read thermal CX rate from json file in the repository
             data = repository.get_thermal_cx_rate(donor_element, donor_charge,
                                                   receiver_element, receiver_charge,
                                                   repository_path=self._data_path)
@@ -130,23 +136,26 @@ class OpenADAS(AtomicData):
         :return:
         """
 
-        # extract element from isotope
+        # extract element from donor isotope because there are no isotope rates in ADAS
         if isinstance(donor_ion, Isotope):
             donor_ion = donor_ion.element
 
-        if isinstance(receiver_ion, Isotope):
-            receiver_ion = receiver_ion.element
+        # extract element from receiver isotope, but keep the receiver isotope for the wavelength
+        receiver_ion_element = receiver_ion.element if isinstance(receiver_ion, Isotope) else receiver_ion
 
         try:
-            # read data
-            wavelength = repository.get_wavelength(receiver_ion, receiver_charge - 1, transition, repository_path=self._data_path)
-            data = repository.get_beam_cx_rates(donor_ion, receiver_ion, receiver_charge, transition,
+            # read element CX rate from json file in the repository
+            data = repository.get_beam_cx_rates(donor_ion, receiver_ion_element, receiver_charge, transition,
                                                 repository_path=self._data_path)
 
         except RuntimeError:
             if self._missing_rates_return_null:
                 return [NullBeamCXPEC()]
             raise
+
+        # obtain isotope's rest wavelength for a given transition
+        # the wavelength is used ot convert the PEC from photons/s/m3 to W/m3
+        wavelength = self.wavelength(receiver_ion, receiver_charge - 1, transition)
 
         # load and interpolate the relevant transition data from each file
         rates = []
@@ -163,7 +172,7 @@ class OpenADAS(AtomicData):
         :return:
         """
 
-        # extract element from isotope
+        # extract elements from isotopes because there are no isotope rates in ADAS
         if isinstance(beam_ion, Isotope):
             beam_ion = beam_ion.element
 
@@ -171,7 +180,7 @@ class OpenADAS(AtomicData):
             plasma_ion = plasma_ion.element
 
         try:
-            # locate data file
+            # read beam stopping rate from json file in the repository
             data = repository.get_beam_stopping_rate(beam_ion, plasma_ion, charge, repository_path=self._data_path)
 
         except RuntimeError:
@@ -192,7 +201,7 @@ class OpenADAS(AtomicData):
         :return:
         """
 
-        # extract element from isotope
+        # extract elements from isotopes because there are no isotope rates in ADAS
         if isinstance(beam_ion, Isotope):
             beam_ion = beam_ion.element
 
@@ -200,7 +209,7 @@ class OpenADAS(AtomicData):
             plasma_ion = plasma_ion.element
 
         try:
-            # locate data file
+            # read beam population rate from json file in the repository
             data = repository.get_beam_population_rate(beam_ion, metastable, plasma_ion, charge,
                                                        repository_path=self._data_path)
 
@@ -222,23 +231,26 @@ class OpenADAS(AtomicData):
         :return:
         """
 
-        # extract element from isotope
-        if isinstance(beam_ion, Isotope):
-            beam_ion = beam_ion.element
+        # extract element from beam isotope, but keep the beam isotope for the wavelength
+        beam_ion_element = beam_ion.element if isinstance(beam_ion, Isotope) else beam_ion
 
+        # extract element from plasma isotope because there are no isotope rates in ADAS
         if isinstance(plasma_ion, Isotope):
             plasma_ion = plasma_ion.element
 
         try:
-            # locate data file
-            data = repository.get_beam_emission_rate(beam_ion, plasma_ion, charge, transition,
+            # read beam emission PEC from json file in the repository
+            data = repository.get_beam_emission_rate(beam_ion_element, plasma_ion, charge, transition,
                                                      repository_path=self._data_path)
-            wavelength = repository.get_wavelength(beam_ion, 0, transition, repository_path=self._data_path)
 
         except RuntimeError:
             if self._missing_rates_return_null:
                 return NullBeamEmissionPEC()
             raise
+
+        # obtain isotope's rest wavelength for a given transition
+        # the wavelength is used ot convert the PEC from photons/s/m3 to W/m3
+        wavelength = self.wavelength(beam_ion, 0, transition)
 
         # load and interpolate data
         return BeamEmissionPEC(data, wavelength, extrapolate=self._permit_extrapolation)
@@ -252,17 +264,22 @@ class OpenADAS(AtomicData):
         :return:
         """
 
-        if isinstance(ion, Isotope):
-            ion = ion.element
+        # extract element from isotope because there are no isotope rates in ADAS
+        # keep the isotope for the wavelength
+        ion_element = ion.element if isinstance(ion, Isotope) else ion
 
         try:
-            wavelength = repository.get_wavelength(ion, charge, transition, repository_path=self._data_path)
-            data = repository.get_pec_excitation_rate(ion, charge, transition, repository_path=self._data_path)
+            # read electron impact excitation PEC from json file in the repository
+            data = repository.get_pec_excitation_rate(ion_element, charge, transition, repository_path=self._data_path)
 
         except RuntimeError:
             if self._missing_rates_return_null:
                 return NullImpactExcitationPEC()
             raise
+
+        # obtain isotope's rest wavelength for a given transition
+        # the wavelength is used ot convert the PEC from photons/s/m3 to W/m3
+        wavelength = self.wavelength(ion, charge, transition)
 
         return ImpactExcitationPEC(wavelength, data, extrapolate=self._permit_extrapolation)
 
@@ -275,26 +292,33 @@ class OpenADAS(AtomicData):
         :return:
         """
 
-        if isinstance(ion, Isotope):
-            ion = ion.element
+        # extract element from isotope because there are no isotope rates in ADAS
+        # keep the isotope for the wavelength
+        ion_element = ion.element if isinstance(ion, Isotope) else ion
 
         try:
-            wavelength = repository.get_wavelength(ion, charge, transition, repository_path=self._data_path)
-            data = repository.get_pec_recombination_rate(ion, charge, transition, repository_path=self._data_path)
+            # read free electron recombination PEC from json file in the repository
+            data = repository.get_pec_recombination_rate(ion_element, charge, transition, repository_path=self._data_path)
 
         except (FileNotFoundError, KeyError):
             if self._missing_rates_return_null:
                 return NullRecombinationPEC()
             raise
 
+        # obtain isotope's rest wavelength for a given transition
+        # the wavelength is used ot convert the PEC from photons/s/m3 to W/m3
+        wavelength = self.wavelength(ion, charge, transition)
+
         return RecombinationPEC(wavelength, data, extrapolate=self._permit_extrapolation)
 
     def line_radiated_power_rate(self, ion, charge):
 
+        # extract element from isotope because there are no isotope rates in ADAS
         if isinstance(ion, Isotope):
             ion = ion.element
 
         try:
+            # read total line radiated power rate from json file in the repository
             data = repository.get_line_radiated_power_rate(ion, charge, repository_path=self._data_path)
 
         except RuntimeError:
@@ -306,10 +330,12 @@ class OpenADAS(AtomicData):
 
     def continuum_radiated_power_rate(self, ion, charge):
 
+        # extract element from isotope because there are no isotope rates in ADAS
         if isinstance(ion, Isotope):
             ion = ion.element
 
         try:
+            # read continuum radiated power rate from json file in the repository
             data = repository.get_continuum_radiated_power_rate(ion, charge, repository_path=self._data_path)
 
         except RuntimeError:
@@ -321,10 +347,12 @@ class OpenADAS(AtomicData):
 
     def cx_radiated_power_rate(self, ion, charge):
 
+        # extract element from isotope because there are no isotope rates in ADAS
         if isinstance(ion, Isotope):
             ion = ion.element
 
         try:
+            # read CX radiated power rate from json file in the repository
             data = repository.get_cx_radiated_power_rate(ion, charge, repository_path=self._data_path)
 
         except RuntimeError:

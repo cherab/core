@@ -156,6 +156,11 @@ Passive Spectroscopy
      - .. image:: ./passive_spectroscopy/stark_line_zoomed.png
           :height: 150px
           :width: 150px
+   * - :ref:`Zeeman Spectroscopy <zeeman_spectroscopy>`
+     - Specifying a Zeeman triplet or multiplet line shapes.
+     - .. image:: ./passive_spectroscopy/zeeman_spectrum_45deg.png
+          :height: 150px
+          :width: 150px   
 
 
 Bolometry
