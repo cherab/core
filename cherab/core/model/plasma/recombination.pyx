@@ -93,8 +93,10 @@ cdef class RecombinationLine(PlasmaModel):
     cdef int _populate_cache(self) except -1:
 
         # sanity checks
-        if self._plasma is None or self._atomic_data is None:
+        if self._plasma is None:
             raise RuntimeError("The emission model is not connected to a plasma object.")
+        if self._atomic_data is None:
+            raise RuntimeError("The emission model is not connected to an atomic data source.")
 
         if self._line is None:
             raise RuntimeError("The emission line has not been set.")

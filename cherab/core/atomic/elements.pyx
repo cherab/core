@@ -75,19 +75,6 @@ cdef class Element:
         else:
             return NotImplemented
 
-    def __getstate__(self):
-        return {"name": self.name,
-                "symbol": self.symbol, 
-                "atomic_number": self.atomic_number,
-                "atomic_weight": self.atomic_weight
-                }
-
-    def __setstate__(self, state):
-        self.name = state["name"]
-        self.symbol = state["symbol"]
-        self.atomic_number = state["atomic_number"]
-        self.atomic_weight = state["atomic_weight"]
-
 
 cdef class Isotope(Element):
     """
@@ -146,17 +133,6 @@ cdef class Isotope(Element):
                     self.element != e.element or self.mass_number != e.mass_number)
         else:
             return NotImplemented
-
-    def __getstate__(self):
-        state = super().__getstate__()
-        state["mass_number"] = self.mass_number
-        state["element"] = self.element
-        return state
-
-    def __setstate__(self, state):
-        super().__setstate__(state)
-        self.mass_number = state["mass_number"]
-        self.element = state["element"]
 
 
 def _build_element_index():

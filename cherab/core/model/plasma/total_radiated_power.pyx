@@ -89,8 +89,10 @@ cdef class TotalRadiatedPower(PlasmaModel):
     cdef int _populate_cache(self) except -1:
 
         # sanity checks
-        if self._plasma is None or self._atomic_data is None:
+        if self._plasma is None:
             raise RuntimeError("The emission model is not connected to a plasma object.")
+        if self._atomic_data is None:
+            raise RuntimeError("The emission model is not connected to an atomic data source.")
 
         # cache line radiation species and rate
         self._plt_rate = self._atomic_data.line_radiated_power_rate(self._element, self._charge)
