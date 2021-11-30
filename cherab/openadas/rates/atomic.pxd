@@ -26,12 +26,11 @@ cdef class IonisationRate(CoreIonisationRate):
 
     cdef:
         readonly dict raw_data
-        readonly double wavelength
         readonly tuple density_range, temperature_range
         Function2D _rate
 
 
-cdef class NullImpactExcitationRate(CoreIonisationRate):
+cdef class NullIonisationRate(CoreIonisationRate):
     pass
 
 
@@ -39,7 +38,6 @@ cdef class RecombinationRate(CoreRecombinationRate):
 
     cdef:
         readonly dict raw_data
-        readonly double wavelength
         readonly tuple density_range, temperature_range
         Function2D _rate
 
@@ -52,7 +50,6 @@ cdef class ThermalCXRate(CoreThermalCXRate):
 
     cdef:
         readonly dict raw_data
-        readonly double wavelength
         readonly tuple density_range, temperature_range
         Function2D _rate
 
