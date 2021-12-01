@@ -221,6 +221,9 @@ cdef class Beam(Node):
         :return: Beam density in m^-3
         """
 
+        if self._attenuator is None:
+            raise ValueError('The beam must have an attenuator model to provide density values.')
+
         # todo: make z > length return 0 as a non-default toggle. It should throw an error by default to warn users they are requesting data outside the domain.
         if z < 0 or z > self._length:
             return 0

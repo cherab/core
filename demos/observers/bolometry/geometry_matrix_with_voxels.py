@@ -13,7 +13,7 @@ from matplotlib.patches import Rectangle
 import numpy as np
 
 from raysect.core import Node, Point2D, Point3D, Vector3D, rotate_basis, rotate_y, translate
-from raysect.core.math import Arg2D
+from raysect.core.math.function.float import Arg2D
 from raysect.optical import World
 from raysect.optical.material import AbsorbingSurface
 from raysect.primitive import Box, Cylinder, Subtract

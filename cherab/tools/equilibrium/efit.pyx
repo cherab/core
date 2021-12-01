@@ -1,3 +1,5 @@
+# cython: language_level=3
+
 # Copyright 2016-2018 Euratom
 # Copyright 2016-2018 United Kingdom Atomic Energy Authority
 # Copyright 2016-2018 Centro de Investigaciones Energéticas, Medioambientales y Tecnológicas
@@ -22,13 +24,15 @@ from libc.math cimport sqrt, INFINITY
 cimport cython
 
 from raysect.optical cimport Vector3D, Point2D, new_vector3d
+from raysect.core.math.function.float cimport Blend2D as ScalarBlend2D
+from raysect.core.math.function.vector3d cimport Blend2D as VectorBlend2D
+
 from cherab.core.math cimport Function1D, autowrap_function1d
 from cherab.core.math cimport Function2D, autowrap_function2d
-from cherab.core.math cimport VectorFunction2D, autowrap_vectorfunction2d
+from cherab.core.math cimport VectorFunction2D, autowrap_vectorfunction2d, ConstantVector2D
 from cherab.core.math cimport Interpolate1DCubic, Interpolate2DCubic
 from cherab.core.math cimport PolygonMask2D
 from cherab.core.math cimport IsoMapper2D, AxisymmetricMapper, VectorAxisymmetricMapper
-from cherab.core.math cimport Blend2D, Constant2D, ConstantVector2D
 from cherab.core.math cimport ClampOutput2D
 
 cdef class EFITEquilibrium:
@@ -245,7 +249,7 @@ cdef class EFITEquilibrium:
         f = IsoMapper2D(self.psi_normalised, profile)
 
         # mask off values outside the lcfs
-        return Blend2D(Constant2D(value_outside_lcfs), f, self.inside_lcfs)
+        return ScalarBlend2D(value_outside_lcfs, f, self.inside_lcfs)
 
     def map3d(self, object profile, double value_outside_lcfs=0.0):
         """
@@ -272,7 +276,7 @@ cdef class EFITEquilibrium:
 
         return AxisymmetricMapper(self.map2d(profile, value_outside_lcfs))
 
-    def map_vector2d(self, object toroidal, object poloidal, object normal):
+    def map_vector2d(self, object toroidal, object poloidal, object normal, Vector3D value_outside_lcfs=None):
         """
         Maps velocity components in flux coordinates onto flux surfaces in the r-z plane.
 
@@ -289,6 +293,8 @@ cdef class EFITEquilibrium:
           as a 1D function or Nx2 array.
         :return: VectorFunction2D object that returns the velocity vector at a given r,z coordinate,
           :math:`v(r,z)`.
+        :param value_outside_lcfs: Value returned if point requested outside the LCFS (default=
+          Vector3D(0, 0, 0)).
 
         .. code-block:: pycon
 
@@ -300,14 +306,15 @@ cdef class EFITEquilibrium:
            >>> v_poloidal[0, :] = [0, 0.1, 0.2, 0.4, 0.7, 1.0]
            >>> v_poloidal[1, :] = [4e4, 1e4, 3e3, 1e3, 0, 0]
            >>> # Assume zero velocity normal to flux surface
-           >>> from cherab.core.math import Constant1D
-           >>> v_normal = Constant1D(0.0)
+           >>> v_normal = 0.0
            >>>
            >>> # generate VectorFunction2D and sample
            >>> v = equilibrium.map_vector2d(v_toroidal, v_poloidal, v_normal)
            >>> v(3.1, 0.2)
            Vector3D(134.523, 543.6347, 25342.16)
         """
+
+        value_outside_lcfs = value_outside_lcfs or Vector3D(0, 0, 0)
 
         # convert toroidal data to 1d function if not already a function object
         if isinstance(toroidal, Function1D) or callable(toroidal):
@@ -330,9 +337,12 @@ cdef class EFITEquilibrium:
             normal = np.array(normal, np.float64)
             normal = Interpolate1DCubic(normal[0, :], normal[1, :])
 
-        return FluxCoordToCartesian(self.b_field, self.psi_normalised, toroidal, poloidal, normal)
+        v = FluxCoordToCartesian(self.b_field, self.psi_normalised, toroidal, poloidal, normal)
 
-    def map_vector3d(self, object toroidal, object poloidal, object normal):
+        # mask off values outside the lcfs
+        return VectorBlend2D(value_outside_lcfs, v, self.inside_lcfs)
+
+    def map_vector3d(self, object toroidal, object poloidal, object normal, Vector3D value_outside_lcfs=None):
         """
         Maps velocity components in flux coordinates onto flux surfaces in 3D space.
 
@@ -349,6 +359,8 @@ cdef class EFITEquilibrium:
           as a 1D function or Nx2 array.
         :return: VectorFunction2D object that returns the velocity vector at a given r,z coordinate,
           :math:`v(r,z)`.
+        :param value_outside_lcfs: Value returned if point requested outside the LCFS (default=
+          Vector3D(0, 0, 0)).
 
         .. code-block:: pycon
 
@@ -360,8 +372,7 @@ cdef class EFITEquilibrium:
            >>> v_poloidal[0, :] = [0, 0.1, 0.2, 0.4, 0.7, 1.0]
            >>> v_poloidal[1, :] = [4e4, 1e4, 3e3, 1e3, 0, 0]
            >>> # Assume zero velocity normal to flux surface
-           >>> from cherab.core.math import Constant1D
-           >>> v_normal = Constant1D(0.0)
+           >>> v_normal = 0.0
            >>>
            >>> # generate VectorFunction2D and sample
            >>> v = equilibrium.map_vector3d(v_toroidal, v_poloidal, v_normal)
@@ -369,7 +380,7 @@ cdef class EFITEquilibrium:
            Vector3D(134.523, 543.6347, 25342.16)
         """
 
-        return VectorAxisymmetricMapper(self.map_vector2d(toroidal, poloidal, normal))
+        return VectorAxisymmetricMapper(self.map_vector2d(toroidal, poloidal, normal, value_outside_lcfs))
 
 
 cdef class EFITLCFSMask(Function2D):
@@ -512,11 +523,7 @@ cdef class FluxCoordToCartesian(VectorFunction2D):
         cdef Vector3D f, toroidal, poloidal, normal
 
         f = self._field.evaluate(r, z)
-        psi = max(0, self._psin(r, z))
-
-        # If value outside LCFS return default value
-        if psi > 1:
-            return self._value_outside_lcfs
+        psi = self._psin.evaluate(r, z)
 
         # calculate flux coordinate vectors
         if f.x == 0 and f.z == 0:
@@ -530,7 +537,9 @@ cdef class FluxCoordToCartesian(VectorFunction2D):
         else:
 
             toroidal = new_vector3d(0, self._toroidal.evaluate(psi), 0)
-            poloidal = new_vector3d(f.x, 0, f.z).set_length(self._poloidal.evaluate(psi))
-            normal = new_vector3d(-f.z, 0, f.x).set_length(self._normal.evaluate(psi))
+            poloidal = new_vector3d(f.x, 0, f.z)
+            poloidal.set_length(self._poloidal.evaluate(psi))
+            normal = new_vector3d(-f.z, 0, f.x)
+            normal.set_length(self._normal.evaluate(psi))
 
         return new_vector3d(poloidal.x + normal.x, toroidal.y, poloidal.z + normal.z)

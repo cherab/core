@@ -245,14 +245,14 @@ cdef class SingleRayAttenuator(BeamAttenuator):
         # z-weighted density sum
         density_sum = 0
         for species, _ in self._stopping_data:
-            density_sum += species.element.atomic_number**2 * species.distribution.density(x, y, z)
+            density_sum += species.charge**2 * species.distribution.density(x, y, z)
 
         # stopping coefficient
         stopping_coeff = 0
         for species, coeff in self._stopping_data:
 
             # sample species distribution
-            target_z = species.element.atomic_number
+            target_z = species.charge
             target_ne = species.distribution.density(x, y, z) * target_z
             target_ti = species.distribution.effective_temperature(x, y, z)
             target_velocity = species.distribution.bulk_velocity(x, y, z)

@@ -16,7 +16,9 @@
 # See the Licence for the specific language governing permissions and limitations
 # under the Licence.
 
-from cherab.core.atomic cimport Element
+from cherab.core.atomic.elements cimport Element
+from cherab.core.atomic.line cimport Line
+from cherab.core.atomic.zeeman cimport ZeemanStructure
 from cherab.core.atomic.rates cimport *
 
 
@@ -51,3 +53,6 @@ cdef class AtomicData:
     cpdef CXRadiationPower cx_radiated_power_rate(self, Element element, int charge)
 
     cpdef FractionalAbundance fractional_abundance(self, Element ion, int charge)
+
+    cpdef ZeemanStructure zeeman_structure(self, Line line, object b_field=*)
+

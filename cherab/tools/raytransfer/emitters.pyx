@@ -45,10 +45,6 @@ cdef class RayTransferIntegrator(VolumeIntegrator):
     :ivar int min_samples: The minimum number of samples to use over integration range.
     """
 
-    cdef:
-        double _step
-        int _min_samples
-
     def __init__(self, double step=0.001, int min_samples=2):
         self.step = step
         self.min_samples = min_samples
@@ -260,14 +256,6 @@ cdef class RayTransferEmitter(InhomogeneousVolumeEmitter):
     :ivar int bins: Number of light sources (the size of spectral array must be equal to this value).
     """
 
-    cdef:
-        int[3] _grid_shape
-        double[3] _grid_steps
-        int _bins
-        np.ndarray _voxel_map
-        public:
-            int[:, :, ::1] voxel_map_mv
-
     def __init__(self, tuple grid_shape, tuple grid_steps, np.ndarray voxel_map=None, np.ndarray mask=None, VolumeIntegrator integrator=None):
 
         cdef:
@@ -310,9 +298,9 @@ cdef class RayTransferEmitter(InhomogeneousVolumeEmitter):
         if mask is not None:
             if mask.shape != self.grid_shape:
                 raise ValueError('Mask array must be of shape: %s.' % (' '.join(['%d' % i for i in self._grid_shape])))
-            mask = mask.astype(np.bool)
+            mask = mask.astype(bool)
         else:
-            mask = np.ones(self.grid_shape, dtype=np.bool)
+            mask = np.ones(self.grid_shape, dtype=bool)
         voxel_map = -1 * np.ones(mask.shape, dtype=np.int32)
         voxel_map[mask] = np.arange(mask.sum(), dtype=np.int32)
 
@@ -411,14 +399,12 @@ cdef class CylindricalRayTransferEmitter(RayTransferEmitter):
         >>> camera.min_wavelength = 600.
         >>> camera.max_wavelength = 601.
     """
-    cdef:
-        double _dr, _dphi, _dz, _period, _rmin
 
     def __init__(self, tuple grid_shape, tuple grid_steps, np.ndarray voxel_map=None, np.ndarray mask=None, VolumeIntegrator integrator=None,
                  double rmin=0):
 
         cdef:
-            double def_integration_step, period
+            double def_integration_step, period, num_sectors
 
         def_integration_step = 0.1 * min(grid_steps[0], grid_steps[-1])
         integrator = integrator or CylindricalRayTransferIntegrator(def_integration_step)
@@ -428,7 +414,8 @@ cdef class CylindricalRayTransferEmitter(RayTransferEmitter):
         self._dphi = self._grid_steps[1]
         self._dz = self._grid_steps[2]
         period = self._grid_shape[1] * self._grid_steps[1]
-        if 360. % period > 1.e-3:
+        num_sectors = 360. / period
+        if abs(round(num_sectors) - num_sectors) > 1.e-3:
             raise ValueError("The period %.3f (grid_shape[1] * grid_steps[1]) is not a multiple of 360." % period)
         self._period = period
 
@@ -538,9 +525,6 @@ cdef class CartesianRayTransferEmitter(RayTransferEmitter):
         >>> camera.min_wavelength = 600.
         >>> camera.max_wavelength = 601.
     """
-
-    cdef:
-        double _dx, _dy, _dz
 
     def __init__(self, tuple grid_shape, tuple grid_steps, np.ndarray voxel_map=None, np.ndarray mask=None, VolumeIntegrator integrator=None):
 

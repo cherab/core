@@ -43,22 +43,6 @@ cdef double ms_to_evamu(double x):
     return 0.5 * (x ** 2) * RECIP_ELEMENTARY_CHARGE * ATOMIC_MASS
 
 
-cdef double amu_to_kg(double x):
-    return x * ATOMIC_MASS
-
-
-cdef double kg_to_amu(double x):
-    return x * RECIP_ATOMIC_MASS
-
-
-cdef double ev_to_j(double x):
-    return x * ELEMENTARY_CHARGE
-
-
-cdef double j_to_ev(double x):
-    return x * RECIP_ELEMENTARY_CHARGE
-
-
 cdef class BeamCXLine(BeamModel):
     """Calculates CX emission for a beam.
 
@@ -103,7 +87,7 @@ cdef class BeamCXLine(BeamModel):
             double donor_density
             double receiver_temperature, receiver_density, receiver_ion_mass, interaction_speed, interaction_energy, emission_rate
             Vector3D receiver_velocity, donor_velocity, interaction_velocity
-            double natural_wavelength, central_wavelength, width_squared, radiance, sigma
+            double natural_wavelength, central_wavelength, radiance, sigma
 
         # cache data on first run
         if self._target_species is None:
@@ -248,14 +232,14 @@ cdef class BeamCXLine(BeamModel):
         # z-weighted density sum
         density_sum = 0
         for species, _ in population_data:
-            density_sum += species.element.atomic_number**2 * species.distribution.density(x, y, z)
+            density_sum += species.charge**2 * species.distribution.density(x, y, z)
 
         # combine population coefficients
         pop_coeff = 0
         total_ne = 0
         for species, coeff in population_data:
 
-            target_z = species.element.atomic_number
+            target_z = species.charge
             target_ne = species.distribution.density(x, y, z) * target_z
             target_ti = species.distribution.effective_temperature(x, y, z)
             target_velocity = species.distribution.bulk_velocity(x, y, z)
@@ -286,9 +270,12 @@ cdef class BeamCXLine(BeamModel):
             BeamPopulationRate coeff
 
         # sanity checks
-        if self._beam is None or self._plasma is None or self._atomic_data is None:
+        if self._beam is None:
             raise RuntimeError("The emission model is not connected to a beam object.")
-
+        if self._plasma is None:
+            raise RuntimeError("The emission model is not connected to a plasma object.")
+        if self._atomic_data is None:
+            raise RuntimeError("The emission model is not connected to an atomic data source.")
         if self._line is None:
             raise RuntimeError("The emission line has not been set.")
 
