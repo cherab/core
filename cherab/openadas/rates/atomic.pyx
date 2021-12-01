@@ -18,7 +18,7 @@
 # under the Licence.
 
 import numpy as np
-from libc.math cimport INFINITY
+from libc.math cimport INFINITY, log10
 
 from raysect.core.math.function.float cimport Interpolator2DArray
 
@@ -44,12 +44,12 @@ cdef class IonisationRate(CoreIonisationRate):
 
         # interpolate rate
         extrapolation_type = 'linear' if extrapolate else 'none'
-        self._rate = Interpolator2DArray(ne, te, rate, 'cubic', extrapolation_type, INFINITY, INFINITY)
+        self._rate = Interpolator2DArray(np.log10(ne), np.log10(te), rate, 'cubic', extrapolation_type, INFINITY, INFINITY)
 
     cpdef double evaluate(self, double density, double temperature) except? -1e999:
 
         # calculate rate and convert from log10 space to linear space
-        return 10 ** self._rate.evaluate(density, temperature)
+        return 10 ** self._rate.evaluate(log10(density), log10(temperature))
 
 
 cdef class NullIonisationRate(CoreIonisationRate):
@@ -83,13 +83,12 @@ cdef class RecombinationRate(CoreRecombinationRate):
 
         # interpolate rate
         extrapolation_type = 'linear' if extrapolate else 'none'
-        self._rate = Interpolator2DArray(ne, te, rate, 'cubic', extrapolation_type, INFINITY, INFINITY)
-
+        self._rate = Interpolator2DArray(np.log10(ne), np.log10(te), rate, 'cubic', extrapolation_type, INFINITY, INFINITY)
 
     cpdef double evaluate(self, double density, double temperature) except? -1e999:
 
         # calculate rate and convert from log10 space to linear space
-        return 10 ** self._rate.evaluate(density, temperature)
+        return 10 ** self._rate.evaluate(log10(density), log10(temperature))
 
 
 cdef class NullRecombinationRate(CoreRecombinationRate):
@@ -123,12 +122,12 @@ cdef class ThermalCXRate(CoreThermalCXRate):
 
         # interpolate rate
         extrapolation_type = 'linear' if extrapolate else 'none'
-        self._rate = Interpolator2DArray(ne, te, rate, 'cubic', extrapolation_type, INFINITY, INFINITY)
+        self._rate = Interpolator2DArray(np.log10(ne), np.log10(te), rate, 'cubic', extrapolation_type, INFINITY, INFINITY)
 
     cpdef double evaluate(self, double density, double temperature) except? -1e999:
 
         # calculate rate and convert from log10 space to linear space
-        return 10 ** self._rate.evaluate(density, temperature)
+        return 10 ** self._rate.evaluate(log10(density), log10(temperature))
 
 
 cdef class NullThermalCXRate(CoreThermalCXRate):
