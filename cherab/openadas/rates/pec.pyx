@@ -16,7 +16,9 @@
 # See the Licence for the specific language governing permissions and limitations
 # under the Licence.
 
-from libc.math cimport INFINITY
+import numpy as np
+
+from libc.math cimport INFINITY, log10
 
 from raysect.core.math.function.float cimport Interpolator2DArray
 from cherab.core.utility.conversion import PhotonToJ
@@ -40,7 +42,7 @@ cdef class ImpactExcitationPEC(CoreImpactExcitationPEC):
         rate = data['rate']
 
         # pre-convert data to W m^3 from Photons s^-1 cm^3 prior to interpolation
-        rate = PhotonToJ.to(rate, wavelength)
+        rate = np.log10(PhotonToJ.to(rate, wavelength))
 
         # store limits of data
         self.density_range = ne.min(), ne.max()
@@ -48,12 +50,12 @@ cdef class ImpactExcitationPEC(CoreImpactExcitationPEC):
 
         # interpolate rate
         extrapolation_type = 'linear' if extrapolate else 'none'
-        self._rate = Interpolator2DArray(ne, te, rate, 'cubic', extrapolation_type, INFINITY, INFINITY)
+        self._rate = Interpolator2DArray(np.log10(ne), np.log10(te), rate, 'cubic', extrapolation_type, INFINITY, INFINITY)
 
     cpdef double evaluate(self, double density, double temperature) except? -1e999:
 
-        # prevent -ve values (possible if extrapolation enabled)
-        return max(0, self._rate.evaluate(density, temperature))
+        # calculate rate and convert from log10 space to linear space
+        return 10 ** self._rate.evaluate(log10(density), log10(temperature))
 
 
 cdef class NullImpactExcitationPEC(CoreImpactExcitationPEC):
@@ -84,7 +86,7 @@ cdef class RecombinationPEC(CoreRecombinationPEC):
         rate = data['rate']
 
         # pre-convert data to W m^3 from Photons s^-1 cm^3 prior to interpolation
-        rate = PhotonToJ.to(rate, wavelength)
+        rate = np.log10(PhotonToJ.to(rate, wavelength))
 
         # store limits of data
         self.density_range = ne.min(), ne.max()
@@ -92,12 +94,12 @@ cdef class RecombinationPEC(CoreRecombinationPEC):
 
         # interpolate rate
         extrapolation_type = 'linear' if extrapolate else 'none'
-        self._rate = Interpolator2DArray(ne, te, rate, 'cubic', extrapolation_type, INFINITY, INFINITY)
+        self._rate = Interpolator2DArray(np.log10(ne), np.log10(te), rate, 'cubic', extrapolation_type, INFINITY, INFINITY)
 
     cpdef double evaluate(self, double density, double temperature) except? -1e999:
 
-        # prevent -ve values (possible if extrapolation enabled)
-        return max(0, self._rate.evaluate(density, temperature))
+        # calculate rate and convert from log10 space to linear space
+        return 10 ** self._rate.evaluate(log10(density), log10(temperature))
 
 
 cdef class NullRecombinationPEC(CoreRecombinationPEC):
