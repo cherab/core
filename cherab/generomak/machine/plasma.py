@@ -29,10 +29,11 @@ from raysect.primitive import Cylinder, Subtract
 from cherab.core import AtomicData, Plasma, Maxwellian, Species
 from cherab.core.atomic.elements import hydrogen, carbon, lookup_isotope, lookup_element
 from cherab.core.utility import RecursiveDict
-from cherab.core.math.mappers import AxisymmetricMapper
+from cherab.core.math.mappers import AxisymmetricMapper, VectorAxisymmetricMapper
 
 from cherab.openadas import OpenADAS
 
+from cherab.generomak.machine import load_equilibrium
 
 def load_edge_profiles():
     """
@@ -161,7 +162,10 @@ def get_edge_plasma(atomic_data=None):
     :return: populated Plasma object
     """
     
-    #create or check atomic_data
+    # load Generomak equilibrium
+    equilibrium = load_equilibrium()
+
+    # create or check atomic_data
     if atomic_data is not None:
      if not isinstance(atomic_data, AtomicData):
          raise ValueError("atomic_data has to be of type AtomicData")   
@@ -205,5 +209,6 @@ def get_edge_plasma(atomic_data=None):
     plasma.electron_distribution = dists["electron"]
     plasma.composition = plasma_composition
     plasma.geometry_transform = geometry_transform
+    plasma.b_field = VectorAxisymmetricMapper(equilibrium.b_field)
 
     return plasma
