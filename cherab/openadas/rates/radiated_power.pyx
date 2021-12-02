@@ -17,7 +17,7 @@
 # See the Licence for the specific language governing permissions and limitations
 # under the Licence.
 
-from libc.math cimport INFINITY
+from libc.math cimport INFINITY, log10
 
 from raysect.core.math.function.float cimport Interpolator2DArray
 
@@ -34,7 +34,7 @@ cdef class LineRadiationPower(CoreLineRadiationPower):
         # unpack
         ne = data['ne']
         te = data['te']
-        rate = data['rate']
+        rate = np.log10(data['rate'])
 
         # store limits of data
         self.density_range = ne.min(), ne.max()
@@ -42,12 +42,12 @@ cdef class LineRadiationPower(CoreLineRadiationPower):
 
         # interpolate rate
         extrapolation_type = 'linear' if extrapolate else 'none'
-        self._rate = Interpolator2DArray(ne, te, rate, 'cubic', extrapolation_type, INFINITY, INFINITY)
+        self._rate = Interpolator2DArray(np.log10(ne), np.log10(te), rate, 'cubic', extrapolation_type, INFINITY, INFINITY)
 
     cdef double evaluate(self, double electron_density, double electron_temperature) except? -1e999:
 
-        # prevent -ve values (possible if extrapolation enabled)
-        return max(0, self._rate.evaluate(electron_density, electron_temperature))
+        # calculate rate and convert from log10 space to linear space
+        return 10 ** self._rate.evaluate(log10(electron_density), log10(electron_temperature))
 
 
 cdef class NullLineRadiationPower(CoreLineRadiationPower):
@@ -72,7 +72,7 @@ cdef class ContinuumPower(CoreContinuumPower):
         # unpack
         ne = data['ne']
         te = data['te']
-        rate = data['rate']
+        rate = np.log10(data['rate'])
 
         # store limits of data
         self.density_range = ne.min(), ne.max()
@@ -80,12 +80,12 @@ cdef class ContinuumPower(CoreContinuumPower):
 
         # interpolate rate
         extrapolation_type = 'linear' if extrapolate else 'none'
-        self._rate = Interpolator2DArray(ne, te, rate, 'cubic', extrapolation_type, INFINITY, INFINITY)
+        self._rate = Interpolator2DArray(np.log10(ne), np.log10(te), rate, 'cubic', extrapolation_type, INFINITY, INFINITY)
 
     cdef double evaluate(self, double electron_density, double electron_temperature) except? -1e999:
 
-        # prevent -ve values (possible if extrapolation enabled)
-        return max(0, self._rate.evaluate(electron_density, electron_temperature))
+        # calculate rate and convert from log10 space to linear space
+        return 10 ** self._rate.evaluate(log10(electron_density), log10(electron_temperature))
 
 
 cdef class NullContinuumPower(CoreContinuumPower):
@@ -110,7 +110,7 @@ cdef class CXRadiationPower(CoreCXRadiationPower):
         # unpack
         ne = data['ne']
         te = data['te']
-        rate = data['rate']
+        rate = np.log10(data['rate'])
 
         # store limits of data
         self.density_range = ne.min(), ne.max()
@@ -118,12 +118,12 @@ cdef class CXRadiationPower(CoreCXRadiationPower):
 
         # interpolate rate
         extrapolation_type = 'linear' if extrapolate else 'none'
-        self._rate = Interpolator2DArray(ne, te, rate, 'cubic', extrapolation_type, INFINITY, INFINITY)
+        self._rate = Interpolator2DArray(np.log10(ne), np.log10(te), rate, 'cubic', extrapolation_type, INFINITY, INFINITY)
 
     cdef double evaluate(self, double electron_density, double electron_temperature) except? -1e999:
 
-        # prevent -ve values (possible if extrapolation enabled)
-        return max(0, self._rate.evaluate(electron_density, electron_temperature))
+        # calculate rate and convert from log10 space to linear space
+        return 10 ** self._rate.evaluate(log10(electron_density), log10(electron_temperature))
 
 
 cdef class NullCXRadiationPower(CoreCXRadiationPower):
