@@ -81,17 +81,7 @@ def load_edge_profiles():
                 element_name = file_data["element"]
                 charge = file_data["charge"]
 
-                # get element or isotope
-                try:
-                    element = lookup_isotope(element_name)
-                except ValueError:
-                    element = lookup_element(element_name)
-                
-                # check charge consistency
-                if charge > element.atomic_number:
-                    raise ValueError("Charge {:d} exceeds the maximum possible charge for the element {}.".format(charge, element.name)) 
                 edge_data["composition"][element_name][charge] = file_data
-                edge_data["composition"][element_name][charge]["element"] = element
 
     return edge_data.freeze()
 
@@ -148,12 +138,18 @@ def get_edge_distributions():
 
     for elem_name, elem_data in mesh_interp["composition"].items():
         for stage, stage_data in elem_data.items():
-            
+
+            # get element or isotope
+            try:
+                element = lookup_isotope(elem_name)
+            except ValueError:
+                element = lookup_element(elem_name)
+                
             n3d = AxisymmetricMapper(stage_data["density"])
             t3d = AxisymmetricMapper(stage_data["temperature"])
-            mass = stage_data["element"].atomic_weight * atomic_mass
+            mass = element.atomic_weight * atomic_mass
             dists["composition"][elem_name][stage]["distribution"] = Maxwellian(n3d, t3d, zero_vector, mass)
-            dists["composition"][elem_name][stage]["element"] = stage_data["element"]
+            dists["composition"][elem_name][stage]["element"] = element
 
     return dists.freeze()
 
@@ -183,11 +179,11 @@ def get_edge_plasma(atomic_data=None):
     z_range = (vertex_coords[:, 1].min(), vertex_coords[:, 1].max())
     plasma_height = z_range[1] - z_range[0]
 
-    padding = 1e-3 #enlarge plasma geometry for safety
+    padding = 1e-3 #enlarge for safety
 
-    outer_column = Cylinder(radius=r_range[1] + padding, height=plasma_height + 2 * padding)
-    inner_column = Cylinder(radius=r_range[0] - padding, height=plasma_height + 4 * padding)
-    inner_column.transform = translate(0, 0, -2 * padding)
+    outer_column = Cylinder(radius=r_range[1], height=plasma_height)
+    inner_column = Cylinder(radius=r_range[0], height=plasma_height + 2 * padding)
+    inner_column.transform = translate(0, 0, -padding)
 
     plasma_geometry = Subtract(outer_column, inner_column)
     geometry_transform = translate(0, 0, -outer_column.height / 2)
