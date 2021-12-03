@@ -16,10 +16,11 @@
 # See the Licence for the specific language governing permissions and limitations
 # under the Licence.
 
+import numpy as np
 from cherab.core.utility.conversion import Cm3ToM3, PerCm3ToPerM3, PhotonToJ
 
 cimport cython
-from libc.math cimport INFINITY
+from libc.math cimport INFINITY, log10
 from raysect.core.math.function.float cimport Interpolator1DArray, Constant1D
 
 
@@ -48,7 +49,7 @@ cdef class BeamCXPEC(CoreBeamCXPEC):
         bmag = data["b"]                                         # Tesla
 
         qref = data["qref"]                                      # m^3/s
-        qeb = PhotonToJ.to(data["qeb"], wavelength)              # W.m^3
+        qeb = np.log10(PhotonToJ.to(data["qeb"], wavelength))    # W.m^3
         qti = data["qti"] / qref                                 # dimensionless
         qni = data["qni"] / qref                                 # dimensionless
         qzeff = data["qz"] / qref                                # dimensionless
@@ -62,8 +63,9 @@ cdef class BeamCXPEC(CoreBeamCXPEC):
         self.b_field_range = bmag.min(), bmag.max()
 
         # interpolate the rate data
-        extrapolation_type = 'quadratic' if extrapolate else 'none'
-        self._eb = Interpolator1DArray(eb, qeb, 'cubic', extrapolation_type, INFINITY) if len(qeb) > 1 else Constant1D(qeb[0])
+        extrapolation_type_log = 'quadratic' if extrapolate else 'none'
+        extrapolation_type = 'nearest' if extrapolate else 'none'
+        self._eb = Interpolator1DArray(np.log10(eb), qeb, 'cubic', extrapolation_type_log, INFINITY) if len(qeb) > 1 else Constant1D(qeb[0])
         self._ti = Interpolator1DArray(ti, qti, 'cubic', extrapolation_type, INFINITY) if len(qti) > 1 else Constant1D(qti[0])
         self._ni = Interpolator1DArray(ni, qni, 'cubic', extrapolation_type, INFINITY) if len(qni) > 1 else Constant1D(qni[0])
         self._zeff = Interpolator1DArray(zeff, qzeff, 'cubic', extrapolation_type, INFINITY) if len(qzeff) > 1 else Constant1D(qzeff[0])
@@ -85,9 +87,11 @@ cdef class BeamCXPEC(CoreBeamCXPEC):
 
         cdef double rate
 
-        rate = self._eb.evaluate(energy)
-        if rate <= 0:
-            return 0.0
+        # need to handle zeros for log-log interpolation
+        if energy < 1.e-300:
+            energy = 1.e-300
+
+        rate = 10 ** self._eb.evaluate(log10(energy))
 
         rate *= self._ti.evaluate(temperature)
         if rate <= 0:
