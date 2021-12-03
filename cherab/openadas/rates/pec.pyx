@@ -49,17 +49,18 @@ cdef class ImpactExcitationPEC(CoreImpactExcitationPEC):
         self.temperature_range = te.min(), te.max()
 
         # interpolate rate
-        extrapolation_type = 'linear' if extrapolate else 'none'
+        # using nearest extrapolation to avoid infinite values at 0 for some rates
+        extrapolation_type = 'nearest' if extrapolate else 'none'
         self._rate = Interpolator2DArray(np.log10(ne), np.log10(te), rate, 'cubic', extrapolation_type, INFINITY, INFINITY)
 
     cpdef double evaluate(self, double density, double temperature) except? -1e999:
 
         # need to handle zeros, also density and temperature can become negative due to cubic interpolation
         # cannot return immediately because extrapolation might be prohibited
-        if density <= 0:
+        if density < 1.e-300:
             density = 1.e-300
 
-        if temperature <= 0:
+        if temperature < 1.e-300:
             temperature = 1.e-300
 
         # calculate rate and convert from log10 space to linear space
@@ -101,17 +102,18 @@ cdef class RecombinationPEC(CoreRecombinationPEC):
         self.temperature_range = te.min(), te.max()
 
         # interpolate rate
-        extrapolation_type = 'linear' if extrapolate else 'none'
+        # using nearest extrapolation to avoid infinite values at 0 for some rates
+        extrapolation_type = 'nearest' if extrapolate else 'none'
         self._rate = Interpolator2DArray(np.log10(ne), np.log10(te), rate, 'cubic', extrapolation_type, INFINITY, INFINITY)
 
     cpdef double evaluate(self, double density, double temperature) except? -1e999:
 
         # need to handle zeros, also density and temperature can become negative due to cubic interpolation
         # cannot return immediately because extrapolation might be prohibited
-        if density <= 0:
+        if density < 1.e-300:
             density = 1.e-300
 
-        if temperature <= 0:
+        if temperature < 1.e-300:
             temperature = 1.e-300
 
         # calculate rate and convert from log10 space to linear space

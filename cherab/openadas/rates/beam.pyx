@@ -79,13 +79,13 @@ cdef class BeamStoppingRate(CoreBeamStoppingRate):
 
         # need to handle zeros, also density and temperature can become negative due to cubic interpolation
         # cannot return immediately because extrapolation might be prohibited
-        if energy == 0:
+        if energy < 1.e-300:
             energy = 1.e-300
 
-        if density <= 0:
+        if density < 1.e-300:
             density = 1.e-300
 
-        if temperature <= 0:
+        if temperature < 1.e-300:
             temperature = 1.e-300
 
         # calculate rate and convert from log10 space to linear space
@@ -154,13 +154,13 @@ cdef class BeamPopulationRate(CoreBeamPopulationRate):
 
         # need to handle zeros, also density and temperature can become negative due to cubic interpolation
         # cannot return immediately because extrapolation might be prohibited
-        if energy == 0:
+        if energy < 1.e-300:
             energy = 1.e-300
 
-        if density <= 0:
+        if density < 1.e-300:
             density = 1.e-300
 
-        if temperature <= 0:
+        if temperature < 1.e-300:
             temperature = 1.e-300
 
         # calculate rate and convert from log10 space to linear space
@@ -231,13 +231,13 @@ cdef class BeamEmissionPEC(CoreBeamEmissionPEC):
 
         # need to handle zeros, also density and temperature can become negative due to cubic interpolation
         # cannot return immediately because extrapolation might be prohibited
-        if energy == 0:
+        if energy < 1.e-300:
             energy = 1.e-300
 
-        if density <= 0:
+        if density < 1.e-300:
             density = 1.e-300
 
-        if temperature <= 0:
+        if temperature < 1.e-300:
             temperature = 1.e-300
 
         # calculate rate and convert from log10 space to linear space
