@@ -145,3 +145,5 @@ plt.pcolormesh(x, y, temperature_grid.transpose(), shading='gouraud')
 plt.autoscale(tight=True)
 plt.colorbar()
 plt.title('3D Temperature (x-y slice, function)')
+
+plt.show()
