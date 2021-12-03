@@ -33,7 +33,7 @@ from cherab.core.math.mappers import AxisymmetricMapper, VectorAxisymmetricMappe
 
 from cherab.openadas import OpenADAS
 
-from cherab.generomak.machine import load_equilibrium
+from cherab.generomak.equilibrium import load_equilibrium
 
 def load_edge_profiles():
     """
@@ -60,7 +60,7 @@ def load_edge_profiles():
        >>> # create hydrogen 0+ density 2D mesh interpolator
        >>> n_h0 = Discrete2DMesh.instance(te, data["composition"]["hydrogen"][0]["temperature"])
     """
-    profiles_dir = os.path.join(os.path.dirname(__file__), "../machine/data/plasma/edge")
+    profiles_dir = os.path.join(os.path.dirname(__file__), "/data/plasma/edge")
 
     edge_data = RecursiveDict()
     path = os.path.join(profiles_dir, "mesh.json")
@@ -175,7 +175,7 @@ def get_edge_plasma(atomic_data=None, parent=None, name="Generomak edge plasma")
         atomic_data = OpenADAS()
 
     # base plasma geometry on mesh vertices
-    profiles_dir = os.path.join(os.path.dirname(__file__), "../machine/data/plasma/edge")
+    profiles_dir = os.path.join(os.path.dirname(__file__), "data/plasma/edge")
     path = os.path.join(profiles_dir, "mesh.json")
     with open(path, "r") as fhl:
         mesh = json.load(fhl)
