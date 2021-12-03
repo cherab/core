@@ -77,13 +77,15 @@ cdef class BeamStoppingRate(CoreBeamStoppingRate):
         :return: The beam stopping coefficient in m^3.s^-1
         """
 
+        # need to handle zeros, also density and temperature can become negative due to cubic interpolation
+        # cannot return immediately because extrapolation might be prohibited
         if energy == 0:
             energy = 1.e-300
 
-        if density == 0:
+        if density <= 0:
             density = 1.e-300
 
-        if temperature == 0:
+        if temperature <= 0:
             temperature = 1.e-300
 
         # calculate rate and convert from log10 space to linear space
@@ -150,13 +152,15 @@ cdef class BeamPopulationRate(CoreBeamPopulationRate):
         :return: The beam population coefficient in dimensionless units.
         """
 
+        # need to handle zeros, also density and temperature can become negative due to cubic interpolation
+        # cannot return immediately because extrapolation might be prohibited
         if energy == 0:
             energy = 1.e-300
 
-        if density == 0:
+        if density <= 0:
             density = 1.e-300
 
-        if temperature == 0:
+        if temperature <= 0:
             temperature = 1.e-300
 
         # calculate rate and convert from log10 space to linear space
@@ -225,13 +229,15 @@ cdef class BeamEmissionPEC(CoreBeamEmissionPEC):
         :return: The beam emission coefficient in m^3.s^-1
         """
 
+        # need to handle zeros, also density and temperature can become negative due to cubic interpolation
+        # cannot return immediately because extrapolation might be prohibited
         if energy == 0:
             energy = 1.e-300
 
-        if density == 0:
+        if density <= 0:
             density = 1.e-300
 
-        if temperature == 0:
+        if temperature <= 0:
             temperature = 1.e-300
 
         # calculate rate and convert from log10 space to linear space

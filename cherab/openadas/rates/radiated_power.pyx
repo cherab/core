@@ -47,10 +47,12 @@ cdef class LineRadiationPower(CoreLineRadiationPower):
 
     cdef double evaluate(self, double electron_density, double electron_temperature) except? -1e999:
 
-        if electron_density == 0:
+        # need to handle zeros, also density and temperature can become negative due to cubic interpolation
+        # cannot return immediately because extrapolation might be prohibited
+        if electron_density <= 0:
             electron_density = 1.e-300
 
-        if electron_temperature == 0:
+        if electron_temperature <= 0:
             electron_temperature = 1.e-300
 
         # calculate rate and convert from log10 space to linear space
@@ -91,10 +93,12 @@ cdef class ContinuumPower(CoreContinuumPower):
 
     cdef double evaluate(self, double electron_density, double electron_temperature) except? -1e999:
 
-        if electron_density == 0:
+        # need to handle zeros, also density and temperature can become negative due to cubic interpolation
+        # cannot return immediately because extrapolation might be prohibited
+        if electron_density <= 0:
             electron_density = 1.e-300
 
-        if electron_temperature == 0:
+        if electron_temperature <= 0:
             electron_temperature = 1.e-300
 
         # calculate rate and convert from log10 space to linear space
@@ -135,10 +139,12 @@ cdef class CXRadiationPower(CoreCXRadiationPower):
 
     cdef double evaluate(self, double electron_density, double electron_temperature) except? -1e999:
 
-        if electron_density == 0:
+        # need to handle zeros, also density and temperature can become negative due to cubic interpolation
+        # cannot return immediately because extrapolation might be prohibited
+        if electron_density <= 0:
             electron_density = 1.e-300
 
-        if electron_temperature == 0:
+        if electron_temperature <= 0:
             electron_temperature = 1.e-300
 
         # calculate rate and convert from log10 space to linear space
