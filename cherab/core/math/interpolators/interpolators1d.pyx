@@ -270,7 +270,7 @@ cdef class _Interpolate1DBase(Function1D):
 
 cdef class Interpolate1DLinear(_Interpolate1DBase):
     """
-    .. deprecated:: 1.2.1
+    .. deprecated:: 1.3.0
        Use `raysect.core.math.function.float.Interpolator1DArray` instead.
 
     Interpolates 1D data using linear interpolation.
@@ -366,7 +366,7 @@ cdef class Interpolate1DLinear(_Interpolate1DBase):
 
 cdef class Interpolate1DCubic(_Interpolate1DBase):
     """
-    .. deprecated:: 1.2.1
+    .. deprecated:: 1.3.0
        Use `raysect.core.math.function.float.Interpolator1DArray` instead.
 
     Interpolates 1D data using cubic interpolation.

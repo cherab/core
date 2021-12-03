@@ -333,7 +333,7 @@ cdef class _Interpolate2DBase(Function2D):
 
 cdef class Interpolate2DLinear(_Interpolate2DBase):
     """
-    .. deprecated:: 1.2.1
+    .. deprecated:: 1.3.0
        Use `raysect.core.math.function.float.Interpolator2DArray` instead.
 
     Interpolates 2D data using linear interpolation.
@@ -499,7 +499,7 @@ cdef class Interpolate2DLinear(_Interpolate2DBase):
 
 cdef class Interpolate2DCubic(_Interpolate2DBase):
     """
-    .. deprecated:: 1.2.1
+    .. deprecated:: 1.3.0
        Use `raysect.core.math.function.float.Interpolator2DArray` instead.
 
     Interpolates 2D data using cubic interpolation.
