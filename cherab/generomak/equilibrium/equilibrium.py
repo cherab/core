@@ -13,8 +13,8 @@ def load_equilibrium(file_path=None):
     """
 
     if file_path is None:
-        generomak_folder = os.path.dirname(__file__)
-        file_path = os.path.join(generomak_folder, "data/equilibrium/generomak_equilibrium.json")
+        equilibrium_folder = os.path.dirname(__file__)
+        file_path = os.path.join(equilibrium_folder, "data/generomak_equilibrium.json")
 
     with open(file_path, "r") as fhl:
         equi_data = json.load(fhl)
