@@ -47,6 +47,12 @@ cdef class LineRadiationPower(CoreLineRadiationPower):
 
     cdef double evaluate(self, double electron_density, double electron_temperature) except? -1e999:
 
+        if electron_density == 0:
+            electron_density = 1.e-300
+
+        if electron_temperature == 0:
+            electron_temperature = 1.e-300
+
         # calculate rate and convert from log10 space to linear space
         return 10 ** self._rate.evaluate(log10(electron_density), log10(electron_temperature))
 
@@ -85,6 +91,12 @@ cdef class ContinuumPower(CoreContinuumPower):
 
     cdef double evaluate(self, double electron_density, double electron_temperature) except? -1e999:
 
+        if electron_density == 0:
+            electron_density = 1.e-300
+
+        if electron_temperature == 0:
+            electron_temperature = 1.e-300
+
         # calculate rate and convert from log10 space to linear space
         return 10 ** self._rate.evaluate(log10(electron_density), log10(electron_temperature))
 
@@ -122,6 +134,12 @@ cdef class CXRadiationPower(CoreCXRadiationPower):
         self._rate = Interpolator2DArray(np.log10(ne), np.log10(te), rate, 'cubic', extrapolation_type, INFINITY, INFINITY)
 
     cdef double evaluate(self, double electron_density, double electron_temperature) except? -1e999:
+
+        if electron_density == 0:
+            electron_density = 1.e-300
+
+        if electron_temperature == 0:
+            electron_temperature = 1.e-300
 
         # calculate rate and convert from log10 space to linear space
         return 10 ** self._rate.evaluate(log10(electron_density), log10(electron_temperature))

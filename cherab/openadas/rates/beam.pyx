@@ -77,6 +77,15 @@ cdef class BeamStoppingRate(CoreBeamStoppingRate):
         :return: The beam stopping coefficient in m^3.s^-1
         """
 
+        if energy == 0:
+            energy = 1.e-300
+
+        if density == 0:
+            density = 1.e-300
+
+        if temperature == 0:
+            temperature = 1.e-300
+
         # calculate rate and convert from log10 space to linear space
         return 10 ** (self._npl_eb.evaluate(log10(energy), log10(density)) + self._tp.evaluate(log10(temperature)))
 
@@ -140,6 +149,15 @@ cdef class BeamPopulationRate(CoreBeamPopulationRate):
         :param temperature: Target temperature in eV.
         :return: The beam population coefficient in dimensionless units.
         """
+
+        if energy == 0:
+            energy = 1.e-300
+
+        if density == 0:
+            density = 1.e-300
+
+        if temperature == 0:
+            temperature = 1.e-300
 
         # calculate rate and convert from log10 space to linear space
         return 10 ** (self._npl_eb.evaluate(log10(energy), log10(density)) + self._tp.evaluate(log10(temperature)))
@@ -206,6 +224,15 @@ cdef class BeamEmissionPEC(CoreBeamEmissionPEC):
         :param temperature: Target temperature in eV.
         :return: The beam emission coefficient in m^3.s^-1
         """
+
+        if energy == 0:
+            energy = 1.e-300
+
+        if density == 0:
+            density = 1.e-300
+
+        if temperature == 0:
+            temperature = 1.e-300
 
         # calculate rate and convert from log10 space to linear space
         return 10 ** (self._npl_eb.evaluate(log10(energy), log10(density)) + self._tp.evaluate(log10(temperature)))

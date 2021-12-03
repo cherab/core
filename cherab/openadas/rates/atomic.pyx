@@ -48,6 +48,12 @@ cdef class IonisationRate(CoreIonisationRate):
 
     cpdef double evaluate(self, double density, double temperature) except? -1e999:
 
+        if density == 0:
+            density = 1.e-300
+
+        if temperature == 0:
+            temperature = 1.e-300
+
         # calculate rate and convert from log10 space to linear space
         return 10 ** self._rate.evaluate(log10(density), log10(temperature))
 
@@ -87,6 +93,12 @@ cdef class RecombinationRate(CoreRecombinationRate):
 
     cpdef double evaluate(self, double density, double temperature) except? -1e999:
 
+        if density == 0:
+            density = 1.e-300
+
+        if temperature == 0:
+            temperature = 1.e-300
+
         # calculate rate and convert from log10 space to linear space
         return 10 ** self._rate.evaluate(log10(density), log10(temperature))
 
@@ -125,6 +137,12 @@ cdef class ThermalCXRate(CoreThermalCXRate):
         self._rate = Interpolator2DArray(np.log10(ne), np.log10(te), rate, 'cubic', extrapolation_type, INFINITY, INFINITY)
 
     cpdef double evaluate(self, double density, double temperature) except? -1e999:
+
+        if density == 0:
+            density = 1.e-300
+
+        if temperature == 0:
+            temperature = 1.e-300
 
         # calculate rate and convert from log10 space to linear space
         return 10 ** self._rate.evaluate(log10(density), log10(temperature))
