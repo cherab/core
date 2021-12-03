@@ -78,7 +78,6 @@ cdef class BeamStoppingRate(CoreBeamStoppingRate):
         """
 
         # need to handle zeros, also density and temperature can become negative due to cubic interpolation
-        # cannot return immediately because extrapolation might be prohibited
         if energy < 1.e-300:
             energy = 1.e-300
 
@@ -153,7 +152,6 @@ cdef class BeamPopulationRate(CoreBeamPopulationRate):
         """
 
         # need to handle zeros, also density and temperature can become negative due to cubic interpolation
-        # cannot return immediately because extrapolation might be prohibited
         if energy < 1.e-300:
             energy = 1.e-300
 
@@ -230,7 +228,6 @@ cdef class BeamEmissionPEC(CoreBeamEmissionPEC):
         """
 
         # need to handle zeros, also density and temperature can become negative due to cubic interpolation
-        # cannot return immediately because extrapolation might be prohibited
         if energy < 1.e-300:
             energy = 1.e-300
 
