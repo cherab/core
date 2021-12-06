@@ -37,7 +37,8 @@ cdef class IsoMapper2D(Function2D):
 
     .. code-block:: pycon
 
-       >>> from cherab.core.math import IsoMapper2D, Interpolate1DCubic
+       >>> from raysect.core.math.function.float import Interpolator1DArray
+       >>> from cherab.core.math import IsoMapper2D
        >>> from cherab.tools.equilibrium import example_equilibrium
        >>>
        >>> equilibrium = example_equilibrium()
@@ -45,7 +46,7 @@ cdef class IsoMapper2D(Function2D):
        >>> # extract the 2D psi function
        >>> psi_n = equilibrium.psi_normalised
        >>> # make a 1D psi profile
-       >>> profile = Interpolate1DCubic([0, 0.5, 0.9, 1.0], [2500, 2000, 1000, 0])
+       >>> profile = Interpolator1DArray([0, 0.5, 0.9, 1.0], [2500, 2000, 1000, 0], 'cubic', 'none', 0)
        >>> # perform the flux function mapping
        >>> f = IsoMapper2D(psi_n, profile)
        >>>
@@ -81,7 +82,8 @@ cdef class IsoMapper3D(Function3D):
 
     .. code-block:: pycon
 
-       >>> from cherab.core.math import IsoMapper2D, Interpolate1DCubic, AxisymmetricMapper
+       >>> from raysect.core.math.function.float import Interpolator1DArray
+       >>> from cherab.core.math import IsoMapper2D, AxisymmetricMapper
        >>> from cherab.tools.equilibrium import example_equilibrium
        >>>
        >>> equilibrium = example_equilibrium()
@@ -90,7 +92,7 @@ cdef class IsoMapper3D(Function3D):
        >>> psi_n = equilibrium.psi_normalised
        >>> psi_n_3d = AxisymmetricMapper(psi_n)
        >>> # make a 1D psi profile
-       >>> profile = Interpolate1DCubic([0, 0.5, 0.9, 1.0], [2500, 2000, 1000, 0])
+       >>> profile = Interpolator1DArray([0, 0.5, 0.9, 1.0], [2500, 2000, 1000, 0], 'cubic', 'none', 0)
        >>> # perform the flux function mapping
        >>> f = IsoMapper3D(psi_n_3d, profile)
        >>>
