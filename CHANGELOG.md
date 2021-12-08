@@ -45,6 +45,8 @@ New:
 * Improve project metadata to make PyPI page more informative. (#317)
 * Add Zeeman spectral line shape models. (#246)
 * Use Raysect's new interpolators in place of Cherab's. (#304)
+* Interpolate OpenADAS rates in log-log space. (#304)
+* Use nearest neighbour extrapolation for OpenADAS ionisation and recombination rates, impact excitation and recombination PECs and line and continuum radiated power rates. (#304)
 
 
 
