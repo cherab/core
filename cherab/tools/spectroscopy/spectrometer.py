@@ -205,6 +205,7 @@ class CzernyTurnerSpectrometer(Spectrometer):
 
     def __init__(self, diffraction_order, grating, focal_length, pixel_spacing, diffraction_angle,
                  accommodated_spectra, min_bins_per_pixel=1, name=''):
+        self._accommodated_spectra = None
         self.diffraction_order = diffraction_order
         self.grating = grating
         self.focal_length = focal_length
@@ -226,7 +227,8 @@ class CzernyTurnerSpectrometer(Spectrometer):
             raise ValueError("Attribute 'diffraction_order' must be positive.")
 
         self._diffraction_order = value
-        self._clear_spectral_settings()
+        # resolution has changed, recalculating wavelength_to_pixel
+        self._update_wavelength_to_pixel()
 
     @property
     def grating(self):
@@ -239,7 +241,8 @@ class CzernyTurnerSpectrometer(Spectrometer):
             raise ValueError("Attribute 'grating' must be positive.")
 
         self._grating = value
-        self._clear_spectral_settings()
+        # resolution has changed, recalculating wavelength_to_pixel
+        self._update_wavelength_to_pixel()
 
     @property
     def focal_length(self):
@@ -252,7 +255,8 @@ class CzernyTurnerSpectrometer(Spectrometer):
             raise ValueError("Attribute 'focal_length' must be positive.")
 
         self._focal_length = value
-        self._clear_spectral_settings()
+        # resolution has changed, recalculating wavelength_to_pixel
+        self._update_wavelength_to_pixel()
 
     @property
     def pixel_spacing(self):
@@ -265,7 +269,8 @@ class CzernyTurnerSpectrometer(Spectrometer):
             raise ValueError("Attribute 'pixel_spacing' must be positive.")
 
         self._pixel_spacing = value
-        self._clear_spectral_settings()
+        # resolution has changed, recalculating wavelength_to_pixel
+        self._update_wavelength_to_pixel()
 
     @property
     def diffraction_angle(self):
@@ -278,7 +283,8 @@ class CzernyTurnerSpectrometer(Spectrometer):
             raise ValueError("Attribute 'diffraction_angle' must be positive.")
 
         self._diffraction_angle = np.deg2rad(value)
-        self._clear_spectral_settings()
+        # resolution has changed, recalculating wavelength_to_pixel
+        self._update_wavelength_to_pixel()
 
     @property
     def accommodated_spectra(self):
@@ -286,13 +292,22 @@ class CzernyTurnerSpectrometer(Spectrometer):
 
     @accommodated_spectra.setter
     def accommodated_spectra(self, value):
-        _wavelength_to_pixel = []
-        _wavelengths = []
         for min_wavelength, pixels in value:
             if min_wavelength <= 0:
                 raise ValueError('The value of min_wavelength in accommodated_spectra must be positive.')
             if pixels <= 0:
                 raise ValueError('The value of pixels in accommodated_spectra must be positive.')
+        self._accommodated_spectra = value
+        self._update_wavelength_to_pixel()
+
+    def _update_wavelength_to_pixel(self):
+
+        if self._accommodated_spectra is None:
+            return
+
+        _wavelength_to_pixel = []
+        _wavelengths = []
+        for min_wavelength, pixels in self._accommodated_spectra:
             pixels = int(pixels)
             wl2pix = np.zeros(pixels + 1)
             wl2pix[0] = min_wavelength
@@ -303,9 +318,9 @@ class CzernyTurnerSpectrometer(Spectrometer):
             wl_center = 0.5 * (wl2pix[1:] + wl2pix[:-1])
             wl_center.flags.writeable = False
             _wavelengths.append(wl_center)
-        self._accommodated_spectra = value
         self._wavelength_to_pixel = tuple(_wavelength_to_pixel)
         self._wavelengths = tuple(_wavelengths)
+
         self._clear_spectral_settings()
 
     @property
