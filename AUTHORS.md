@@ -5,6 +5,7 @@ Core Team
 * Jack Lovell (Developer)
 * Alex Meakins (Architect/Core Developer)
 * Matej Tomes (Developer)
+* Vlad Neverov (Developer)
 
 
 Contributors
@@ -19,7 +20,6 @@ Contributors
 * James Harrison
 * Nick Hawkes
 * Andy Meigs
-* vsnever
 
 
 Project History

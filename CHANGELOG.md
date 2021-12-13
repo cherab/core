@@ -1,11 +1,55 @@
 Project Changelog
 =================
 
-Release 1.2.1 (TBD)
+Release 1.3.0 (8 Dec 2021)
 -------------------
 
+API changes:
+* Use of Cherab's interpolators is now deprecated in favour of those upstream in Raysect.
+
 Bug fixes:
-* Fixed OpenADAS repository populate() method failing with the pure python interpreter but working in ipython. 
+* Fixed OpenADAS repository populate() method failing with the pure python interpreter but working in ipython. (#186)
+* Fix loss of precision in OpenCL SART inversion. (#188)
+* Tidy up bolometer API and fix sightline orientation. (#189, #191, #193, #195)
+* Fix faulty periodicity check in cylindrical ray transfer classes. (#226)
+* Use correct species temperature when calculating line broadening. (#236)
+* Fix corrupting JSON file when populating OpenADAS repository (#244)
+* Fix getting incorrect beam population rates from OpenADAS (#253)
+* Fix the Gaunt factor in the Bremsstrahlung class. (#271)
+* Fix wrong intensity_s1 coefficient in BeamEmissionMultiplet. (#277)
+* Fix beam emission rate calculation. (#278)
+* Fix some crashes when parameters are not correctly specified. (#287, #289)
+* Fix mapping from flux coordinates to Cartesian. (#302)
+* Use isotope rather than element wavelengths. (#296)
+* Fix some documentation typos. (#309)
+* Fix misleading error messages arising from sanity checks in plasma, beam and atomic models. (#333)
+
+
+New:
+* Add electron rest mass and classical radius constants. (#187)
+* Improve performance of ray transfer emitters and integrators (#198)
+* Add some bolometry examples to the demos and documentation (#161)
+* Standardise on the name "Cherab" rather than "CHERAB"
+* Comaptibility with Raysect 0.7.1
+* Use Raysect's function framework where possible. (#214)
+* Tools to create slab plasmas. (#208)
+* Use PEP517-compliant pyproject.toml to improve installation process. (#250)
+* Add more accurate hydrogen isotope wavelengths. (#265)
+* Add the "Generomak", an example machine with first wall mesh (#268, #312), magnetic equilibrium (#335, #341) and edge plasma profiles (#337).
+* Enable specifying the value outside the LCFS when mapping to EFIT equilibria. (#270)
+* Allow user to specify the path to an atomic data repository. (#291, #316)
+* Switch CI from Travis to Github actions. (#280, #293)
+* Add Cython definition files for Ray Transfer Emitters. (#307)
+* Add spectroscopic fibre optic observers. (#284)
+* Add an infra-red video bolometer (IRVB) model. (#206)
+* Improve project metadata to make PyPI page more informative. (#317)
+* Add Zeeman spectral line shape models. (#246)
+* Use Raysect's new interpolators in place of Cherab's. (#304)
+* Interpolate OpenADAS rates in log-log space. (#304)
+* Use nearest neighbour extrapolation for OpenADAS ionisation and recombination rates, impact excitation and recombination PECs and line and continuum radiated power rates. (#304)
+
+
+
 
 
 Release 1.2.0 (24 Nov 2019)

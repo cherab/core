@@ -26,11 +26,11 @@ cimport cython
 from raysect.optical cimport Vector3D, Point2D, new_vector3d
 from raysect.core.math.function.float cimport Blend2D as ScalarBlend2D
 from raysect.core.math.function.vector3d cimport Blend2D as VectorBlend2D
+from raysect.core.math.function.float cimport Interpolator1DArray, Interpolator2DArray
 
 from cherab.core.math cimport Function1D, autowrap_function1d
 from cherab.core.math cimport Function2D, autowrap_function2d
 from cherab.core.math cimport VectorFunction2D, autowrap_vectorfunction2d, ConstantVector2D
-from cherab.core.math cimport Interpolate1DCubic, Interpolate2DCubic
 from cherab.core.math cimport PolygonMask2D
 from cherab.core.math cimport IsoMapper2D, AxisymmetricMapper, VectorAxisymmetricMapper
 from cherab.core.math cimport ClampOutput2D
@@ -109,18 +109,18 @@ cdef class EFITEquilibrium:
         self.psi_data = psi
 
         # interpolate poloidal flux grid data
-        self.psi = Interpolate2DCubic(r, z, psi)
+        self.psi = Interpolator2DArray(r, z, psi, 'cubic', 'none', 0, 0)
         self.psi_axis = psi_axis
         self.psi_lcfs = psi_lcfs
-        self.psi_normalised = ClampOutput2D(Interpolate2DCubic(r, z, (psi - psi_axis) / (psi_lcfs - psi_axis)), min=0)
+        self.psi_normalised = ClampOutput2D(Interpolator2DArray(r, z, (psi - psi_axis) / (psi_lcfs - psi_axis), 'cubic', 'none', 0, 0), min=0)
 
         # store equilibrium attributes
         self.r_range = r.min(), r.max()
         self.z_range = z.min(), z.max()
         self._b_vacuum_magnitude = b_vacuum_magnitude
         self._b_vacuum_radius = b_vacuum_radius
-        self._f_profile = Interpolate1DCubic(f_profile[0, :], f_profile[1, :])
-        self.q = Interpolate1DCubic(q_profile[0, :], q_profile[1, :])
+        self._f_profile = Interpolator1DArray(f_profile[0, :], f_profile[1, :], 'cubic', 'none', 0)
+        self.q = Interpolator1DArray(q_profile[0, :], q_profile[1, :], 'cubic', 'none', 0)
 
         # populate points
         self._process_points(magnetic_axis, x_points, strike_points)
@@ -187,8 +187,8 @@ cdef class EFITEquilibrium:
         dix_dr = 1.0 / np.gradient(r, edge_order=2)
         diy_dz = 1.0 / np.gradient(z, edge_order=2)
 
-        dpsi_dr = Interpolate2DCubic(r, z, dpsi_dix * dix_dr[:, np.newaxis])
-        dpsi_dz = Interpolate2DCubic(r, z, dpsi_diy * diy_dz[np.newaxis, :])
+        dpsi_dr = Interpolator2DArray(r, z, dpsi_dix * dix_dr[:, np.newaxis], 'cubic', 'none', 0, 0)
+        dpsi_dz = Interpolator2DArray(r, z, dpsi_diy * diy_dz[np.newaxis, :], 'cubic', 'none', 0, 0)
 
         return dpsi_dr, dpsi_dz
 
@@ -213,7 +213,7 @@ cdef class EFITEquilibrium:
             return
 
         # interpolate sampled data, allowing a small bit of extrapolation to cope with numerical sampling accuracy
-        self.psin_to_r = Interpolate1DCubic(psin, r, extrapolate=True, extrapolation_range=SAMPLE_RESOLUTION, extrapolation_type='quadratic')
+        self.psin_to_r = Interpolator1DArray(psin, r, 'cubic', 'quadratic', SAMPLE_RESOLUTION)
 
     def map2d(self, object profile, double value_outside_lcfs=0.0):
         """
@@ -243,7 +243,7 @@ cdef class EFITEquilibrium:
             profile = autowrap_function1d(profile)
         else:
             profile = np.array(profile, np.float64)
-            profile = Interpolate1DCubic(profile[0, :], profile[1, :])
+            profile = Interpolator1DArray(profile[0, :], profile[1, :], 'cubic', 'none', 0)
 
         # map around equilibrium
         f = IsoMapper2D(self.psi_normalised, profile)
@@ -321,21 +321,21 @@ cdef class EFITEquilibrium:
             toroidal = autowrap_function1d(toroidal)
         else:
             toroidal = np.array(toroidal, np.float64)
-            toroidal = Interpolate1DCubic(toroidal[0, :], toroidal[1, :])
+            toroidal = Interpolator1DArray(toroidal[0, :], toroidal[1, :], 'cubic', 'none', 0)
 
         # convert poloidal data to 1d function if not already a function object
         if isinstance(poloidal, Function1D) or callable(poloidal):
             poloidal = autowrap_function1d(poloidal)
         else:
             poloidal = np.array(poloidal, np.float64)
-            poloidal = Interpolate1DCubic(poloidal[0, :], poloidal[1, :])
+            poloidal = Interpolator1DArray(poloidal[0, :], poloidal[1, :], 'cubic', 'none', 0)
 
         # convert normal data to 1d function if not already a function object
         if isinstance(normal, Function1D) or callable(normal):
             normal = autowrap_function1d(normal)
         else:
             normal = np.array(normal, np.float64)
-            normal = Interpolate1DCubic(normal[0, :], normal[1, :])
+            normal = Interpolator1DArray(normal[0, :], normal[1, :], 'cubic', 'none', 0)
 
         v = FluxCoordToCartesian(self.b_field, self.psi_normalised, toroidal, poloidal, normal)
 
