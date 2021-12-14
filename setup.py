@@ -130,7 +130,7 @@ setup(
         "numpy>=1.14",
         "scipy",
         "matplotlib",
-        "raysect==0.7.1",
+        "raysect==0.8.0",
         "cython>=0.28",
     ],
     packages=find_packages(),
