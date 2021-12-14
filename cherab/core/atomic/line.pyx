@@ -60,3 +60,21 @@ cdef class Line:
 
     def __repr__(self):
         return '<Line: {}, {}, {}>'.format(self.element.name, self.charge, self.transition)
+
+    def __hash__(self):
+        return hash((self.element, self.charge, self.transition))
+
+    def __richcmp__(self, object other, int op):
+
+        cdef Line line
+
+        if not isinstance(other, Line):
+            return NotImplemented
+
+        line = <Line> other
+        if op == 2:     # __eq__()
+            return self.element == line.element and self.charge == line.charge and self.transition == line.transition
+        elif op == 3:   # __ne__()
+            return self.element != line.element or self.charge != line.charge or self.transition != line.transition
+        else:
+            return NotImplemented

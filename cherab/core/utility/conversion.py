@@ -96,6 +96,6 @@ class PerCm3ToPerM3(BaseFactorConversion):
 
 
 class AngstromToNm(BaseFactorConversion):
-    """Converts from cm3 to m3
+    """Converts from Angstroms to nm.
     """
     conversion_factor = 0.1

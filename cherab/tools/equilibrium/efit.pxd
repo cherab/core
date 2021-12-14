@@ -1,3 +1,5 @@
+# cython: language_level=3
+
 # Copyright 2016-2018 Euratom
 # Copyright 2016-2018 United Kingdom Atomic Energy Authority
 # Copyright 2016-2018 Centro de Investigaciones Energéticas, Medioambientales y Tecnológicas
@@ -85,4 +87,3 @@ cdef class FluxCoordToCartesian(VectorFunction2D):
         Function1D _toroidal, _poloidal, _normal
         Function2D _psin
         Vector3D _value_outside_lcfs
-

@@ -18,7 +18,7 @@
 
 from raysect.optical cimport Point3D, Vector3D, Spectrum, World, Ray, Primitive, AffineMatrix3D
 from raysect.optical.material.emitter cimport InhomogeneousVolumeEmitter, NumericalIntegrator
-from raysect.core.math.function cimport Function3D, autowrap_function3d
+from cherab.core.math.function cimport Function3D, autowrap_function3d
 from libc.math cimport M_PI
 import cython
 
@@ -40,7 +40,7 @@ cdef class RadiationFunction(InhomogeneousVolumeEmitter):
     evaluation takes place in the correct coordinate system.
 
     :param Function3D radiation_function: A 3D radiation function that specifies the amount of radiation
-      to be radiated at a given point, :math:`\phi(x, y, z)` [W/m^2].
+      to be radiated at a given point, :math:`\phi(x, y, z)` [W/m^3].
     :param float step: The scale length for integration of the radiation function.
 
     .. code-block:: pycon

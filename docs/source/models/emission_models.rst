@@ -2,7 +2,7 @@
 Emission Models
 ===============
 
-CHERAB contains a number of independent physics models for spectroscopic emission.
+Cherab contains a number of independent physics models for spectroscopic emission.
 
 .. toctree::
    custom_models
@@ -12,3 +12,4 @@ CHERAB contains a number of independent physics models for spectroscopic emissio
    radiated_power/radiated_power
    brem/bremsstrahlung
    basic_line/basic_line_emission
+   line_shapes/spectral_line_shapes

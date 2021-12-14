@@ -18,7 +18,7 @@
 # See the Licence for the specific language governing permissions and limitations
 # under the Licence.
 
-from raysect.core.math.function cimport Function2D, Discrete2DMesh
+from cherab.core.math.function cimport Function2D, Discrete2DMesh
 
 
 cdef class PolygonMask2D(Function2D):

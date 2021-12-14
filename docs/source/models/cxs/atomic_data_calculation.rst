@@ -4,16 +4,16 @@ Atomic data calculation
 .. *Date: 02/12/2014*
 
 Aim of this note: Below is given the details on how ADAS atomic data are
-used and implemented in CHERAB at present. The aim here is to give a very
+used and implemented in Cherab at present. The aim here is to give a very
 concise information. More details can be found in ADAS manual on line.
 
 .. WARNING::
     We will need in each section another paragraph on how these data
-    are being used within the atomic model in CHERAB and modified to be used
-    within the main CHERAB.
+    are being used within the atomic model in Cherab and modified to be used
+    within the main Cherab.
 
 .. csv-table:: Important quantities
-    :header: "Name CHERAB", "Description", "ADAS notation", "ADAS file", "ADAS program", "Units in ADAS"
+    :header: "Name Cherab", "Description", "ADAS notation", "ADAS file", "ADAS program", "Units in ADAS"
 
     ":math:`\sigma^{CX}_{Z^{(\alpha+1)+}}(H^0(m_i), n, l, E_{c})`", "Charge-Exchange cross-section between electron donor :math:`H^0` in metastable state :math:`m_{i}` and ion :math:`Z^{(\alpha+1)+}` in shell :math:`(n,l)` with a collision energy :math:`E_{c}`", ":math:`\sigma_{n, l}(E_{c})`", "", "", ":math:`cm^{2}`"
     ":math:`q^{CX, Z^{(\alpha+1)+}, H^0(m_i)}_{n\rightarrow n'}`", "Effective emission coefficient (or rate) for a charge-exchange line corresponding to a transition :math:`n\rightarrow n'` of ion :math:`Z^{(\alpha+1)+}` with electron donor :math:`H^0` in metastable state :math:`m_{i}`", ":math:`q^{eff}_{n\rightarrow n'}`", "adf12", "adas303", ":math:`photon.cm^{3}.s^{-1}.(4\pi steradian)^{-1}`"

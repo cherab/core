@@ -37,7 +37,8 @@ cdef class IsoMapper2D(Function2D):
 
     .. code-block:: pycon
 
-       >>> from cherab.core.math import IsoMapper2D, Interpolate1DCubic
+       >>> from raysect.core.math.function.float import Interpolator1DArray
+       >>> from cherab.core.math import IsoMapper2D
        >>> from cherab.tools.equilibrium import example_equilibrium
        >>>
        >>> equilibrium = example_equilibrium()
@@ -45,7 +46,7 @@ cdef class IsoMapper2D(Function2D):
        >>> # extract the 2D psi function
        >>> psi_n = equilibrium.psi_normalised
        >>> # make a 1D psi profile
-       >>> profile = Interpolate1DCubic([0, 0.5, 0.9, 1.0], [2500, 2000, 1000, 0])
+       >>> profile = Interpolator1DArray([0, 0.5, 0.9, 1.0], [2500, 2000, 1000, 0], 'cubic', 'none', 0)
        >>> # perform the flux function mapping
        >>> f = IsoMapper2D(psi_n, profile)
        >>>
@@ -81,7 +82,8 @@ cdef class IsoMapper3D(Function3D):
 
     .. code-block:: pycon
 
-       >>> from cherab.core.math import IsoMapper2D, Interpolate1DCubic, AxisymmetricMapper
+       >>> from raysect.core.math.function.float import Interpolator1DArray
+       >>> from cherab.core.math import IsoMapper2D, AxisymmetricMapper
        >>> from cherab.tools.equilibrium import example_equilibrium
        >>>
        >>> equilibrium = example_equilibrium()
@@ -90,7 +92,7 @@ cdef class IsoMapper3D(Function3D):
        >>> psi_n = equilibrium.psi_normalised
        >>> psi_n_3d = AxisymmetricMapper(psi_n)
        >>> # make a 1D psi profile
-       >>> profile = Interpolate1DCubic([0, 0.5, 0.9, 1.0], [2500, 2000, 1000, 0])
+       >>> profile = Interpolator1DArray([0, 0.5, 0.9, 1.0], [2500, 2000, 1000, 0], 'cubic', 'none', 0)
        >>> # perform the flux function mapping
        >>> f = IsoMapper3D(psi_n_3d, profile)
        >>>
@@ -123,13 +125,11 @@ cdef class Swizzle2D(Function2D):
     .. code-block:: pycon
 
        >>> from cherab.core.math import Swizzle2D
-       >>> from raysect.core.math.function.function2d import PythonFunction2D
        >>>
-       >>> def my_func(r, z):
+       >>> def f1(r, z):
        >>>     return r**2 + z
        >>>
-       >>> f2 = PythonFunction2D(my_func)
-       >>> f2 = Swizzle2D(f2)
+       >>> f2 = Swizzle2D(f1)
        >>>
        >>> f2(3, 0)
        3.0
@@ -168,15 +168,13 @@ cdef class Swizzle3D(Function3D):
     .. code-block:: pycon
 
        >>> from cherab.core.math import Swizzle3D
-       >>> from raysect.core.math.function.function3d import PythonFunction3D
        >>>
-       >>> def my_func(x, y, z):
+       >>> def f1(x, y, z):
        >>>     return x**3 + y**2 + z
        >>>
-       >>> f3 = PythonFunction3D(my_func)
-       >>> f3 = Swizzle3D(f3, (0, 2, 1))
+       >>> f2 = Swizzle3D(f1, (0, 2, 1))
        >>>
-       >>> f3(3, 2, 1)
+       >>> f2(3, 2, 1)
        30.0
     """
 
@@ -238,17 +236,15 @@ cdef class AxisymmetricMapper(Function3D):
 
        >>> from numpy import sqrt
        >>> from cherab.core.math import AxisymmetricMapper
-       >>> from raysect.core.math.function.function2d import PythonFunction2D
        >>>
-       >>> def my_func(r, z):
+       >>> def f1(r, z):
        >>>     return r
        >>>
-       >>> f2 = PythonFunction2D(my_func)
-       >>> f3 = AxisymmetricMapper(f2)
+       >>> f2 = AxisymmetricMapper(f1)
        >>>
-       >>> f3(1, 0, 0)
+       >>> f2(1, 0, 0)
        1.0
-       >>> f3(1/sqrt(2), 1/sqrt(2), 0)
+       >>> f2(1/sqrt(2), 1/sqrt(2), 0)
        0.99999999
     """
 
@@ -282,19 +278,17 @@ cdef class VectorAxisymmetricMapper(VectorFunction3D):
     .. code-block:: pycon
 
        >>> from cherab.core.math import VectorAxisymmetricMapper
-       >>> from cherab.core.math.function.vectorfunction2d import PythonVectorFunction2D
        >>>
        >>> def my_func(r, z):
        >>>     v = Vector3D(1, 0, 0)
        >>>     v.length = r
        >>>     return v
        >>>
-       >>> f2 = PythonVectorFunction2D(my_func)
-       >>> f3 = VectorAxisymmetricMapper(f2)
+       >>> f = VectorAxisymmetricMapper(my_func)
        >>>
-       >>> f3(1, 0, 0)
+       >>> f(1, 0, 0)
        Vector3D(1.0, 0.0, 0.0)
-       >>> f3(1/sqrt(2), 1/sqrt(2), 0)
+       >>> f(1/sqrt(2), 1/sqrt(2), 0)
        Vector3D(0.70710678, 0.70710678, 0.0)
     """
 

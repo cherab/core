@@ -57,7 +57,7 @@ cdef class AtomicData:
 
     cpdef BeamPopulationRate beam_population_rate(self, Element beam_ion, int metastable, Element plasma_ion, int charge):
         """
-        Returns a list of applicable beam population coefficients in m^3/s.
+        Returns a list of applicable dimensionless beam population coefficients.
         """
 
         raise NotImplementedError("The beam_population() virtual method is not implemented for this atomic data source.")
@@ -90,3 +90,5 @@ cdef class AtomicData:
     cpdef FractionalAbundance fractional_abundance(self, Element ion, int charge):
         raise NotImplementedError("The fractional_abundance() virtual method is not implemented for this atomic data source.")
 
+    cpdef ZeemanStructure zeeman_structure(self, Line line, object b_field=None):
+        raise NotImplementedError("The zeeman_structure() virtual method is not implemented for this atomic data source.")

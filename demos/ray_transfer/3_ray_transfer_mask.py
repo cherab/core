@@ -58,7 +58,7 @@ rad_circle = 50.
 xsqr = np.linspace(-49.5, 49.5, 100) ** 2
 rad = np.sqrt(xsqr[:, None] + xsqr[None, :])
 mask = rad < rad_circle  # a boolean array 100x100 (True inside the circle, False - outside)
-rtc.mask = mask
+rtc.mask = mask[:, None, :]  # making 3D mask from 2D (RZ-plane) mask
 
 # creating ray transfer pipeline
 pipeline = RayTransferPipeline2D()

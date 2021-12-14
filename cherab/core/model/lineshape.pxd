@@ -24,6 +24,7 @@ cimport numpy as np
 from raysect.optical cimport Spectrum, Point3D, Vector3D
 from cherab.core cimport Line, Species, Plasma, Beam
 from cherab.core.math cimport Function1D, Function2D
+from cherab.core.atomic.zeeman cimport ZeemanStructure
 
 
 cpdef double doppler_shift(double wavelength, Vector3D observation_direction, Vector3D velocity)
@@ -60,6 +61,32 @@ cdef class StarkBroadenedLine(LineShapeModel):
 
     cdef double _aij, _bij, _cij
 
+    pass
+
+
+cdef class ZeemanLineShapeModel(LineShapeModel):
+
+    cdef double _polarisation
+
+    pass
+
+
+cdef class ZeemanTriplet(ZeemanLineShapeModel):
+
+    pass
+
+
+cdef class ParametrisedZeemanTriplet(ZeemanLineShapeModel):
+
+    cdef double _alpha, _beta, _gamma
+
+    pass
+
+
+cdef class ZeemanMultiplet(ZeemanLineShapeModel):
+
+    cdef ZeemanStructure _zeeman_structure
+    
     pass
 
 

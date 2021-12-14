@@ -1,3 +1,5 @@
+# cython: language_level=3
+
 # Copyright 2016-2018 Euratom
 # Copyright 2016-2018 United Kingdom Atomic Energy Authority
 # Copyright 2016-2018 Centro de Investigaciones Energéticas, Medioambientales y Tecnológicas
@@ -22,13 +24,15 @@ from libc.math cimport sqrt, INFINITY
 cimport cython
 
 from raysect.optical cimport Vector3D, Point2D, new_vector3d
+from raysect.core.math.function.float cimport Blend2D as ScalarBlend2D
+from raysect.core.math.function.vector3d cimport Blend2D as VectorBlend2D
+from raysect.core.math.function.float cimport Interpolator1DArray, Interpolator2DArray
+
 from cherab.core.math cimport Function1D, autowrap_function1d
 from cherab.core.math cimport Function2D, autowrap_function2d
-from cherab.core.math cimport VectorFunction2D, autowrap_vectorfunction2d
-from cherab.core.math cimport Interpolate1DCubic, Interpolate2DCubic
+from cherab.core.math cimport VectorFunction2D, autowrap_vectorfunction2d, ConstantVector2D
 from cherab.core.math cimport PolygonMask2D
 from cherab.core.math cimport IsoMapper2D, AxisymmetricMapper, VectorAxisymmetricMapper
-from cherab.core.math cimport Blend2D, Constant2D, ConstantVector2D
 from cherab.core.math cimport ClampOutput2D
 
 cdef class EFITEquilibrium:
@@ -105,18 +109,18 @@ cdef class EFITEquilibrium:
         self.psi_data = psi
 
         # interpolate poloidal flux grid data
-        self.psi = Interpolate2DCubic(r, z, psi)
+        self.psi = Interpolator2DArray(r, z, psi, 'cubic', 'none', 0, 0)
         self.psi_axis = psi_axis
         self.psi_lcfs = psi_lcfs
-        self.psi_normalised = ClampOutput2D(Interpolate2DCubic(r, z, (psi - psi_axis) / (psi_lcfs - psi_axis)), min=0)
+        self.psi_normalised = ClampOutput2D(Interpolator2DArray(r, z, (psi - psi_axis) / (psi_lcfs - psi_axis), 'cubic', 'none', 0, 0), min=0)
 
         # store equilibrium attributes
         self.r_range = r.min(), r.max()
         self.z_range = z.min(), z.max()
         self._b_vacuum_magnitude = b_vacuum_magnitude
         self._b_vacuum_radius = b_vacuum_radius
-        self._f_profile = Interpolate1DCubic(f_profile[0, :], f_profile[1, :])
-        self.q = Interpolate1DCubic(q_profile[0, :], q_profile[1, :])
+        self._f_profile = Interpolator1DArray(f_profile[0, :], f_profile[1, :], 'cubic', 'none', 0)
+        self.q = Interpolator1DArray(q_profile[0, :], q_profile[1, :], 'cubic', 'none', 0)
 
         # populate points
         self._process_points(magnetic_axis, x_points, strike_points)
@@ -183,8 +187,8 @@ cdef class EFITEquilibrium:
         dix_dr = 1.0 / np.gradient(r, edge_order=2)
         diy_dz = 1.0 / np.gradient(z, edge_order=2)
 
-        dpsi_dr = Interpolate2DCubic(r, z, dpsi_dix * dix_dr[:, np.newaxis])
-        dpsi_dz = Interpolate2DCubic(r, z, dpsi_diy * diy_dz[np.newaxis, :])
+        dpsi_dr = Interpolator2DArray(r, z, dpsi_dix * dix_dr[:, np.newaxis], 'cubic', 'none', 0, 0)
+        dpsi_dz = Interpolator2DArray(r, z, dpsi_diy * diy_dz[np.newaxis, :], 'cubic', 'none', 0, 0)
 
         return dpsi_dr, dpsi_dz
 
@@ -209,7 +213,7 @@ cdef class EFITEquilibrium:
             return
 
         # interpolate sampled data, allowing a small bit of extrapolation to cope with numerical sampling accuracy
-        self.psin_to_r = Interpolate1DCubic(psin, r, extrapolate=True, extrapolation_range=SAMPLE_RESOLUTION, extrapolation_type='quadratic')
+        self.psin_to_r = Interpolator1DArray(psin, r, 'cubic', 'quadratic', SAMPLE_RESOLUTION)
 
     def map2d(self, object profile, double value_outside_lcfs=0.0):
         """
@@ -239,13 +243,13 @@ cdef class EFITEquilibrium:
             profile = autowrap_function1d(profile)
         else:
             profile = np.array(profile, np.float64)
-            profile = Interpolate1DCubic(profile[0, :], profile[1, :])
+            profile = Interpolator1DArray(profile[0, :], profile[1, :], 'cubic', 'none', 0)
 
         # map around equilibrium
         f = IsoMapper2D(self.psi_normalised, profile)
 
         # mask off values outside the lcfs
-        return Blend2D(Constant2D(value_outside_lcfs), f, self.inside_lcfs)
+        return ScalarBlend2D(value_outside_lcfs, f, self.inside_lcfs)
 
     def map3d(self, object profile, double value_outside_lcfs=0.0):
         """
@@ -272,7 +276,7 @@ cdef class EFITEquilibrium:
 
         return AxisymmetricMapper(self.map2d(profile, value_outside_lcfs))
 
-    def map_vector2d(self, object toroidal, object poloidal, object normal):
+    def map_vector2d(self, object toroidal, object poloidal, object normal, Vector3D value_outside_lcfs=None):
         """
         Maps velocity components in flux coordinates onto flux surfaces in the r-z plane.
 
@@ -289,6 +293,8 @@ cdef class EFITEquilibrium:
           as a 1D function or Nx2 array.
         :return: VectorFunction2D object that returns the velocity vector at a given r,z coordinate,
           :math:`v(r,z)`.
+        :param value_outside_lcfs: Value returned if point requested outside the LCFS (default=
+          Vector3D(0, 0, 0)).
 
         .. code-block:: pycon
 
@@ -300,8 +306,7 @@ cdef class EFITEquilibrium:
            >>> v_poloidal[0, :] = [0, 0.1, 0.2, 0.4, 0.7, 1.0]
            >>> v_poloidal[1, :] = [4e4, 1e4, 3e3, 1e3, 0, 0]
            >>> # Assume zero velocity normal to flux surface
-           >>> from cherab.core.math import Constant1D
-           >>> v_normal = Constant1D(0.0)
+           >>> v_normal = 0.0
            >>>
            >>> # generate VectorFunction2D and sample
            >>> v = equilibrium.map_vector2d(v_toroidal, v_poloidal, v_normal)
@@ -309,30 +314,35 @@ cdef class EFITEquilibrium:
            Vector3D(134.523, 543.6347, 25342.16)
         """
 
+        value_outside_lcfs = value_outside_lcfs or Vector3D(0, 0, 0)
+
         # convert toroidal data to 1d function if not already a function object
         if isinstance(toroidal, Function1D) or callable(toroidal):
             toroidal = autowrap_function1d(toroidal)
         else:
             toroidal = np.array(toroidal, np.float64)
-            toroidal = Interpolate1DCubic(toroidal[0, :], toroidal[1, :])
+            toroidal = Interpolator1DArray(toroidal[0, :], toroidal[1, :], 'cubic', 'none', 0)
 
         # convert poloidal data to 1d function if not already a function object
         if isinstance(poloidal, Function1D) or callable(poloidal):
             poloidal = autowrap_function1d(poloidal)
         else:
             poloidal = np.array(poloidal, np.float64)
-            poloidal = Interpolate1DCubic(poloidal[0, :], poloidal[1, :])
+            poloidal = Interpolator1DArray(poloidal[0, :], poloidal[1, :], 'cubic', 'none', 0)
 
         # convert normal data to 1d function if not already a function object
         if isinstance(normal, Function1D) or callable(normal):
             normal = autowrap_function1d(normal)
         else:
             normal = np.array(normal, np.float64)
-            normal = Interpolate1DCubic(normal[0, :], normal[1, :])
+            normal = Interpolator1DArray(normal[0, :], normal[1, :], 'cubic', 'none', 0)
 
-        return FluxCoordToCartesian(self.b_field, self.psi_normalised, toroidal, poloidal, normal)
+        v = FluxCoordToCartesian(self.b_field, self.psi_normalised, toroidal, poloidal, normal)
 
-    def map_vector3d(self, object toroidal, object poloidal, object normal):
+        # mask off values outside the lcfs
+        return VectorBlend2D(value_outside_lcfs, v, self.inside_lcfs)
+
+    def map_vector3d(self, object toroidal, object poloidal, object normal, Vector3D value_outside_lcfs=None):
         """
         Maps velocity components in flux coordinates onto flux surfaces in 3D space.
 
@@ -349,6 +359,8 @@ cdef class EFITEquilibrium:
           as a 1D function or Nx2 array.
         :return: VectorFunction2D object that returns the velocity vector at a given r,z coordinate,
           :math:`v(r,z)`.
+        :param value_outside_lcfs: Value returned if point requested outside the LCFS (default=
+          Vector3D(0, 0, 0)).
 
         .. code-block:: pycon
 
@@ -360,8 +372,7 @@ cdef class EFITEquilibrium:
            >>> v_poloidal[0, :] = [0, 0.1, 0.2, 0.4, 0.7, 1.0]
            >>> v_poloidal[1, :] = [4e4, 1e4, 3e3, 1e3, 0, 0]
            >>> # Assume zero velocity normal to flux surface
-           >>> from cherab.core.math import Constant1D
-           >>> v_normal = Constant1D(0.0)
+           >>> v_normal = 0.0
            >>>
            >>> # generate VectorFunction2D and sample
            >>> v = equilibrium.map_vector3d(v_toroidal, v_poloidal, v_normal)
@@ -369,7 +380,7 @@ cdef class EFITEquilibrium:
            Vector3D(134.523, 543.6347, 25342.16)
         """
 
-        return VectorAxisymmetricMapper(self.map_vector2d(toroidal, poloidal, normal))
+        return VectorAxisymmetricMapper(self.map_vector2d(toroidal, poloidal, normal, value_outside_lcfs))
 
 
 cdef class EFITLCFSMask(Function2D):
@@ -512,11 +523,7 @@ cdef class FluxCoordToCartesian(VectorFunction2D):
         cdef Vector3D f, toroidal, poloidal, normal
 
         f = self._field.evaluate(r, z)
-        psi = max(0, self._psin(r, z))
-
-        # If value outside LCFS return default value
-        if psi > 1:
-            return self._value_outside_lcfs
+        psi = self._psin.evaluate(r, z)
 
         # calculate flux coordinate vectors
         if f.x == 0 and f.z == 0:
@@ -530,7 +537,9 @@ cdef class FluxCoordToCartesian(VectorFunction2D):
         else:
 
             toroidal = new_vector3d(0, self._toroidal.evaluate(psi), 0)
-            poloidal = new_vector3d(f.x, 0, f.z).set_length(self._poloidal.evaluate(psi))
-            normal = new_vector3d(-f.z, 0, f.x).set_length(self._normal.evaluate(psi))
+            poloidal = new_vector3d(f.x, 0, f.z)
+            poloidal.set_length(self._poloidal.evaluate(psi))
+            normal = new_vector3d(-f.z, 0, f.x)
+            normal.set_length(self._normal.evaluate(psi))
 
         return new_vector3d(poloidal.x + normal.x, toroidal.y, poloidal.z + normal.z)

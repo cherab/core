@@ -11,7 +11,7 @@ particle-in-cell code. These codes typically export their plasma solutions on a 
 in a 2D plane, assuming a symmetry axis. The plasma values are defined either
 at the mesh vertices or inside the cells.
 
-These types of plasmas can be achieved in CHERAB with Raysect's mesh interpolators,
+These types of plasmas can be achieved in Cherab with Raysect's mesh interpolators,
 `Discrete2DMesh <https://raysect.github.io/documentation/api_reference/core/functions.html#raysect.core.math.interpolators.discrete2dmesh.Discrete2DMesh>`_
 and `Interpolator2DMesh <https://raysect.github.io/documentation/api_reference/core/functions.html#raysect.core.math.interpolators.interpolator2dmesh.Interpolator2DMesh>`_.
 Both mesh functions are defined on a triangular mesh. The mesh vertex coordinates and

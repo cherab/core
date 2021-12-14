@@ -4,7 +4,7 @@ Tomography
 
 Tomographic inversion problems often arise in the study of plasma diagnostics, especially
 when making line integrated measurements. Tomographic inversion techniques allow us to
-try recovering the underlying plasma properties from a reduced set of measurements. In CHERAB
+try recovering the underlying plasma properties from a reduced set of measurements. In Cherab
 we implement a basic set of tomography algorithms, for a wider range of options please
 consult the dedicated tomography libraries such as `ToFu <https://github.com/ToFuProject/tofu>`_.
 
