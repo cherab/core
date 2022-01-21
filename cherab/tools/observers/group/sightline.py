@@ -23,7 +23,7 @@ from .base import Observer0DGroup
 
 class SightLineGroup(Observer0DGroup):
     """
-    A group of spectroscopic sight-lines under a single scene-graph node.
+    A group of sight-lines under a single scene-graph node.
 
     A scene-graph object regrouping a series of 'SightLine'
     observers as a scene-graph parent. Allows combined observation and display
@@ -48,11 +48,9 @@ class SightLineGroup(Observer0DGroup):
        >>> group.add_observer(SightLine(Point3D(3., 0, 0), Vector3D(-cos(pi/10), 0, sin(pi/10)), name="SightLine 1"))
        >>> group.add_observer(SightLine(Point3D(3., 0, 0), Vector3D(-1, 0, 0), name="SightLine 2"))
        >>> group.add_observer(SightLine(Point3D(3., 0, 0), Vector3D(-cos(pi/10), 0, -sin(pi/10)), name="SightLine 3"))
-       >>> group.connect_pipelines([(SpectralRadiancePipeline0D, 'MySpectralPipeline', None),
-                                    (RadiancePipeline0D, 'MyMonoPipeline', None)])  # add pipelines to all observers in the group
+       >>> group.connect_pipelines([SpectralRadiancePipeline0D, RadiancePipeline0D], [{'name': 'MySpectralPipeline'}, {'name': 'MyMonoPipeline'}])  # add pipelines to all observers in the group
        >>> group.spectral_bins = 512  # same value for all observers in the group
        >>> group.pixel_samples = [2000, 1000, 2000]  # individual value for each observer in the group
-       >>> group.display_progress = False  # control pipeline parameters through the group observer
        >>> group.observe()  # combined observation
        >>> 
        >>> plot_group_spectra(group, item='MySpectralPipeline', in_photons=True)  # plot the spectra

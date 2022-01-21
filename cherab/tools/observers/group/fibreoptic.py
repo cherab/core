@@ -58,13 +58,11 @@ class FibreOpticGroup(Observer0DGroup):
        >>> group.add_observer(FibreOptic(Point3D(3., 0, 0), Vector3D(-cos(pi/10), 0, sin(pi/10)), name="Fibre 1"))
        >>> group.add_observer(FibreOptic(Point3D(3., 0, 0), Vector3D(-1, 0, 0), name="Fibre 2"))
        >>> group.add_observer(FibreOptic(Point3D(3., 0, 0), Vector3D(-cos(pi/10), 0, -sin(pi/10)), name="Fibre 3"))
-       >>> group.connect_pipelines([(SpectralPowerPipeline0D, 'MySpectralPipeline', None),
-                                    (PowerPipeline0D, 'MyMonoPipeline', None)])  # add pipelines to all fibres in the group
+       >>> group.connect_pipelines([SpectralRadiancePipeline0D, RadiancePipeline0D], [{'name': 'MySpectralPipeline'}, {'name': 'MyMonoPipeline'}])  # add pipelines to all observers in the group
        >>> group.acceptance_angle = 2  # same value for all fibres in the group
        >>> group.radius = 2.e-3
        >>> group.spectral_bins = 512
        >>> group.pixel_samples = [2000, 1000, 2000]  # individual value for each fibre in the group
-       >>> group.display_progress = False  # control pipeline parameters through the group observer
        >>> group.observe()  # combined observation
        >>> 
        >>> plot_group_spectra(group, item='MySpectralPipeline', in_photons=True)  # plot the spectra

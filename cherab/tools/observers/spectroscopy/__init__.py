@@ -17,8 +17,5 @@
 # See the Licence for the specific language governing permissions and limitations
 # under the Licence.
 
-from .fibreoptic import FibreOpticGroup
-from .sightline import SightLineGroup
-from .targettedpixel import TargettedPixelGroup
-from .pixel import PixelGroup
-from .spectroscopic import SpectroscopicFibreOpticGroup, SpectroscopicSightLineGroup
+from .fibreoptic import SpectroscopicFibreOptic
+from .sightline import SpectroscopicSightLine
