@@ -25,6 +25,9 @@ from raysect.optical.observer import Observer0D
 
 class Observer0DGroup(Node):
     """
+    .. deprecated:: 1.4.0
+       Use Raysect's observer classes instead.
+    
     A base class for handling groups of nonimaging observers as one Node.
 
     A scene-graph object regrouping a series of observers as a scene-graph parent.
@@ -60,23 +63,24 @@ class Observer0DGroup(Node):
 
     def __getitem__(self, item):
 
-        if isinstance(item, int):
-            try:
-                return self._observers[item]
-            except IndexError:
-                raise IndexError("observer number {} not available in this {} "
-                                 "with only {} observers.".format(item, self.__class__.__name__, len(self._observers)))
-        elif isinstance(item, str):
-            observers = [observer for observer in self._observers if observer.name == item]
-            if len(observers) == 1:
-                return observers[0]
+        try:
+            selected = self._observers[item]
+        except IndexError:
+            raise IndexError("observer number {} not available in this {} "
+                                "with only {} observers.".format(item, self.__class__.__name__, len(self._observers)))
+        except TypeError:
+            if isinstance(item, str):
+                observers = [observer for observer in self._observers if observer.name == item]
+                if len(observers) == 1:
+                    selected = observers[0]
 
-            if len(observers) == 0:
-                raise ValueError("observer '{}' was not found in this {}.".format(item, self.__class__.__name__))
+                if len(observers) == 0:
+                    raise ValueError("observer '{}' was not found in this {}.".format(item, self.__class__.__name__))
 
-            raise ValueError("Found {} observers with name {} in this {}.".format(len(observers), item, self.__class__.__name__))
-        else:
-            raise TypeError("{} key must be of type int or str.".format(self.__class__.__name__))
+                raise ValueError("Found {} observers with name {} in this {}.".format(len(observers), item, self.__class__.__name__))
+            else:
+                raise TypeError("{} key must be of type int, slice or str.".format(self.__class__.__name__))
+        return selected
 
     @property
     def observers(self):
