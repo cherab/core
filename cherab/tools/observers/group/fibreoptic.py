@@ -18,28 +18,28 @@
 # under the Licence.
 
 from numpy import ndarray
+from raysect.optical.observer import FibreOptic
+
 from cherab.tools.observers.group.base import Observer0DGroup
-from cherab.tools.observers.spectroscopy import SpectroscopicFibreOptic
-from .spectroscopic import SpectroscopicObserver0DGroup
 
 
-class FibreOpticGroup(SpectroscopicObserver0DGroup):
+class FibreOpticGroup(Observer0DGroup):
     """
     A group of fibre optics under a single scene-graph node.
 
-    A scene-graph object regrouping a series of 'SpectroscopicFibreOptic'
+    A scene-graph object regrouping a series of 'FibreOptic'
     observers as a scene-graph parent. Allows combined observation and display
     control simultaneously.
 
-    :ivar list sight_lines: A list of fibre optics (SpectroscopicFibreOptic instances) in this
+    :ivar list observers: A list of fibre optics (FibreOptic instances) in this
                             group.
     :ivar list/float acceptance_angle: The angle in degrees between the z axis and the cone
                                        surface which defines the fibres solid angle sampling
-                                       area. The same value can be shared between all sight lines,
-                                       or each sight line can be assigned with individual value.
+                                       area. The same value can be shared between all observers,
+                                       or each observer can be assigned with individual value.
     :ivar list/float radius: The radius of the fibre tip in metres. This radius defines a circular
                              area at the fibre tip which will be sampled over. The same value
-                             can be shared between all sight lines, or each sight line can be
+                             can be shared between all observers, or each observer can be
                              assigned with individual value.
 
     .. code-block:: pycon
@@ -47,16 +47,17 @@ class FibreOpticGroup(SpectroscopicObserver0DGroup):
        >>> from math import cos, sin, pi
        >>> from matplotlib import pyplot as plt
        >>> from raysect.optical import World
-       >>> from raysect.optical.observer import SpectralPowerPipeline0D, PowerPipeline0D
+       >>> from raysect.optical.observer import SpectralPowerPipeline0D, PowerPipeline0D, FibreOptic
        >>> from raysect.core.math import Point3D, Vector3D
-       >>> from cherab.tools.observers import SpectroscopicFibreOptic, FibreOpticGroup
+       >>> from cherab.tools.observers import FibreOpticGroup
+       >>> from cherab.tools.observers.plotting import plot_group_total, plot_group_spectra
        >>>
        >>> world = World()
        ...
        >>> group = FibreOpticGroup(parent=world)
-       >>> group.add_sight_line(SpectroscopicFibreOptic(Point3D(3., 0, 0), Vector3D(-cos(pi/10), 0, sin(pi/10)), name="Fibre 1"))
-       >>> group.add_sight_line(SpectroscopicFibreOptic(Point3D(3., 0, 0), Vector3D(-1, 0, 0), name="Fibre 2"))
-       >>> group.add_sight_line(SpectroscopicFibreOptic(Point3D(3., 0, 0), Vector3D(-cos(pi/10), 0, -sin(pi/10)), name="Fibre 3"))
+       >>> group.add_observer(FibreOptic(Point3D(3., 0, 0), Vector3D(-cos(pi/10), 0, sin(pi/10)), name="Fibre 1"))
+       >>> group.add_observer(FibreOptic(Point3D(3., 0, 0), Vector3D(-1, 0, 0), name="Fibre 2"))
+       >>> group.add_observer(FibreOptic(Point3D(3., 0, 0), Vector3D(-cos(pi/10), 0, -sin(pi/10)), name="Fibre 3"))
        >>> group.connect_pipelines([(SpectralPowerPipeline0D, 'MySpectralPipeline', None),
                                     (PowerPipeline0D, 'MyMonoPipeline', None)])  # add pipelines to all fibres in the group
        >>> group.acceptance_angle = 2  # same value for all fibres in the group
@@ -65,24 +66,25 @@ class FibreOpticGroup(SpectroscopicObserver0DGroup):
        >>> group.pixel_samples = [2000, 1000, 2000]  # individual value for each fibre in the group
        >>> group.display_progress = False  # control pipeline parameters through the group observer
        >>> group.observe()  # combined observation
-       >>> group.plot_spectra(item='MySpectralPipeline', in_photons=True)  # plot the spectra
-       >>> group.plot_total_signal(item='MyMonoPipeline')  # plot the total signals
+       >>> 
+       >>> plot_group_spectra(group, item='MySpectralPipeline', in_photons=True)  # plot the spectra
+       >>> plot_group_total(group, item='MyMonoPipeline')  # plot the total signals
        >>> plt.show()
     """
 
     @Observer0DGroup.observers.setter
     def observers(self, value):
         if not isinstance(value, (list, tuple)):
-            raise TypeError("The sight_lines attribute of FibreOpticGroup must be a list or tuple of SpectroscopicFibreOptics.")
+            raise TypeError("The observers attribute of FibreOpticGroup must be a list or tuple of FibreOptics.")
 
-        for sight_line in value:
-            if not isinstance(sight_line, SpectroscopicFibreOptic):
-                raise TypeError("The sight_lines attribute of FibreOpticGroup must be a list or tuple of "
-                                "SpectroscopicFibreOptics. Value {} is not a SpectroscopicFibreOptic.".format(sight_line))
+        for observer in value:
+            if not isinstance(observer, FibreOptic):
+                raise TypeError("The observers attribute of FibreOpticGroup must be a list or tuple of "
+                                "FibreOptics. Value {} is not a FibreOptic.".format(observer))
 
         # Prevent external changes being made to this list
-        for sight_line in value:
-            sight_line.parent = self
+        for observer in value:
+            observer.parent = self
 
         self._observers = tuple(value)
     
@@ -90,10 +92,10 @@ class FibreOpticGroup(SpectroscopicObserver0DGroup):
         """
         Adds new fibre optic to the group.
 
-        :param SpectroscopicFibreOptic fibre: Fibre optic to add.
+        :param FibreOptic fibre: Fibre optic to add.
         """
-        if not isinstance(fibre, SpectroscopicFibreOptic):
-            raise TypeError("The fiber argument must be of type SpectroscopicFibreOptic.")
+        if not isinstance(fibre, FibreOptic):
+            raise TypeError("The fiber argument must be of type FibreOptic.")
         fibre.parent = self
         self._observers = self._observers + (fibre, )
 
@@ -101,36 +103,36 @@ class FibreOpticGroup(SpectroscopicObserver0DGroup):
     def acceptance_angle(self):
         # The angle in degrees between the z axis and the cone surface which defines the fibres
         # solid angle sampling area.
-        return [sight_line.acceptance_angle for sight_line in self._observers]
+        return [observer.acceptance_angle for observer in self._observers]
 
     @acceptance_angle.setter
     def acceptance_angle(self, value):
         if isinstance(value, (list, tuple, ndarray)):
             if len(value) == len(self._observers):
-                for sight_line, v in zip(self._observers, value):
-                    sight_line.acceptance_angle = v
+                for observer, v in zip(self._observers, value):
+                    observer.acceptance_angle = v
             else:
                 raise ValueError("The length of 'acceptance_angle' ({}) "
-                                 "mismatches the number of sight-lines ({}).".format(len(value), len(self._observers)))
+                                 "mismatches the number of observers ({}).".format(len(value), len(self._observers)))
         else:
-            for sight_line in self._observers:
-                sight_line.acceptance_angle = value
+            for observer in self._observers:
+                observer.acceptance_angle = value
 
     @property
     def radius(self):
         # The radius of the fibre tip in metres. This radius defines a circular area at the fibre tip
         # which will be sampled over.
-        return [sight_line.radius for sight_line in self._observers]
+        return [observer.radius for observer in self._observers]
 
     @radius.setter
     def radius(self, value):
         if isinstance(value, (list, tuple, ndarray)):
             if len(value) == len(self._observers):
-                for sight_line, v in zip(self._observers, value):
-                    sight_line.radius = v
+                for observer, v in zip(self._observers, value):
+                    observer.radius = v
             else:
                 raise ValueError("The length of 'radius' ({}) "
-                                 "mismatches the number of sight-lines ({}).".format(len(value), len(self._observers)))
+                                 "mismatches the number of observers ({}).".format(len(value), len(self._observers)))
         else:
-            for sight_line in self._observers:
-                sight_line.radius = value
+            for observer in self._observers:
+                observer.radius = value

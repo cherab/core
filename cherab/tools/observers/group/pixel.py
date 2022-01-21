@@ -42,16 +42,16 @@ class PixelGroup(Observer0DGroup):
         if not isinstance(value, (list, tuple)):
             raise TypeError("The observers attribute of PixelGroup must be a list or tuple of Pixels.")
 
-        for sight_line in value:
-            if not isinstance(sight_line, Pixel):
-                raise TypeError("The sight_lines attribute of LineOfSightGroup must be a list or tuple of "
-                                "Pixel. Value {} is not a Pixel.".format(sight_line))
+        for observer in value:
+            if not isinstance(observer, Pixel):
+                raise TypeError("The observers attribute of LineOfSightGroup must be a list or tuple of "
+                                "Pixel. Value {} is not a Pixel.".format(observer))
 
         # Prevent external changes being made to this list
-        for sight_line in value:
-            sight_line.parent = self
+        for observer in value:
+            observer.parent = self
 
-        self._sight_lines = tuple(value)
+        self._observers = tuple(value)
 
     def add_observer(self, pixel):
         """
@@ -64,7 +64,7 @@ class PixelGroup(Observer0DGroup):
             raise TypeError("The pixel argument must be of type Pixel.")
 
         pixel.parent = self
-        self._sight_lines = self._sight_lines + (pixel,)
+        self._observers = self._observers + (pixel,)
 
     @property
     def x_width(self):
@@ -78,7 +78,7 @@ class PixelGroup(Observer0DGroup):
                     pixel.x_width = v
             else:
                 raise ValueError("The length of 'x_width' ({}) "
-                                 "mismatches the number of pixels ({}).".format(len(value), len(self._sight_lines)))
+                                 "mismatches the number of pixels ({}).".format(len(value), len(self._observers)))
         else:
             for pixel in self._observers:
                 pixel.x_width = value
@@ -94,7 +94,7 @@ class PixelGroup(Observer0DGroup):
                     pixel.y_width = v
             else:
                 raise ValueError("The length of 'y_width' ({}) "
-                                 "mismatches the number of pixels ({}).".format(len(value), len(self._sight_lines)))
+                                 "mismatches the number of pixels ({}).".format(len(value), len(self._observers)))
         else:
             for pixel in self._observers:
                 pixel.y_width = value

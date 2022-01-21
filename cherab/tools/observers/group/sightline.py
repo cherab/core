@@ -17,20 +17,19 @@
 # See the Licence for the specific language governing permissions and limitations
 # under the Licence.
 
-from cherab.tools.observers.spectroscopy import SpectroscopicSightLine
-from .spectroscopic import SpectroscopicObserver0DGroup
+from raysect.optical.observer import SightLine
 from .base import Observer0DGroup
 
 
-class SightLineGroup(SpectroscopicObserver0DGroup):
+class SightLineGroup(Observer0DGroup):
     """
     A group of spectroscopic sight-lines under a single scene-graph node.
 
-    A scene-graph object regrouping a series of 'SpectroscopicSightLine'
+    A scene-graph object regrouping a series of 'SightLine'
     observers as a scene-graph parent. Allows combined observation and display
     control simultaneously.
 
-    :ivar list sight_lines: A list of lines of sight (SpectroscopicSightLine instances)
+    :ivar list observers: A list of lines of sight (SightLine instances)
                             in this group.
 
     .. code-block:: pycon
@@ -38,53 +37,55 @@ class SightLineGroup(SpectroscopicObserver0DGroup):
        >>> from math import cos, sin, pi
        >>> from matplotlib import pyplot as plt
        >>> from raysect.optical import World
-       >>> from raysect.optical.observer import SpectralRadiancePipeline0D, RadiancePipeline0D
+       >>> from raysect.optical.observer import SpectralRadiancePipeline0D, RadiancePipeline0D, SightLine
        >>> from raysect.core.math import Point3D, Vector3D
-       >>> from cherab.tools.observers import SpectroscopicSightLine, SightLineGroup
+       >>> from cherab.tools.observers import SightLineGroup
+       >>> from cherab.tools.observers.plotting import plot_group_total, plot_group_spectra
        >>>
        >>> world = World()
        ...
        >>> group = SightLineGroup(parent=world)
-       >>> group.add_sight_line(SpectroscopicSightLine(Point3D(3., 0, 0), Vector3D(-cos(pi/10), 0, sin(pi/10)), name="SightLine 1"))
-       >>> group.add_sight_line(SpectroscopicSightLine(Point3D(3., 0, 0), Vector3D(-1, 0, 0), name="SightLine 2"))
-       >>> group.add_sight_line(SpectroscopicSightLine(Point3D(3., 0, 0), Vector3D(-cos(pi/10), 0, -sin(pi/10)), name="SightLine 3"))
+       >>> group.add_observer(SightLine(Point3D(3., 0, 0), Vector3D(-cos(pi/10), 0, sin(pi/10)), name="SightLine 1"))
+       >>> group.add_observer(SightLine(Point3D(3., 0, 0), Vector3D(-1, 0, 0), name="SightLine 2"))
+       >>> group.add_observer(SightLine(Point3D(3., 0, 0), Vector3D(-cos(pi/10), 0, -sin(pi/10)), name="SightLine 3"))
        >>> group.connect_pipelines([(SpectralRadiancePipeline0D, 'MySpectralPipeline', None),
-                                    (RadiancePipeline0D, 'MyMonoPipeline', None)])  # add pipelines to all sight lines in the group
-       >>> group.spectral_bins = 512  # same value for all sight lines in the group
-       >>> group.pixel_samples = [2000, 1000, 2000]  # individual value for each sight line in the group
+                                    (RadiancePipeline0D, 'MyMonoPipeline', None)])  # add pipelines to all observers in the group
+       >>> group.spectral_bins = 512  # same value for all observers in the group
+       >>> group.pixel_samples = [2000, 1000, 2000]  # individual value for each observer in the group
        >>> group.display_progress = False  # control pipeline parameters through the group observer
        >>> group.observe()  # combined observation
-       >>> group.plot_spectra(item='MySpectralPipeline', in_photons=True)  # plot the spectra
-       >>> group.plot_total_signal(item='MyMonoPipeline')  # plot the total signals
+       >>> 
+       >>> plot_group_spectra(group, item='MySpectralPipeline', in_photons=True)  # plot the spectra
+       >>> plot_group_total(group, item='MyMonoPipeline')  # plot the total signals
        >>> plt.show()
     """
 
     @Observer0DGroup.observers.setter
-    def sight_lines(self, value):
+    def observers(self, value):
 
         if not isinstance(value, (list, tuple)):
-            raise TypeError("The sight_lines attribute of LineOfSightGroup must be a list or tuple of SpectroscopicSightLines.")
+            raise TypeError("The observers attribute of LineOfSightGroup must be a list or tuple of SightLines.")
 
-        for sight_line in value:
-            if not isinstance(sight_line, SpectroscopicSightLine):
-                raise TypeError("The sight_lines attribute of LineOfSightGroup must be a list or tuple of "
-                                "SpectroscopicSightLines. Value {} is not a SpectroscopicSightLine.".format(sight_line))
+        for observer in value:
+            if not isinstance(observer, SightLine):
+                raise TypeError("The observers attribute of LineOfSightGroup must be a list or tuple of "
+                                "SightLines. Value {} is not a SightLine.".format(observer))
 
         # Prevent external changes being made to this list
-        for sight_line in value:
-            sight_line.parent = self
+        for observer in value:
+            observer.parent = self
 
         self._observers = tuple(value)
 
-    def add_observer(self, sight_line):
+    def add_observer(self, observer):
         """
         Adds new line of sight to the group.
 
-        :param SpectroscopicSightLine sight_line: Sight line to add.
+        :param SightLine observer: observer to add.
         """
 
-        if not isinstance(sight_line, SpectroscopicSightLine):
-            raise TypeError("The sight_line argument must be of type SpectroscopicSightLine.")
+        if not isinstance(observer, SightLine):
+            raise TypeError("The observer argument must be of type SightLine.")
 
-        sight_line.parent = self
-        self._observers = self._observers + (sight_line,)
+        observer.parent = self
+        self._observers = self._observers + (observer,)

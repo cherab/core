@@ -32,12 +32,12 @@ class Observer0DGroup(Node):
     Note that for any property except `names` and `pipelines`, the same value can be shared between
     all observers, or each observer can be assigned with individual value.
 
-    :ivar list names: A list of sight-line names.
+    :ivar list names: A list of observer names.
     :ivar list pipelines: A list of all pipelines connected to each observer in the group.
-    :ivar list/RenderEngine render_engine: Rendering engine used by the sight lines.
+    :ivar list/RenderEngine render_engine: Rendering engine used by the observers.
                                            Note that if the engine is shared, changing its
-                                           parameters for one sight line in a group will affect
-                                           all sight lines.
+                                           parameters for one observer in a group will affect
+                                           all observers.
     :ivar list/float min_wavelength: Lower wavelength bound for sampled spectral range.
     :ivar list/float max_wavelength: Upper wavelength bound for sampled spectral range.
     :ivar list/int spectral_bins: The number of spectral samples over the wavelength range.
@@ -64,17 +64,17 @@ class Observer0DGroup(Node):
             try:
                 return self._observers[item]
             except IndexError:
-                raise IndexError("Sight-line number {} not available in this {} "
-                                 "with only {} sight-lines.".format(item, self.__class__.__name__, len(self._observers)))
+                raise IndexError("observer number {} not available in this {} "
+                                 "with only {} observers.".format(item, self.__class__.__name__, len(self._observers)))
         elif isinstance(item, str):
-            sightlines = [sight_line for sight_line in self._observers if sight_line.name == item]
-            if len(sightlines) == 1:
-                return sightlines[0]
+            observers = [observer for observer in self._observers if observer.name == item]
+            if len(observers) == 1:
+                return observers[0]
 
-            if len(sightlines) == 0:
-                raise ValueError("Sight-line '{}' was not found in this {}.".format(item, self.__class__.__name__))
+            if len(observers) == 0:
+                raise ValueError("observer '{}' was not found in this {}.".format(item, self.__class__.__name__))
 
-            raise ValueError("Found {} sight-lines with name {} in this {}.".format(len(sightlines), item, self.__class__.__name__))
+            raise ValueError("Found {} observers with name {} in this {}.".format(len(observers), item, self.__class__.__name__))
         else:
             raise TypeError("{} key must be of type int or str.".format(self.__class__.__name__))
 
@@ -87,9 +87,8 @@ class Observer0DGroup(Node):
 
     @observers.setter
     def observers(self, value):
-        raise NotImplementedError()
         if not isinstance(value, (list, tuple)):
-            raise TypeError("The sight_lines attribute of FibreOpticGroup must be a list or tuple of SpectroscopicFibreOptics.")
+            raise TypeError("The observers attribute of Observer0DGroup must be a list or tuple of Observer0D.")
 
         if not all([isinstance(val, Observer0D) for val in value]):
             raise ValueError('All observers assigned to the group must be of type Observer0D')
@@ -105,7 +104,6 @@ class Observer0DGroup(Node):
 
         :param Observer0D observer: observer to add
         """
-        raise NotImplementedError()
         if not isinstance(observer, Observer0D):
             raise ValueError("Can only add Observer0D objects")
         observer.parent = self
@@ -143,7 +141,7 @@ class Observer0DGroup(Node):
     
     @property
     def render_engine(self):
-        # Rendering engine used by the sight lines.
+        # Rendering engine used by the observers.
         return [observer.render_engine for observer in self._observers]
 
     @render_engine.setter
@@ -157,7 +155,7 @@ class Observer0DGroup(Node):
                         raise TypeError("The list 'render_engine' must contain only RenderEngine instances.")
             else:
                 raise ValueError("The length of 'render_engine' ({}) "
-                                 "mismatches the number of sight-lines ({}).".format(len(value), len(self._observers)))
+                                 "mismatches the number of observers ({}).".format(len(value), len(self._observers)))
         else:
             if not isinstance(value, RenderEngine):
                 raise TypeError("The list 'render_engine' must contain only RenderEngine instances.")
@@ -177,7 +175,7 @@ class Observer0DGroup(Node):
                     observer.min_wavelength = v
             else:
                 raise ValueError("The length of 'min_wavelength' ({}) "
-                                 "mismatches the number of sight-lines ({}).".format(len(value), len(self._observers)))
+                                 "mismatches the number of observers ({}).".format(len(value), len(self._observers)))
         else:
             for observer in self._observers:
                 observer.min_wavelength = value
@@ -195,7 +193,7 @@ class Observer0DGroup(Node):
                     observer.max_wavelength = v
             else:
                 raise ValueError("The length of 'max_wavelength' ({}) "
-                                 "mismatches the number of sight-lines ({}).".format(len(value), len(self._observers)))
+                                 "mismatches the number of observers ({}).".format(len(value), len(self._observers)))
         else:
             for observer in self._observers:
                 observer.max_wavelength = value
@@ -213,7 +211,7 @@ class Observer0DGroup(Node):
                     observer.spectral_bins = v
             else:
                 raise ValueError("The length of 'spectral_bins' ({}) "
-                                 "mismatches the number of sight-lines ({}).".format(len(value), len(self._observers)))
+                                 "mismatches the number of observers ({}).".format(len(value), len(self._observers)))
         else:
             for observer in self._observers:
                 observer.spectral_bins = value
@@ -231,7 +229,7 @@ class Observer0DGroup(Node):
                     observer.ray_extinction_prob = v
             else:
                 raise ValueError("The length of 'ray_extinction_prob' ({}) "
-                                 "mismatches the number of sight-lines ({}).".format(len(value), len(self._observers)))
+                                 "mismatches the number of observers ({}).".format(len(value), len(self._observers)))
         else:
             for observer in self._observers:
                 observer.ray_extinction_prob = value
@@ -249,7 +247,7 @@ class Observer0DGroup(Node):
                     observer.ray_extinction_min_depth = v
             else:
                 raise ValueError("The length of 'ray_extinction_min_depth' ({}) "
-                                 "mismatches the number of sight-lines ({}).".format(len(value), len(self._observers)))
+                                 "mismatches the number of observers ({}).".format(len(value), len(self._observers)))
         else:
             for observer in self._observers:
                 observer.ray_extinction_min_depth = value
@@ -267,7 +265,7 @@ class Observer0DGroup(Node):
                     observer.ray_max_depth = v
             else:
                 raise ValueError("The length of 'ray_max_depth' ({}) "
-                                 "mismatches the number of sight-lines ({}).".format(len(value), len(self._observers)))
+                                 "mismatches the number of observers ({}).".format(len(value), len(self._observers)))
         else:
             for observer in self._observers:
                 observer.ray_max_depth = value
@@ -285,7 +283,7 @@ class Observer0DGroup(Node):
                     observer.ray_important_path_weight = v
             else:
                 raise ValueError("The length of 'ray_important_path_weight' ({}) "
-                                 "mismatches the number of sight-lines ({}).".format(len(value), len(self._observers)))
+                                 "mismatches the number of observers ({}).".format(len(value), len(self._observers)))
         else:
             for observer in self._observers:
                 observer.ray_important_path_weight = value
@@ -303,7 +301,7 @@ class Observer0DGroup(Node):
                     observer.pixel_samples = v
             else:
                 raise ValueError("The length of 'pixel_samples' ({}) "
-                                 "mismatches the number of sight-lines ({}).".format(len(value), len(self._observers)))
+                                 "mismatches the number of observers ({}).".format(len(value), len(self._observers)))
         else:
             for observer in self._observers:
                 observer.pixel_samples = value
@@ -321,7 +319,7 @@ class Observer0DGroup(Node):
                     observer.samples_per_task = v
             else:
                 raise ValueError("The length of 'samples_per_task' ({}) "
-                                 "mismatches the number of sight-lines ({}).".format(len(value), len(self._observers)))
+                                 "mismatches the number of observers ({}).".format(len(value), len(self._observers)))
         else:
             for observer in self._observers:
                 observer.samples_per_task = value
@@ -330,5 +328,41 @@ class Observer0DGroup(Node):
         """
         Starts the observation.
         """
-        for sight_line in self._observers:
-            sight_line.observe()
+        for observer in self._observers:
+            observer.observe()
+    
+    @property
+    def pipelines(self):
+        # A list of all pipelines connected to each sight-line in the group.
+        return [observer.pipelines for observer in self._observers]
+
+    def connect_pipelines(self, pipeline_classes, keywords_list=None, suppress_display_progress=True):
+        """
+        Creates and connects a new set of given pipelines to each observer in the group.
+
+        Pipeline classes are instantiated using parameters specified in approrpiate dict from keywords list.
+        If keywords list is provided, it length must match the number of provided pipeline classes.
+
+        :param list pipeline_classes: list of pipeline classes to be connected with observers
+        :param list keywords_list: list of dicts with keywords passed to init methods of pipeline classes
+                                   its length must match the number of pipeline classes
+                                   for default parameters place an empty dict to approriate place in the list
+        :param bool suppress_display_progress: Toggles setting display_progress to False for each compatible pipeline (default=True)
+        """
+        if keywords_list is None:
+            keywords_list = [dict() for ppln in pipeline_classes]
+        if len(pipeline_classes) !=len (keywords_list):
+            raise ValueError('The number of given pipeline classes does not match the number of dicts in keyword list.\
+                              For each pipeline class there must be a parameter dict.')
+        for observer in self._observers:
+            pipelines = []
+            for PipelineClass, kwargs in zip(pipeline_classes, keywords_list):
+                pipeline = PipelineClass(**kwargs)
+                if suppress_display_progress:
+                    try:
+                        pipeline.display_progress = False
+                    except AttributeError:
+                        pass
+                pipelines.append(pipeline)
+            observer.pipelines = pipelines
+        return
