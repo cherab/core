@@ -22,3 +22,4 @@ from .line import Line
 from .interface import AtomicData
 from .rates import *
 from .zeeman import ZeemanStructure
+from .gaunt import *

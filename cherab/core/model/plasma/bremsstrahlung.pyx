@@ -1,6 +1,6 @@
-# Copyright 2016-2018 Euratom
-# Copyright 2016-2018 United Kingdom Atomic Energy Authority
-# Copyright 2016-2018 Centro de Investigaciones Energéticas, Medioambientales y Tecnológicas
+# Copyright 2016-2022 Euratom
+# Copyright 2016-2022 United Kingdom Atomic Energy Authority
+# Copyright 2016-2022 Centro de Investigaciones Energéticas, Medioambientales y Tecnológicas
 #
 # Licensed under the EUPL, Version 1.1 or – as soon they will be approved by the
 # European Commission - subsequent versions of the EUPL (the "Licence");
@@ -58,6 +58,12 @@ cdef class Bremsstrahlung(PlasmaModel):
             double lower_sample, upper_sample
             int i
 
+        # initialise Gaunt factor on first run
+        if self._gaunt_factor is None:
+            if self._atomic_data is None:
+                raise RuntimeError("The emission model is not connected to an atomic data source.")
+            self._gaunt_factor = self._atomic_data.free_free_gaunt_factor()
+
         ne = self._plasma.get_electron_distribution().density(point.x, point.y, point.z)
         if ne == 0:
             return spectrum
@@ -74,7 +80,7 @@ cdef class Bremsstrahlung(PlasmaModel):
         lower_sample = self._bremsstrahlung(lower_wavelength, te, ne, z_effective)
         for i in range(spectrum.bins):
 
-            upper_wavelength = spectrum.min_wavelength + spectrum.delta_wavelength * i
+            upper_wavelength = spectrum.min_wavelength + spectrum.delta_wavelength * (i + 1)
             upper_sample = self._bremsstrahlung(upper_wavelength, te, ne, z_effective)
 
             spectrum.samples_mv[i] += 0.5 * (lower_sample + upper_sample)
@@ -87,21 +93,21 @@ cdef class Bremsstrahlung(PlasmaModel):
     @cython.cdivision(True)
     cdef double _bremsstrahlung(self, double wvl, double te, double ne, double zeff):
         """
-        :param wvl: in nm 
+        :param wvl: in nm
         :param te: in eV
         :param ne: in m^-3
         :param zeff: a.u.
-        :return: 
+        :return:
         """
 
         cdef double gaunt_factor, radiance, pre_factor
 
         # gaunt factor
-        gaunt_factor = max(1., 0.6183 * log(te) - 0.0821)
+        gaunt_factor = self._gaunt_factor(zeff, te, wvl)
 
         # bremsstrahlung equation W/m^3/str/nm
         pre_factor = 0.95e-19 * RECIP_4_PI * gaunt_factor * ne * ne * zeff / (sqrt(te) * wvl)
-        radiance =  pre_factor * exp(- EXP_FACTOR / (te * wvl)) * PH_TO_J_FACTOR
+        radiance = pre_factor * exp(- EXP_FACTOR / (te * wvl)) * PH_TO_J_FACTOR
 
         # convert to W/m^3/str/nm
         return radiance / wvl

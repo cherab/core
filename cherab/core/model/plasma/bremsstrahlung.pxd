@@ -1,6 +1,6 @@
-# Copyright 2016-2018 Euratom
-# Copyright 2016-2018 United Kingdom Atomic Energy Authority
-# Copyright 2016-2018 Centro de Investigaciones Energéticas, Medioambientales y Tecnológicas
+# Copyright 2016-2022 Euratom
+# Copyright 2016-2022 United Kingdom Atomic Energy Authority
+# Copyright 2016-2022 Centro de Investigaciones Energéticas, Medioambientales y Tecnológicas
 #
 # Licensed under the EUPL, Version 1.1 or – as soon they will be approved by the
 # European Commission - subsequent versions of the EUPL (the "Licence");
@@ -18,16 +18,13 @@
 
 # cython: language_level=3
 
-from cherab.core.atomic cimport Line
+from cherab.core.atomic cimport FreeFreeGauntFactor
 from cherab.core.plasma cimport PlasmaModel
-from cherab.core.species cimport Species
 
 
 cdef class Bremsstrahlung(PlasmaModel):
 
     cdef:
-        Line _line
-        double _wavelength
-        Species _target_species
+        FreeFreeGauntFactor _gaunt_factor
 
     cdef double _bremsstrahlung(self, double wvl, double te, double ne, double zeff)
