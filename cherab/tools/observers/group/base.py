@@ -55,9 +55,8 @@ class Observer0DGroup(Node):
     """
     def __init__(self, parent=None, transform=None, name=None, observers=None):
         super().__init__(parent=parent, transform=transform, name=name)
-        if observers is None:
-            self._observers = tuple()
-        else:
+        self._observers = tuple()
+        if observers is not None:
             for observer in observers:
                 self.add_observer(observer)
 
