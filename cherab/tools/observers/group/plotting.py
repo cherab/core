@@ -24,6 +24,14 @@ from raysect.optical.observer import RadiancePipeline0D, PowerPipeline0D, Spectr
 
 
 def select_pipelines(group, item):
+    """
+    Selects pipelines from the group based on index or name.
+
+    :param Observer0DGroup group: Observer group from which to select pipelines.
+    :param str/int item: The index or name of the pipeline to be selected.
+    :return list pipelines: matching pipelines
+    :return list observers: observers with matching pipelines
+    """
     pipelines = []
     observers = []
     for observer in group._observers:
@@ -51,6 +59,7 @@ def plot_group_total(group, item=0, ax=None):
     """
     Plots total (wavelength-integrated) signal for each observer in the group.
     
+    :param Observer0DGroup group: Group class with observers hodling data to be plotted.
     :param str/int item: The index or name of the pipeline. Default: 0.
     :param Axes ax: Existing matplotlib axes.
     :return Axes ax: Matplotlib axes with plotted spectra
@@ -77,9 +86,9 @@ def plot_group_total(group, item=0, ax=None):
             tick_labels.append(group._sight_lines.index(sight_line))
 
     if isinstance(pipeline, (SpectralRadiancePipeline0D, RadiancePipeline0D)):
-        ylabel = 'Radiance (W/m^2/str)'
+        ylabel = 'Radiance [W/m^2/str]'
     else:  # SpectralPowerPipeline0D or PowerPipeline0D
-        ylabel = 'Power (W)'
+        ylabel = 'Power [W]'
 
     ax.bar(list(range(len(signal))), signal, tick_label=tick_labels, label=item)
 
@@ -94,7 +103,7 @@ def plot_group_total(group, item=0, ax=None):
         ax.set_title('{}: {}'.format(group.name, item))
 
     ax.set_ylabel(ylabel)
-    ax.set_xlabel('Line of sight')
+    ax.set_xlabel('Observer')
 
     return ax
 
@@ -103,6 +112,7 @@ def plot_group_spectra(group, item=0, in_photons=False, ax=None):
     """
     Plot the spectra observed by each observer in the group for a given pipeline.
     
+    :param Observer0DGroup group: Group class with observers hodling data to be plotted.
     :param str/int item: The index or name of the pipeline. Default: 0.
     :param bool in_photons: If True, plots the spectrum in photon/s/nm instead of W/nm.
                             Default is False.
@@ -130,9 +140,9 @@ def plot_group_spectra(group, item=0, in_photons=False, ax=None):
         else:
             ax.plot(spectrum.wavelengths, spectrum.samples, marker='o', ls='none', label=observer.name)
     if isinstance(pipelines[0], SpectralRadiancePipeline0D):
-        ylabel = 'Spectral radiance (photon/s/m^2/str/nm)' if in_photons else 'Spectral radiance (W/m^2/str/nm)'
+        ylabel = 'Spectral radiance [photon/s/m^2/str/nm]' if in_photons else 'Spectral radiance [W/m^2/str/nm]'
     else:  # SpectralPowerPipeline0D
-        ylabel = 'Spectral power (photon/s/nm)' if in_photons else 'Spectral power (W/nm)'
+        ylabel = 'Spectral power [photon/s/nm]' if in_photons else 'Spectral power [W/nm]'
 
     if isinstance(item, int):
         # check if pipelines share the same name
@@ -144,7 +154,7 @@ def plot_group_spectra(group, item=0, in_photons=False, ax=None):
     elif isinstance(item, str):
         ax.set_title('{}: {}'.format(group.name, item))
 
-    ax.set_xlabel('Wavelength (nm)')
+    ax.set_xlabel('Wavelength [nm]')
     ax.set_ylabel(ylabel)
     ax.legend()
 

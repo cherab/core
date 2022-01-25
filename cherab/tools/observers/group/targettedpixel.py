@@ -40,7 +40,6 @@ class TargettedPixelGroup(Observer0DGroup):
 
     @Observer0DGroup.observers.setter
     def observers(self, value):
-
         if not isinstance(value, (list, tuple)):
             raise TypeError("The observers attribute of TargettedPixelGroup must be a list or tuple of TargettedPixel.")
 
@@ -61,10 +60,8 @@ class TargettedPixelGroup(Observer0DGroup):
 
         :param TargettedPixel observer: Targetted pixel to add.
         """
-
         if not isinstance(observer, TargettedPixel):
             raise TypeError("The observer argument must be of type TargettedPixel.")
-
         observer.parent = self
         self._observers = self._observers + (observer,)
 
@@ -84,6 +81,7 @@ class TargettedPixelGroup(Observer0DGroup):
         else:
             for pixel in self._observers:
                 pixel.x_width = value
+
     @property
     def y_width(self):
         return [pixel.y_width for pixel in self._observers]

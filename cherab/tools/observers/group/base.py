@@ -61,7 +61,6 @@ class Observer0DGroup(Node):
                 self.add_observer(observer)
 
     def __getitem__(self, item):
-
         try:
             selected = self._observers[item]
         except IndexError:
@@ -351,6 +350,14 @@ class Observer0DGroup(Node):
                                    its length must match the number of pipeline classes
                                    for default parameters place an empty dict to approriate place in the list
         :param bool suppress_display_progress: Toggles setting display_progress to False for each compatible pipeline (default=True)
+
+        .. code-block:: pycon
+          
+          ...
+          >>> pipelines = [SpectralRadiancePipeline0D, RadiancePipeline0D]
+          >>> keywords = [{'name': 'MySpectralPipeline'}, {}]
+          >>> group.connect_pipelines(pipeline_classes=pipelines, keywords_list=keywords)
+        
         """
         if keywords_list is None:
             keywords_list = [dict() for ppln in pipeline_classes]
