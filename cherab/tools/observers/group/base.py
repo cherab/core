@@ -1,4 +1,3 @@
-
 # Copyright 2016-2021 Euratom
 # Copyright 2016-2021 United Kingdom Atomic Energy Authority
 # Copyright 2016-2021 Centro de Investigaciones Energéticas, Medioambientales y Tecnológicas
@@ -25,7 +24,6 @@ from raysect.optical.observer import Observer0D
 
 class Observer0DGroup(Node):
     """
-    
     A base class for handling groups of nonimaging observers as one Node.
 
     A scene-graph object regrouping a series of observers as a scene-graph parent.
@@ -82,7 +80,10 @@ class Observer0DGroup(Node):
     def observers(self):
         """
         A list of all Observer0D object assigned to the group.
-        The group is set as a parent to any added observer."""
+        The group is set as a parent to any added observer.
+
+        :rtype: tuple
+        """
         return self._observers
 
     @observers.setter
@@ -128,7 +129,12 @@ class Observer0DGroup(Node):
     
     @property
     def pipelines(self):
-        """A list of all pipelines connected to each observer in the group"""
+        """
+        A list of all pipelines connected to each observer in the group
+        
+        :param list pipelist: list of lists/tuples of already instantiated pipelines
+        :rtype: list
+        """
         return [observer.pipelines for observer in self._observers]
     
     @pipelines.setter
@@ -141,7 +147,10 @@ class Observer0DGroup(Node):
     
     @property
     def render_engine(self):
-        # Rendering engine used by the observers.
+        """
+        Rendering engine used by the observers.
+        :rtype: list
+        """
         return [observer.render_engine for observer in self._observers]
 
     @render_engine.setter
@@ -330,11 +339,6 @@ class Observer0DGroup(Node):
         """
         for observer in self._observers:
             observer.observe()
-    
-    @property
-    def pipelines(self):
-        # A list of all pipelines connected to each observer in the group.
-        return [observer.pipelines for observer in self._observers]
 
     def connect_pipelines(self, pipeline_classes, keywords_list=None, suppress_display_progress=True):
         """

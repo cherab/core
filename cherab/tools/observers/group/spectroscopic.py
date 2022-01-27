@@ -1,4 +1,3 @@
-
 # Copyright 2016-2021 Euratom
 # Copyright 2016-2021 United Kingdom Atomic Energy Authority
 # Copyright 2016-2021 Centro de Investigaciones Energéticas, Medioambientales y Tecnológicas
@@ -19,11 +18,10 @@
 
 import matplotlib.pyplot as plt
 from numpy import ndarray
-
 from raysect.optical import Spectrum
 from raysect.optical.observer import SpectralRadiancePipeline0D, SpectralPowerPipeline0D, RadiancePipeline0D
 
-from cherab.tools.observers.group.base import Observer0DGroup
+from .base import Observer0DGroup
 from cherab.tools.observers.spectroscopy import SpectroscopicFibreOptic, SpectroscopicSightLine
 
 
@@ -430,7 +428,6 @@ class SpectroscopicSightLineGroup(SpectroscopicObserver0DGroup):
 
     @Observer0DGroup.observers.setter
     def sight_lines(self, value):
-
         if not isinstance(value, (list, tuple)):
             raise TypeError("The sight_lines attribute of LineOfSightGroup must be a list or tuple of SpectroscopicSightLines.")
 
@@ -451,7 +448,6 @@ class SpectroscopicSightLineGroup(SpectroscopicObserver0DGroup):
 
         :param SpectroscopicSightLine sight_line: Sight line to add.
         """
-
         if not isinstance(sight_line, SpectroscopicSightLine):
             raise TypeError("The sight_line argument must be of type SpectroscopicSightLine.")
 

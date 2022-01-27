@@ -1,4 +1,3 @@
-
 # Copyright 2016-2021 Euratom
 # Copyright 2016-2021 United Kingdom Atomic Energy Authority
 # Copyright 2016-2021 Centro de Investigaciones Energéticas, Medioambientales y Tecnológicas
@@ -18,8 +17,8 @@
 # under the Licence.
 
 from numpy import ndarray
-
 from raysect.optical.observer import TargettedPixel
+
 from .base import Observer0DGroup
 
 
@@ -35,7 +34,6 @@ class TargettedPixelGroup(Observer0DGroup):
     :ivar list y_width: Width of pixel along local y axis
     :ivar list targets: Targets for preferential sampling
     :ivar list targetted_path_prob: Probability of ray being casted at the target
-
     """
 
     @Observer0DGroup.observers.setter

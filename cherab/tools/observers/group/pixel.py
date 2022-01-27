@@ -1,4 +1,3 @@
-
 # Copyright 2016-2021 Euratom
 # Copyright 2016-2021 United Kingdom Atomic Energy Authority
 # Copyright 2016-2021 Centro de Investigaciones Energéticas, Medioambientales y Tecnológicas
@@ -18,8 +17,8 @@
 # under the Licence.
 
 from numpy import ndarray
-
 from raysect.optical.observer import Pixel
+
 from .base import Observer0DGroup
 
 

@@ -1,4 +1,3 @@
-
 # Copyright 2016-2021 Euratom
 # Copyright 2016-2021 United Kingdom Atomic Energy Authority
 # Copyright 2016-2021 Centro de Investigaciones Energéticas, Medioambientales y Tecnológicas
@@ -20,7 +19,7 @@
 from numpy import ndarray
 from raysect.optical.observer import FibreOptic
 
-from cherab.tools.observers.group.base import Observer0DGroup
+from .base import Observer0DGroup
 
 
 class FibreOpticGroup(Observer0DGroup):

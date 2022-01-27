@@ -1,4 +1,3 @@
-
 # Copyright 2016-2021 Euratom
 # Copyright 2016-2021 United Kingdom Atomic Energy Authority
 # Copyright 2016-2021 Centro de Investigaciones Energéticas, Medioambientales y Tecnológicas
@@ -18,7 +17,6 @@
 # under the Licence.
 
 import matplotlib.pyplot as plt
-
 from raysect.optical import Spectrum
 from raysect.optical.observer import RadiancePipeline0D, PowerPipeline0D, SpectralRadiancePipeline0D, SpectralPowerPipeline0D
 
@@ -64,7 +62,6 @@ def plot_group_total(group, item=0, ax=None):
     :param Axes ax: Existing matplotlib axes.
     :return Axes ax: Matplotlib axes with plotted spectra
     """
-
     pipelines, observers = select_pipelines(group, item)
 
     if ax is None:
@@ -119,7 +116,6 @@ def plot_group_spectra(group, item=0, in_photons=False, ax=None):
     :param Axes ax: Existing matplotlib axes.
     :return Axes ax: Matplotlib axes with plotted spectra
     """
-
     pipelines, observers = select_pipelines(group, item)
 
     if ax is None:
