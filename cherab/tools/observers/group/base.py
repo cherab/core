@@ -66,7 +66,7 @@ class Observer0DGroup(Node):
             if isinstance(item, str):
                 observers = [observer for observer in self._observers if observer.name == item]
                 if len(observers) == 1:
-                    selected = observers[0]
+                    return observers[0]
 
                 if len(observers) == 0:
                     raise ValueError("observer '{}' was not found in this {}.".format(item, self.__class__.__name__))
@@ -91,14 +91,14 @@ class Observer0DGroup(Node):
         if not isinstance(value, (list, tuple)):
             raise TypeError("The observers attribute of Observer0DGroup must be a list or tuple of Observer0D.")
 
-        if not all([isinstance(val, Observer0D) for val in value]):
+        if not all(isinstance(val, Observer0D) for val in value):
             raise ValueError('All observers assigned to the group must be of type Observer0D')
         
         for observer in value:
             observer.parent = self
 
         self._observers = tuple(value)
-    
+
     def add_observer(self, observer):
         """
         Adds new observer to the group
@@ -126,7 +126,7 @@ class Observer0DGroup(Node):
                                  "mismatches the number of observers ({}).".format(len(value), len(self._observers)))
         else:
             raise TypeError("The names attribute must be a list or tuple.")
-    
+
     @property
     def pipelines(self):
         """
@@ -144,7 +144,7 @@ class Observer0DGroup(Node):
                 observer.pipelines = pipelines
         else:
             raise ValueError('Length of pipelines list do not match number of observers in the group.')
-    
+
     @property
     def render_engine(self):
         """
