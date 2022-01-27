@@ -25,8 +25,6 @@ from raysect.optical.observer import Observer0D
 
 class Observer0DGroup(Node):
     """
-    .. deprecated:: 1.4.0
-       Use Raysect's observer classes instead.
     
     A base class for handling groups of nonimaging observers as one Node.
 
