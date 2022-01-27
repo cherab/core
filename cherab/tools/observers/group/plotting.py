@@ -23,7 +23,9 @@ from raysect.optical.observer import RadiancePipeline0D, PowerPipeline0D, Spectr
 
 def select_pipelines(group, item):
     """
-    Selects pipelines from the group based on index or name.
+    Selects pipelines of the same type based on index or name from the provided group.
+
+    If name is used, error is raised if none or more than one pipeline is found in an observer.
 
     :param Observer0DGroup group: Observer group from which to select pipelines.
     :param str/int item: The index or name of the pipeline to be selected.
@@ -32,19 +34,23 @@ def select_pipelines(group, item):
     """
     pipelines = []
     observers = []
-    for observer in group._observers:
+    for observer in group.observers:
         if isinstance(item, int):
-            if item < len(observer.pipelines):
+            try:
                 pipelines.append(observer.pipelines[item])
                 observers.append(observer)
+            except IndexError:
+                raise ValueError('Invalid pipeline index {} for observer {} with {} pipelines'.format(
+                                item, observer, len(observer.pipelines)))
         elif isinstance(item, str):
             matching_pipelines = [pipeline for pipeline in observer.pipelines if pipeline.name == item]
-            if len(matching_pipelines) == 1:
+            pipelines_num = len(matching_pipelines)
+            if pipelines_num != 1:
+                raise ValueError("Found {} matching pipelines for name {} in observer {}.".format(
+                                pipelines_num, item, observer))
+            else:
                 pipelines.append(matching_pipelines[0])
                 observers.append(observer)
-
-    if len(pipelines) == 0:
-        raise ValueError("Pipeline {} was not found for any observer in this {}.".format((item, group.__class__.__name__)))
 
     pipeline_types = set(type(pipeline) for pipeline in pipelines)
     if len(pipeline_types) > 1:
@@ -80,7 +86,7 @@ def plot_group_total(group, item=0, ax=None):
         if observer.name and len(observer.name):
             tick_labels.append(observer.name)
         else:
-            tick_labels.append(group._observers.index(observer))
+            tick_labels.append(group.observers.index(observer))
 
     if isinstance(pipeline, (SpectralRadiancePipeline0D, RadiancePipeline0D)):
         ylabel = 'Radiance [W/m^2/str]'
