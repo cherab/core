@@ -43,7 +43,7 @@ class PixelGroup(Observer0DGroup):
 
         for observer in value:
             if not isinstance(observer, Pixel):
-                raise TypeError("The observers attribute of LineOfSightGroup must be a list or tuple of "
+                raise TypeError("The observers attribute of PixelGroup must be a list or tuple of "
                                 "Pixel. Value {} is not a Pixel.".format(observer))
 
         # Prevent external changes being made to this list
@@ -54,7 +54,7 @@ class PixelGroup(Observer0DGroup):
 
     def add_observer(self, pixel):
         """
-        Adds new line of sight to the group.
+        Adds new pixel to the group.
 
         :param Pixel pixel: Pixel to add.
         """

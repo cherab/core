@@ -72,7 +72,7 @@ def plot_group_total(group, item=0, ax=None):
 
     signal = []
     tick_labels = []
-    for pipeline, sight_line in zip(pipelines, observers):
+    for pipeline, observer in zip(pipelines, observers):
         if isinstance(pipeline, SpectralPowerPipeline0D):
             spectrum = Spectrum(pipeline.min_wavelength, pipeline.max_wavelength, pipeline.bins)
             spectrum.samples[:] = pipeline.samples.mean
@@ -80,10 +80,10 @@ def plot_group_total(group, item=0, ax=None):
         else:
             signal.append(pipeline.value.mean)
 
-        if sight_line.name and len(sight_line.name):
-            tick_labels.append(sight_line.name)
+        if observer.name and len(observer.name):
+            tick_labels.append(observer.name)
         else:
-            tick_labels.append(group._sight_lines.index(sight_line))
+            tick_labels.append(group._observers.index(observer))
 
     if isinstance(pipeline, (SpectralRadiancePipeline0D, RadiancePipeline0D)):
         ylabel = 'Radiance [W/m^2/str]'

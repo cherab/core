@@ -56,7 +56,7 @@ class TargettedPixelGroup(Observer0DGroup):
 
     def add_observer(self, observer):
         """
-        Adds new line of sight to the group.
+        Adds new targetted pixel to the group.
 
         :param TargettedPixel observer: Targetted pixel to add.
         """
@@ -77,7 +77,7 @@ class TargettedPixelGroup(Observer0DGroup):
                     pixel.x_width = v
             else:
                 raise ValueError("The length of 'x_width' ({}) "
-                                 "mismatches the number of pixels ({}).".format(len(value), len(self._sight_lines)))
+                                 "mismatches the number of pixels ({}).".format(len(value), len(self._observers)))
         else:
             for pixel in self._observers:
                 pixel.x_width = value
@@ -94,7 +94,7 @@ class TargettedPixelGroup(Observer0DGroup):
                     pixel.y_width = v
             else:
                 raise ValueError("The length of 'y_width' ({}) "
-                                 "mismatches the number of pixels ({}).".format(len(value), len(self._sight_lines)))
+                                 "mismatches the number of pixels ({}).".format(len(value), len(self._observers)))
         else:
             for pixel in self._observers:
                 pixel.y_width = value
@@ -131,7 +131,7 @@ class TargettedPixelGroup(Observer0DGroup):
                     pixel.targetted_path_prob = v
             else:
                 raise ValueError("The length of 'value' ({}) "
-                                 "mismatches the number of pixels ({}).".format(len(value), len(self._sight_lines)))
+                                 "mismatches the number of pixels ({}).".format(len(value), len(self._observers)))
         else:
             for pixel in self._observers:
                 pixel.targetted_path_prob = value

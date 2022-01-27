@@ -333,7 +333,7 @@ class Observer0DGroup(Node):
     
     @property
     def pipelines(self):
-        # A list of all pipelines connected to each sight-line in the group.
+        # A list of all pipelines connected to each observer in the group.
         return [observer.pipelines for observer in self._observers]
 
     def connect_pipelines(self, pipeline_classes, keywords_list=None, suppress_display_progress=True):
