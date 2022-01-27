@@ -101,23 +101,30 @@ class TargettedPixelGroup(Observer0DGroup):
 
     @property
     def targets(self):
-        """Targets for preferential sampling"""
-        return [pixel.target for pixel in self._observers]
+        """
+        List of target lists used by pixels for preferential sampling
+
+        :param list value: List of primitives to be set to each pixel or 
+                           list of lists containing targets specific for each pixel
+                           in this case the number of lists must match number of pixels
+
+        :rtype: list
+        """
+        return [pixel.targets for pixel in self._observers]
 
     @targets.setter
     def targets(self, value):
-        if isinstance(value, (list, tuple)):
+        if all(isinstance(v, (list, tuple)) for v in value):
             if len(value) == len(self._observers):
                 for pixel, v in zip(self._observers, value):
-                    pixel.target = v
-                    v.parent = self
+                    pixel.targets = v
             else:
-                raise ValueError("The length of 'value' ({}) "
-                                 "mismatches the number of pixels ({}).".format(len(value), len(self._sight_lines)))
+                raise ValueError("The number of provided target lists' ({}) "
+                                 "mismatches the number of pixels ({}).".format(len(value), len(self._observers)))
         else:
-            value.parent = self
+            # assuming a list of primitives, the pixel's setter will throw an error if not
             for pixel in self._observers:
-                pixel.target = value
+                pixel.targets = value
 
     @property
     def targetted_path_prob(self):
