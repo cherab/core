@@ -1,8 +1,17 @@
 Project Changelog
 =================
 
-Release 1.3.0 (8 Dec 2021)
+Release 1.4.0 (TBD)
 -------------------
+
+Bug fixes:
+* Fix wavelength indexing in Bremsstrahlung emission model. (#352)
+
+New:
+* Add new classes for free-free Gaunt factors and improve accuracy of the Gaunt factor used in Bremsstrahlung emission model. (#352)
+
+Release 1.3.0 (8 Dec 2021)
+--------------------------
 
 API changes:
 * Use of Cherab's interpolators is now deprecated in favour of those upstream in Raysect.

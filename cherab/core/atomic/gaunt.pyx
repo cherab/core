@@ -51,7 +51,13 @@ cdef class FreeFreeGauntFactor():
 
     def __call__(self, double zeff, double temperature, double wavelength):
         """
-        Returns self.evaluate(zeff, temperature, wavelength).
+        Returns the temperature-averaged free-free Gaunt factor for the supplied parameters.
+
+        :param double zeff: Effective Z of the plasma.
+        :param double temperature: Electron temperature in eV.
+        :param double wavelength: Spectral wavelength.
+
+        :return: free-free Gaunt factor
         """
 
         return self.evaluate(zeff, temperature, wavelength)
