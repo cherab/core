@@ -16,6 +16,8 @@
 # See the Licence for the specific language governing permissions and limitations
 # under the Licence.
 
+import warnings
+
 import matplotlib.pyplot as plt
 from raysect.optical import Spectrum
 from raysect.optical.observer import RadiancePipeline0D, PowerPipeline0D, SpectralRadiancePipeline0D, SpectralPowerPipeline0D
@@ -25,7 +27,8 @@ def select_pipelines(group, item):
     """
     Selects pipelines of the same type based on index or name from the provided group.
 
-    If name is used, error is raised if none or more than one pipeline is found in an observer.
+    If name is used, error is raised when more than one pipeline is found in an observer.
+    An ValueError is also raised if found pipelines are not of the same type.
 
     :param Observer0DGroup group: Observer group from which to select pipelines.
     :param str/int item: The index or name of the pipeline to be selected.
@@ -40,17 +43,19 @@ def select_pipelines(group, item):
                 pipelines.append(observer.pipelines[item])
                 observers.append(observer)
             except IndexError:
-                raise ValueError('Invalid pipeline index {} for observer {} with {} pipelines'.format(
+                warnings.warn('Invalid pipeline index {} for observer {} with {} pipelines'.format(
                                 item, observer, len(observer.pipelines)))
         elif isinstance(item, str):
             matching_pipelines = [pipeline for pipeline in observer.pipelines if pipeline.name == item]
             pipelines_num = len(matching_pipelines)
-            if pipelines_num != 1:
-                raise ValueError("Found {} matching pipelines for name {} in observer {}.".format(
-                                pipelines_num, item, observer))
-            else:
+            if pipelines_num == 0:
+                warnings.warn('Found no matching pipelines for name {} in observer {}'.format(item, observer))
+            elif pipelines_num == 1:
                 pipelines.append(matching_pipelines[0])
                 observers.append(observer)
+            else:
+                raise ValueError("Found {} matching pipelines for name {} in observer {}.".format(
+                                pipelines_num, item, observer))
 
     pipeline_types = set(type(pipeline) for pipeline in pipelines)
     if len(pipeline_types) > 1:
@@ -137,10 +142,12 @@ def plot_group_spectra(group, item=0, in_photons=False, ax=None):
         else:
             spectrum = spectrum_observed
 
+        label = observer.name if observer.name and len(observer.name) else group.observers.index(observer)
+
         if spectrum.samples.size > 1:
-            ax.plot(spectrum.wavelengths, spectrum.samples, label=observer.name)
+            ax.plot(spectrum.wavelengths, spectrum.samples, label=label)
         else:
-            ax.plot(spectrum.wavelengths, spectrum.samples, marker='o', ls='none', label=observer.name)
+            ax.plot(spectrum.wavelengths, spectrum.samples, marker='o', ls='none', label=label)
     if isinstance(pipelines[0], SpectralRadiancePipeline0D):
         ylabel = 'Spectral radiance [photon/s/m^2/str/nm]' if in_photons else 'Spectral radiance [W/m^2/str/nm]'
     else:  # SpectralPowerPipeline0D
