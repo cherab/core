@@ -319,33 +319,7 @@ class SpectroscopicFibreOpticGroup(SpectroscopicObserver0DGroup):
        >>> group.plot_total_signal(item='MyMonoPipeline')  # plot the total signals
        >>> plt.show()
     """
-
-    @Observer0DGroup.observers.setter
-    def observers(self, value):
-        if not isinstance(value, (list, tuple)):
-            raise TypeError("The sight_lines attribute of FibreOpticGroup must be a list or tuple of SpectroscopicFibreOptics.")
-
-        for sight_line in value:
-            if not isinstance(sight_line, SpectroscopicFibreOptic):
-                raise TypeError("The sight_lines attribute of FibreOpticGroup must be a list or tuple of "
-                                "SpectroscopicFibreOptics. Value {} is not a SpectroscopicFibreOptic.".format(sight_line))
-
-        # Prevent external changes being made to this list
-        for sight_line in value:
-            sight_line.parent = self
-
-        self._observers = tuple(value)
-    
-    def add_observer(self, fibre):
-        """
-        Adds new fibre optic to the group.
-
-        :param SpectroscopicFibreOptic fibre: Fibre optic to add.
-        """
-        if not isinstance(fibre, SpectroscopicFibreOptic):
-            raise TypeError("The fiber argument must be of type SpectroscopicFibreOptic.")
-        fibre.parent = self
-        self._observers = self._observers + (fibre, )
+    _OBSERVER_TYPE = SpectroscopicFibreOptic
 
     @property
     def acceptance_angle(self):
@@ -425,31 +399,22 @@ class SpectroscopicSightLineGroup(SpectroscopicObserver0DGroup):
        >>> group.plot_total_signal(item='MyMonoPipeline')  # plot the total signals
        >>> plt.show()
     """
+    _OBSERVER_TYPE = SpectroscopicSightLine
 
-    @Observer0DGroup.observers.setter
-    def sight_lines(self, value):
-        if not isinstance(value, (list, tuple)):
-            raise TypeError("The sight_lines attribute of LineOfSightGroup must be a list or tuple of SpectroscopicSightLines.")
+    @property
+    def sensitivity(self):
+        # A list of observer sensitivities.
+        return [observer.sensitivity for observer in self._observers]
 
-        for sight_line in value:
-            if not isinstance(sight_line, SpectroscopicSightLine):
-                raise TypeError("The sight_lines attribute of LineOfSightGroup must be a list or tuple of "
-                                "SpectroscopicSightLines. Value {} is not a SpectroscopicSightLine.".format(sight_line))
-
-        # Prevent external changes being made to this list
-        for sight_line in value:
-            sight_line.parent = self
-
-        self._observers = tuple(value)
-
-    def add_observer(self, sight_line):
-        """
-        Adds new line of sight to the group.
-
-        :param SpectroscopicSightLine sight_line: Sight line to add.
-        """
-        if not isinstance(sight_line, SpectroscopicSightLine):
-            raise TypeError("The sight_line argument must be of type SpectroscopicSightLine.")
-
-        sight_line.parent = self
-        self._observers = self._observers + (sight_line,)
+    @sensitivity.setter
+    def names(self, value):
+        if isinstance(value, (list, tuple, ndarray)):
+            if len(value) == len(self._observers):
+                for observer, v in zip(self._observers, value):
+                    observer.sensitivity = v
+            else:
+                raise ValueError("The length of 'sensitivity' ({}) ".format(len(value)) +
+                                 "mismatches the number of observers ({}).".format(len(self._observers)))
+        else:
+            for observer in self._observers:
+                observer.sensitivity = value

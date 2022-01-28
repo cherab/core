@@ -30,8 +30,6 @@ class FibreOpticGroup(Observer0DGroup):
     observers as a scene-graph parent. Allows combined observation and display
     control simultaneously.
 
-    :ivar list observers: A list of fibre optics (FibreOptic instances) in this
-                            group.
     :ivar list/float acceptance_angle: The angle in degrees between the z axis and the cone
                                        surface which defines the fibres solid angle sampling
                                        area. The same value can be shared between all observers,
@@ -77,33 +75,7 @@ class FibreOpticGroup(Observer0DGroup):
        >>> plot_group_total(group, item='MyMonoPipeline')  # plot the total signals
        >>> plt.show()
     """
-
-    @Observer0DGroup.observers.setter
-    def observers(self, value):
-        if not isinstance(value, (list, tuple)):
-            raise TypeError("The observers attribute of FibreOpticGroup must be a list or tuple of FibreOptics.")
-
-        for observer in value:
-            if not isinstance(observer, FibreOptic):
-                raise TypeError("The observers attribute of FibreOpticGroup must be a list or tuple of "
-                                "FibreOptics. Value {} is not a FibreOptic.".format(observer))
-
-        # Prevent external changes being made to this list
-        for observer in value:
-            observer.parent = self
-
-        self._observers = tuple(value)
-    
-    def add_observer(self, fibre):
-        """
-        Adds new fibre optic to the group.
-
-        :param FibreOptic fibre: Fibre optic to add.
-        """
-        if not isinstance(fibre, FibreOptic):
-            raise TypeError("The fiber argument must be of type FibreOptic.")
-        fibre.parent = self
-        self._observers = self._observers + (fibre, )
+    _OBSERVER_TYPE = FibreOptic
 
     @property
     def acceptance_angle(self):

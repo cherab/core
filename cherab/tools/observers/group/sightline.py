@@ -16,6 +16,7 @@
 # See the Licence for the specific language governing permissions and limitations
 # under the Licence.
 
+from numpy import ndarray
 from raysect.optical.observer import SightLine
 
 from .base import Observer0DGroup
@@ -67,31 +68,22 @@ class SightLineGroup(Observer0DGroup):
        >>> plot_group_total(group, item='MyMonoPipeline')  # plot the total signals
        >>> plt.show()
     """
+    _OBSERVER_TYPE = SightLine
 
-    @Observer0DGroup.observers.setter
-    def observers(self, value):
-        if not isinstance(value, (list, tuple)):
-            raise TypeError("The observers attribute of SightLineGroup must be a list or tuple of SightLines.")
+    @property
+    def sensitivity(self):
+        # A list of observer sensitivities.
+        return [observer.sensitivity for observer in self._observers]
 
-        for observer in value:
-            if not isinstance(observer, SightLine):
-                raise TypeError("The observers attribute of SightLineGroup must be a list or tuple of "
-                                "SightLines. Value {} is not a SightLine.".format(observer))
-
-        # Prevent external changes being made to this list
-        for observer in value:
-            observer.parent = self
-
-        self._observers = tuple(value)
-
-    def add_observer(self, observer):
-        """
-        Adds new line of sight to the group.
-
-        :param SightLine observer: observer to add.
-        """
-        if not isinstance(observer, SightLine):
-            raise TypeError("The observer argument must be of type SightLine.")
-
-        observer.parent = self
-        self._observers = self._observers + (observer,)
+    @sensitivity.setter
+    def names(self, value):
+        if isinstance(value, (list, tuple, ndarray)):
+            if len(value) == len(self._observers):
+                for observer, v in zip(self._observers, value):
+                    observer.sensitivity = v
+            else:
+                raise ValueError("The length of 'sensitivity' ({}) ".format(len(value)) +
+                                 "mismatches the number of observers ({}).".format(len(self._observers)))
+        else:
+            for observer in self._observers:
+                observer.sensitivity = value

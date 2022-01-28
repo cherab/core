@@ -49,6 +49,8 @@ class Observer0DGroup(Node):
     :ivar list/int pixel_samples: The number of samples to take per pixel.
     :ivar list/int samples_per_task: Minimum number of samples to request per task.
     """
+    _OBSERVER_TYPE = Observer0D
+
     def __init__(self, parent=None, transform=None, name=None, observers=None):
         super().__init__(parent=parent, transform=transform, name=name)
         self._observers = tuple()
@@ -79,7 +81,7 @@ class Observer0DGroup(Node):
     @property
     def observers(self):
         """
-        A list of all Observer0D object assigned to the group.
+        A list of all observer object assigned to the group.
         The group is set as a parent to any added observer.
 
         :rtype: tuple
@@ -89,10 +91,10 @@ class Observer0DGroup(Node):
     @observers.setter
     def observers(self, value):
         if not isinstance(value, (list, tuple)):
-            raise TypeError("The observers attribute of Observer0DGroup must be a list or tuple of Observer0D.")
+            raise TypeError("The observers attribute of {} must be a list or tuple of {}.".format(self.__name__, self._OBSERVER_TYPE))
 
-        if not all(isinstance(val, Observer0D) for val in value):
-            raise ValueError('All observers assigned to the group must be of type Observer0D')
+        if not all(isinstance(val, self._OBSERVER_TYPE) for val in value):
+            raise ValueError('All observers assigned to the group must be of type {}'.format(self._OBSERVER_TYPE))
         
         for observer in value:
             observer.parent = self
@@ -100,13 +102,9 @@ class Observer0DGroup(Node):
         self._observers = tuple(value)
 
     def add_observer(self, observer):
-        """
-        Adds new observer to the group
-
-        :param Observer0D observer: observer to add
-        """
-        if not isinstance(observer, Observer0D):
-            raise ValueError("Can only add Observer0D objects")
+        """Adds new observer to the group."""
+        if not isinstance(observer, self._OBSERVER_TYPE):
+            raise ValueError("Can only add {} objects".format(self._OBSERVER_TYPE))
         observer.parent = self
         self._observers = self._observers + (observer, )
 

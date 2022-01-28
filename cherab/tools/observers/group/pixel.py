@@ -32,35 +32,8 @@ class PixelGroup(Observer0DGroup):
 
     :ivar list x_width: Width of pixel along local x axis
     :ivar list y_width: Width of pixel along local y axis
-
     """
-
-    @Observer0DGroup.observers.setter
-    def observers(self, value):
-        if not isinstance(value, (list, tuple)):
-            raise TypeError("The observers attribute of PixelGroup must be a list or tuple of Pixels.")
-
-        for observer in value:
-            if not isinstance(observer, Pixel):
-                raise TypeError("The observers attribute of PixelGroup must be a list or tuple of "
-                                "Pixel. Value {} is not a Pixel.".format(observer))
-
-        # Prevent external changes being made to this list
-        for observer in value:
-            observer.parent = self
-
-        self._observers = tuple(value)
-
-    def add_observer(self, pixel):
-        """
-        Adds new pixel to the group.
-
-        :param Pixel pixel: Pixel to add.
-        """
-        if not isinstance(pixel, Pixel):
-            raise TypeError("The pixel argument must be of type Pixel.")
-        pixel.parent = self
-        self._observers = self._observers + (pixel,)
+    _OBSERVER_TYPE = Pixel
 
     @property
     def x_width(self):

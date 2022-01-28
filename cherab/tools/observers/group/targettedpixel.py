@@ -35,33 +35,7 @@ class TargettedPixelGroup(Observer0DGroup):
     :ivar list targets: Targets for preferential sampling
     :ivar list targetted_path_prob: Probability of ray being casted at the target
     """
-
-    @Observer0DGroup.observers.setter
-    def observers(self, value):
-        if not isinstance(value, (list, tuple)):
-            raise TypeError("The observers attribute of TargettedPixelGroup must be a list or tuple of TargettedPixel.")
-
-        for observer in value:
-            if not isinstance(observer, TargettedPixel):
-                raise TypeError("The observers attribute of TargettedPixelGroup must be a list or tuple of "
-                                "TargettedPixel. Value {} is not a TargettedPixel.".format(observer))
-
-        # Prevent external changes being made to this list
-        for observer in value:
-            observer.parent = self
-
-        self._observers = tuple(value)
-
-    def add_observer(self, observer):
-        """
-        Adds new targetted pixel to the group.
-
-        :param TargettedPixel observer: Targetted pixel to add.
-        """
-        if not isinstance(observer, TargettedPixel):
-            raise TypeError("The observer argument must be of type TargettedPixel.")
-        observer.parent = self
-        self._observers = self._observers + (observer,)
+    _OBSERVER_TYPE = TargettedPixel
 
     @property
     def x_width(self):
