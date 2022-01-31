@@ -5,7 +5,7 @@ Release 1.4.0 (TBD)
 -------------------
 
 New:
-* Make f_profile (toroidal flux) a read-only attribute of EFITEquilibrium. (#355)
+* Make f_profile (current flux) a read-only attribute of EFITEquilibrium. (#355)
 
 Release 1.3.0 (8 Dec 2021)
 --------------------------
