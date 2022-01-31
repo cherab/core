@@ -43,9 +43,8 @@ cdef class EFITEquilibrium:
         readonly double time
         readonly np.ndarray lcfs_polygon, limiter_polygon
         readonly np.ndarray psi_data, r_data, z_data
-        readonly Function1D q
+        readonly Function1D q, f_profile
         double _b_vacuum_magnitude, _b_vacuum_radius
-        Function1D _f_profile
         Function2D _dpsidr, _dpsidz
 
 

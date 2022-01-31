@@ -1,8 +1,14 @@
 Project Changelog
 =================
 
-Release 1.3.0 (8 Dec 2021)
+Release 1.4.0 (TBD)
 -------------------
+
+New:
+* Make f_profile (toroidal flux) a read-only attribute of EFITEquilibrium. (#355)
+
+Release 1.3.0 (8 Dec 2021)
+--------------------------
 
 API changes:
 * Use of Cherab's interpolators is now deprecated in favour of those upstream in Raysect.
