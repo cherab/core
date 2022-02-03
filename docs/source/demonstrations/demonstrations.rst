@@ -249,6 +249,11 @@ Geometry Matrices
 Code examples gallery
 =====================
 
+.. note::
+   These code examples are included for historical reasons.
+   They may require specific (sometimes older) versions of Cherab's submodules to work.
+   Many also require access to specific machine data.
+
 .. list-table::
    :widths: 28 50 22
    :header-rows: 1

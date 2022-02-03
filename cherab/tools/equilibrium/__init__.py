@@ -21,4 +21,3 @@ from .efit import EFITEquilibrium
 from .plot import plot_equilibrium
 from .eqdsk import import_eqdsk
 from .example import example_equilibrium
-# from .equ import import_equ_psi

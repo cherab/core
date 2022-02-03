@@ -1,6 +1,6 @@
-# Copyright 2016-2018 Euratom
-# Copyright 2016-2018 United Kingdom Atomic Energy Authority
-# Copyright 2016-2018 Centro de Investigaciones Energéticas, Medioambientales y Tecnológicas
+# Copyright 2016-2021 Euratom
+# Copyright 2016-2021 United Kingdom Atomic Energy Authority
+# Copyright 2016-2021 Centro de Investigaciones Energéticas, Medioambientales y Tecnológicas
 #
 # Licensed under the EUPL, Version 1.1 or – as soon they will be approved by the
 # European Commission - subsequent versions of the EUPL (the "Licence");
@@ -16,10 +16,14 @@
 # See the Licence for the specific language governing permissions and limitations
 # under the Licence.
 
+import numpy as np
+
 from cherab.core.utility.conversion import PhotonToJ
 
 cimport cython
-from cherab.core.math cimport Interpolate1DCubic, Interpolate2DCubic
+from libc.math cimport INFINITY, log10
+from raysect.core.math.function.float cimport Interpolator1DArray, Interpolator2DArray, Constant2D, Arg2D
+from cherab.core.math cimport IsoMapper2D
 
 # todo: clarify variables
 
@@ -40,8 +44,8 @@ cdef class BeamStoppingRate(CoreBeamStoppingRate):
         e = data["e"]                          # eV/amu
         n = data["n"]                          # m^-3
         t = data["t"]                          # eV
-        sen = data["sen"]                      # m^3/s
-        st = data["st"] / data["sref"]         # dimensionless
+        sen = np.log10(data["sen"])                      # m^3/s
+        st = np.log10(data["st"] / data["sref"])         # dimensionless
 
         # store limits of data
         self.beam_energy_range = e.min(), e.max()
@@ -49,8 +53,17 @@ cdef class BeamStoppingRate(CoreBeamStoppingRate):
         self.temperature_range = t.min(), t.max()
 
         # interpolate
-        self._npl_eb = Interpolate2DCubic(e, n, sen, tolerate_single_value=True, extrapolate=extrapolate, extrapolation_type="quadratic")
-        self._tp = Interpolate1DCubic(t, st, tolerate_single_value=True, extrapolate=extrapolate, extrapolation_type="quadratic")
+        extrapolation_type_2d = 'linear' if extrapolate else 'none'
+        extrapolation_type_1d = 'quadratic' if extrapolate else 'none'
+        if len(e) == 1 and len(n) == 1:
+            self._npl_eb = Constant2D(sen[0, 0])
+        elif len(e) == 1:
+            self._npl_eb = IsoMapper2D(Arg2D('y'), Interpolator1DArray(np.log10(n), sen[0], 'cubic', extrapolation_type_1d, INFINITY))
+        elif len(n) == 1:
+            self._npl_eb = IsoMapper2D(Arg2D('x'), Interpolator1DArray(np.log10(e), sen[:, 0], 'cubic', extrapolation_type_1d, INFINITY))
+        else:
+            self._npl_eb = Interpolator2DArray(np.log10(e), np.log10(n), sen, 'cubic', extrapolation_type_2d, INFINITY, INFINITY)
+        self._tp = Interpolator1DArray(np.log10(t), st, 'cubic', extrapolation_type_1d, INFINITY)
 
     cpdef double evaluate(self, double energy, double density, double temperature) except? -1e999:
         """
@@ -64,17 +77,18 @@ cdef class BeamStoppingRate(CoreBeamStoppingRate):
         :return: The beam stopping coefficient in m^3.s^-1
         """
 
-        cdef double val
+        # need to handle zeros, also density and temperature can become negative due to cubic interpolation
+        if energy < 1.e-300:
+            energy = 1.e-300
 
-        val = self._npl_eb.evaluate(energy, density)
-        if val <= 0:
-            return 0.0
+        if density < 1.e-300:
+            density = 1.e-300
 
-        val *= self._tp.evaluate(temperature)
-        if val <= 0:
-            return 0.0
+        if temperature < 1.e-300:
+            temperature = 1.e-300
 
-        return val
+        # calculate rate and convert from log10 space to linear space
+        return 10 ** (self._npl_eb.evaluate(log10(energy), log10(density)) + self._tp.evaluate(log10(temperature)))
 
 
 cdef class NullBeamStoppingRate(CoreBeamStoppingRate):
@@ -104,8 +118,8 @@ cdef class BeamPopulationRate(CoreBeamPopulationRate):
         e = data["e"]                          # eV/amu
         n = data["n"]                          # m^-3
         t = data["t"]                          # eV
-        sen = data["sen"]                      # dimensionless
-        st = data["st"] / data["sref"]         # dimensionless
+        sen = np.log10(data["sen"])                      # dimensionless
+        st = np.log10(data["st"] / data["sref"])         # dimensionless
 
         # store limits of data
         self.beam_energy_range = e.min(), e.max()
@@ -113,8 +127,17 @@ cdef class BeamPopulationRate(CoreBeamPopulationRate):
         self.temperature_range = t.min(), t.max()
 
         # interpolate
-        self._npl_eb = Interpolate2DCubic(e, n, sen, tolerate_single_value=True, extrapolate=extrapolate, extrapolation_type="quadratic")
-        self._tp = Interpolate1DCubic(t, st, tolerate_single_value=True, extrapolate=extrapolate, extrapolation_type="quadratic")
+        extrapolation_type_2d = 'linear' if extrapolate else 'none'
+        extrapolation_type_1d = 'quadratic' if extrapolate else 'none'
+        if len(e) == 1 and len(n) == 1:
+            self._npl_eb = Constant2D(sen[0, 0])
+        elif len(e) == 1:
+            self._npl_eb = IsoMapper2D(Arg2D('y'), Interpolator1DArray(np.log10(n), sen[0], 'cubic', extrapolation_type_1d, INFINITY))
+        elif len(n) == 1:
+            self._npl_eb = IsoMapper2D(Arg2D('x'), Interpolator1DArray(np.log10(e), sen[:, 0], 'cubic', extrapolation_type_1d, INFINITY))
+        else:
+            self._npl_eb = Interpolator2DArray(np.log10(e), np.log10(n), sen, 'cubic', extrapolation_type_2d, INFINITY, INFINITY)
+        self._tp = Interpolator1DArray(np.log10(t), st, 'cubic', extrapolation_type_1d, INFINITY)
 
     cpdef double evaluate(self, double energy, double density, double temperature) except? -1e999:
         """
@@ -128,17 +151,18 @@ cdef class BeamPopulationRate(CoreBeamPopulationRate):
         :return: The beam population coefficient in dimensionless units.
         """
 
-        cdef double val
+        # need to handle zeros, also density and temperature can become negative due to cubic interpolation
+        if energy < 1.e-300:
+            energy = 1.e-300
 
-        val = self._npl_eb.evaluate(energy, density)
-        if val <= 0:
-            return 0.0
+        if density < 1.e-300:
+            density = 1.e-300
 
-        val *= self._tp.evaluate(temperature)
-        if val <= 0:
-            return 0.0
+        if temperature < 1.e-300:
+            temperature = 1.e-300
 
-        return val
+        # calculate rate and convert from log10 space to linear space
+        return 10 ** (self._npl_eb.evaluate(log10(energy), log10(density)) + self._tp.evaluate(log10(temperature)))
 
 
 cdef class NullBeamPopulationRate(CoreBeamPopulationRate):
@@ -170,8 +194,8 @@ cdef class BeamEmissionPEC(CoreBeamEmissionPEC):
         e = data["e"]                                   # eV/amu
         n = data["n"]                                   # m^-3
         t = data["t"]                                   # eV
-        sen = PhotonToJ.to(data["sen"], wavelength)     # W.m^3/s
-        st = data["st"] / data["sref"]                  # dimensionless
+        sen = np.log10(PhotonToJ.to(data["sen"], wavelength))     # W.m^3/s
+        st = np.log10(data["st"] / data["sref"])                  # dimensionless
 
         # store limits of data
         self.beam_energy_range = e.min(), e.max()
@@ -179,8 +203,17 @@ cdef class BeamEmissionPEC(CoreBeamEmissionPEC):
         self.temperature_range = t.min(), t.max()
 
         # interpolate
-        self._npl_eb = Interpolate2DCubic(e, n, sen, tolerate_single_value=True, extrapolate=extrapolate, extrapolation_type="quadratic")
-        self._tp = Interpolate1DCubic(t, st, tolerate_single_value=True, extrapolate=extrapolate, extrapolation_type="quadratic")
+        extrapolation_type_2d = 'linear' if extrapolate else 'none'
+        extrapolation_type_1d = 'quadratic' if extrapolate else 'none'
+        if len(e) == 1 and len(n) == 1:
+            self._npl_eb = Constant2D(sen[0, 0])
+        elif len(e) == 1:
+            self._npl_eb = IsoMapper2D(Arg2D('y'), Interpolator1DArray(np.log10(n), sen[0], 'cubic', extrapolation_type_1d, INFINITY))
+        elif len(n) == 1:
+            self._npl_eb = IsoMapper2D(Arg2D('x'), Interpolator1DArray(np.log10(e), sen[:, 0], 'cubic', extrapolation_type_1d, INFINITY))
+        else:
+            self._npl_eb = Interpolator2DArray(np.log10(e), np.log10(n), sen, 'cubic', extrapolation_type_2d, INFINITY, INFINITY)
+        self._tp = Interpolator1DArray(np.log10(t), st, 'cubic', extrapolation_type_1d, INFINITY)
 
     cpdef double evaluate(self, double energy, double density, double temperature) except? -1e999:
         """
@@ -194,17 +227,18 @@ cdef class BeamEmissionPEC(CoreBeamEmissionPEC):
         :return: The beam emission coefficient in m^3.s^-1
         """
 
-        cdef double val
+        # need to handle zeros, also density and temperature can become negative due to cubic interpolation
+        if energy < 1.e-300:
+            energy = 1.e-300
 
-        val = self._npl_eb.evaluate(energy, density)
-        if val <= 0:
-            return 0.0
+        if density < 1.e-300:
+            density = 1.e-300
 
-        val *= self._tp.evaluate(temperature)
-        if val <= 0:
-            return 0.0
+        if temperature < 1.e-300:
+            temperature = 1.e-300
 
-        return val
+        # calculate rate and convert from log10 space to linear space
+        return 10 ** (self._npl_eb.evaluate(log10(energy), log10(density)) + self._tp.evaluate(log10(temperature)))
 
 
 cdef class NullBeamEmissionPEC(CoreBeamEmissionPEC):

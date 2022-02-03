@@ -1,6 +1,6 @@
-# Copyright 2016-2018 Euratom
-# Copyright 2016-2018 United Kingdom Atomic Energy Authority
-# Copyright 2016-2018 Centro de Investigaciones Energéticas, Medioambientales y Tecnológicas
+# Copyright 2016-2021 Euratom
+# Copyright 2016-2021 United Kingdom Atomic Energy Authority
+# Copyright 2016-2021 Centro de Investigaciones Energéticas, Medioambientales y Tecnológicas
 #
 # Licensed under the EUPL, Version 1.1 or – as soon they will be approved by the
 # European Commission - subsequent versions of the EUPL (the "Licence");
@@ -19,19 +19,18 @@
 from cherab.core cimport IonisationRate as CoreIonisationRate
 from cherab.core cimport RecombinationRate as CoreRecombinationRate
 from cherab.core cimport ThermalCXRate as CoreThermalCXRate
-from cherab.core.math cimport Interpolate2DCubic
+from cherab.core.math cimport Function2D
 
 
 cdef class IonisationRate(CoreIonisationRate):
 
     cdef:
         readonly dict raw_data
-        readonly double wavelength
         readonly tuple density_range, temperature_range
-        Interpolate2DCubic _rate
+        Function2D _rate
 
 
-cdef class NullImpactExcitationRate(CoreIonisationRate):
+cdef class NullIonisationRate(CoreIonisationRate):
     pass
 
 
@@ -39,9 +38,8 @@ cdef class RecombinationRate(CoreRecombinationRate):
 
     cdef:
         readonly dict raw_data
-        readonly double wavelength
         readonly tuple density_range, temperature_range
-        Interpolate2DCubic _rate
+        Function2D _rate
 
 
 cdef class NullRecombinationRate(CoreRecombinationRate):
@@ -52,9 +50,8 @@ cdef class ThermalCXRate(CoreThermalCXRate):
 
     cdef:
         readonly dict raw_data
-        readonly double wavelength
         readonly tuple density_range, temperature_range
-        Interpolate2DCubic _rate
+        Function2D _rate
 
 
 cdef class NullThermalCXRate(CoreThermalCXRate):
