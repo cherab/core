@@ -78,6 +78,9 @@ class Observer0DGroup(Node):
                 raise TypeError("{} key must be of type int, slice or str.".format(self.__class__.__name__))
         return selected
 
+    def __len__(self):
+        return len(self._observers)
+
     @property
     def observers(self):
         """
@@ -91,14 +94,11 @@ class Observer0DGroup(Node):
     @observers.setter
     def observers(self, value):
         if not isinstance(value, (list, tuple)):
-            raise TypeError("The observers attribute of {} must be a list or tuple of {}.".format(self.__name__, self._OBSERVER_TYPE))
-
+            raise TypeError("The observers attribute must be a list or tuple of {}.".format(self._OBSERVER_TYPE))
         if not all(isinstance(val, self._OBSERVER_TYPE) for val in value):
             raise ValueError('All observers assigned to the group must be of type {}'.format(self._OBSERVER_TYPE))
-        
         for observer in value:
             observer.parent = self
-
         self._observers = tuple(value)
 
     def add_observer(self, observer):
@@ -134,7 +134,7 @@ class Observer0DGroup(Node):
         :rtype: list
         """
         return [observer.pipelines for observer in self._observers]
-    
+
     @pipelines.setter
     def pipelines(self, pipelist):
         if len(pipelist) == len(self._observers):
@@ -276,7 +276,7 @@ class Observer0DGroup(Node):
         else:
             for observer in self._observers:
                 observer.ray_max_depth = value
-   
+
     @property
     def ray_important_path_weight(self):
         # Relative weight of important path sampling.
@@ -330,7 +330,7 @@ class Observer0DGroup(Node):
         else:
             for observer in self._observers:
                 observer.samples_per_task = value
-    
+
     def observe(self):
         """
         Starts the observation.
@@ -342,13 +342,13 @@ class Observer0DGroup(Node):
         """
         Creates and connects a new set of given pipelines to each observer in the group.
 
-        Pipeline classes are instantiated using parameters specified in approrpiate dict from keywords list.
+        Pipeline classes are instantiated using parameters specified in appropriate dict from keywords list.
         If keywords list is provided, it length must match the number of provided pipeline classes.
 
         :param list pipeline_classes: list of pipeline classes to be connected with observers
         :param list keywords_list: list of dicts with keywords passed to init methods of pipeline classes
                                    its length must match the number of pipeline classes
-                                   for default parameters place an empty dict to approriate place in the list
+                                   for default parameters place an empty dict to appropriate place in the list
         :param bool suppress_display_progress: Toggles setting display_progress to False for each compatible pipeline (default=True)
 
         .. code-block:: pycon

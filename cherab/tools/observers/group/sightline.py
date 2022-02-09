@@ -76,7 +76,7 @@ class SightLineGroup(Observer0DGroup):
         return [observer.sensitivity for observer in self._observers]
 
     @sensitivity.setter
-    def names(self, value):
+    def sensitivity(self, value):
         if isinstance(value, (list, tuple, ndarray)):
             if len(value) == len(self._observers):
                 for observer, v in zip(self._observers, value):
