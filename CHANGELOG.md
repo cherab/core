@@ -8,7 +8,9 @@ Bug fixes:
 * Fix wavelength indexing in Bremsstrahlung emission model. (#352)
 
 New:
+* Make f_profile (current flux) a read-only attribute of EFITEquilibrium. (#355)
 * Add new classes for free-free Gaunt factors and improve accuracy of the Gaunt factor used in Bremsstrahlung emission model. (#352)
+
 
 Release 1.3.0 (8 Dec 2021)
 --------------------------
