@@ -21,7 +21,7 @@ from cherab.core.math cimport Function2D
 
 cdef class FreeFreeGauntFactor():
 
-    cpdef double evaluate(self, double zeff, double temperature, double wavelength) except? -1e999
+    cpdef double evaluate(self, double z, double temperature, double wavelength) except? -1e999
 
 
 cdef class InterpolatedFreeFreeGauntFactor(FreeFreeGauntFactor):

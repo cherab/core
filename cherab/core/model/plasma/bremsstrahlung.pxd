@@ -18,6 +18,7 @@
 
 # cython: language_level=3
 
+from numpy cimport ndarray
 from cherab.core.atomic cimport FreeFreeGauntFactor
 from cherab.core.plasma cimport PlasmaModel
 
@@ -26,5 +27,11 @@ cdef class Bremsstrahlung(PlasmaModel):
 
     cdef:
         FreeFreeGauntFactor _gaunt_factor
+        ndarray _species_charge, _species_density
+        double[::1] _species_density_mv, _species_charge_mv
 
-    cdef double _bremsstrahlung(self, double wvl, double te, double ne, double zeff)
+    cdef double _bremsstrahlung(self, double wvl, double te, double ne)
+
+    cdef int _populate_cache(self) except -1
+
+

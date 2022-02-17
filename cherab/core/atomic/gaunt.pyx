@@ -37,11 +37,11 @@ cdef class FreeFreeGauntFactor():
     The base class for temperature-averaged free-free Gaunt factors.
     """
 
-    cpdef double evaluate(self, double zeff, double temperature, double wavelength) except? -1e999:
+    cpdef double evaluate(self, double z, double temperature, double wavelength) except? -1e999:
         """
         Returns the temperature-averaged free-free Gaunt factor for the supplied parameters.
 
-        :param double zeff: Effective Z of the plasma.
+        :param double z: Species charge or effective plasma charge.
         :param double temperature: Electron temperature in eV.
         :param double wavelength: Spectral wavelength.
 
@@ -49,24 +49,24 @@ cdef class FreeFreeGauntFactor():
         """
         raise NotImplementedError("The evaluate() virtual method must be implemented.")
 
-    def __call__(self, double zeff, double temperature, double wavelength):
+    def __call__(self, double z, double temperature, double wavelength):
         """
         Returns the temperature-averaged free-free Gaunt factor for the supplied parameters.
 
-        :param double zeff: Effective Z of the plasma.
+        :param double z: Species charge or effective plasma charge.
         :param double temperature: Electron temperature in eV.
         :param double wavelength: Spectral wavelength.
 
         :return: free-free Gaunt factor
         """
 
-        return self.evaluate(zeff, temperature, wavelength)
+        return self.evaluate(z, temperature, wavelength)
 
 
 cdef class InterpolatedFreeFreeGauntFactor(FreeFreeGauntFactor):
     r"""
     The temperature-averaged free-free Gaunt factors interpolated in the space of parameters:
-    :math:`u = h{\nu}/kT` and :math:`{\gamma}^{2} = Z_{eff}^{2}Ry/kT`.
+    :math:`u = h{\nu}/kT` and :math:`{\gamma}^{2} = Z^{2}Ry/kT`.
     See T.R. Carson, 1988, Astron. & Astrophys., 189,
     `319 <https://ui.adsabs.harvard.edu/#abs/1988A&A...189..319C/abstract>`_ for details.
 
@@ -106,11 +106,11 @@ cdef class InterpolatedFreeFreeGauntFactor(FreeFreeGauntFactor):
         self._gaunt_factor = Interpolator2DArray(np.log10(u), np.log10(gamma2), gaunt_factor, 'cubic', 'none', 0, 0)
 
     @cython.cdivision(True)
-    cpdef double evaluate(self, double zeff, double temperature, double wavelength) except? -1e999:
+    cpdef double evaluate(self, double z, double temperature, double wavelength) except? -1e999:
         """
         Returns the temperature-averaged free-free Gaunt factor for the supplied parameters.
 
-        :param double zeff: Effective Z of the plasma.
+        :param double z: Species charge or effective plasma charge.
         :param double temperature: Electron temperature in eV.
         :param double wavelength: Spectral wavelength.
 
@@ -120,11 +120,11 @@ cdef class InterpolatedFreeFreeGauntFactor(FreeFreeGauntFactor):
         cdef:
             double u, gamma2
 
-        if zeff == 0:
+        if z == 0:
 
             return 0
 
-        gamma2 = zeff * zeff * RYDBERG_CONSTANT_EV / temperature
+        gamma2 = z * z * RYDBERG_CONSTANT_EV / temperature
         u = PH_TO_EV_FACTOR / (temperature * wavelength)
 
         # classical limit
