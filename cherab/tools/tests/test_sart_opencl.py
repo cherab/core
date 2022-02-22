@@ -16,10 +16,12 @@
 # See the Licence for the specific language governing permissions and limitations
 # under the Licence.
 
+import gc
 import unittest
 import os
 import numpy as np
 from cherab.tools.inversions import SartOpencl
+from cherab.tools.inversions.opencl import device_select
 try:
     import pyopencl as cl
 except ImportError:
@@ -47,16 +49,24 @@ class TestSartOpencl(unittest.TestCase):
         # true emissivity in float32, shape: (11, 8)
         true_emissivity = np.load(os.path.join(os.path.dirname(__file__), 'data/true_emissivity.npy'))
         self.true_emissivity = true_emissivity.flatten()
+        # Any OpenCL device, including a CPU, will do for the tests. This enables
+        # POCL to be installed as an OpenCL driver for testing.
+        self.device = device_select(device_type=cl.device_type.ALL)
+
+    def tearDown(self):
+        # Ensure the OpenCL device is properly released between tests.
+        self.device = None
+        gc.collect()
 
     def test_inversion(self):
         with SartOpencl(self.gm, block_size=256, copy_column_major=True, use_atomic=False,
-                        steps_per_thread=64, block_size_row_maj=64) as inv_sart:
+                        steps_per_thread=64, block_size_row_maj=64, device=self.device) as inv_sart:
             solution, residual = inv_sart(self.receiver)
         self.assertTrue(np.allclose(solution, self.true_emissivity, atol=1.e-2))
 
     def test_inversion_atomic(self):
         with SartOpencl(self.gm, block_size=256, copy_column_major=True, use_atomic=True,
-                        steps_per_thread=64, block_size_row_maj=64) as inv_sart:
+                        steps_per_thread=64, block_size_row_maj=64, device=self.device) as inv_sart:
             solution, residual = inv_sart(self.receiver)
         self.assertTrue(np.allclose(solution, self.true_emissivity, atol=1.e-2))
 
@@ -65,6 +75,6 @@ class TestSartOpencl(unittest.TestCase):
         # The beta_laplace parameter is set to just 0.001 to reduce the impact of regularisation. This is a technical test only.
         laplacian_matrix = np.identity(self.gm.shape[1], dtype=np.float32)
         with SartOpencl(self.gm, laplacian_matrix=laplacian_matrix, block_size=256, copy_column_major=True, use_atomic=False,
-                        steps_per_thread=64, block_size_row_maj=64) as inv_sart:
+                        steps_per_thread=64, block_size_row_maj=64, device=self.device) as inv_sart:
             solution, residual = inv_sart(self.receiver, beta_laplace=0.001)
         self.assertTrue(np.allclose(solution / solution.max(), self.true_emissivity, atol=1.e-2))
