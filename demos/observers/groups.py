@@ -54,7 +54,7 @@ plasma.parent = world
 load_first_wall(world)
 
 # Create a group of optical fibres observing the divertor.
-group = FibreOpticGroup(parent=world, name='Divertor LoS array')
+group = FibreOpticGroup(parent=world, name='Divertor Fibre Optic Array')
 group.transform = rotate_z(22.5)
 origin = Point3D(2.3, 0, 1.25)
 angles = [-63.8, -66.5, -69.2, -71.9, -74.6]
@@ -65,7 +65,7 @@ for i in range(len(angles)):
     rot = rotate_basis(Vector3D(direction_r[i], 0, direction_z[i]), Vector3D(0, 1, 0))
     fibre = FibreOptic(name='{}'.format(i + 1), transform=trans*rot)
     group.add_observer(fibre)
-group.connect_pipelines([SpectralRadiancePipeline0D], [{'name': 'SpectralPipeline'}])
+group.connect_pipelines([SpectralRadiancePipeline0D], [{'name': 'SpectralRadiance'}])
 
 # Set observer parameters for all observers in group
 group.acceptance_angle = 1.4
@@ -84,7 +84,7 @@ group.observe()
 ###############################################################################
 
 plt.ion()
-plot_group_spectra(group, item='SpectralPipeline', in_photons=True)
-plot_group_total(group, item='SpectralPipeline')
+plot_group_spectra(group, item='SpectralRadiance', in_photons=True)
+plot_group_total(group, item='SpectralRadiance')
 plt.ioff()
 plt.show()

@@ -10,6 +10,11 @@ API changes:
 New:
 * Make f_profile (current flux) a read-only attribute of EFITEquilibrium. (#355)
 * Add group observer class for each of Raysect's 0D observers (#332)
+* Add a demo for observer group handling and plotting
+
+Bug Fixes:
+----------
+* Fixed generomak plasma edge data paths
 
 Release 1.3.0 (8 Dec 2021)
 --------------------------
