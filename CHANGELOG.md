@@ -4,8 +4,12 @@ Project Changelog
 Release 1.4.0 (TBD)
 -------------------
 
+Bug fixes:
+* Fix and improve OpenCL utility functions (#358).
+
 New:
 * Make f_profile (current flux) a read-only attribute of EFITEquilibrium. (#355)
+* Add verbose parameter to SartOpencl solver (default is False) (#358).
 
 Release 1.3.0 (8 Dec 2021)
 --------------------------
