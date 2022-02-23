@@ -101,7 +101,7 @@ def get_edge_interpolators():
     te = Discrete2DMesh(profiles["mesh"]["vertex_coords"],
                         profiles["mesh"]["triangles"],
                         profiles["electron"]["temperature"], limit=False)
-    ne = Discrete2DMesh.instance(te, profiles["electron"]["temperature"], limit=False)
+    ne = Discrete2DMesh.instance(te, profiles["electron"]["density"], limit=False)
 
     mesh_interp["electron"]["temperature"] = te
     mesh_interp["electron"]["density"] = ne
@@ -192,7 +192,7 @@ def get_edge_plasma(atomic_data=None, parent=None, name="Generomak edge plasma")
     inner_column.transform = translate(0, 0, -padding)
 
     plasma_geometry = Subtract(outer_column, inner_column)
-    geometry_transform = translate(0, 0, -outer_column.height / 2)
+    geometry_transform = translate(0, 0, z_range[0])
     
     # get distributions
     dists = get_edge_distributions()
