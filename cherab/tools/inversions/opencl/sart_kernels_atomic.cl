@@ -15,8 +15,6 @@
 //
 // See the Licence for the specific language governing permissions and limitations
 // under the Licence.
-//
-// The following code is created by Vladislav Neverov (NRC "Kurchatov Institute") for Cherab Spectroscopy Modelling Framework
 
 #ifndef BLOCK_SIZE
 #define BLOCK_SIZE 256
