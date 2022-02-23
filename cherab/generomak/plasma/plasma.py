@@ -39,7 +39,7 @@ def load_edge_profiles():
     """
     Loads Generomak edge plasma profiles
 
-    Return a single dictionary with available edge and plasma species temperature and 
+    Return a single dictionary with available edge and plasma species temperature and
     density profiles. The profiles are saved on a 2D triangular mesh.
 
     :return: dictionary with mesh, electron and plasma composition profiles
@@ -51,7 +51,7 @@ def load_edge_profiles():
        >>>
        >>>
        >>> data = load_edge_profiles()
-       >>> 
+       >>>
        >>> # create electron temperature 2D mesh interpolator
        >>> te = Discrete2DMesh(data["mesh"]["vertex_coords"],
                                data["mesh"]["triangles"],
@@ -116,9 +116,9 @@ def get_edge_interpolators():
             mesh_interp["composition"][elem_name][stage]["density"] = n
             mesh_interp["composition"][elem_name][stage]["element"] = stage_data["element"]
 
-    
+
     return mesh_interp.freeze()
-    
+
 def get_edge_distributions():
     """
     Provides Generomak edge Maxwellian distribution of plasma species
@@ -145,7 +145,7 @@ def get_edge_distributions():
                 element = lookup_isotope(elem_name)
             except ValueError:
                 element = lookup_element(elem_name)
-                
+
             n3d = AxisymmetricMapper(stage_data["density"])
             t3d = AxisymmetricMapper(stage_data["temperature"])
             mass = element.atomic_weight * atomic_mass
@@ -163,14 +163,14 @@ def get_edge_plasma(atomic_data=None, parent=None, name="Generomak edge plasma")
     :param name: name of the plasma node, defaults "Generomak edge plasma"
     :return: populated Plasma object
     """
-    
+
     # load Generomak equilibrium
     equilibrium = load_equilibrium()
 
     # create or check atomic_data
     if atomic_data is not None:
      if not isinstance(atomic_data, AtomicData):
-         raise ValueError("atomic_data has to be of type AtomicData")   
+         raise ValueError("atomic_data has to be of type AtomicData")
     else:
         atomic_data = OpenADAS()
 
@@ -193,7 +193,7 @@ def get_edge_plasma(atomic_data=None, parent=None, name="Generomak edge plasma")
 
     plasma_geometry = Subtract(outer_column, inner_column)
     geometry_transform = translate(0, 0, z_range[0])
-    
+
     # get distributions
     dists = get_edge_distributions()
 
