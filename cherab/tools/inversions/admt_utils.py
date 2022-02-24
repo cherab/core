@@ -26,7 +26,7 @@ for details.
 
 __author__ = "Jack Lovell, Oak Ridge National Laboratory"
 
-from collections import Mapping
+from collections.abc import Mapping
 import numpy as np
 
 

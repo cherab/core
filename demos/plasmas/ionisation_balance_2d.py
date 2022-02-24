@@ -2,8 +2,8 @@ from collections.abc import Iterable
 
 import matplotlib.pyplot as plt
 import numpy as np
+from raysect.core.math.function.float import Interpolator1DArray, Interpolator2DArray
 from cherab.core.atomic import neon, hydrogen, helium
-from cherab.core.math import Interpolate1DCubic, Interpolate2DCubic
 from cherab.openadas import OpenADAS
 from cherab.tools.equilibrium import example_equilibrium
 from cherab.tools.plasmas.ionisation_balance import (fractional_abundance, equilibrium_map3d_fractional,
@@ -106,13 +106,13 @@ n_element_profile_1d = double_parabola(psin_1d, 1e17, 1e17, 2, 2, 1) + normal(ps
 n_element2_profile_1d = double_parabola(psin_1d, 5e17, 1e17, 2, 2, 1)
 n_tcx_donor_profile_1d = exp_decay(psin_1d, 10, 3e16, 1)
 
-t_e_1d = Interpolate1DCubic(psin_1d, t_e_profile_1d)
-n_e_1d = Interpolate1DCubic(psin_1d, n_e_profile_1d)
+t_e_1d = Interpolator1DArray(psin_1d, t_e_profile_1d, 'cubic', 'none', 0)
+n_e_1d = Interpolator1DArray(psin_1d, n_e_profile_1d, 'cubic', 'none', 0)
 
-t_element_1d = Interpolate1DCubic(psin_1d, t_element_profile_1d)
-n_element_1d = Interpolate1DCubic(psin_1d, n_element_profile_1d)
-n_element2_1d = Interpolate1DCubic(psin_1d, n_element2_profile_1d)
-n_tcx_donor_1d = Interpolate1DCubic(psin_1d, n_tcx_donor_profile_1d)
+t_element_1d = Interpolator1DArray(psin_1d, t_element_profile_1d, 'cubic', 'none', 0)
+n_element_1d = Interpolator1DArray(psin_1d, n_element_profile_1d, 'cubic', 'none', 0)
+n_element2_1d = Interpolator1DArray(psin_1d, n_element2_profile_1d, 'cubic', 'none', 0)
+n_tcx_donor_1d = Interpolator1DArray(psin_1d, n_tcx_donor_profile_1d, 'cubic', 'none', 0)
 
 psin_2d = np.zeros(equilibrium.psi_data.shape)
 
@@ -124,37 +124,37 @@ t_e_profile_2d = np.zeros_like(psin_2d)
 for index in np.ndindex(*t_e_profile_2d.shape):
     t_e_profile_2d[index] = t_e_1d(psin_2d[index])
 
-t_e_2d = Interpolate2DCubic(equilibrium.r_data, equilibrium.z_data, t_e_profile_2d)
+t_e_2d = Interpolator2DArray(equilibrium.r_data, equilibrium.z_data, t_e_profile_2d, 'cubic', 'none', 0, 0)
 
 n_e_profile_2d = np.zeros_like(psin_2d)
 for index in np.ndindex(*n_e_profile_2d.shape):
     n_e_profile_2d[index] = n_e_1d(psin_2d[index])
 
-n_e_2d = Interpolate2DCubic(equilibrium.r_data, equilibrium.z_data, n_e_profile_2d)
+n_e_2d = Interpolator2DArray(equilibrium.r_data, equilibrium.z_data, n_e_profile_2d, 'cubic', 'none', 0, 0)
 
 t_element_profile_2d = np.zeros_like(psin_2d)
 for index in np.ndindex(*t_element_profile_2d.shape):
     t_element_profile_2d[index] = t_element_1d(psin_2d[index])
 
-t_element_2d = Interpolate2DCubic(equilibrium.r_data, equilibrium.z_data, t_element_profile_2d)
+t_element_2d = Interpolator2DArray(equilibrium.r_data, equilibrium.z_data, t_element_profile_2d, 'cubic', 'none', 0, 0)
 
 n_element_profile_2d = np.zeros_like(psin_2d)
 for index in np.ndindex(*n_element_profile_2d.shape):
     n_element_profile_2d[index] = n_element_1d(psin_2d[index])
 
-n_element_2d = Interpolate2DCubic(equilibrium.r_data, equilibrium.z_data, n_element_profile_2d)
+n_element_2d = Interpolator2DArray(equilibrium.r_data, equilibrium.z_data, n_element_profile_2d, 'cubic', 'none', 0, 0)
 
 n_element2_profile_2d = np.zeros_like(psin_2d)
 for index in np.ndindex(*n_element2_profile_2d.shape):
     n_element2_profile_2d[index] = n_element2_1d(psin_2d[index])
 
-n_element2_2d = Interpolate2DCubic(equilibrium.r_data, equilibrium.z_data, n_element2_profile_2d)
+n_element2_2d = Interpolator2DArray(equilibrium.r_data, equilibrium.z_data, n_element2_profile_2d, 'cubic', 'none', 0, 0)
 
 n_tcx_donor_profile_2d = np.zeros_like(psin_2d)
 for index in np.ndindex(*n_tcx_donor_profile_2d.shape):
     n_tcx_donor_profile_2d[index] = n_tcx_donor_1d(psin_2d[index])
 
-n_tcx_donor_2d = Interpolate2DCubic(equilibrium.r_data, equilibrium.z_data, n_element_profile_2d)
+n_tcx_donor_2d = Interpolator2DArray(equilibrium.r_data, equilibrium.z_data, n_element_profile_2d, 'cubic', 'none', 0, 0)
 
 
 ########################################################################################################################
@@ -252,6 +252,7 @@ for key, item in element_bulk_abundance.items():
     ax.contour(equilibrium.r_data, equilibrium.z_data, equilibrium.psi_data.T, colors="white")
     ax.plot(equilibrium.limiter_polygon[:, 0], equilibrium.limiter_polygon[:, 1], "k-")
     ax.plot(equilibrium.lcfs_polygon[:, 0], equilibrium.lcfs_polygon[:, 1], "r-")
-    ax.set_title("{} {}+".format(element.symbol, key))
+    ax.set_title("{} {}+".format(element_bulk.symbol, key))
     ax.set_aspect(1)
 
+plt.show()

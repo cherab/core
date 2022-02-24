@@ -1,5 +1,5 @@
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.1206141.svg)](https://doi.org/10.5281/zenodo.1206141)
-[![Build Status](https://travis-ci.com/cherab/core.svg?branch=master)](https://travis-ci.com/cherab/core)
+[![Build Status](https://github.com/cherab/core/actions/workflows/ci.yml/badge.svg)](https://github.com/cherab/core/actions/workflows/ci.yml/badge.svg)
 
 Cherab
 ======

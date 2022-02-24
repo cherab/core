@@ -156,6 +156,11 @@ Passive Spectroscopy
      - .. image:: ./passive_spectroscopy/stark_line_zoomed.png
           :height: 150px
           :width: 150px
+   * - :ref:`Zeeman Spectroscopy <zeeman_spectroscopy>`
+     - Specifying a Zeeman triplet or multiplet line shapes.
+     - .. image:: ./passive_spectroscopy/zeeman_spectrum_45deg.png
+          :height: 150px
+          :width: 150px   
 
 
 Bolometry
@@ -243,6 +248,11 @@ Geometry Matrices
 
 Code examples gallery
 =====================
+
+.. note::
+   These code examples are included for historical reasons.
+   They may require specific (sometimes older) versions of Cherab's submodules to work.
+   Many also require access to specific machine data.
 
 .. list-table::
    :widths: 28 50 22
