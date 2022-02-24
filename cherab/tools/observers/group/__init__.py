@@ -1,4 +1,3 @@
-
 # Copyright 2016-2021 Euratom
 # Copyright 2016-2021 United Kingdom Atomic Energy Authority
 # Copyright 2016-2021 Centro de Investigaciones Energéticas, Medioambientales y Tecnológicas
@@ -19,3 +18,6 @@
 
 from .fibreoptic import FibreOpticGroup
 from .sightline import SightLineGroup
+from .targettedpixel import TargettedPixelGroup
+from .pixel import PixelGroup
+from .spectroscopic import SpectroscopicFibreOpticGroup, SpectroscopicSightLineGroup
