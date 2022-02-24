@@ -24,12 +24,14 @@ from scipy.constants import atomic_mass, electron_mass
 
 from raysect.core import Vector3D, translate
 from raysect.core.math.function.float.function2d.interpolate import Discrete2DMesh
+from raysect.core.math.function.float import Arg1D, Exp1D, Constant1D
 from raysect.primitive import Cylinder, Subtract
 
 from cherab.core import AtomicData, Plasma, Maxwellian, Species
 from cherab.core.atomic.elements import hydrogen, carbon, lookup_isotope, lookup_element
 from cherab.core.utility import RecursiveDict
 from cherab.core.math.mappers import AxisymmetricMapper, VectorAxisymmetricMapper
+from cherab.core.math.clamp import ClampInput1D
 
 from cherab.openadas import OpenADAS
 
@@ -60,7 +62,7 @@ def load_edge_profiles():
        >>> # create hydrogen 0+ density 2D mesh interpolator
        >>> n_h0 = Discrete2DMesh.instance(te, data["composition"]["hydrogen"][0]["temperature"])
     """
-    profiles_dir = os.path.join(os.path.dirname(__file__), "/data/plasma/edge")
+    profiles_dir = os.path.join(os.path.dirname(__file__), "data/edge")
 
     edge_data = RecursiveDict()
     path = os.path.join(profiles_dir, "mesh.json")
@@ -101,7 +103,7 @@ def get_edge_interpolators():
     te = Discrete2DMesh(profiles["mesh"]["vertex_coords"],
                         profiles["mesh"]["triangles"],
                         profiles["electron"]["temperature"], limit=False)
-    ne = Discrete2DMesh.instance(te, profiles["electron"]["temperature"], limit=False)
+    ne = Discrete2DMesh.instance(te, profiles["electron"]["density"], limit=False)
 
     mesh_interp["electron"]["temperature"] = te
     mesh_interp["electron"]["density"] = ne
@@ -175,7 +177,7 @@ def get_edge_plasma(atomic_data=None, parent=None, name="Generomak edge plasma")
         atomic_data = OpenADAS()
 
     # base plasma geometry on mesh vertices
-    profiles_dir = os.path.join(os.path.dirname(__file__), "data/plasma/edge")
+    profiles_dir = os.path.join(os.path.dirname(__file__), "data/edge")
     path = os.path.join(profiles_dir, "mesh.json")
     with open(path, "r") as fhl:
         mesh = json.load(fhl)
@@ -199,7 +201,7 @@ def get_edge_plasma(atomic_data=None, parent=None, name="Generomak edge plasma")
 
     # create plasma composition list
     plasma_composition = []
-    for elem_name, elem_data in dists["composition"].items():
+    for _, elem_data in dists["composition"].items():
         for stage, stage_data in elem_data.items():
             species = Species(stage_data["element"], stage, stage_data["distribution"])
             plasma_composition.append(species)
@@ -215,3 +217,332 @@ def get_edge_plasma(atomic_data=None, parent=None, name="Generomak edge plasma")
     plasma.b_field = VectorAxisymmetricMapper(equilibrium.b_field)
 
     return plasma
+
+def get_double_parabola(v_min, v_max, convexity, concavity, xmin=0, xmax=1):
+    """
+    Returns a 1d double-quadratic Function1D
+
+    The retuned Function1D is of the form
+
+    .. math:: f(x) = ((v_{max} - v_{min}) * ((1 - ((1 - x_{norm}) ** convexity)) ** concavity) + v_min)
+
+    where the :math: `x_norm` is calculated as
+
+    .. math:: x_{norm} = (x - xmin) / (xmax - xmin).
+
+    The returned function is decreasing and monotonous and its domain is [xmin, xmax].
+
+    :param v_min: The minimum value of the profile at xmax.
+    :param v_max: The maximum value of the profile at xmin.
+    :param xmin: The lower edge of the function domain. Defaults to 0.
+    :param xmax: The upper edge of the function domain Defaults to 1.
+    :param convexity: Controls the convexity of the profile in the lower values part of the profile.
+    :param concavity: Controls the concavity of the profile in the higher values part of the profile.
+    :return: Function1D
+    """
+
+    x = Arg1D() #the free parameter
+    
+    # funciton for the normalised free variable
+    x_norm = ClampInput1D((x - xmin) / (xmax - xmin), 0, 1)
+
+    # profile function
+    return (v_max - v_min) * ((1 - ((1 - x_norm) ** convexity)) ** concavity) + v_min
+
+def get_exponential_growth(initial_value, growth_rate, initial_position=1):
+    """
+    returns exponentially growing Function1D
+
+    The returned Function1D is of the form:
+
+    ::math::
+      v_0 \exp((x - x_0) * \lambda)
+
+    where v_0 is the initial_value, x_0 is the initial_position and lambda is the growth_rate.
+
+    :param initial_value: The value of the function at the initial position.
+    :param growth_rate: Growth constant of the profile.
+    :param initial_position: The initial position of the profile. Defaults to 1.
+    :return: Function1D
+    """
+
+    x = Arg1D() #the free parameter
+    return initial_value * Exp1D((x - initial_position) * growth_rate)
+
+def get_maxwellian_distribution(equilibrium, f1d_density, f1d_temperature, f1d_vtor, f1d_vpol, f1d_vnorm, rest_mass):
+    """ Returns Maxwellian distribution for equilibrium mapped 1d profiles
+    
+    :param equilibrium: Instance of EFITEquilibrium
+    :param f1d_density: Function1D describing density profile.
+    :param f1d_temperature: Function1D describing temperature profile.
+    :param f1d_f1d_vtor: Function1D describing bulk toroidal rotation velocity profile.
+    :param f1d_f1d_vpol: Function1D describing bulk poloidal rotation velocity profile.
+    :param f1d_vnom: Function1D describing bulk velocity normal to magnetic surfaces.
+    :rest_mass: Rest mass of the distribution species.
+    :return: Maxwellian distribution
+    """
+
+
+    # map profiles to 3D
+    f3d_te = equilibrium.map3d(f1d_temperature)
+    f3d_ne = equilibrium.map3d(f1d_density)
+    f3d_v = equilibrium.map_vector3d(f1d_vtor, f1d_vpol, f1d_vnorm)
+    
+    # return Maxwellian distribution
+    return Maxwellian(f3d_ne, f3d_te, f3d_v, rest_mass)
+
+def get_edge_profile_values(r, z, edge_interpolators=None):
+    """
+    Evalueate edge plasma profiles at the position [r, z]
+
+    :param r: Radial distance in cylindrical cordinates in m.
+    :param z: Elevation in cylindrical coordinates in m.
+    :param edge_interpolators: Dictionary with edge interpolators in the shape
+           returned by the get_edge_interpolators function.
+    :return: Dictionary of edge values at [R, Z]
+    """
+    # load edge interpolators if not passed as argument
+    if edge_interpolators is None:
+        edge_interp = get_edge_interpolators()
+    else:
+        edge_interp = edge_interpolators
+    # create recursive dictionary to store profile values
+    lcfs_values = RecursiveDict()
+
+    # add electron values
+    lcfs_values["electron"]["temperature"] = edge_interp["electron"]["temperature"](r, z)
+    lcfs_values["electron"]["density"] = edge_interp["electron"]["density"](r, z)
+
+    # add species values
+    for spec, desc in edge_interp['composition'].items():
+        for chrg, chrg_desc in desc.items():
+            for prop, val in chrg_desc.items():
+                if prop in ["temperature", "density"]:
+                    lcfs_values["composition"][spec][chrg][prop] = val(r, z)
+                else:
+                    lcfs_values["composition"][spec][chrg][prop] = val
+    
+    return lcfs_values.freeze()
+
+def get_core_profiles_description(lcfs_values=None, ne_core=5e19, ne_convexity=2,
+                         ne_concavity=4, te_core=3e3,
+                         te_convexity=2, te_concavity=3,
+                         nh_core=5e19, nh_convexity=2,
+                         nh_concavity=4, th_core=2.8e3,
+                         th_convexity=2, th_concavity=4,
+                         th0_fraction=0.8, nh0_decay=10,
+                         timp_core=2.7e3, timp_convexity=2,
+                         timp_concavity=4, nimp_core=5e17,
+                         nimp_convexity=2, nimp_concavity=4,
+                         nimp_decay=8,
+                         vtor_core=1e5, vtor_edge=1e4,
+                         vtor_convexity=2, vtor_concavity=4,
+                         vpol_lcfs=2e4, vpol_decay=0.08):
+    """
+    Returns dictionary of core profile functions and species descriptions
+
+    :param lcfs_values: Dictionary of profile values at the separatrix on outer midplane.
+                        The dictionary has to have the same for, mas the one returned by
+                        the function get_edge_profile_values. The default value is the
+                        dictionary returned by the call get_edge_profile_values for r, z
+                        on last closed flux surface on outer midplane.
+    :param ne_core: core electron density
+    :param ne_convexity: convexity of the electron density profile
+    :param ne_concavity: concavity of the electron density profile
+    :param te_core: core electron temperature 
+    :param te_convexity: convexity of the electron temperature profile
+    :param te_concavity: convexity of the electron temperature profile
+    :param nh_core: core density of H1+
+    :param nh_convexity: convexity of H1+ density profile
+    :param nh_concavity: concavity of H1+ density profile
+    :param th_core: core H1+ temperature
+    :param th_convexity: convexity of H1+ density profile
+    :param th_concavity: convexity of H1+ density profile
+    :param th0_fraction: H0 temperature factor
+    :param nh0_decay: decay rate of H0 density profile
+    :param timp_core: core impurity density
+    :param timp_convexity: convexity of impurity temperature profile
+    :param timp_concavity: concavity of impurity temperature profile
+    :param nimp_core: core impurity density
+    :param nimp_convexity: convexity of impurity density profile
+    :param nimp_concavity: concavity of impurity density profile
+    :param nimp_decay: decay rate of impurity density profile (except bare nuclei)
+    :param vtor_core: toroidal rotation velocity at the edge m/s
+    :param vtor_edge: core toroidal rotation velocity m/s
+    :param vtor_convexity: convexity of the toroidal rotation profile
+    :param vtor_concavity: concavity of the toroidal rotation profile
+    :return: dictionary of Function1D profiles
+    """
+    if lcfs_values is None:
+        # get edge profiles and calculate profile values at midplane outer lcfs
+        equilibrium = load_equilibrium()
+        r = equilibrium.psin_to_r(1)
+        z = 0
+        lcfs_values = get_edge_profile_values(r, z)
+
+    # toroidal rotation profile
+    f1d_vtor = get_double_parabola(vtor_edge, vtor_core, vtor_convexity, vtor_concavity)
+
+    vpol_lcfs = 2e4
+    vpol_decay = 0.08
+    # poloidal rotation profile
+    f1d_vpol = get_exponential_growth(vpol_lcfs, vpol_decay) 
+
+    # velocity normal to magnetic surfaces
+    f1d_vnorm = Constant1D(0)
+   
+    # construct dictionary with 1D profile functions
+    profiles = RecursiveDict()
+
+    # Setup electron profiles with double parabola shapes
+    profiles["electron"]["f1d_temperature"] = get_double_parabola(lcfs_values["electron"]["temperature"],
+                                                                  te_core, te_convexity, te_concavity,
+                                                                  xmin=1, xmax=0)
+    profiles["electron"]["f1d_density"] = get_double_parabola(lcfs_values["electron"]["density"],
+                                                              ne_core, ne_convexity, ne_concavity,
+                                                              xmin=1, xmax=0)
+    profiles["electron"]["f1d_vtor"] = Constant1D(0)
+    profiles["electron"]["f1d_vpol"] = Constant1D(0)
+    profiles["electron"]["f1d_vnorm"] = Constant1D(0)
+
+    # Setup H1+ profiles with double parabola shapes
+    profiles["composition"]["hydrogen"][1]["f1d_temperature"] = get_double_parabola(lcfs_values["composition"]["hydrogen"][1]["temperature"],
+                                                                                    th_core, th_convexity, th_concavity, xmin=1, xmax=0)
+    profiles["composition"]["hydrogen"][1]["f1d_density"] = get_double_parabola(lcfs_values["composition"]["hydrogen"][1]["density"],
+                                                                                nh_core, nh_convexity, nh_concavity, xmin=1, xmax=0)
+    profiles["composition"]["hydrogen"][1]["f1d_vtor"] = f1d_vtor
+    profiles["composition"]["hydrogen"][1]["f1d_vpol"] = f1d_vpol
+    profiles["composition"]["hydrogen"][1]["f1d_vnorm"] = f1d_vnorm
+
+    # setup H0+ profile shapes with temperature as a fraction of H1+ and density with decaying exponential
+    profiles["composition"]["hydrogen"][0]["f1d_temperature"] = th0_fraction * get_double_parabola(lcfs_values["composition"]["hydrogen"][0]["temperature"],
+                                                                                                   th_core, th_convexity, th_concavity, xmin=1, xmax=0)
+    profiles["composition"]["hydrogen"][0]["f1d_density"] = get_exponential_growth(lcfs_values["composition"]["hydrogen"][0]["density"], nh0_decay)
+    profiles["composition"]["hydrogen"][0]["f1d_vtor"] = f1d_vtor
+    profiles["composition"]["hydrogen"][0]["f1d_vpol"] = f1d_vpol
+    profiles["composition"]["hydrogen"][0]["f1d_vnorm"] = f1d_vnorm
+
+    # setup C6+ profile shapes with double parabolas
+    profiles["composition"]["carbon"][6]["f1d_temperature"] = get_double_parabola(lcfs_values["composition"]["carbon"][6]["temperature"],
+                                                                                  timp_core, timp_convexity, timp_concavity, xmin=1, xmax=0)
+    profiles["composition"]["carbon"][6]["f1d_density"] = get_double_parabola(lcfs_values["composition"]["carbon"][6]["density"],
+                                                                              nimp_core, nimp_convexity, nimp_concavity, xmin=1, xmax=0) 
+    profiles["composition"]["carbon"][6]["f1d_vtor"] = f1d_vtor
+    profiles["composition"]["carbon"][6]["f1d_vpol"] = f1d_vpol
+    profiles["composition"]["carbon"][6]["f1d_vnorm"] = f1d_vnorm
+
+    # setup CX+ profile shapes with temperature as double parabolas and density with decaying exponentials
+    for chrg in range(6):
+        profiles["composition"]["carbon"][chrg]["f1d_temperature"] = get_double_parabola(lcfs_values["composition"]["carbon"][chrg]["temperature"],
+                                                                                         timp_core, timp_convexity, timp_concavity, xmin=1, xmax=0)
+        profiles["composition"]["carbon"][chrg]["f1d_density"] = get_exponential_growth(lcfs_values["composition"]["carbon"][chrg]["density"], nimp_decay)
+        profiles["composition"]["carbon"][chrg]["f1d_vtor"] = f1d_vtor
+        profiles["composition"]["carbon"][chrg]["f1d_vpol"] = f1d_vpol
+        profiles["composition"]["carbon"][chrg]["f1d_vnorm"] = f1d_vnorm
+
+    return profiles.freeze()
+
+def get_core_distributions(profiles=None, equilibrium=None):
+    """
+    Returns a dictionary of core plasma species Maxwellian distributions.
+
+    :param profiles: Dictionary of core particle profiles.  The dictionary has to have the same form 
+                     as the one returned by the function get_core_profiles_description. 
+                     The default value is the value returned by the call get_core_profiles_description().
+    :param equilibrium: an instance of EFITEquilibrium.
+    :return:  dictionary of core plasma species with Maxwellian distribution
+    """
+    # get core profile data if not passed sa argument
+    if profiles is None:
+        profiles = get_core_profiles_description()
+    
+    # load plasma equilibrium if not passed as argument
+    if equilibrium is None:
+        equilibrium = load_equilibrium()
+
+
+    # build a dictionary with Maxwellian distributions
+    species = RecursiveDict()
+    species["electron"] = get_maxwellian_distribution(equilibrium, rest_mass=electron_mass,
+                                                            **profiles["electron"])
+    for name, spec in profiles["composition"].items():
+        spec_cherab = _get_cherab_element(name)
+        for chrg, desc in spec.items():
+            rest_mass = atomic_mass * spec_cherab.atomic_weight
+            species["composition"][name][chrg] = get_maxwellian_distribution(equilibrium, rest_mass=rest_mass,  **desc)
+        
+    return species.freeze()
+
+def get_core_plasma(distributions=None, atomic_data=None, parent=None, name="Generomak core plasma"):
+    """
+    Provides Generomak core plasma.
+
+    :param distributions: A dictionary of plasma distributions. Has to have the same for mas the
+                          dictionary returned by get_core_distributions. The default value
+                          is the value returned by the call get_core_distributions().
+    :param atomic_data: Instance of AtomicData, default isOpenADAS()
+    :param parent: parent of the plasma node, defaults None
+    :param name: name of the plasma node, defaults "Generomak edge plasma"
+    :return: populated Plasma object
+    """
+    
+    # load Generomak equilibrium
+    equilibrium = load_equilibrium()
+
+    # create or check atomic_data
+    if atomic_data is not None:
+     if not isinstance(atomic_data, AtomicData):
+         raise ValueError("atomic_data has to be of type AtomicData")   
+    else:
+        atomic_data = OpenADAS()
+
+    # construct plasma primitive shape 
+    padding = 1e-3 #enlarge for safety
+    plasma_height = equilibrium.z_range[1] - equilibrium.z_range[0]
+    outer_column = Cylinder(radius=equilibrium.r_range[1], height=plasma_height)
+    inner_column = Cylinder(radius=equilibrium.r_range[0], height=plasma_height + 2 * padding)
+    inner_column.transform = translate(0, 0, -padding)
+    plasma_geometry = Subtract(outer_column, inner_column)
+
+    # coordinate transform of the plasma frame
+    geometry_transform = translate(0, 0, -outer_column.height / 2)
+    
+    # load core distributions if needed
+    if distributions is None:
+        dists = get_core_distributions()
+    else:
+        dists = distributions
+    
+    # create plasma composition list
+    plasma_composition = []
+    for elem_name, elem_data in dists["composition"].items():
+        for stage, stage_data in elem_data.items():
+            elem = _get_cherab_element(elem_name)
+            species = Species(elem, stage, stage_data)
+            plasma_composition.append(species)
+
+    # Populate plasma
+    plasma = Plasma(parent=parent)
+    plasma.name = name
+    plasma.geometry = plasma_geometry
+    plasma.atomic_data = atomic_data
+    plasma.electron_distribution = dists["electron"]
+    plasma.composition = plasma_composition
+    plasma.geometry_transform = geometry_transform
+    plasma.b_field = VectorAxisymmetricMapper(equilibrium.b_field)
+
+    return plasma
+
+def _get_cherab_element(name):
+    """Returns cherab element instance
+    
+    :param name: Name or label of the element Cherab has to know.
+    :return: Cherab element
+    """
+    try:
+        return lookup_isotope(name)
+    except ValueError:
+        try:
+            return lookup_element(name)
+        except ValueError:
+            raise ValueError("Unknown element name '{}' by Cherab".format(name))
