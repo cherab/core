@@ -25,6 +25,9 @@ from raysect.optical.observer import SpectralRadiancePipeline0D, SpectralPowerPi
 
 class _SpectroscopicObserver0DBase:
     """
+    .. deprecated:: 1.4.0
+       Use Raysect's observer classes instead.
+    
     A base class for spectroscopic 0D observers.
 
     The observer allows to control some of the pipeline properties
