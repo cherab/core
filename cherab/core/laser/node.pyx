@@ -50,26 +50,67 @@ cdef class ModelManager:
 
 
 cdef class Laser(Node):
+    """
+    A scene-graph object representing a laser of laser light.
 
-    def __init__(self, object parent=None, AffineMatrix3D transform=None,
-                 double importance=1., str name=None):
+    The Cherab laser object holds basic information about the laser and connects
+    the components which are needed for the laser description. With specified
+    emission models it can contribute to observed radiation.
+
+    The Laser object is a Raysect scene-graph node and lives in it's own
+    coordinate space. This coordinate space is defined relative to it's parent
+    scene-graph object by an AffineTransform. The beam parameters are defined
+    in the Laser object coordinate space. Models using the beam object must
+    convert any spatial coordinates into beam space before requesting values
+    from the Laser object.
+
+    The main physical properties of the laser are defined by the three
+    attributes laser_spectrum, laser_profile and models. The laser_spectrum
+    has to be an instance of LaserSpectrum and defines the spectral properties
+    of the laser light. The laser_profile has to be an instance of LaserProfile
+    and it holds all the space related definitions as volumetric distribution
+    of laser light energy polarisation direction. In the models a list of LaserModels
+    can be stored, which calculate the contribution of the laser ligth to the observed
+    radiation. The models can cover various applications as for example
+    Thomson scattering. Please see the documentation of individual classes
+    for more detail.
+
+    The shape of the laser (e.g. cylinder) and its parameters (e.g. radius)
+    is controled by the LaserProfile.
+
+    The plasma reference has to be specified to attach the laser_profile and models.
+
+    :param Node parent: The parent node in the Raysect scene-graph.
+      See the Raysect documentation for more guidance.
+    :param AffineMatrix3D transform: The transform defining the spatial position
+      and orientation of this laser. See the Raysect documentation if you need
+      guidance on how to use AffineMatrix3D transforms.
+    :param str name: The name for this laser object.
+    :ivar Plasma plasma: The plasma instance with which this laser interacts.
+    :ivar float importance: The importance sampling factor.
+    :ivar LaserSpectrum laser_spectrum: The LaserSpectrum instance with which this laser interacts.
+    :ivar LaserProfile laser_profile: The LaserProfile instance with which this laser interacts.
+    :ivar ModelManager models: The manager class that sets and provides access to the
+      emission models for this laser.
+    :ivar VolumeIntegrator integrator: The configurable method for doing
+      volumetric integration through the laser along a Ray's path. Defaults to
+      a numerical integrator with 1mm step size, NumericalIntegrator(step=0.001).
+    """
+
+    def __init__(self, object parent=None, AffineMatrix3D transform=None, str name=None):
 
         super().__init__(parent, transform, name)
 
-        # set init values of the laser
         self._set_init_values()
 
-        # change reporting and tracking
         self.notifier = Notifier()
 
-        #setup model manager
         self._models = ModelManager()
         
-        # set material integrator
         self._integrator = NumericalIntegrator(step=1e-3)
 
-        self._importance = importance
-        self._configure_geometry()
+        self._importance = 1.
+        self._configure()
 
     def _set_init_values(self):
         """
@@ -90,8 +131,7 @@ cdef class Laser(Node):
             self._plasma.notifier.remove(self._plasma_changed)
 
         self._plasma = value
-        #self._plasma.notifier.add(self._plasma_changed)
-        self._configure_geometry()
+        self._configure()
 
     @property
     def importance(self):
@@ -101,15 +141,11 @@ cdef class Laser(Node):
     def importance(self, double value):
         
         self._importance = value
-        self._configure_geometry()
+        self._configure()
 
-    def _configure_geometry(self):
+    def _configure(self):
         """
-        The beam bounding envelope is a cylinder aligned with the beam axis.
-        The overall length of the cylinder is self.length and radius self.radius.
-        The cylinder is divided into cylindical segments to optimize bounding shapes
-        The length of the cylidrical segments is equal to 2 * self.radius, except the last segment.
-        Length of the last segment can be different to match self.length value.
+        Reconfigure the laser primitives and update references after changes.
         """
 
         # no further work if there are no emission models
@@ -120,15 +156,18 @@ cdef class Laser(Node):
         if self._laser_profile is None:
             return
 
-        # clear geometry to remove segments
+        # update the plasma reference in models
+        for model in list(self._models):
+            model.plasma = self._plasma
+
+        # clear geometry parents to remove segments
         for i in self._geometry:
             i.parent = None
         self._geometry = []
 
-        #get geometry from laser_profile
+        # rebuild geometry
         primitives = self._laser_profile.generate_geometry()
 
-        #assign material and parent
         for i in primitives:
             i.parent = self
             i.material = LaserMaterial(self, i, list(self._models), self._integrator)
@@ -142,7 +181,7 @@ cdef class Laser(Node):
     @laser_spectrum.setter
     def laser_spectrum(self, LaserSpectrum value):
         self._laser_spectrum = value
-        self._configure_geometry()
+        self._configure()
 
     @property
     def laser_profile(self):
@@ -154,7 +193,7 @@ cdef class Laser(Node):
         self._laser_profile = value
         self._laser_profile.laser = self
 
-        self._configure_geometry()
+        self._configure()
 
     @property
     def models(self):
@@ -173,7 +212,7 @@ cdef class Laser(Node):
             raise ValueError('The laser must have a reference to a laser spectrum object before specifying scattering model.')
 
         self._models.set(value)
-        self._configure_geometry()
+        self._configure()
 
     @property
     def integrator(self):
@@ -182,14 +221,14 @@ cdef class Laser(Node):
     @integrator.setter
     def integrator(self, VolumeIntegrator value):
         self._integrator = value
-        self._configure_geometry()
+        self._configure()
 
     def get_geometry(self):
         return self._geometry
 
     def _plasma_changed(self):
         """React to change of plasma and propagate the information."""
-        self._configure_geometry()
+        self._configure()
 
     def _modified(self):
-        self._configure_geometry()
+        self._configure()
