@@ -1,4 +1,4 @@
-from cherab.core.laser.models.laserspectrum_base cimport LaserSpectrum
+from cherab.core.laser.laserspectrum cimport LaserSpectrum
 from libc.math cimport sqrt, exp, M_PI
 
 cdef class ConstantSpectrum(LaserSpectrum):
