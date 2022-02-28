@@ -1,5 +1,4 @@
 from raysect.core.math.function.float cimport Function3D
-from raysect.optical cimport Spectrum
 from raysect.core.math.cython.utility cimport find_index
 
 from libc.math cimport sqrt, exp, pi

@@ -1,14 +1,13 @@
+cimport cython
+
 from raysect.optical cimport Vector3D, Point3D
 from raysect.optical.spectrum cimport Spectrum
 
 from cherab.core cimport Plasma
 from cherab.core.distribution cimport DistributionFunction
 from cherab.core.laser.node cimport Laser
-from cherab.core.laser.models.profile_base cimport LaserProfile
-from cherab.core.laser.models.laserspectrum_base cimport LaserSpectrum
-cimport cython
-
-#cdef double RE_SQUARED
+from cherab.core.laser.profile cimport LaserProfile
+from cherab.core.laser.laserspectrum cimport LaserSpectrum
 
 
 cdef class LaserModel:
@@ -22,6 +21,7 @@ cdef class LaserModel:
                             Vector3D observation_laser, Spectrum spectrum)
 
     cdef object __weakref__
+
 
 cdef class SeldenMatobaThomsonSpectrum(LaserModel):
     cdef:

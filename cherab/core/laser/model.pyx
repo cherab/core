@@ -1,15 +1,15 @@
+from libc.math cimport exp, sqrt, cos, M_PI
+cimport cython
+
 from raysect.optical cimport Vector3D, Point3D
 from raysect.optical.spectrum cimport Spectrum
 
 from cherab.core cimport Plasma
 from cherab.core.laser.node cimport Laser
-from cherab.core.laser.models.profile_base cimport LaserProfile
+from cherab.core.laser.profile cimport LaserProfile
 from cherab.core.utility.constants cimport DEGREES_TO_RADIANS, ATOMIC_MASS, RECIP_4_PI
-from cherab.core.laser.models.laserspectrum_base cimport LaserSpectrum
+from cherab.core.laser.laserspectrum cimport LaserSpectrum
 from cherab.core.utility.constants cimport PLANCK_CONSTANT, SPEED_OF_LIGHT, ELECTRON_CLASSICAL_RADIUS, ELECTRON_REST_MASS, ELEMENTARY_CHARGE
-
-from libc.math cimport exp, sqrt, cos, M_PI
-cimport cython
 
 
 cdef class LaserModel:
@@ -63,6 +63,7 @@ cdef class LaserModel:
     def laser_spectrum(self, LaserSpectrum value):
 
         self._laser_spectrum = value
+
 
 cdef class SeldenMatobaThomsonSpectrum(LaserModel):
     """

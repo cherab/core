@@ -1,7 +1,7 @@
 from raysect.core.math.function.float cimport Function3D
 from raysect.optical cimport Spectrum, Point3D, Vector3D
 
-from cherab.core.laser.models.profile_base cimport LaserProfile
+from cherab.core.laser.profile cimport LaserProfile
 
 cdef class UniformEnergyDensity(LaserProfile):
 

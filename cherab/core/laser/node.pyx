@@ -5,7 +5,8 @@ from raysect.core cimport translate, Material
 
 from cherab.core.laser.material cimport LaserMaterial
 from cherab.core.laser.model cimport LaserModel
-from cherab.core.laser.models.laserspectrum_base import LaserSpectrum
+from cherab.core.laser.profile import LaserProfile
+from cherab.core.laser.laserspectrum import LaserSpectrum
 from cherab.core.utility import Notifier
 from libc.math cimport M_PI
 
@@ -188,7 +189,7 @@ cdef class Laser(Node):
         return self._laser_profile
 
     @laser_profile.setter
-    def laser_profile(self, object value):
+    def laser_profile(self, LaserProfile value):
 
         self._laser_profile = value
         self._laser_profile.laser = self

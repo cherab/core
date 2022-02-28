@@ -4,8 +4,8 @@ from raysect.primitive import Cylinder
 from raysect.optical cimport Spectrum, Vector3D, translate
 
 from cherab.core.laser.node cimport Laser
-from cherab.core.laser.models.profile_base cimport LaserProfile
-from cherab.core.laser.models.math_functions cimport ConstantAxisymmetricGaussian3D, ConstantBivariateGaussian3D, TrivariateGaussian3D, GaussianBeamModel 
+from cherab.core.laser.profile cimport LaserProfile
+from cherab.core.model.laser.math_functions cimport ConstantAxisymmetricGaussian3D, ConstantBivariateGaussian3D, TrivariateGaussian3D, GaussianBeamModel 
 
 from cherab.core.utility.constants cimport SPEED_OF_LIGHT
 
