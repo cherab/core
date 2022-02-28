@@ -18,6 +18,9 @@ cdef class LaserProfile:
     of the electric component vector and volumetric energy density of 
     the laser light.
 
+    All the laser properties are evaluated in the frame of reference of
+    the laser.
+
     .. warning::
         When combining a LaserProfile with a LaserSpectrum for a laser,
         a special care has to be given to obtain the correct power

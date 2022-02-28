@@ -19,6 +19,11 @@ cdef class UniformEnergyDensity(LaserProfile):
     Returns a laser with a cylindrical shape within which the laser volumentric energy density is constant.
     The laser starts at z=0 and extends in the positive z direction.
 
+    .. note:
+        The methods get_pointing, get_polarization and get_energy_density are not limited to the inside
+        of the laser cylinder.  If called alone for position (x, y, z) outisde the laser cylinder,
+        they will still return non-zero values.
+      
     In the following example, a laser of length of 2 m (extending from z=0 to z=2 m) with a radius of 3 cm
     and volumetric energy density of 5 J*m^-3 and polarisation in the y direction is created:
 
@@ -108,11 +113,14 @@ cdef class UniformEnergyDensity(LaserProfile):
 
 cdef class ConstantBivariateGaussian(LaserProfile):
     """
-    LaserProfile with a Gaussian-shaped volumetric energy density distribution in the xy plane and constant pulse intensity.
+    LaserProfile with a Gaussian-shaped volumetric energy density distribution in the xy plane
+    and constant pulse intensity.
 
-    Returns a laser with a cylindrical shape and the propagation of the laser light in the positive z direction. This model imitates
-    a laser beam with a uniform power output within a single pulse. This results in the distribution of the energy density along the propagation
-    direction of the laser (z-axis) to be also uniform. The integral value of laser energy Exy in an x-y plane is given by
+    Returns a laser with a cylindrical shape and the propagation of the laser light in the positive z direction.
+
+    The model imitates a laser beam with a uniform power output within a single pulse. This results
+    in the distribution of the energy density along the propagation direction of the laser (z-axis) to be also
+    uniform. The integral value of laser energy Exy in an x-y plane is given by
     
     .. math:: 
          E_{xy} = \\frac{E_p}{(c * \\tau)},
@@ -126,9 +134,14 @@ cdef class ConstantBivariateGaussian(LaserProfile):
     The sigma_x and sigma_y are standard deviations in x and y directions, respectively.
 
     .. note::
-    The height of the cylinder, forming the laser beam, is given by the laser_length and is independent from the 
-    temporal length of the laser pulse given by pulse_length. This gives the possibility to independently control
-    the size of the laser primitive and the value of the volumetric energy density.
+        The height of the cylinder, forming the laser beam, is given by the laser_length and is independent from the 
+        temporal length of the laser pulse given by pulse_length. This gives the possibility to independently control
+        the size of the laser primitive and the value of the volumetric energy density.
+      
+        The methods get_pointing, get_polarization and get_energy_density are not limited to the inside
+        of the laser cylinder.  If called for position (x, y, z) outisde the laser cylinder, they can still
+        return non-zero values.
+    
 
     The following example shows how to create a laser with sigma_x= 1 cm and sigma_y=2 cm, which makes the laser
     profile in x-y plane to be elliptical. The pulse energy is 5 J and the laser temporal pulse length is 10 ns:
@@ -306,8 +319,8 @@ cdef class TrivariateGaussian(LaserProfile):
     """
     LaserProfile with a trivariate Gaussian-shaped volumetric energy density.
 
-    Returns a laser with a cylindrical shape and the propagation of the laser light in the positive z direction. This model imitates
-    a laser beam with a Gaussian distribution of power output within a single pulse frozen in time:
+    Returns a laser with a cylindrical shape and the propagation of the laser light in the positive z direction.
+    This model imitates a laser beam with a Gaussian distribution of power output within a single pulse frozen in time:
 
     .. math::
          E(x, y, z) = \\frac{E_p}{\\sqrt{2 \\pi^3} \\sigma_x \\sigma_y \\sigma_z} exp\\left(-\\frac{x^2}{2 \\sigma_x^2} -\\frac{y^2}{2 \\sigma_y^2} -\\frac{(z - \\mu_z)^2}{2 \\sigma_z^2}\\right).
@@ -324,9 +337,14 @@ cdef class TrivariateGaussian(LaserProfile):
     The c stands for the speed of light in vacuum.
 
     .. note::
-    The height of the cylinder, forming the laser beam, is given by the laser_length and is independent from the 
-    temporal length of the laser pulse given by pulse_length. This gives the possibility to independently control
-    the size of the laser primitive and the value of the volumetric energy density.
+        The height of the cylinder, forming the laser beam, is given by the laser_length and is independent from the 
+        temporal length of the laser pulse given by pulse_length. This gives the possibility to independently control
+        the size of the laser primitive and the value of the volumetric energy density.
+      
+        The methods get_pointing, get_polarization and get_energy_density are not limited to the inside
+        of the laser cylinder.  If called alone for position (x, y, z) outisde the laser cylinder, they can still
+        return non-zero values.
+    
 
     The following example shows how to create a laser with sigma_x = 1 cm and sigma_y = 2 cm, which makes the laser
     profile in an x-y plane to be elliptical. The pulse energy is 5 J and the laser temporal pulse length is 10 ns.
@@ -544,8 +562,12 @@ cdef class GaussianBeamAxisymmetric(LaserProfile):
 
     where the E_p is the energy in a single laser pulse and tau is the temporal pulse length.
 
-    .. note::
-         For more information about the Gaussian beam model see https://en.wikipedia.org/wiki/Gaussian_beam
+    .. note::      
+        For more information about the Gaussian beam model see https://en.wikipedia.org/wiki/Gaussian_beam
+
+        The methods get_pointing, get_polarization and get_energy_density are not limited to the inside
+        of the laser cylinder.  If called alone for position (x, y, z) outisde the laser cylinder, they can still
+        return non-zero values.
 
     The following example shows how to create a laser with pulse energy 5J, pulse length 10 ns and with the laser cylinder primitive
     being 2m long with 5 cm in diameter. The the standard deviation of the beam in the focal point (waist) is 5mm and the position of the
