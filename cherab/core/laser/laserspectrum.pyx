@@ -41,7 +41,6 @@ cdef class LaserSpectrum(Function1D):
     :param float max_wavelength: The maximum wavelength of the laser
       spectrum in nm.
     :param int bins: The number of spectral bins of the laser spectrum.
-
     :ivar float min_wavelength: The minimum wavelength of the laser
       spectrum in nm.
     :ivar float max_wavelength: The maximum wavelength of the laser
@@ -50,8 +49,8 @@ cdef class LaserSpectrum(Function1D):
     :ivar ndarray wavelengths: The wavelengt coordinate vector in nm.
     :ivar ndarray power_spectral_density: The values of the power
       spectral density in W / nm.
-    :ivar ndarray photos: The values corresponding to the number
-      of photons.
+    :ivar ndarray photon_spectral_density: The values corresponding to the number
+      of photons per nm.
     :ivar float delta_wavelength: Spectral width of the bins in nm.
     """
 
@@ -110,8 +109,8 @@ cdef class LaserSpectrum(Function1D):
         return self._power_spectral_density
 
     @property
-    def photons(self):
-        return self._photons
+    def photon_spectral_density(self):
+        return self._photon_spectral_density
 
     @property
     def delta_wavelength(self):
@@ -131,6 +130,7 @@ cdef class LaserSpectrum(Function1D):
 
         cdef:
             Py_ssize_t index
+            double delta_wvl_half, wvl_lower, wvl_upper, wvl
 
         self._delta_wavelength = (self._max_wavelength - self._min_wavelength) / self._bins
         self._wavelengths = np.zeros(self.bins, dtype=np.double)
@@ -145,16 +145,33 @@ cdef class LaserSpectrum(Function1D):
         self._power = np.zeros(self._bins, dtype=np.double)  # power in a spectral bin (PSD * delta wavelength)
         self._power_mv = self._power
 
-        self._photons = np.zeros(self._bins, dtype=np.double)
-        self._photons_mv = self._photons
+        self._photon_spectral_density = np.zeros(self._bins, dtype=np.double)
+        self._photon_spectral_density_mv = self._photon_spectral_density
+
+        delta_wvl_half = self._delta_wavelength * 0.5
+        wvl_lower = self._wavelengths_mv[0] - delta_wvl_half
 
         for index in range(self._bins):
-            self._power_spectral_density_mv[index] = self.evaluate(self._wavelengths_mv[index])
+            wvl = wvl_lower + delta_wvl_half
+            wvl_upper = wvl_lower + self._delta_wavelength
+
+            self._power_spectral_density_mv[index] = self._get_bin_power_spectral_density(wvl_lower, wvl_upper)
             self._power_mv[index] = self._power_spectral_density_mv[index] * self._delta_wavelength # power in the spectral bin for scattering calculations
-            self._photons_mv[index] = self._power_spectral_density_mv[index] / self._photon_energy(self._wavelengths_mv[index])
+            self._photon_spectral_density_mv[index] = self._power_spectral_density_mv[index] / self._photon_energy(wvl)
+
+            wvl_lower = wvl_upper
 
     cdef double _photon_energy(self, double wavelength):
         return SPEED_OF_LIGHT * PLANCK_CONSTANT / (wavelength * 1e-9)
 
     cpdef double evaluate_integral(self, double lower_limit, double upper_limit):
         raise NotImplementedError('Virtual method must be implemented in a sub-class.')
+
+    cpdef double _get_bin_power_spectral_density(self, double wavelength_lower, double wavelength_upper):
+        """
+        Returns the power spectral density in a bin.
+
+        This method can be overidden if a better precision is needed.
+        For example for distributions with known cumulative distribution function.
+        """
+        return 0.5 * (self.evaluate(wavelength_lower) + self.evaluate(wavelength_upper))

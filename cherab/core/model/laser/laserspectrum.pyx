@@ -1,5 +1,5 @@
 from cherab.core.laser.laserspectrum cimport LaserSpectrum
-from libc.math cimport sqrt, exp, M_PI
+from libc.math cimport sqrt, exp, M_PI, erf, M_SQRT2
 
 cdef class ConstantSpectrum(LaserSpectrum):
     """
@@ -32,11 +32,11 @@ cdef class ConstantSpectrum(LaserSpectrum):
             double spectrum_width
             int index
 
-        if self._min_wavelength < x < self._max_wavelength:
+        if self._min_wavelength <= x <= self._max_wavelength:
             return 1.0 / (self._max_wavelength - self._min_wavelength)
         else:
             return 0
-
+    
 cdef class GaussianSpectrum(LaserSpectrum):
     """
     A laser spectrum with a normally distributed power spectral density.
@@ -74,6 +74,7 @@ cdef class GaussianSpectrum(LaserSpectrum):
         self._stddev = value
         self._recip_stddev = 1 / value
         self._normalisation = 1 / (value * sqrt(2 * M_PI))
+        self._norm_cdf = 1 / (value * M_SQRT2)
 
     @property
     def mean(self):
@@ -95,3 +96,17 @@ cdef class GaussianSpectrum(LaserSpectrum):
         :return: Power spectral density in W/nm. 
         """
         return self._normalisation * exp(-0.5 * ((x - self._mean) * self._recip_stddev) ** 2)
+
+    cpdef double _get_bin_power_spectral_density(self, double wavelength_lower, double wavelength_upper):
+        """
+        Returns the power spectral density in a bin.
+
+        Overrides the parent method to deliver better precision.
+        """
+
+        cdef:
+            double val_lower, val_upper
+
+        val_lower = erf((wavelength_lower - self._mean) * self._norm_cdf)
+        val_upper = erf((wavelength_upper - self._mean) * self._norm_cdf)
+        return 0.5 * (val_upper - val_lower) / self._delta_wavelength
