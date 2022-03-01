@@ -35,7 +35,6 @@ ax_t.set_ylabel("eV")
 # setup density plot
 _, ax_n = plt.subplots()
 ax_n.set_yscale("log")
-ax_n.tick_params(axis='both', which='both', labelsize=20)
 ax_n.set_title("Species Core Density Profiles")
 ax_n.set_xlabel("psin")
 ax_n.set_ylabel("m^-3")

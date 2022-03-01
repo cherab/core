@@ -275,9 +275,9 @@ def get_maxwellian_distribution(equilibrium, f1d_density, f1d_temperature, f1d_v
     :param equilibrium: Instance of EFITEquilibrium
     :param f1d_density: Function1D describing density profile.
     :param f1d_temperature: Function1D describing temperature profile.
-    :param f1d_f1d_vtor: Function1D describing bulk toroidal rotation velocity profile.
-    :param f1d_f1d_vpol: Function1D describing bulk poloidal rotation velocity profile.
-    :param f1d_vnom: Function1D describing bulk velocity normal to magnetic surfaces.
+    :param f1d_vtor: Function1D describing bulk toroidal rotation velocity profile.
+    :param f1d_vpol: Function1D describing bulk poloidal rotation velocity profile.
+    :param f1d_vnorm: Function1D describing bulk velocity normal to magnetic surfaces.
     :rest_mass: Rest mass of the distribution species.
     :return: Maxwellian distribution
     """
@@ -342,7 +342,7 @@ def get_core_profiles_description(lcfs_values=None, ne_core=5e19, ne_convexity=2
     Returns dictionary of core profile functions and species descriptions
 
     :param lcfs_values: Dictionary of profile values at the separatrix on outer midplane.
-                        The dictionary has to have the same for, mas the one returned by
+                        The dictionary has to have the same format as the one returned by
                         the function get_edge_profile_values. The default value is the
                         dictionary returned by the call get_edge_profile_values for r, z
                         on last closed flux surface on outer midplane.
@@ -351,13 +351,13 @@ def get_core_profiles_description(lcfs_values=None, ne_core=5e19, ne_convexity=2
     :param ne_concavity: concavity of the electron density profile
     :param te_core: core electron temperature 
     :param te_convexity: convexity of the electron temperature profile
-    :param te_concavity: convexity of the electron temperature profile
+    :param te_concavity: concavity of the electron temperature profile
     :param nh_core: core density of H1+
     :param nh_convexity: convexity of H1+ density profile
     :param nh_concavity: concavity of H1+ density profile
     :param th_core: core H1+ temperature
-    :param th_convexity: convexity of H1+ density profile
-    :param th_concavity: convexity of H1+ density profile
+    :param th_convexity: convexity of H1+ temperature profile
+    :param th_concavity: concavity of H1+ temperature profile
     :param th0_fraction: H0 temperature factor
     :param nh0_decay: decay rate of H0 density profile
     :param timp_core: core impurity density
@@ -477,10 +477,10 @@ def get_core_plasma(distributions=None, atomic_data=None, parent=None, name="Gen
     """
     Provides Generomak core plasma.
 
-    :param distributions: A dictionary of plasma distributions. Has to have the same for mas the
+    :param distributions: A dictionary of plasma distributions. Has to have the same format as the
                           dictionary returned by get_core_distributions. The default value
                           is the value returned by the call get_core_distributions().
-    :param atomic_data: Instance of AtomicData, default isOpenADAS()
+    :param atomic_data: Instance of AtomicData, default is OpenADAS()
     :param parent: parent of the plasma node, defaults None
     :param name: name of the plasma node, defaults "Generomak edge plasma"
     :return: populated Plasma object
@@ -491,8 +491,8 @@ def get_core_plasma(distributions=None, atomic_data=None, parent=None, name="Gen
 
     # create or check atomic_data
     if atomic_data is not None:
-     if not isinstance(atomic_data, AtomicData):
-         raise ValueError("atomic_data has to be of type AtomicData")   
+        if not isinstance(atomic_data, AtomicData):
+            raise ValueError("atomic_data has to be of type AtomicData")   
     else:
         atomic_data = OpenADAS()
 
@@ -505,7 +505,7 @@ def get_core_plasma(distributions=None, atomic_data=None, parent=None, name="Gen
     plasma_geometry = Subtract(outer_column, inner_column)
 
     # coordinate transform of the plasma frame
-    geometry_transform = translate(0, 0, -outer_column.height / 2)
+    geometry_transform = translate(0, 0, equilibrium.z_range[0])
     
     # load core distributions if needed
     if distributions is None:
