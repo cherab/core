@@ -125,8 +125,8 @@ cdef class ConstantBivariateGaussian(LaserProfile):
     .. math:: 
          E_{xy} = \\frac{E_p}{(c * \\tau)},
 
-    where Ep is the energy of the laser pulse, tau is the temporal pulse length and c is the speed of light in vacuum. In an x-y plane,
-    the volumetric energy density follows a bivariate Gaussian with a zer correlation between standard deviations:
+    where Ep is the energy of the laser pulse, tau is the temporal pulse length and c is the speed of light in vacuum.
+    In an x-y plane, the volumetric energy density follows a bivariate Gaussian with a zero correlation:
 
     .. math::
          E(x, y) = \\frac{E_{xy}}{2 \\pi \\sigma_x \\sigma_y} exp\\left(-\\frac{x^2 + y^2}{2 \\sigma_x \\sigma_y}\\right).
@@ -327,7 +327,7 @@ cdef class TrivariateGaussian(LaserProfile):
 
 
     The sigma_x and sigma_y are standard deviations in x and y directions, respectively, and E_p is the energy deliverd by laser in a
-    single laser pulse The mu_z is the mean of the distribution in the z direction and controls th position of the laser pulse along the z direction.
+    single laser pulse. The mu_z is the mean of the distribution in the z direction and controls th position of the laser pulse along the z direction.
     The standard deviation in z direction sigma_z is calculated from the pulse length tau_p, which is the 
     standard deviation of the Gaussian distributed ouput power of the laser within a single pulse:
 
@@ -369,7 +369,7 @@ cdef class TrivariateGaussian(LaserProfile):
 
 
     :param float pulse_energy: The energy of the laser in Joules delivered in a single laser pulse.
-    :param float pulse_length: The temporal length of the laser pulse in seconds.
+    :param float pulse_length: The standard deviation of the laser pulse length in the temporal domain.
     :param float mean_z: Position of the mean value of the laser pulse in the z direction. Can be used to control the
       position of the laser pulse along the laser propagation.
     :param float laser_length: The length of the laser cylinder.
@@ -381,9 +381,9 @@ cdef class TrivariateGaussian(LaserProfile):
     :param Vector3D polarization: The direction of the laser polarization.
 
     :ivar float pulse_energy: The energy of the laser in Joules delivered in a single laser pulse.
-    :ivar float pulse_length: The temporal length of the laser pulse in seconds.
-    :ivar float mean_z: Position of the mean value of the laser pulse in the z direction. Can be used to control the
-      position of the laser pulse along the laser propagation.
+    :ivar float pulse_length: The standard deviation of the laser pulse length in the temporal domain.
+    :ivar float mean_z: Position of the mean value of the laser pulse in the z direction.
+     Can be used to control the position of the laser pulse along the laser propagation.
     :ivar float laser_radius: The radius of the laser cylinder.
     :ivar float laser_length: The length of the laser cylinder.
     :ivar float stddev_x: The standard deviation of the bivariate Gaussian distribution of the volumetric energy
