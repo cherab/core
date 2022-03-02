@@ -127,10 +127,10 @@ cdef class LaserProfile:
             raise TypeError("Value has to instance of Laser class.")
         
         if self._laser is not None:
-            self.notifier.remove(self._laser._configure_geometry)
+            self.notifier.remove(self._laser._configure)
         
         self._laser = value
-        self.notifier.add(self._laser._configure_geometry)
+        self.notifier.add(self._laser._configure)
         self._change()
         
         self.notifier.notify()
