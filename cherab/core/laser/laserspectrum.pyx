@@ -123,7 +123,7 @@ cdef class LaserSpectrum(Function1D):
         if not max_wavelength > 0:
             raise ValueError("min_wavelength has to be larger than 0, but {} passed.".format(max_wavelength))
 
-        if min_wavelength > max_wavelength:
+        if not min_wavelength < max_wavelength:
             raise ValueError("min_wavelength has to be smaller than max_wavelength: min_wavelength={} > max_wavelength={}".format(min_wavelength, max_wavelength))
 
     cpdef void _update_cache(self):
