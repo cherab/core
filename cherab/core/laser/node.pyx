@@ -79,7 +79,7 @@ cdef class Laser(Node):
     The shape of the laser (e.g. cylinder) and its parameters (e.g. radius)
     is controled by the LaserProfile.
 
-    The plasma reference has to be specified to attach the laser_profile and models.
+    The plasma reference has to be specified to attach the any models.
 
     :param Node parent: The parent node in the Raysect scene-graph.
       See the Raysect documentation for more guidance.
@@ -202,15 +202,10 @@ cdef class Laser(Node):
 
     @models.setter
     def models(self, value):
+        
         # check necessary data is available
-        if not self._plasma:
-            raise ValueError('The laser must have a reference to a plasma object before specifying the scattering model.')
-
-        if not self._laser_profile:
-            raise ValueError('The laser must have a reference to a laser model object before specifying the scattering model.')
-
-        if not self._laser_spectrum:
-            raise ValueError('The laser must have a reference to a laser spectrum object before specifying scattering model.')
+        if not all([self._plasma, self._laser_profile, self._laser_spectrum]):
+            raise ValueError("The plasma, laser_profile and laser_spectrum must be set before before specifying any models.")
 
         self._models.set(value)
         self._configure()
