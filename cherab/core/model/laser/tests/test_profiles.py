@@ -5,10 +5,22 @@ from math import exp, sqrt
 from raysect.core import Vector3D
 
 from cherab.core.model.laser.profile import UniformEnergyDensity, ConstantBivariateGaussian
-from cherab.core.model.laser.profile import TrivariateGaussian, GaussianBeamAxisymmetric
+from cherab.core.model.laser.profile import TrivariateGaussian, GaussianBeamAxisymmetric, generate_segmented_cylinder
 
 from scipy.integrate import nquad
 from scipy.constants import c, pi
+
+class TestSegmentedCylinder(unittest.TestCase):
+
+    def test_number_of_primitives(self):
+
+        # for r > l there should be 1 cylinder segment only
+        primitives = generate_segmented_cylinder(radius=1, length=0.5)
+        self.assertEqual(len(primitives), 1, msg="Wrong nuber of laser segments, expected 1.")
+
+        # for r < l tehre should be length // (2 * radius) segments
+        primitives = generate_segmented_cylinder(radius=0.5, length=10)
+        self.assertEqual(len(primitives), 10, msg="Wrong nuber of laser segments, expected 20.")
 
 
 class TestLaserProfile(unittest.TestCase):
