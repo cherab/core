@@ -136,7 +136,16 @@ cdef class LaserProfile:
         self.notifier.notify()
 
     cpdef list generate_geometry(self):
-        """returns list of raysect primitives composing the laser geometry"""
+        """
+        returns list of raysect primitives composing the laser geometry
+        
+        This method is called from the Laser instance to which the instance
+        of Profile is attached to. The Laser instance will be assigned as
+        the parent to the returned primitives in the Laser._configure method.
+        The Laser._configure method does not change any transforms. This is
+        why the returned primitives have to have their transforms already
+        initialised in the frame of the laser, when returned.
+        """
 
         raise NotImplementedError("Virtual function density not defined.")
     
