@@ -10,7 +10,7 @@ cdef class LaserMaterial(InhomogeneousVolumeEmitter):
 
     def __init__(self, Laser laser not None, _NodeBase laser_segment not None, list models, VolumeIntegrator integrator not None):
 
-        super().__init__(laser._integrator)
+        super().__init__(integrator)
 
         self._laser_segment_to_laser_node = laser_segment.to(laser)
         self._laser_to_plasma = laser_segment.to(laser._plasma)
