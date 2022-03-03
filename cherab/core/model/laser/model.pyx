@@ -1,4 +1,4 @@
-from libc.math cimport exp, sqrt, cos, M_PI
+from libc.math cimport exp, sqrt, cos, M_PI, sin
 cimport cython
 
 from raysect.optical cimport Vector3D, Point3D
@@ -53,7 +53,7 @@ cdef class SeldenMatobaThomsonSpectrum(LaserModel):
         # Matoba, T., et al., 1979. Analytical approximations in the theory of relativistic Thomson scattering for high temperature fusion plasma.
         # Japanese Journal of Applied Physics, 18(6), p.1127., TS cross section equiation 18 
         # speed of light for correct normalisation of the scattered intensity calculation (from x-section to rate constant)
-        self._CONST_TS = ELECTRON_CLASSICAL_RADIUS ** 2 * SPEED_OF_LIGHT
+        self._RATE_TS = ELECTRON_CLASSICAL_RADIUS ** 2 * SPEED_OF_LIGHT
 
 
         self._RECIP_M_PI = 1 / M_PI
@@ -93,7 +93,7 @@ cdef class SeldenMatobaThomsonSpectrum(LaserModel):
         te = self._plasma.get_electron_distribution().effective_temperature(plasma_x, plasma_y, plasma_z)
         
         #terminate early if electron temperature is 0
-        if ne <= 0:
+        if te <= 0:
             return spectrum
         
         ne = self._plasma.get_electron_distribution().density(plasma_x, plasma_y, plasma_z)
@@ -122,7 +122,7 @@ cdef class SeldenMatobaThomsonSpectrum(LaserModel):
 
         # angle between polarisation and observation
         polarisation_vector = self._laser_profile.get_polarization(laser_x, laser_y, laser_z)
-        angle_polarization = 180. - observation_laser.angle(polarisation_vector) # scattering direction is the opposite to obervation direction
+        angle_polarization = observation_laser.angle(polarisation_vector) # scattering direction is the opposite to obervation direction
 
         laser_wavelength_mv = self._laser_spectrum._wavelengths_mv
         laser_spectrum_power_mv = self._laser_spectrum._power_mv  # power in spectral bins (PSD * delta wavelength)
@@ -146,7 +146,7 @@ cdef class SeldenMatobaThomsonSpectrum(LaserModel):
             int index, nbins
             double alpha, epsilon, cos_anglescat, wavelength, min_wavelength, delta_wavelength
             double const_theta, recip_laser_wavelength, scattered_power, spectrum_norm
-            double cos2_angle_pol
+            double sin2_angle_pol
 
         alpha = self._CONST_ALPHA / te
         # scattering angle of the photon = pi - observation_angle
@@ -159,11 +159,12 @@ cdef class SeldenMatobaThomsonSpectrum(LaserModel):
         min_wavelength = spectrum.min_wavelength
         delta_wavelength = spectrum.delta_wavelength
         recip_laser_wavelength = 1 / laser_wavelength
-        cos2_angle_pol = cos(angle_polarization) ** 2
+
+        # dipole radiation has a cos ** 2 characteristic, here angle shifted by 90 deg
+        sin2_angle_pol = sin(angle_polarization * DEGREES_TO_RADIANS) ** 2
 
         #from d_lambda to d_epsilon:d_epsilon = d_lambda / laser_wavelength
-        scattered_power = ne * self._CONST_TS * laser_energy * recip_laser_wavelength * cos2_angle_pol
-
+        scattered_power = ne * self._RATE_TS * laser_energy * recip_laser_wavelength * sin2_angle_pol
         for index in range(nbins):
             wavelength = min_wavelength + (0.5 + index) * delta_wavelength
             epsilon = (wavelength * recip_laser_wavelength) - 1

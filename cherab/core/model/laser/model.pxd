@@ -9,7 +9,7 @@ from cherab.core.laser.laserspectrum cimport LaserSpectrum
 
 cdef class SeldenMatobaThomsonSpectrum(LaserModel):
     cdef:
-        double re, _CONST_ALPHA, _CONST_TS, _RECIP_M_PI
+        double re, _CONST_ALPHA, _RATE_TS, _RECIP_M_PI
 
 
     cpdef Spectrum emission(self, Point3D point_plasma, Vector3D observation_plasma, Point3D point_laser,
