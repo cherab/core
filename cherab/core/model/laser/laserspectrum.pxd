@@ -5,6 +5,7 @@ cdef class ConstantSpectrum(LaserSpectrum):
 
     cdef double evaluate(self, double x) except? -1e999
 
+
 cdef class GaussianSpectrum(LaserSpectrum):
 
     cdef:

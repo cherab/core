@@ -1,4 +1,3 @@
-
 from raysect.core.math.function.float cimport Function1D
 
 from cherab.core.utility.constants cimport SPEED_OF_LIGHT, PLANCK_CONSTANT

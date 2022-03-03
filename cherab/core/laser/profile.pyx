@@ -6,6 +6,7 @@ from raysect.optical cimport SpectralFunction, Spectrum, InterpolatedSF, Point3D
 from cherab.core.laser.node cimport Laser
 from cherab.core.utility import Notifier
 
+
 cdef class LaserProfile:
     """
     LaserProfile base class.

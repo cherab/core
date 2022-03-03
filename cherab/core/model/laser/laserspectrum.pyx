@@ -1,6 +1,7 @@
 from cherab.core.laser.laserspectrum cimport LaserSpectrum
 from libc.math cimport sqrt, exp, M_PI, erf, M_SQRT2
 
+
 cdef class ConstantSpectrum(LaserSpectrum):
     """
     A laser spectrum with constant power.
@@ -36,7 +37,8 @@ cdef class ConstantSpectrum(LaserSpectrum):
             return 1.0 / (self._max_wavelength - self._min_wavelength)
         else:
             return 0
-    
+
+
 cdef class GaussianSpectrum(LaserSpectrum):
     """
     A laser spectrum with a normally distributed power spectral density.

@@ -5,6 +5,7 @@ from raysect.optical cimport Spectrum, Point3D, Vector3D
 
 from cherab.core.laser.node cimport Laser
 
+
 cdef class LaserProfile:
 
     cdef:

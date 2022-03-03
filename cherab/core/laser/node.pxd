@@ -33,5 +33,4 @@ cdef class Laser(Node):
         list _geometry
         VolumeIntegrator _integrator
         
-
     cdef object __weakref__

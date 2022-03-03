@@ -6,6 +6,7 @@ from raysect.optical.material.emitter.inhomogeneous cimport VolumeIntegrator
 from cherab.core.laser.node cimport Laser
 from cherab.core.laser.model cimport LaserModel
 
+
 cdef class LaserMaterial(InhomogeneousVolumeEmitter):
 
     def __init__(self, Laser laser not None, _NodeBase laser_segment not None, list models, VolumeIntegrator integrator not None):
@@ -25,7 +26,6 @@ cdef class LaserMaterial(InhomogeneousVolumeEmitter):
             model.laser_spectrum = laser.laser_spectrum
 
         self._models = models
-
 
     cpdef Spectrum emission_function(self, Point3D point, Vector3D direction, Spectrum spectrum,
                                      World world, Ray ray, Primitive primitive,

@@ -3,6 +3,7 @@ from raysect.optical cimport Spectrum, Point3D, Vector3D
 
 from cherab.core.laser.profile cimport LaserProfile
 
+
 cdef class UniformEnergyDensity(LaserProfile):
 
     cdef:

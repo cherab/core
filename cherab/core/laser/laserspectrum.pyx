@@ -64,7 +64,6 @@ cdef class LaserSpectrum(Function1D):
 
         self.bins = bins
 
-
     @property
     def min_wavelength(self):
         return self._min_wavelength

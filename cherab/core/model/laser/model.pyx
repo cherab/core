@@ -55,7 +55,6 @@ cdef class SeldenMatobaThomsonSpectrum(LaserModel):
         # speed of light for correct normalisation of the scattered intensity calculation (from x-section to rate constant)
         self._RATE_TS = ELECTRON_CLASSICAL_RADIUS ** 2 * SPEED_OF_LIGHT
 
-
         self._RECIP_M_PI = 1 / M_PI
 
     @cython.cdivision(True)

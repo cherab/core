@@ -758,7 +758,7 @@ def generate_segmented_cylinder(radius, length):
     n_segments = int(length // (2 * radius))  # number of segments
     geometry = []
 
-    #length of segment is either length / n_segments if length > radius or length i f length < radius
+    #length of segment is either length / n_segments if length > radius or length if length < radius
     if n_segments > 1:
         segment_length = length / n_segments
         for i in range(n_segments):

@@ -12,7 +12,6 @@ cdef class LaserModel:
         LaserSpectrum _laser_spectrum
         LaserProfile _laser_profile
 
-
     cpdef Spectrum emission(self, Point3D point_plasma, Vector3D observation_plasma, Point3D point_laser,
                             Vector3D observation_laser, Spectrum spectrum)
 

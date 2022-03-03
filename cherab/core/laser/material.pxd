@@ -4,6 +4,7 @@ from raysect.optical.material.emitter cimport InhomogeneousVolumeEmitter
 
 from cherab.core.laser.node cimport Laser
 
+
 cdef class LaserMaterial(InhomogeneousVolumeEmitter):
 
     cdef:

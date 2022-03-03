@@ -1,6 +1,7 @@
 from raysect.core.math.function.float cimport Function3D
 
 cdef class ConstantAxisymmetricGaussian3D(Function3D):
+
     cdef:
         double _stddev, _recip_negative_2stddev2, _recip_2pistddev2
 
@@ -21,6 +22,7 @@ cdef class TrivariateGaussian3D(Function3D):
 
 
 cdef class GaussianBeamModel(Function3D):
+
     cdef:
         double _waist_z, _stddev_waist, _stddev_waist2, _wavelength, _rayleigh_range
 
