@@ -3,7 +3,6 @@ from raysect.core.math.function.float cimport Function1D
 from raysect.optical cimport Point3D, Vector3D
 
 from cherab.core.utility import Notifier
-from cherab.core.laser.node import Laser
 from cherab.core.utility.constants cimport SPEED_OF_LIGHT, PLANCK_CONSTANT
 
 import numpy as np
