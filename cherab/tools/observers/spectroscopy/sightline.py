@@ -27,6 +27,9 @@ from .base import _SpectroscopicObserver0DBase
 class SpectroscopicSightLine(SightLine, _SpectroscopicObserver0DBase):
 
     """
+    .. deprecated:: 1.4.0
+       Use Raysect's SightLine observer instead.
+
     A simple line of sight observer.
 
     Multiple `SpectroscopicSightLine` observers can be combined into `SightLineGroup`.
