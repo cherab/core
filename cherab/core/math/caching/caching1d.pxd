@@ -1,3 +1,5 @@
+# cython: language_level=3
+
 # Copyright 2016-2018 Euratom
 # Copyright 2016-2018 United Kingdom Atomic Energy Authority
 # Copyright 2016-2018 Centro de Investigaciones Energéticas, Medioambientales y Tecnológicas
@@ -17,25 +19,15 @@
 # under the Licence.
 
 from cherab.core.math.function cimport Function1D
-from numpy cimport ndarray, int8_t
+
 
 cdef class Caching1D(Function1D):
+    cdef:
+        Function1D _function
+        bint _no_boundary_error
+        double _xmin, _xmax, _resolution
+        unsigned char[::1] _sampled
+        double[::1] _xsamples, _fsamples
+        int _nsamples
 
-    cdef readonly:
-        Function1D function
-        int no_boundary_error
-        ndarray x_np
-        double[::1] x_domain_view
-        int top_index_x
-        double x_min, x_delta_inv
-        double data_min, data_max, data_delta, data_delta_inv
-        double[::1] x_view, x2_view, x3_view
-        double[::1] data_view
-        double[:,::1] coeffs_view
-        int8_t[::1] calculated_view
-
-    cdef double evaluate(self, double px) except? -1e999
-
-    cdef double _evaluate(self, double px, int i_x)
-
-    cdef double _evaluate_polynomial_derivative(self, int i_x, double px, int der_x)
+    cdef double _get_and_cache(self, int index) except? -1e999
