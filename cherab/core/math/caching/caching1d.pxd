@@ -27,7 +27,7 @@ cdef class Caching1D(Function1D):
         bint _no_boundary_error
         double _xmin, _xmax, _resolution
         unsigned char[::1] _sampled
-        double[::1] _xsamples, _fsamples
+        double[::1] _fsamples
         int _nsamples
 
     cdef double _get_and_cache(self, int index) except? -1e999

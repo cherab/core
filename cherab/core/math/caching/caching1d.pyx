@@ -21,7 +21,6 @@
 import numpy as np
 
 cimport cython
-from raysect.core.math.cython.utility cimport find_index
 from raysect.core.math.cython.interpolation.cubic cimport calc_coefficients_1d, evaluate_cubic_1d
 from cherab.core.math.function cimport autowrap_function1d
 
@@ -73,7 +72,6 @@ cdef class Caching1D(Function1D):
     """
 
     # The implementation works as follows:
-    # - From space_area and resolution, generate an x grid of sampled points.
     # - Store a list of which points have already been evaluated, and their values.
     # - For each new value x to evaluate, check if the sample points either side
     #   have already been evaluated.
@@ -84,6 +82,9 @@ cdef class Caching1D(Function1D):
     # - Use raysect.core.math.cython.interpolation.cubic's utilities to calculate
     #   the polynomial coefficients for the 1D cubic and then evaluate the cubic
     #   interpolation of the function at the position x.
+    # - Note that the sampled points have uniform spacing: this enables a few
+    #   optimisations such as analytic calculations of the array index and x
+    #   values for the nearest samples to the requested x.
 
     def __init__(self, function1d, space_area, resolution, no_boundary_error=False, function_boundaries=None):
         self._function = autowrap_function1d(function1d)
@@ -93,14 +94,9 @@ cdef class Caching1D(Function1D):
         if resolution <= 0:
             raise ValueError("Resolution must be greater than zero.")
         self._resolution = resolution
-        nsamples = int((self._xmax - self._xmin) / resolution + 1)
-        xsamples = np.linspace(self._xmin, self._xmax, nsamples)
-        fsamples = np.empty_like(xsamples)
-        sampled = np.full_like(fsamples, False, dtype='uint8')
-        self._nsamples = nsamples
-        self._xsamples = xsamples
-        self._fsamples = fsamples
-        self._sampled = sampled
+        self._nsamples = int((self._xmax - self._xmin) / resolution + 1)
+        self._fsamples = np.empty(self._nsamples)
+        self._sampled = np.full(self._nsamples, False, dtype='uint8')
         self._no_boundary_error = no_boundary_error
         # TODO: normalise using function_boundaries to avoid numerical issues.
 
@@ -111,7 +107,7 @@ cdef class Caching1D(Function1D):
         cdef double x, fsamp
 
         if not self._sampled[index]:
-            x = self._xsamples[index]
+            x = self._xmin + index * self._resolution
             fsamp = self._function.evaluate(x)
             self._sampled[index] = True
             self._fsamples[index] = fsamp
@@ -135,7 +131,8 @@ cdef class Caching1D(Function1D):
             double dfdx[2]  # Function derivative evaluations
 
         if self._xmin <= x < self._xmax:
-            lower_index = find_index(self._xsamples, x)
+            # Sampling is uniform, so lower_index is determined analytically.
+            lower_index = int((x - self._xmin) // self._resolution)
             f[0] = self._get_and_cache(lower_index)
             f[1] = self._get_and_cache(lower_index + 1)
             # Calculate derivatives. calc_coefficiets_1d requires derivatives
@@ -151,7 +148,9 @@ cdef class Caching1D(Function1D):
                 fnext = self._get_and_cache(lower_index + 2)
                 dfdx[1] = (fnext - f[0]) / 2
             calc_coefficients_1d(f, dfdx, a)
-            xnorm = (x - self._xsamples[lower_index]) / self._resolution
+            # lower_x = xmin + resolution * index
+            # xnorm = (x - lower_x) / res = (x - xmin) / resolution - index
+            xnorm = (x - self._xmin) / self._resolution - lower_index
             feval = evaluate_cubic_1d(a, xnorm)
             return feval
 
