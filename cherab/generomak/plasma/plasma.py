@@ -37,6 +37,7 @@ from cherab.openadas import OpenADAS
 
 from cherab.generomak.equilibrium import load_equilibrium
 
+
 def load_edge_profiles():
     """
     Loads Generomak edge plasma profiles
@@ -88,6 +89,7 @@ def load_edge_profiles():
 
     return edge_data.freeze()
 
+
 def get_edge_interpolators():
     """
     Provides Generomak edge profiles 2d interpolator
@@ -118,8 +120,8 @@ def get_edge_interpolators():
             mesh_interp["composition"][elem_name][stage]["density"] = n
             mesh_interp["composition"][elem_name][stage]["element"] = stage_data["element"]
 
-
     return mesh_interp.freeze()
+
 
 def get_edge_distributions():
     """
@@ -156,6 +158,7 @@ def get_edge_distributions():
 
     return dists.freeze()
 
+
 def get_edge_plasma(atomic_data=None, parent=None, name="Generomak edge plasma"):
     """
     Provides Generomak Edge plasma.
@@ -171,8 +174,8 @@ def get_edge_plasma(atomic_data=None, parent=None, name="Generomak edge plasma")
 
     # create or check atomic_data
     if atomic_data is not None:
-     if not isinstance(atomic_data, AtomicData):
-         raise ValueError("atomic_data has to be of type AtomicData")
+        if not isinstance(atomic_data, AtomicData):
+            raise ValueError("atomic_data has to be of type AtomicData")
     else:
         atomic_data = OpenADAS()
 
@@ -187,7 +190,7 @@ def get_edge_plasma(atomic_data=None, parent=None, name="Generomak edge plasma")
     z_range = (vertex_coords[:, 1].min(), vertex_coords[:, 1].max())
     plasma_height = z_range[1] - z_range[0]
 
-    padding = 1e-3 #enlarge for safety
+    padding = 1e-3  # enlarge for safety
 
     outer_column = Cylinder(radius=r_range[1], height=plasma_height)
     inner_column = Cylinder(radius=r_range[0], height=plasma_height + 2 * padding)
@@ -218,6 +221,7 @@ def get_edge_plasma(atomic_data=None, parent=None, name="Generomak edge plasma")
 
     return plasma
 
+
 def get_double_parabola(v_min, v_max, convexity, concavity, xmin=0, xmax=1):
     """
     Returns a 1d double-quadratic Function1D
@@ -242,12 +246,13 @@ def get_double_parabola(v_min, v_max, convexity, concavity, xmin=0, xmax=1):
     """
 
     x = Arg1D() #the free parameter
-    
+
     # funciton for the normalised free variable
     x_norm = ClampInput1D((x - xmin) / (xmax - xmin), 0, 1)
 
     # profile function
     return (v_max - v_min) * ((1 - ((1 - x_norm) ** convexity)) ** concavity) + v_min
+
 
 def get_exponential_growth(initial_value, growth_rate, initial_position=1):
     """
@@ -269,9 +274,10 @@ def get_exponential_growth(initial_value, growth_rate, initial_position=1):
     x = Arg1D() #the free parameter
     return initial_value * Exp1D((x - initial_position) * growth_rate)
 
+
 def get_maxwellian_distribution(equilibrium, f1d_density, f1d_temperature, f1d_vtor, f1d_vpol, f1d_vnorm, rest_mass):
     """ Returns Maxwellian distribution for equilibrium mapped 1d profiles
-    
+
     :param equilibrium: Instance of EFITEquilibrium
     :param f1d_density: Function1D describing density profile.
     :param f1d_temperature: Function1D describing temperature profile.
@@ -287,9 +293,10 @@ def get_maxwellian_distribution(equilibrium, f1d_density, f1d_temperature, f1d_v
     f3d_te = equilibrium.map3d(f1d_temperature)
     f3d_ne = equilibrium.map3d(f1d_density)
     f3d_v = equilibrium.map_vector3d(f1d_vtor, f1d_vpol, f1d_vnorm)
-    
+
     # return Maxwellian distribution
     return Maxwellian(f3d_ne, f3d_te, f3d_v, rest_mass)
+
 
 def get_edge_profile_values(r, z, edge_interpolators=None):
     """
@@ -321,8 +328,9 @@ def get_edge_profile_values(r, z, edge_interpolators=None):
                     lcfs_values["composition"][spec][chrg][prop] = val(r, z)
                 else:
                     lcfs_values["composition"][spec][chrg][prop] = val
-    
+
     return lcfs_values.freeze()
+
 
 def get_core_profiles_arguments(**kwargs):
     """
@@ -336,7 +344,7 @@ def get_core_profiles_arguments(**kwargs):
         ne_core: (default 5e19) core electron density
         ne_convexity: (default 2) (default ) convexity of the electron density profile
         ne_concavity: (default 4) concavity of the electron density profile
-        te_core core: (default 3e3) electron temperature 
+        te_core core: (default 3e3) electron temperature
         te_convexity: (default 2) convexity of the electron temperature profile
         te_concavity: (default 3) concavity of the electron temperature profile
         nh_core core: (default 5e19) density of H1+
@@ -360,7 +368,7 @@ def get_core_profiles_arguments(**kwargs):
         vtor_concavity: (default 4) concavity of the toroidal rotation profile
         vpol_lcfs: (default 2e4) Bulk poloidal rotation velocity in m/s
         vpol_decay: (default 0.08)
-    
+
     :return: dictionary of profile arguments
     """
 
@@ -388,6 +396,7 @@ def get_core_profiles_arguments(**kwargs):
 
     return core_args
 
+
 def get_core_profiles_description(lcfs_values=None, core_args=None):
     """
     Returns dictionary of core profile functions and species descriptions
@@ -409,7 +418,7 @@ def get_core_profiles_description(lcfs_values=None, core_args=None):
         r = equilibrium.psin_to_r(1)
         z = 0
         lcfs_values = get_edge_profile_values(r, z)
-    
+
     if core_args is None:
         core_args = get_core_profiles_arguments()
 
@@ -422,7 +431,7 @@ def get_core_profiles_description(lcfs_values=None, core_args=None):
 
     # velocity normal to magnetic surfaces
     f1d_vnorm = Constant1D(0)
-   
+
     # construct dictionary with 1D profile functions
     profiles = RecursiveDict()
 
@@ -479,6 +488,7 @@ def get_core_profiles_description(lcfs_values=None, core_args=None):
 
     return profiles.freeze()
 
+
 def get_core_distributions(profiles=None, equilibrium=None):
     """
     Returns a dictionary of core plasma species Maxwellian distributions.
@@ -492,11 +502,10 @@ def get_core_distributions(profiles=None, equilibrium=None):
     # get core profile data if not passed sa argument
     if profiles is None:
         profiles = get_core_profiles_description()
-    
+
     # load plasma equilibrium if not passed as argument
     if equilibrium is None:
         equilibrium = load_equilibrium()
-
 
     # build a dictionary with Maxwellian distributions
     species = RecursiveDict()
@@ -507,8 +516,9 @@ def get_core_distributions(profiles=None, equilibrium=None):
         for chrg, desc in spec.items():
             rest_mass = atomic_mass * spec_cherab.atomic_weight
             species["composition"][name][chrg] = get_maxwellian_distribution(equilibrium, rest_mass=rest_mass,  **desc)
-        
+
     return species.freeze()
+
 
 def get_core_plasma(distributions=None, atomic_data=None, parent=None, name="Generomak core plasma"):
     """
@@ -522,7 +532,7 @@ def get_core_plasma(distributions=None, atomic_data=None, parent=None, name="Gen
     :param name: name of the plasma node, defaults "Generomak edge plasma"
     :return: populated Plasma object
     """
-    
+
     # load Generomak equilibrium
     equilibrium = load_equilibrium()
 
@@ -543,13 +553,13 @@ def get_core_plasma(distributions=None, atomic_data=None, parent=None, name="Gen
 
     # coordinate transform of the plasma frame
     geometry_transform = translate(0, 0, equilibrium.z_range[0])
-    
+
     # load core distributions if needed
     if distributions is None:
         dists = get_core_distributions()
     else:
         dists = distributions
-    
+
     # create plasma composition list
     plasma_composition = []
     for elem_name, elem_data in dists["composition"].items():
@@ -570,9 +580,10 @@ def get_core_plasma(distributions=None, atomic_data=None, parent=None, name="Gen
 
     return plasma
 
+
 def _get_cherab_element(name):
     """Returns cherab element instance
-    
+
     :param name: Name or label of the element Cherab has to know.
     :return: Cherab element
     """
