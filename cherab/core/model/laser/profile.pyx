@@ -30,7 +30,7 @@ cdef class UniformEnergyDensity(LaserProfile):
     .. code-block:: pycon
        
        >>> from raysect.core import Vector3D
-       >>> # TODO: Add imports when files moved to correct locations
+       >>> from cherab.core.model.laser import UniformEnergyDensity
        
        >>> energy = 5 # energy density in J
        >>> radius = 3e-2 # laser radius in m
@@ -149,7 +149,7 @@ cdef class ConstantBivariateGaussian(LaserProfile):
     .. code-block:: pycon
        
        >>> from raysect.core import Vector3D
-       >>> # TODO: Add imports when files moved to correct locations
+       >>> from cherab.core.model.laser import ConstantBivariateGaussian
        
        >>> radius = 3e-2 # laser radius in m
        >>> length = 2 # laser length in m
@@ -353,7 +353,7 @@ cdef class TrivariateGaussian(LaserProfile):
     .. code-block:: pycon
        
        >>> from raysect.core import Vector3D
-       >>> # TODO: Add imports when files moved to correct locations
+       >>> from cherab.core.model.laser import ConstantBivariateGaussian
        
        >>> radius = 3e-2 # laser radius in m
        >>> length = 2 # laser length in m
@@ -576,7 +576,7 @@ cdef class GaussianBeamAxisymmetric(LaserProfile):
     .. code-block:: pycon
        
        >>> from raysect.core import Vector3D
-       >>> # TODO: Add imports when files moved to correct locations
+       >>> from cherab.core.model.laser import GaussianBeamAxisymmetric
        
        >>> radius = 5e-2 # laser radius in m
        >>> length = 2 # laser length in m
