@@ -13,3 +13,4 @@ Cherab contains a number of independent physics models for spectroscopic emissio
    brem/bremsstrahlung
    basic_line/basic_line_emission
    line_shapes/spectral_line_shapes
+   laser/laser
