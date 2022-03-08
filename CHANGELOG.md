@@ -4,11 +4,19 @@ Project Changelog
 Release 1.4.0 (TBD)
 -------------------
 
+API changes:
+* Spectroscopic observers and their groups are deprecated and replaced by groups based on Raysect's 0D observers. (#332)
+
 Bug fixes:
+* Fixed generomak plasma edge data paths.
+* Fix and improve OpenCL utility functions. (#358)
 * Fix wavelength indexing in Bremsstrahlung emission model. (#352)
 
 New:
 * Make f_profile (current flux) a read-only attribute of EFITEquilibrium. (#355)
+* Add group observer class for each of Raysect's 0D observers. (#332)
+* Add a demo for observer group handling and plotting.
+* Add verbose parameter to SartOpencl solver (default is False). (#358)
 * Add new classes for free-free Gaunt factors and improve accuracy of the Gaunt factor used in Bremsstrahlung emission model. (#352)
 
 
