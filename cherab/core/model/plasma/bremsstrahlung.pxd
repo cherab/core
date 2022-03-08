@@ -27,6 +27,7 @@ cdef class Bremsstrahlung(PlasmaModel):
 
     cdef:
         FreeFreeGauntFactor _gaunt_factor
+        bint _user_provided_gaunt_factor
         ndarray _species_charge, _species_density
         double[::1] _species_density_mv, _species_charge_mv
 

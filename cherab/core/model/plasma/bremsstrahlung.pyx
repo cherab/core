@@ -21,6 +21,7 @@
 import numpy as np
 from raysect.optical cimport Spectrum, Point3D, Vector3D
 from cherab.core cimport Plasma, AtomicData
+from cherab.core.atomic cimport FreeFreeGauntFactor
 from cherab.core.species cimport Species
 from cherab.core.utility.constants cimport RECIP_4_PI, ELEMENTARY_CHARGE, SPEED_OF_LIGHT, PLANCK_CONSTANT
 from libc.math cimport sqrt, log, exp
@@ -44,14 +45,33 @@ cdef class Bremsstrahlung(PlasmaModel):
         \\epsilon (\\lambda) = \\frac{0.95 \\times 10^{-19}}{\\lambda 4 \\pi} \\sum_{i} \\left(g_{ff}(Z_i, T_e, \\lambda) n_i Z_i^2\\right) n_e T_e^{1/2} \\times \\exp{\\frac{-hc}{\\lambda T_e}},
 
     where the emission :math:`\\epsilon (\\lambda)` is in units of radiance (ph/s/sr/m^3/nm).
+
+    :ivar Plasma plasma: The plasma to which this emission model is attached. Default is None.
+    :ivar AtomicData atomic_data: The atomic data provider for this model. Default is None.
+    :ivar FreeFreeGauntFactor gaunt_factor: Free-free Gaunt factor as a function of Z, Te and
+                                            wavelength. If not provided,
+                                            the `atomic_data` is used.
     """
 
-    def __init__(self, Plasma plasma=None, AtomicData atomic_data=None):
+    def __init__(self, Plasma plasma=None, AtomicData atomic_data=None, FreeFreeGauntFactor gaunt_factor=None):
 
         super().__init__(plasma, atomic_data)
 
+        self.gaunt_factor = gaunt_factor
+
         # ensure that cache is initialised
         self._change()
+
+    @property
+    def gaunt_factor(self):
+
+        return self._gaunt_factor
+
+    @gaunt_factor.setter
+    def gaunt_factor(self, value):
+
+        self._gaunt_factor = value
+        self._user_provided_gaunt_factor = True if value else False
 
     def __repr__(self):
         return '<PlasmaModel - Bremsstrahlung>'
@@ -70,7 +90,7 @@ cdef class Bremsstrahlung(PlasmaModel):
             int i
 
         # cache data on first run
-        if self._gaunt_factor is None:
+        if self._species_charge is None:
             self._populate_cache()
 
         ne = self._plasma.get_electron_distribution().density(point.x, point.y, point.z)
@@ -139,11 +159,12 @@ cdef class Bremsstrahlung(PlasmaModel):
         if self._plasma is None:
             raise RuntimeError("The emission model is not connected to a plasma object.")
 
-        if self._atomic_data is None:
-            raise RuntimeError("The emission model is not connected to an atomic data source.")
+        if self._gaunt_factor is None:
+            if self._atomic_data is None:
+                raise RuntimeError("The emission model is not connected to an atomic data source.")
 
-        # initialise Gaunt factor on first run
-        self._gaunt_factor = self._atomic_data.free_free_gaunt_factor()
+            # initialise Gaunt factor on first run using the atomic data
+            self._gaunt_factor = self._atomic_data.free_free_gaunt_factor()
 
         species_charge = []
         for species in self._plasma.get_composition():
@@ -160,7 +181,8 @@ cdef class Bremsstrahlung(PlasmaModel):
     def _change(self):
 
         # clear cache to force regeneration on first use
-        self._gaunt_factor = None
+        if not self._user_provided_gaunt_factor:
+            self._gaunt_factor = None
         self._species_charge = None
         self._species_charge_mv = None
         self._species_density = None
