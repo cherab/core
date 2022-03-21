@@ -340,7 +340,7 @@ def get_core_profiles_arguments(**kwargs):
     If there is a match, the default value is overwritten by th passed value, the default value is kept
     otherwise.
 
-    List of core parameters, their meanint and default values
+    List of core parameters, their meaning and default values
         ne_core: (default 5e19) core electron density
         ne_convexity: (default 2) (default ) convexity of the electron density profile
         ne_concavity: (default 4) concavity of the electron density profile
@@ -371,18 +371,18 @@ def get_core_profiles_arguments(**kwargs):
 
     :return: dictionary of profile arguments
     """
-
-    core_args = {"ne_core": 5e19, "ne_convexity": 2,
-                         "ne_concavity": 4, "te_core": 3e3,
-                         "te_convexity": 2, "te_concavity": 3,
-                         "nh_core": 5e19, "nh_convexity": 2,
-                         "nh_concavity": 4, "th_core": 2.8e3,
-                         "th_convexity": 2, "th_concavity": 4,
-                         "th0_fraction": 0.8, "nh0_decay": 10,
-                         "timp_core": 2.7e3, "timp_convexity": 2,
-                         "timp_concavity": 4, "nimp_core": 5e17,
-                         "nimp_convexity": 2, "nimp_concavity": 4,
-                         "nimp_decay": 8,
+    
+    core_args = {"ne_core": 5e19, "ne_convexity": 1.09,
+                         "ne_concavity": 0.24, "te_core": 3e3,
+                         "te_convexity": 2.35, "te_concavity": 1.26,
+                         "nh_core": 5e19, "nh_convexity": 1.09,
+                         "nh_concavity": 0.24, "th_core": 2.8e3,
+                         "th_convexity": 1, "th_concavity": 0.82,
+                         "th0_fraction": 0.8, "nh0_decay": 20,
+                         "timp_core": 2.7e3, "timp_convexity": 1,
+                         "timp_concavity": 0.82, "nimp_core": 5e17,
+                         "nimp_convexity": 1.09, "nimp_concavity": 0.24,
+                         "nimp_decay": 30,
                          "vtor_core": 1e5, "vtor_edge": 1e4,
                          "vtor_convexity": 2, "vtor_concavity": 4,
                          "vpol_lcfs": 2e4, "vpol_decay": 0.08}
