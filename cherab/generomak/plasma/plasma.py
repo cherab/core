@@ -342,32 +342,32 @@ def get_core_profiles_arguments(**kwargs):
 
     List of core parameters, their meaning and default values
         ne_core: (default 5e19) core electron density
-        ne_convexity: (default 2) (default ) convexity of the electron density profile
-        ne_concavity: (default 4) concavity of the electron density profile
+        ne_convexity: (default 1.09) (default ) convexity of the electron density profile
+        ne_concavity: (default 0.24) concavity of the electron density profile
         te_core core: (default 3e3) electron temperature
-        te_convexity: (default 2) convexity of the electron temperature profile
-        te_concavity: (default 3) concavity of the electron temperature profile
-        nh_core core: (default 5e19) density of H1+
-        nh_convexity: (default 2) convexity of H1+ density profile
-        nh_concavity: (default 4) concavity of H1+ density profile
-        th_core core: (default 2.8e3) H1+ temperature
-        th_convexity: (default 2) convexity of H1+ temperature profile
-        th_concavity: (default 4) concavity of H1+ temperature profile
+        te_convexity: (default 2.35) convexity of the electron temperature profile
+        te_concavity: (default 1.26) concavity of the electron temperature profile
+        nh_core: (default 5e19) density of H1+
+        nh_convexity: (default 1.09) convexity of H1+ density profile
+        nh_concavity: (default 0.24) concavity of H1+ density profile
+        th_core: (default 2.8e3) H1+ temperature
+        th_convexity: (default 1) convexity of H1+ temperature profile
+        th_concavity: (default 0.82) concavity of H1+ temperature profile
         th0_fraction: (default 0.8) H0 temperature factor
-        nh0_decay decay: (default 10) rate of H0 density profile
-        timp_core core: (default 2.7e3) impurity density
-        timp_convexity: (default 2) convexity of impurity temperature profile
-        timp_concavity: (default 4) concavity of impurity temperature profile
-        nimp_core core: (default 5e17) impurity density
-        nimp_convexity: (default 2) convexity of impurity density profile
-        nimp_concavity: (default 4) concavity of impurity density profile
-        nimp_decay: (default 8) decay rate of impurity density profile (except bare nuclei)
-        vtor_core: (default 1e5) toroidal rotation velocity at the edge m/s
-        vtor_edge: (default 1e4) core toroidal rotation velocity m/s
+        nh0_decay decay: (default 20) rate of H0 density profile
+        timp_core: (default 2.7e3) core impurity temperature
+        timp_convexity: (default 1) convexity of impurity temperature profile
+        timp_concavity: (default 0.82) concavity of impurity temperature profile
+        nimp_core: (default 5e17) impurity density
+        nimp_convexity: (default 1.09) convexity of impurity density profile
+        nimp_concavity: (default 0.24) concavity of impurity density profile
+        nimp_decay: (default 30) decay rate of impurity density profile (except bare nuclei)
+        vtor_core: (default 1e5) toroidal rotation velocity m/s
+        vtor_edge: (default 1e4) toroidal rotation velocity at the edge m/s
         vtor_convexity: (default 2) convexity of the toroidal rotation profile
         vtor_concavity: (default 4) concavity of the toroidal rotation profile
         vpol_lcfs: (default 2e4) Bulk poloidal rotation velocity in m/s
-        vpol_decay: (default 0.08)
+        vpol_decay: (default 0.08) Decay rate of poloidal rotation velocity
 
     :return: dictionary of profile arguments
     """
