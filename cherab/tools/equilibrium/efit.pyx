@@ -73,6 +73,7 @@ cdef class EFITEquilibrium:
 
     :ivar Function2D psi: The poloidal flux in the r-z plane, :math:`\psi(r,z)`.
     :ivar Function2D psi_normalised: The normalised poloidal flux in the r-z plane, :math:`\psi_n(r,z)`.
+    :ivar Function1D f_profile: The current flux at the specified normalised poloidal flux, :math:`F(\psi_n)`.
     :ivar Function1D q: The safety factor :math:`q` at the specified normalised poloidal flux, :math:`q(\psi_n)`.
     :ivar VectorFunction2D b_field: A 2D function that returns the magnetic field vector at the specified
       point in the r-z plane, :math:`B(r, z)`.
@@ -119,7 +120,7 @@ cdef class EFITEquilibrium:
         self.z_range = z.min(), z.max()
         self._b_vacuum_magnitude = b_vacuum_magnitude
         self._b_vacuum_radius = b_vacuum_radius
-        self._f_profile = Interpolator1DArray(f_profile[0, :], f_profile[1, :], 'cubic', 'none', 0)
+        self.f_profile = Interpolator1DArray(f_profile[0, :], f_profile[1, :], 'cubic', 'none', 0)
         self.q = Interpolator1DArray(q_profile[0, :], q_profile[1, :], 'cubic', 'none', 0)
 
         # populate points
@@ -130,7 +131,7 @@ cdef class EFITEquilibrium:
 
         # calculate b-field
         dpsi_dr, dpsi_dz = self._calculate_differentials(r, z, psi)
-        self.b_field = MagneticField(self.psi_normalised, dpsi_dr, dpsi_dz, self._f_profile, b_vacuum_radius, b_vacuum_magnitude, self.inside_lcfs)
+        self.b_field = MagneticField(self.psi_normalised, dpsi_dr, dpsi_dz, self.f_profile, b_vacuum_radius, b_vacuum_magnitude, self.inside_lcfs)
 
         # populate flux coordinate attributes
         self.toroidal_vector = ConstantVector2D(Vector3D(0, 1, 0))

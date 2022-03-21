@@ -1,8 +1,26 @@
 Project Changelog
 =================
 
-Release 1.3.0 (8 Dec 2021)
+Release 1.4.0 (TBD)
 -------------------
+
+API changes:
+* Spectroscopic observers and their groups are deprecated and replaced by groups based on Raysect's 0D observers. (#332) 
+
+New:
+* Make f_profile (current flux) a read-only attribute of EFITEquilibrium. (#355)
+* Add group observer class for each of Raysect's 0D observers. (#332)
+* Add a demo for observer group handling and plotting.
+* Add verbose parameter to SartOpencl solver (default is False). (#358)
+
+Bug Fixes:
+----------
+* Fixed generomak plasma edge data paths.
+* Fix and improve OpenCL utility functions. (#358)
+
+
+Release 1.3.0 (8 Dec 2021)
+--------------------------
 
 API changes:
 * Use of Cherab's interpolators is now deprecated in favour of those upstream in Raysect.
