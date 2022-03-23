@@ -125,8 +125,11 @@ class Spectrometer(SpectroscopicInstrument):
         self._min_bins_per_pixel = value
         self._clear_spectral_settings()
 
-    def _update_pipeline_properties(self):
-        self._pipeline_properties = [(SpectralRadiancePipeline0D, self._name, None)]
+    def _update_pipeline_classes(self):
+        self._pipeline_classes = [SpectralRadiancePipeline0D]
+
+    def _update_pipeline_kwargs(self):
+        self._pipeline_kwargs = [{'name': self._name}]
 
     def _update_spectral_settings(self):
         self._min_wavelength = min(wl2pix[0] for wl2pix in self._wavelength_to_pixel)

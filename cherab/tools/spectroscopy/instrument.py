@@ -24,14 +24,16 @@ class SpectroscopicInstrument:
 
     :param str name: Instrument name.
 
-    :ivar list pipeline_properties: The list of properties (class, name, filter) of
-                                    the pipelines used with this instrument.
+    :ivar list pipeline_classes: The list of pipeline classes used with this instrument.
+    :ivar list pipeline_kwargs: The list of dicts with keywords passed to init methods of
+                                pipeline classes used with this instrument.
     :ivar float min_wavelength: Lower wavelength bound for spectral range.
     :ivar float max_wavelength: Upper wavelength bound for spectral range.
     :ivar int spectral_bins: The number of spectral samples over the wavelength range.
     """
 
     def __init__(self, name=''):
+        self._pipeline_classes = None
         self.name = name
         self._clear_spectral_settings()
 
@@ -43,28 +45,39 @@ class SpectroscopicInstrument:
     @name.setter
     def name(self, value):
         self._name = str(value)
-        self._pipeline_properties = None
+        self._pipeline_kwargs = None
 
     @property
-    def pipeline_properties(self):
-        # The list of properties (class, name, filter) of the pipelines used with
-        # this instrument.
-        if self._pipeline_properties is None:
-            self._update_pipeline_properties()
+    def pipeline_classes(self):
+        # The list of pipeline classes used with this instrument.
+        if self._pipeline_classes is None:
+            self._update_pipeline_classes()
 
-        return self._pipeline_properties
+        return self._pipeline_classes
+
+    @property
+    def pipeline_kwargs(self):
+        # The list of dicts with keywords passed to init methods of
+        # pipeline classes used with this instrument.
+        if self._pipeline_kwargs is None:
+            self._update_pipeline_kwargs()
+
+        return self._pipeline_kwargs
 
     def create_pipelines(self):
-        """ Returns a list of new pipelines created according to `pipeline_properties`."""
+        """ Returns a list of new pipelines created according to `pipeline_classes`
+            and keyword arguments."""
+        if self._pipeline_classes is None:
+            self._update_pipeline_classes()
+        if self._pipeline_kwargs is None:
+            self._update_pipeline_kwargs()
 
-        pl_list = []
-        for (pl_class, pl_name, pl_filter) in self.pipeline_properties:
-            if pl_filter is None:
-                pl_list.append(pl_class(name=pl_name))
-            else:
-                pl_list.append(pl_class(name=pl_name, filter=pl_filter))
+        pipelines = []
+        for PipelineClass, kwargs in zip(self._pipeline_classes, self._pipeline_kwargs):
+            pipeline = PipelineClass(**kwargs)
+            pipelines.append(pipeline)
 
-        return pl_list
+        return pipelines
 
     @property
     def min_wavelength(self):
@@ -98,5 +111,8 @@ class SpectroscopicInstrument:
     def _update_spectral_settings(self):
         raise NotImplementedError("To be defined in subclass.")
 
-    def _update_pipeline_properties(self):
+    def _update_pipeline_classes(self):
+        raise NotImplementedError("To be defined in subclass.")
+
+    def _update_pipeline_kwargs(self):
         raise NotImplementedError("To be defined in subclass.")

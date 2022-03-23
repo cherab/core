@@ -197,10 +197,14 @@ class Polychromator(SpectroscopicInstrument):
 
         self._filters = value
         self._clear_spectral_settings()
-        self._pipeline_properties = None
+        self._pipeline_classes = None
+        self._pipeline_kwargs = None
 
-    def _update_pipeline_properties(self):
-        self._pipeline_properties = [(RadiancePipeline0D, self._name + ': ' + poly_filter.name, poly_filter) for poly_filter in self._filters]
+    def _update_pipeline_classes(self):
+        self._pipeline_classes = [RadiancePipeline0D for poly_filter in self._filters]
+
+    def _update_pipeline_kwargs(self):
+        self._pipeline_kwargs = [{'name': self._name + ': ' + poly_filter.name, 'filter': poly_filter} for poly_filter in self._filters]
 
     def _update_spectral_settings(self):
 

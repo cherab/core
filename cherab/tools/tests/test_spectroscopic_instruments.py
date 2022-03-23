@@ -64,12 +64,17 @@ class TestPolychromator(unittest.TestCase):
                             TrapezoidalFilter(700., 8., 4., 'filter 2'))
     min_bins_per_window_default = 10
 
-    def test_pipeline_properties(self):
+    def test_pipeline_classes(self):
         polychromator = Polychromator(self.poly_filters_default, self.min_bins_per_window_default, 'test polychromator')
-        pipeline_properties_true = [(RadiancePipeline0D, 'test polychromator: filter 1', self.poly_filters_default[0]),
-                                    (RadiancePipeline0D, 'test polychromator: filter 2', self.poly_filters_default[1])]
-        self.assertSequenceEqual(pipeline_properties_true, polychromator.pipeline_properties)
+        pipeline_classes_true = [RadiancePipeline0D, RadiancePipeline0D]
+        self.assertSequenceEqual(pipeline_classes_true, polychromator.pipeline_classes)
 
+    def test_pipeline_kwargs(self):
+        polychromator = Polychromator(self.poly_filters_default, self.min_bins_per_window_default, 'test polychromator')
+        pipeline_kwargs_true = [{'name': 'test polychromator: filter 1', 'filter': self.poly_filters_default[0]},
+                                {'name': 'test polychromator: filter 2', 'filter': self.poly_filters_default[1]}]
+        self.assertSequenceEqual(pipeline_kwargs_true, polychromator.pipeline_kwargs)
+        
     def test_spectral_properties(self):
         polychromator = Polychromator(self.poly_filters_default, self.min_bins_per_window_default)
         min_wavelength_true = 397.
@@ -98,11 +103,15 @@ class TestSpectrometer(unittest.TestCase):
     Test cases for Spectrometer class.
     """
 
-    def test_pipeline_properties(self):
+    def test_pipeline_classes(self):
         wavelength_to_pixel = ([400., 400.5],)
         spectrometer = Spectrometer(wavelength_to_pixel, name='test spectrometer')
-        pipeline_properties_true = [(SpectralRadiancePipeline0D, 'test spectrometer', None)]
-        self.assertSequenceEqual(pipeline_properties_true, spectrometer.pipeline_properties)
+        self.assertSequenceEqual([SpectralRadiancePipeline0D], spectrometer.pipeline_classes)
+
+    def test_pipeline_kwargs(self):
+        wavelength_to_pixel = ([400., 400.5],)
+        spectrometer = Spectrometer(wavelength_to_pixel, name='test spectrometer')
+        self.assertSequenceEqual([{'name': 'test spectrometer'}], spectrometer.pipeline_kwargs)
 
     def test_spectral_properties(self):
         wavelength_to_pixel = ([400., 400.5, 401.5, 402., 404.], [600., 600.5, 601.5, 602., 604., 607.])
