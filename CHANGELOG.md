@@ -11,6 +11,7 @@ New:
 * Make f_profile (current flux) a read-only attribute of EFITEquilibrium. (#355)
 * Add group observer class for each of Raysect's 0D observers (#332)
 * Add a demo for observer group handling and plotting
+* Add Generomak core plasma profiles (#360)
 
 Bug Fixes:
 ----------
