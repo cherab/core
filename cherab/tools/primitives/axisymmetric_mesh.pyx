@@ -23,6 +23,8 @@ from .toroidal_mesh import toroidal_mesh_from_polygon
 
 cpdef Mesh axisymmetric_mesh_from_polygon(object polygon, int num_toroidal_segments=500):
     """
+    .. deprecated:: 1.4.0
+       Use `toroidal_mesh_from_polygon` with `toroidal_extent=360` instead.
     Generates an Raysect Mesh primitive from the specified 2D polygon.
 
     :param np.ndarray polygon: A numpy array with shape [N,2] specifying the wall outline polygon
