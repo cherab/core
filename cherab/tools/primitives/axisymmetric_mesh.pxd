@@ -17,7 +17,6 @@
 # See the Licence for the specific language governing permissions and limitations
 # under the Licence.
 
-cimport numpy as np
 from raysect.primitive.mesh cimport Mesh
 
 cpdef Mesh axisymmetric_mesh_from_polygon(object polygon, int num_toroidal_segments=*)

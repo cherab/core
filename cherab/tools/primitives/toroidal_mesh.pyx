@@ -21,29 +21,33 @@ cimport numpy as np
 from libc.math cimport cos, sin
 from raysect.primitive.mesh.mesh cimport Mesh
 from raysect.core.math.polygon import triangulate2d
+from raysect.core.math.cython cimport winding2d
 
 
 cdef double DEG2RAD = 2 * np.pi / 360
 
 
-cpdef Mesh toroidal_mesh_from_polygon(object polygon, object polygon_triangles=None, double toroidal_extent=360, int num_toroidal_segments=500):
+cpdef Mesh toroidal_mesh_from_polygon(object polygon, double toroidal_extent, object polygon_triangles=None, int num_toroidal_segments=500):
     """
     Generates a watertight Raysect Mesh primitive from the specified 2D polygon in R-Z plane
     by extending it in toroidal direction by a given angle and closing the
     poloidal faces with triangulated polygons.
 
-    :param np.ndarray polygon: A numpy array with shape [N,2] specifying the wall outline polygon
-                               in the R-Z plane. The polygon should not be closed, i.e.
-                               vertex i = 0 and i = N should not be the same vertex, but neighbours.
-    :param np.ndarray polygon_triangles: A numpy array with shape [M,3] specifying the triangulation
-                                         of a polygon (polygon_triangles = [[v1, v2, v3],...),
-                                         where v1, v2, v3 are the vertex array indices specifying
-                                         the triangle’s vertices. Should be with clockwise winding.
-                                         Defaults to None.
-                                         If not provided, the triangulation will be performed using
-                                         `triangulate2d(polygon)` from raysect.core.math.polygon.
+    :param object polygon: An object which can be converted to a numpy array with shape 
+                           [N,2] specifying the wall outline polygon in the R-Z plane. 
+                           The polygon should not be closed, i.e. vertex i = 0 and i = N 
+                           should not be the same vertex, but neighbours.
+    :param object polygon_triangles: An object which can be converted to a numpy array
+                                     with shape [M,3] specifying the triangulation
+                                     of a polygon (polygon_triangles = [[v1, v2, v3],...),
+                                     where v1, v2, v3 are the vertex array indices specifying
+                                     the triangle’s vertices. Should be with clockwise winding.
+                                     Defaults to None.
+                                     If not provided, the triangulation will be performed using
+                                     `triangulate2d(polygon)` from raysect.core.math.polygon.
     :param float toroidal_extent: Angular extention of an element in toroidal direction (in degrees).
-                                  Default to 360.
+                                  Note that in the case of toroidal_extent=360  produces 
+                                  an axisymmetric mesh which has no end faces
     :param int num_toroidal_segments: The number of repeating toroidal segments
                                       per given `toroidal_extent` that will be used to construct
                                       the mesh. Defaults to 500.
@@ -55,14 +59,13 @@ cpdef Mesh toroidal_mesh_from_polygon(object polygon, object polygon_triangles=N
         >>> from cherab.tools.primitives import toroidal_mesh_from_polygon
         >>>
         >>> # wall_polygon is your (N, 2) ndarray describing the polygon
-        >>> mesh = toroidal_mesh_from_polygon(wall_polygon, extent = 50)
+        >>> mesh = toroidal_mesh_from_polygon(wall_polygon, toroidal_extent = 50)
     """
 
     cdef:
         int num_poloidal_vertices, num_toroidal_segments_loop
         int i, j, vid, v1_id, v2_id, v3_id, v4_id
         double theta, r, x, y, z
-        np.ndarray vertices
         list triangles
         double[:, :] polygon_mv, vertices_mv
 
@@ -76,6 +79,9 @@ cpdef Mesh toroidal_mesh_from_polygon(object polygon, object polygon_triangles=N
 
     if polygon.shape[1] != 2:
         raise ValueError("The 'polygon' must have [N, 2] shape.")
+    
+    if (toroidal_extent<=0) or (toroidal_extent>360):
+        raise ValueError("The 'toroidal_extent' should be in the range 0 < 'toroidal_extent' <= 360.")
 
     num_poloidal_vertices = polygon.shape[0]
     theta = toroidal_extent / num_toroidal_segments  # toroidal step
@@ -153,15 +159,11 @@ cpdef Mesh toroidal_mesh_from_polygon(object polygon, object polygon_triangles=N
 
 cdef _check_polygon_triangulation(np.ndarray polygon, np.ndarray polygon_triangles):
 
-    cdef:
-        np.ndarray tri, edge_a, edge_b
 
     # check consistency
-    if not np.all(np.sort(np.unique(polygon_triangles)) == np.arange(polygon.shape[0], dtype=np.int32)):
+    if not np.array_equal(np.unique(polygon_triangles), np.arange(polygon.shape[0], dtype=np.int32)):
         raise ValueError("The data in 'polygon_triangles' does not match a given 'polygon'.")
     # check winding
-    tri = polygon[polygon_triangles]
-    edge_a = tri[:, 1] - tri[:, 0]
-    edge_b = tri[:, 2] - tri[:, 0]
-    if not np.all(edge_a[:, 0] * edge_b[:, 1] - edge_a[:, 1] * edge_b[:, 0] < 0):
+    triangles = np.ascontiguousarray(polygon[polygon_triangles])
+    if not all(winding2d(triangle) for triangle in triangles):
         raise ValueError("All triangles in 'polygon_triangles' must be wound clockwise.")

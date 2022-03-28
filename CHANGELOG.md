@@ -6,7 +6,6 @@ Release 1.4.0 (TBD)
 
 API changes:
 * Spectroscopic observers and their groups are deprecated and replaced by groups based on Raysect's 0D observers. (#332) 
-* axisymmetric_mesh_from_polygon is deprecated and toroidal_mesh_from_polygon with toroidal_extent=360 should be used instead. (#365) 
 
 New:
 * Make f_profile (current flux) a read-only attribute of EFITEquilibrium. (#355)
@@ -14,7 +13,7 @@ New:
 * Add a demo for observer group handling and plotting.
 * Add verbose parameter to SartOpencl solver (default is False). (#358)
 * Add Generomak core plasma profiles. (#360)
-* Add toroidal_mesh_from_polygon for making mesh not fully-360 degrees axysimmetric elements. (#365)
+* Add toroidal_mesh_from_polygon for making mesh for not fully-360 degrees axisymmetric elements. (#365)
 
 Bug Fixes:
 ----------
