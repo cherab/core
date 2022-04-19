@@ -21,12 +21,14 @@ import numpy as np
 from libc.math cimport INFINITY, log10
 
 from raysect.core.math.function.float cimport Interpolator2DArray
+from cherab.core.math cimport OutofRangeFallback2D
 
 
 cdef class LineRadiationPower(CoreLineRadiationPower):
     """Base class for radiated powers."""
 
-    def __init__(self, species, ionisation, dict data, extrapolate=False):
+    def __init__(self, species, ionisation, dict data, extrapolate=False,
+                 rate_fallback=None):
 
         super().__init__(species, ionisation)
 
@@ -44,7 +46,17 @@ cdef class LineRadiationPower(CoreLineRadiationPower):
         # interpolate rate
         # using nearest extrapolation to avoid infinite values at 0 for some rates
         extrapolation_type = 'nearest' if extrapolate else 'none'
-        self._rate = Interpolator2DArray(np.log10(ne), np.log10(te), rate, 'cubic', extrapolation_type, INFINITY, INFINITY)
+        rate = 10 ** Interpolator2DArray(np.log10(ne), np.log10(te), rate, 'cubic', extrapolation_type, INFINITY, INFINITY)
+
+        if rate_fallback is not None:
+            self._rate = OutofRangeFallback2D(rate, rate_fallback,
+                                              xmin=np.log10(self.density_range[0]),
+                                              xmax=np.log10(self.density_range[1]),
+                                              ymin=np.log10(self.temperature_range[0]),
+                                              ymax=np.log10(self.temperature_range[1]))
+            self.rate_fallback = rate_fallback
+        else:
+            self._rate = rate
 
     cdef double evaluate(self, double electron_density, double electron_temperature) except? -1e999:
 
@@ -56,7 +68,7 @@ cdef class LineRadiationPower(CoreLineRadiationPower):
             electron_temperature = 1.e-300
 
         # calculate rate and convert from log10 space to linear space
-        return 10 ** self._rate.evaluate(log10(electron_density), log10(electron_temperature))
+        return self._rate.evaluate(log10(electron_density), log10(electron_temperature))
 
 
 cdef class NullLineRadiationPower(CoreLineRadiationPower):
@@ -72,7 +84,8 @@ cdef class NullLineRadiationPower(CoreLineRadiationPower):
 cdef class ContinuumPower(CoreContinuumPower):
     """Base class for radiated powers."""
 
-    def __init__(self, species, ionisation, dict data, extrapolate=False):
+    def __init__(self, species, ionisation, dict data, extrapolate=False,
+                 rate_fallback=None):
 
         super().__init__(species, ionisation)
 
@@ -90,7 +103,17 @@ cdef class ContinuumPower(CoreContinuumPower):
         # interpolate rate
         # using nearest extrapolation to avoid infinite values at 0 for some rates
         extrapolation_type = 'nearest' if extrapolate else 'none'
-        self._rate = Interpolator2DArray(np.log10(ne), np.log10(te), rate, 'cubic', extrapolation_type, INFINITY, INFINITY)
+        rate = 10 ** Interpolator2DArray(np.log10(ne), np.log10(te), rate, 'cubic', extrapolation_type, INFINITY, INFINITY)
+
+        if rate_fallback is not None:
+            self._rate = OutofRangeFallback2D(rate, rate_fallback,
+                                              xmin=np.log10(self.density_range[0]),
+                                              xmax=np.log10(self.density_range[1]),
+                                              ymin=np.log10(self.temperature_range[0]),
+                                              ymax=np.log10(self.temperature_range[1]))
+            self.rate_fallback = rate_fallback
+        else:
+            self._rate = rate
 
     cdef double evaluate(self, double electron_density, double electron_temperature) except? -1e999:
 
@@ -102,7 +125,7 @@ cdef class ContinuumPower(CoreContinuumPower):
             electron_temperature = 1.e-300
 
         # calculate rate and convert from log10 space to linear space
-        return 10 ** self._rate.evaluate(log10(electron_density), log10(electron_temperature))
+        return self._rate.evaluate(log10(electron_density), log10(electron_temperature))
 
 
 cdef class NullContinuumPower(CoreContinuumPower):
@@ -118,7 +141,8 @@ cdef class NullContinuumPower(CoreContinuumPower):
 cdef class CXRadiationPower(CoreCXRadiationPower):
     """Base class for radiated powers."""
 
-    def __init__(self, species, ionisation, dict data, extrapolate=False):
+    def __init__(self, species, ionisation, dict data, extrapolate=False,
+                 rate_fallback=None):
 
         super().__init__(species, ionisation)
 
@@ -135,7 +159,17 @@ cdef class CXRadiationPower(CoreCXRadiationPower):
 
         # interpolate rate
         extrapolation_type = 'linear' if extrapolate else 'none'
-        self._rate = Interpolator2DArray(np.log10(ne), np.log10(te), rate, 'cubic', extrapolation_type, INFINITY, INFINITY)
+        rate = 10 ** Interpolator2DArray(np.log10(ne), np.log10(te), rate, 'cubic', extrapolation_type, INFINITY, INFINITY)
+
+        if rate_fallback is not None:
+            self._rate = OutofRangeFallback2D(rate, rate_fallback,
+                                              xmin=np.log10(self.density_range[0]),
+                                              xmax=np.log10(self.density_range[1]),
+                                              ymin=np.log10(self.temperature_range[0]),
+                                              ymax=np.log10(self.temperature_range[1]))
+            self.rate_fallback = rate_fallback
+        else:
+            self._rate = rate
 
     cdef double evaluate(self, double electron_density, double electron_temperature) except? -1e999:
 
@@ -147,7 +181,7 @@ cdef class CXRadiationPower(CoreCXRadiationPower):
             electron_temperature = 1.e-300
 
         # calculate rate and convert from log10 space to linear space
-        return 10 ** self._rate.evaluate(log10(electron_density), log10(electron_temperature))
+        return self._rate.evaluate(log10(electron_density), log10(electron_temperature))
 
 
 cdef class NullCXRadiationPower(CoreCXRadiationPower):

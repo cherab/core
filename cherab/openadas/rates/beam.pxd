@@ -28,9 +28,14 @@ cdef class BeamStoppingRate(CoreBeamStoppingRate):
         dict raw_data
         Function2D _npl_eb
         Function1D _tp
+        double _rate_fallback
         tuple beam_energy_range
         tuple density_range
         tuple temperature_range
+        double rate_fallback
+    
+    cdef:
+        bint _fallback
 
 
 cdef class NullBeamStoppingRate(CoreBeamStoppingRate):
@@ -46,6 +51,10 @@ cdef class BeamPopulationRate(CoreBeamPopulationRate):
         tuple beam_energy_range
         tuple density_range
         tuple temperature_range
+        double rate_fallback
+    
+    cdef:
+        bint _fallback
 
 
 cdef class NullBeamPopulationRate(CoreBeamPopulationRate):
@@ -62,7 +71,10 @@ cdef class BeamEmissionPEC(CoreBeamEmissionPEC):
         tuple beam_energy_range
         tuple density_range
         tuple temperature_range
+        double rate_fallback
 
+    cdef:
+        bint _fallback
 
 cdef class NullBeamEmissionPEC(CoreBeamEmissionPEC):
     pass

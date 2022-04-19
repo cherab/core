@@ -22,15 +22,20 @@ from libc.math cimport INFINITY, log10
 
 from raysect.core.math.function.float cimport Interpolator2DArray
 from cherab.core.utility.conversion import PhotonToJ
+from cherab.core.math cimport OutofRangeFallback2D
 
 
 cdef class ImpactExcitationPEC(CoreImpactExcitationPEC):
 
-    def __init__(self, double wavelength, dict data, extrapolate=False):
+    def __init__(self, double wavelength, dict data, extrapolate=False,
+                 rate_fallback=None):
         """
         :param wavelength: Resting wavelength of corresponding emission line in nm.
         :param data: Dictionary containing rate data.
         :param extrapolate: Enable extrapolation (default=False).
+        :param rate_fallback: (double) If set, rate_fallback value is returned when the input is
+          outside of the atomic data domain (The rate value is to be extrapolated).
+          If set, fallback takes precedence over extrapolation.   
         """
 
         self.wavelength = wavelength
@@ -51,7 +56,17 @@ cdef class ImpactExcitationPEC(CoreImpactExcitationPEC):
         # interpolate rate
         # using nearest extrapolation to avoid infinite values at 0 for some rates
         extrapolation_type = 'nearest' if extrapolate else 'none'
-        self._rate = Interpolator2DArray(np.log10(ne), np.log10(te), rate, 'cubic', extrapolation_type, INFINITY, INFINITY)
+        rate = 10 ** Interpolator2DArray(np.log10(ne), np.log10(te), rate, 'cubic', extrapolation_type, INFINITY, INFINITY)
+
+        if rate_fallback is not None:
+            self._rate = OutofRangeFallback2D(rate, rate_fallback,
+                                              xmin=np.log10(self.density_range[0]),
+                                              xmax=np.log10(self.density_range[1]),
+                                              ymin=np.log10(self.temperature_range[0]),
+                                              ymax=np.log10(self.temperature_range[1]))
+            self.rate_fallback = rate_fallback
+        else:
+            self._rate = rate
 
     cpdef double evaluate(self, double density, double temperature) except? -1e999:
 
@@ -63,7 +78,7 @@ cdef class ImpactExcitationPEC(CoreImpactExcitationPEC):
             temperature = 1.e-300
 
         # calculate rate and convert from log10 space to linear space
-        return 10 ** self._rate.evaluate(log10(density), log10(temperature))
+        return self._rate.evaluate(log10(density), log10(temperature))
 
 
 cdef class NullImpactExcitationPEC(CoreImpactExcitationPEC):
@@ -78,11 +93,15 @@ cdef class NullImpactExcitationPEC(CoreImpactExcitationPEC):
 
 cdef class RecombinationPEC(CoreRecombinationPEC):
 
-    def __init__(self, double wavelength, dict data, extrapolate=False):
+    def __init__(self, double wavelength, dict data, extrapolate=False,
+                 rate_fallback=None):
         """
         :param wavelength: Resting wavelength of corresponding emission line in nm.
         :param data: Dictionary containing rate data.
         :param extrapolate: Enable extrapolation (default=False).
+        :param rate_fallback: (double) If set, rate_fallback value is returned when the input is
+          outside of the atomic data domain (The rate value is to be extrapolated).
+          If set, fallback takes precedence over extrapolation.   
         """
 
         self.wavelength = wavelength
@@ -103,7 +122,17 @@ cdef class RecombinationPEC(CoreRecombinationPEC):
         # interpolate rate
         # using nearest extrapolation to avoid infinite values at 0 for some rates
         extrapolation_type = 'nearest' if extrapolate else 'none'
-        self._rate = Interpolator2DArray(np.log10(ne), np.log10(te), rate, 'cubic', extrapolation_type, INFINITY, INFINITY)
+        rate = 10 ** Interpolator2DArray(np.log10(ne), np.log10(te), rate, 'cubic', extrapolation_type, INFINITY, INFINITY)
+
+        if rate_fallback is not None:
+            self._rate = OutofRangeFallback2D(rate, rate_fallback,
+                                              xmin=np.log10(self.density_range[0]),
+                                              xmax=np.log10(self.density_range[1]),
+                                              ymin=np.log10(self.temperature_range[0]),
+                                              ymax=np.log10(self.temperature_range[1]))
+            self.rate_fallback = rate_fallback
+        else:
+            self._rate = rate
 
     cpdef double evaluate(self, double density, double temperature) except? -1e999:
 
@@ -115,7 +144,7 @@ cdef class RecombinationPEC(CoreRecombinationPEC):
             temperature = 1.e-300
 
         # calculate rate and convert from log10 space to linear space
-        return 10 ** self._rate.evaluate(log10(density), log10(temperature))
+        return self._rate.evaluate(log10(density), log10(temperature))
 
 
 cdef class NullRecombinationPEC(CoreRecombinationPEC):

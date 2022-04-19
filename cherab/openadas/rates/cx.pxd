@@ -32,6 +32,10 @@ cdef class BeamCXPEC(CoreBeamCXPEC):
         readonly tuple temperature_range
         readonly tuple zeff_range
         readonly tuple b_field_range
+        double rate_fallback
+    
+    cdef:
+        bint _fallback
 
 
 cdef class NullBeamCXPEC(CoreBeamCXPEC):

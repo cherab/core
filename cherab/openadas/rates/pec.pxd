@@ -26,7 +26,7 @@ cdef class ImpactExcitationPEC(CoreImpactExcitationPEC):
 
     cdef:
         readonly dict raw_data
-        readonly double wavelength
+        readonly double wavelength, rate_fallback
         readonly tuple density_range, temperature_range
         Function2D _rate
 
@@ -39,7 +39,7 @@ cdef class RecombinationPEC(CoreRecombinationPEC):
 
     cdef:
         readonly dict raw_data
-        readonly double wavelength
+        readonly double wavelength, rate_fallback
         readonly tuple density_range, temperature_range
         Function2D _rate
 

@@ -22,7 +22,7 @@ from cherab.core.utility.conversion import PhotonToJ
 
 cimport cython
 from libc.math cimport INFINITY, log10
-from raysect.core.math.function.float cimport Interpolator1DArray, Interpolator2DArray, Constant2D, Arg2D
+from raysect.core.math.function.float cimport Interpolator1DArray, Interpolator2DArray, Constant2D, Arg2D, Arg3D
 from cherab.core.math cimport IsoMapper2D
 
 # todo: clarify variables
@@ -33,10 +33,14 @@ cdef class BeamStoppingRate(CoreBeamStoppingRate):
 
     :param data: A dictionary holding the beam coefficient data.
     :param extrapolate: Set to True to enable extrapolation, False to disable (default).
+    :param rate_fallback: (double) If set, rate_fallback value is returned when the input is
+        outside of the atomic data domain (The rate value is to be extrapolated).
+        If set, fallback takes precedence over extrapolation.   
     """
 
     @cython.cdivision(True)
-    def __init__(self, dict data, bint extrapolate=False):
+    def __init__(self, dict data, bint extrapolate=False,
+                 rate_fallback=None):
 
         self.raw_data = data
 
@@ -51,6 +55,12 @@ cdef class BeamStoppingRate(CoreBeamStoppingRate):
         self.beam_energy_range = e.min(), e.max()
         self.density_range = n.min(), n.max()
         self.temperature_range = t.min(), t.max()
+
+        if rate_fallback is not None:
+            self.rate_fallback = rate_fallback
+            self._fallback = 1
+        else:
+            self._fallback = 0
 
         # interpolate
         extrapolation_type_2d = 'linear' if extrapolate else 'none'
@@ -77,6 +87,12 @@ cdef class BeamStoppingRate(CoreBeamStoppingRate):
         :return: The beam stopping coefficient in m^3.s^-1
         """
 
+        if self._fallback:
+            if not self.beam_energy_range[0] <= energy <= self.beam_energy_range[1] \
+               or not self.density_range[0] <= density <= self.density_range[1] \
+               or not self.temperature_range[0] <= temperature <= self.temperature_range[1]:
+                return self.rate_fallback
+
         # need to handle zeros, also density and temperature can become negative due to cubic interpolation
         if energy < 1.e-300:
             energy = 1.e-300
@@ -86,7 +102,7 @@ cdef class BeamStoppingRate(CoreBeamStoppingRate):
 
         if temperature < 1.e-300:
             temperature = 1.e-300
-
+        
         # calculate rate and convert from log10 space to linear space
         return 10 ** (self._npl_eb.evaluate(log10(energy), log10(density)) + self._tp.evaluate(log10(temperature)))
 
@@ -107,10 +123,14 @@ cdef class BeamPopulationRate(CoreBeamPopulationRate):
 
     :param data: A dictionary holding the beam coefficient data.
     :param extrapolate: Set to True to enable extrapolation, False to disable (default).
+    :param rate_fallback: (double) If set, rate_fallback value is returned when the input is
+      outside of the atomic data domain (The rate value is to be extrapolated).
+      If set, fallback takes precedence over extrapolation.   
     """
 
     @cython.cdivision(True)
-    def __init__(self, dict data, bint extrapolate=False):
+    def __init__(self, dict data, bint extrapolate=False,
+                 rate_fallback=None):
 
         self.raw_data = data
 
@@ -125,6 +145,12 @@ cdef class BeamPopulationRate(CoreBeamPopulationRate):
         self.beam_energy_range = e.min(), e.max()
         self.density_range = n.min(), n.max()
         self.temperature_range = t.min(), t.max()
+
+        if rate_fallback is not None:
+            self._fallback = 1
+            self.rate_fallback = rate_fallback
+        else:
+            self._fallback = 0
 
         # interpolate
         extrapolation_type_2d = 'linear' if extrapolate else 'none'
@@ -150,6 +176,12 @@ cdef class BeamPopulationRate(CoreBeamPopulationRate):
         :param temperature: Target temperature in eV.
         :return: The beam population coefficient in dimensionless units.
         """
+
+        if self._fallback:
+            if not self.beam_energy_range[0] <= energy <= self.beam_energy_range[1] \
+               or not self.density_range[0] <= density <= self.density_range[1] \
+               or not self.temperature_range[0] <= temperature <= self.temperature_range[1]:
+                return self.rate_fallback
 
         # need to handle zeros, also density and temperature can become negative due to cubic interpolation
         if energy < 1.e-300:
@@ -182,10 +214,14 @@ cdef class BeamEmissionPEC(CoreBeamEmissionPEC):
     :param data: A dictionary holding the beam coefficient data.
     :param wavelength: The natural wavelength of the emission line associated with the rate data in nm.
     :param extrapolate: Set to True to enable extrapolation, False to disable (default).
+    :param rate_fallback: (double) If set, the rate_fallback value is returned when
+      the input is outside of the atomic data domain (The rate value is to be extrapolated).
+      If set, fallback takes precedence over extrapolation.   
     """
 
     @cython.cdivision(True)
-    def __init__(self, dict data, double wavelength, bint extrapolate=False):
+    def __init__(self, dict data, double wavelength, bint extrapolate=False,
+                 rate_fallback=None):
 
         self.wavelength = wavelength
         self.raw_data = data
@@ -201,6 +237,12 @@ cdef class BeamEmissionPEC(CoreBeamEmissionPEC):
         self.beam_energy_range = e.min(), e.max()
         self.density_range = n.min(), n.max()
         self.temperature_range = t.min(), t.max()
+
+        if rate_fallback is not None:
+            self._fallback = 1
+            self.rate_fallback = rate_fallback
+        else:
+            self._fallback = 0
 
         # interpolate
         extrapolation_type_2d = 'linear' if extrapolate else 'none'
@@ -226,6 +268,12 @@ cdef class BeamEmissionPEC(CoreBeamEmissionPEC):
         :param temperature: Target temperature in eV.
         :return: The beam emission coefficient in m^3.s^-1
         """
+
+        if self._fallback:
+            if not self.beam_energy_range[0] <= energy <= self.beam_energy_range[1] \
+               or not self.density_range[0] <= density <= self.density_range[1] \
+               or not self.temperature_range[0] <= temperature <= self.temperature_range[1]:
+                return self.rate_fallback
 
         # need to handle zeros, also density and temperature can become negative due to cubic interpolation
         if energy < 1.e-300:

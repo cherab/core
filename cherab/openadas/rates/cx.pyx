@@ -32,14 +32,23 @@ cdef class BeamCXPEC(CoreBeamCXPEC):
     :param wavelength: The natural wavelength of the emission line associated with the rate data in nm.
     :param data: A dictionary holding the rate data.
     :param extrapolate: Set to True to enable extrapolation, False to disable (default).
+    :param rate_fallback: (double) If set, rate_fallback value is returned when the input is
+        outside of the atomic data domain (The rate value is to be extrapolated).
+        If set, fallback takes precedence over extrapolation.   
     """
 
     @cython.cdivision(True)
-    def __init__(self, int donor_metastable, double wavelength, dict data, bint extrapolate=False):
+    def __init__(self, int donor_metastable, double wavelength, dict data, bint extrapolate=False,
+                 rate_fallback=None):
 
         self.donor_metastable = donor_metastable
         self.wavelength = wavelength
         self.raw_data = data
+        if rate_fallback is not None:
+            self._fallback = 1
+            self.rate_fallback = rate_fallback
+        else:
+            self._fallback = 0
 
         # pre-convert data to W m^3 from Photons s^-1 m^3 prior to interpolation
         eb = data["eb"]                                          # eV/amu
@@ -86,6 +95,15 @@ cdef class BeamCXPEC(CoreBeamCXPEC):
         """
 
         cdef double rate
+
+        if self._fallback:
+            if not self.beam_energy_range[0] <= energy <= self.beam_energy_range[1] \
+               or not self.density_range[0] <= density <= self.density_range[1] \
+               or not self.temperature_range[0] <= temperature <= self.temperature_range[1] \
+               or not self.zeff_range[0] <= z_effective <= self.zeff_range[1] \
+               or not self.b_field_range[0] <= b_field <= self.b_field_range[1]:
+                return self.rate_fallback
+
 
         # need to handle zeros for log-log interpolation
         if energy < 1.e-300:

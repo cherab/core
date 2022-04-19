@@ -36,10 +36,46 @@ class OpenADAS(AtomicData):
     :param bool wavelength_element_fallback: If true, allows to use the element's wavelength when
                                              the isotope's wavelength is not available.
                                              Default is False.
+    :param double ionisation_rate_fallback_value: If passed, informs the ionisation_rate interpolation
+                                                  object to return the passed value instead of extrapolation.
+    :param double recombination_rate_fallback_value: If passed, informs the recombination_rate interpolation
+                                                     object to return the passed value instead of extrapolation.
+    :param double thermal_cx_rate_fallback_value: If passed, informs the thermal_cx_rate interpolation
+                                                  object to return the passed value instead of extrapolation.
+    :param double beam_cx_pec_fallback_value: If passed, informs the beam_cx_pec interpolation
+                                              object to return the passed value instead of extrapolation.
+    :param double beam_stopping_rate_fallback_value: If passed, informs the beam_stopping_rate interpolation
+                                                     object to return the passed value instead of extrapolation.
+    :param double beam_population_rate_fallback_value: If passed, informs the beam_population_rate interpolation
+                                                       object to return the passed value instead of extrapolation.
+    :param double beam_emission_pec_fallback_value: If passed, informs the beam_beam_emission_pec interpolation
+                                                    object to return the passed value instead of extrapolation.
+    :param double impact_excitation_pec_fallback_value: If passed, informs the impact_excitation_pec interpolation
+                                                        object to return the passed value instead of extrapolation.
+    :param double recombination_pec_fallback_value: If passed, informs the recombination_pec interpolation
+                                                    object to return the passed value instead of extrapolation.
+    :param double line_radiated_power_fallback_value: If passed, informs the line_radiated_power interpolation
+                                                      object to return the passed value instead of extrapolation.
+    :param double continuum_radiated_power_fallback_value: If passed, informs the continuum_radiated_power interpolation
+                                                           object to return the passed value instead of extrapolation.
+    :param double cx_radiated_power_fallback_value: If passed, informs the cx_radiated_power interpolation
+                                                    object to return the passed value instead of extrapolation.
     """
 
     def __init__(self, data_path=None, permit_extrapolation=False, missing_rates_return_null=False,
-                 wavelength_element_fallback=False):
+                 wavelength_element_fallback=False,
+                 ionisation_rate_fallback_value=None,
+                 recombination_rate_fallback_value=None,
+                 thermal_cx_rate_fallback_value=None,
+                 beam_cx_pec_fallback_value=None,
+                 beam_stopping_rate_fallback_value=None,
+                 beam_population_rate_fallback_value=None,
+                 beam_emission_pec_fallback_value=None,
+                 impact_excitation_pec_fallback_value=None,
+                 recombination_pec_fallback_value=None,
+                 line_radiated_power_fallback_value=None,
+                 continuum_radiated_power_fallback_value=None,
+                 cx_radiated_power_fallback_value=None):
 
         super().__init__()
         self._data_path = data_path or DEFAULT_REPOSITORY_PATH
@@ -49,6 +85,18 @@ class OpenADAS(AtomicData):
         self._missing_rates_return_null = missing_rates_return_null
 
         self._wavelength_element_fallback = wavelength_element_fallback
+        self._ionisation_rate_fallback_value = ionisation_rate_fallback_value
+        self._recombination_rate_fallback_value = recombination_rate_fallback_value
+        self._thermal_cx_rate_fallback_value = thermal_cx_rate_fallback_value
+        self._beam_cx_pec_fallback_value = beam_cx_pec_fallback_value
+        self._beam_stopping_rate_fallback_value = beam_stopping_rate_fallback_value
+        self._beam_population_rate_fallback_value = beam_population_rate_fallback_value
+        self._beam_emission_pec_fallback_value = beam_emission_pec_fallback_value
+        self._impact_excitation_pec_fallback_value = impact_excitation_pec_fallback_value
+        self._recombination_pec_fallback_value = recombination_pec_fallback_value
+        self._line_radiated_power_fallback_value = line_radiated_power_fallback_value
+        self._continuum_radiated_power_fallback_value = continuum_radiated_power_fallback_value
+        self._cx_radiated_power_fallback_value = cx_radiated_power_fallback_value
 
     @property
     def data_path(self):
@@ -97,7 +145,8 @@ class OpenADAS(AtomicData):
                 return NullIonisationRate()
             raise
 
-        return IonisationRate(data, extrapolate=self._permit_extrapolation)
+        return IonisationRate(data, extrapolate=self._permit_extrapolation,
+                              rate_fallback=self._ionisation_rate_fallback_value)
 
     def recombination_rate(self, ion, charge):
         """
@@ -124,7 +173,8 @@ class OpenADAS(AtomicData):
                 return NullRecombinationRate()
             raise
 
-        return RecombinationRate(data, extrapolate=self._permit_extrapolation)
+        return RecombinationRate(data, extrapolate=self._permit_extrapolation,
+                                 rate_fallback=self._recombination_rate_fallback_value)
 
     def thermal_cx_rate(self, donor_element, donor_charge, receiver_element, receiver_charge):
         """
@@ -159,7 +209,8 @@ class OpenADAS(AtomicData):
                 return NullThermalCXRate()
             raise
 
-        return ThermalCXRate(data, extrapolate=self._permit_extrapolation)
+        return ThermalCXRate(data, extrapolate=self._permit_extrapolation,
+                             rate_fallback=self._thermal_cx_rate_fallback_value)
 
     def beam_cx_pec(self, donor_ion, receiver_ion, receiver_charge, transition):
         """
@@ -206,7 +257,8 @@ class OpenADAS(AtomicData):
         # load and interpolate the relevant transition data from each file
         rates = []
         for donor_metastable, rate_data in data:
-            rates.append(BeamCXPEC(donor_metastable, wavelength, rate_data, extrapolate=self._permit_extrapolation))
+            rates.append(BeamCXPEC(donor_metastable, wavelength, rate_data, extrapolate=self._permit_extrapolation,
+                                   rate_fallback=self._beam_cx_pec_fallback_value))
         return rates
 
     def beam_stopping_rate(self, beam_ion, plasma_ion, charge):
@@ -241,7 +293,8 @@ class OpenADAS(AtomicData):
             raise
 
         # load and interpolate data
-        return BeamStoppingRate(data, extrapolate=self._permit_extrapolation)
+        return BeamStoppingRate(data, extrapolate=self._permit_extrapolation,
+                                rate_fallback=self._beam_stopping_rate_fallback_value)
 
     def beam_population_rate(self, beam_ion, metastable, plasma_ion, charge):
         """
@@ -277,7 +330,8 @@ class OpenADAS(AtomicData):
             raise
 
         # load and interpolate data
-        return BeamPopulationRate(data, extrapolate=self._permit_extrapolation)
+        return BeamPopulationRate(data, extrapolate=self._permit_extrapolation,
+                                  rate_fallback=self._beam_population_rate_fallback_value)
 
     def beam_emission_pec(self, beam_ion, plasma_ion, charge, transition):
         """
@@ -318,7 +372,8 @@ class OpenADAS(AtomicData):
         wavelength = self.wavelength(beam_ion, 0, transition)
 
         # load and interpolate data
-        return BeamEmissionPEC(data, wavelength, extrapolate=self._permit_extrapolation)
+        return BeamEmissionPEC(data, wavelength, extrapolate=self._permit_extrapolation,
+                               rate_fallback=self._beam_emission_pec_fallback_value)
 
     def impact_excitation_pec(self, ion, charge, transition):
         """
@@ -351,7 +406,8 @@ class OpenADAS(AtomicData):
         # the wavelength is used ot convert the PEC from photons/s/m3 to W/m3
         wavelength = self.wavelength(ion, charge, transition)
 
-        return ImpactExcitationPEC(wavelength, data, extrapolate=self._permit_extrapolation)
+        return ImpactExcitationPEC(wavelength, data, extrapolate=self._permit_extrapolation,
+                                   rate_fallback=self._impact_excitation_pec_fallback_value)
 
     def recombination_pec(self, ion, charge, transition):
         """
@@ -384,7 +440,8 @@ class OpenADAS(AtomicData):
         # the wavelength is used ot convert the PEC from photons/s/m3 to W/m3
         wavelength = self.wavelength(ion, charge, transition)
 
-        return RecombinationPEC(wavelength, data, extrapolate=self._permit_extrapolation)
+        return RecombinationPEC(wavelength, data, extrapolate=self._permit_extrapolation,
+                                rate_fallback=self._recombination_pec_fallback_value)
 
     def line_radiated_power_rate(self, ion, charge):
         """
@@ -412,7 +469,8 @@ class OpenADAS(AtomicData):
                 return NullLineRadiationPower(ion, charge)
             raise
 
-        return LineRadiationPower(ion, charge, data, extrapolate=self._permit_extrapolation)
+        return LineRadiationPower(ion, charge, data, extrapolate=self._permit_extrapolation,
+                                  rate_fallback=self._line_radiated_power_fallback_value)
 
     def continuum_radiated_power_rate(self, ion, charge):
         """
@@ -440,7 +498,8 @@ class OpenADAS(AtomicData):
                 return NullContinuumPower(ion, charge)
             raise
 
-        return ContinuumPower(ion, charge, data, extrapolate=self._permit_extrapolation)
+        return ContinuumPower(ion, charge, data, extrapolate=self._permit_extrapolation,
+                              rate_fallback=self._continuum_radiated_power_fallback_value)
 
     def cx_radiated_power_rate(self, ion, charge):
         """
@@ -468,4 +527,5 @@ class OpenADAS(AtomicData):
                 return NullCXRadiationPower(ion, charge)
             raise
 
-        return CXRadiationPower(ion, charge, data, extrapolate=self._permit_extrapolation)
+        return CXRadiationPower(ion, charge, data, extrapolate=self._permit_extrapolation,
+                                rate_fallback=self._cx_radiated_power_fallback_value)

@@ -29,6 +29,7 @@ cdef class LineRadiationPower(CoreLineRadiationPower):
     cdef:
         readonly dict raw_data
         readonly tuple density_range, temperature_range
+        double rate_fallback
         Function2D _rate
 
 
@@ -41,6 +42,7 @@ cdef class ContinuumPower(CoreContinuumPower):
     cdef:
         readonly dict raw_data
         readonly tuple density_range, temperature_range
+        double rate_fallback
         Function2D _rate
 
 
@@ -53,6 +55,7 @@ cdef class CXRadiationPower(CoreCXRadiationPower):
     cdef:
         readonly dict raw_data
         readonly tuple density_range, temperature_range
+        readonly double rate_fallback
         Function2D _rate
 
 
