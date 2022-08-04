@@ -17,6 +17,10 @@
 # See the Licence for the specific language governing permissions and limitations
 # under the Licence.
 
+"""
+This demo does the same plots as the plot_2d_profiles.py demo, but samples the profiles from the Plasma objects.
+"""
+
 import numpy as np
 from matplotlib.colors import SymLogNorm
 from matplotlib import pyplot as plt
@@ -25,10 +29,6 @@ from cherab.core.math import sample3d
 from cherab.core.atomic.elements import hydrogen, carbon
 
 from cherab.generomak.plasma.plasma import get_core_plasma, get_edge_plasma, get_plasma
-
-"""
-This demo does the same plots as the plot_2d_profiles.py demo, but sampling the profiles from the Plasma objects.
-"""
 
 
 def plot_profiles(core_profile, edge_profile, full_profile, r_range, z_range, label):

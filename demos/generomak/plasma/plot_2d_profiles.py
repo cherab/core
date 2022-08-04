@@ -17,6 +17,10 @@
 # See the Licence for the specific language governing permissions and limitations
 # under the Licence.
 
+"""
+This demo plots core, edge and blended Generomak 2D plasma profiles.
+"""
+
 import numpy as np
 from matplotlib.colors import SymLogNorm
 from matplotlib.collections import PolyCollection
@@ -27,10 +31,6 @@ from cherab.core.utility import RecursiveDict
 
 from cherab.generomak.equilibrium import load_equilibrium
 from cherab.generomak.plasma.plasma import get_core_profiles_description, load_edge_profiles, get_full_profiles
-
-"""
-This demo plots core, edge and blended Generomak 2D plasma profiles.
-"""
 
 
 def plot_profiles(core_profile, edge_mesh, edge_data, full_profile, label):
