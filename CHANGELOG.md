@@ -14,6 +14,7 @@ New:
 * Add verbose parameter to SartOpencl solver (default is False). (#358)
 * Add Generomak core plasma profiles. (#360)
 * Add toroidal_mesh_from_polygon for making mesh for not fully-360 degrees axisymmetric elements. (#365)
+* Add Generomak full plasma profiles obtained by blending the core and edge profiles. (#372)
 
 Bug Fixes:
 ----------
