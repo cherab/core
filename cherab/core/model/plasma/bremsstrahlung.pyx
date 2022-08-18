@@ -38,7 +38,7 @@ cdef class Bremsstrahlung(PlasmaModel):
     et. al., 'ITER LIDAR performance analysis', Rev. Sci. Instrum. 79, 10E727 (2008),
 
     .. math::
-        \\epsilon (\\lambda) = \\frac{0.95 \\times 10^{-19}}{\\lambda 4 \\pi} g_{ff} n_e^2 Z_{eff} T_e^{1/2} \\times \\exp{\\frac{-hc}{\\lambda T_e}},
+        \\epsilon (\\lambda) = \\frac{0.95 \\times 10^{-19}}{\\lambda 4 \\pi} g_{ff} n_e^2 Z_{eff} T_e^{-1/2} \\times \\exp{\\frac{-hc}{\\lambda T_e}},
 
     where the emission :math:`\\epsilon (\\lambda)` is in units of radiance (ph/s/sr/m^3/nm).
     """
