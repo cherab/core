@@ -331,6 +331,23 @@ class Observer0DGroup(Node):
             for observer in self._observers:
                 observer.samples_per_task = value
 
+    @property
+    def quiet(self):
+        return [observer.quiet for observer in self._observers]
+
+    @quiet.setter
+    def quiet(self, value):
+        if isinstance(value, (list, tuple, ndarray)):
+            if len(value) == len(self._observers):
+                for observer, v in zip(self._observers, value):
+                    observer.quiet = v
+            else:
+                raise ValueError("The length of 'quiet' ({}) "
+                                 "mismatches the number of observers ({}).".format(len(value), len(self._observers)))
+        else:
+            for observer in self._observers:
+                observer.quiet = value
+
     def observe(self):
         """
         Starts the observation.

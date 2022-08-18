@@ -133,7 +133,20 @@ class Observer0DGroupTestCase(unittest.TestCase):
 
         with self.assertRaises(ValueError):
             group.spectral_bins = [1000] * (len(group) + 1)
-    
+
+        # quiet        
+        quiet = [True] * len(group)
+        group.quiet = quiet
+        self.assertListEqual(group.quiet, quiet)
+
+        quiet = False
+        group.quiet = quiet
+        for observer in group.observers:
+            self.assertEqual(observer.quiet, quiet)
+
+        with self.assertRaises(ValueError):
+            group.quiet = [False] * (len(group) + 1)
+
         # rays        
         probs = [0.2 + i*0.1 for i in range(len(group))]
         min_depths = [2 + i for i in range(len(group))]
