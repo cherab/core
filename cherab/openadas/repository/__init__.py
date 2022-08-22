@@ -17,4 +17,10 @@
 # under the Licence.
 
 # for backward compatibility
-from ...atomic.repository import *
+from cherab.atomic.repository.beam import *
+from cherab.atomic.repository.pec import *
+from cherab.atomic.repository.atomic import *
+from cherab.atomic.repository.wavelength import *
+from cherab.atomic.repository.radiated_power import *
+from cherab.atomic.repository.utility import DEFAULT_REPOSITORY_PATH
+from cherab.atomic.repository.create import populate

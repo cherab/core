@@ -1,6 +1,6 @@
-# Copyright 2016-2018 Euratom
-# Copyright 2016-2018 United Kingdom Atomic Energy Authority
-# Copyright 2016-2018 Centro de Investigaciones Energéticas, Medioambientales y Tecnológicas
+# Copyright 2016-2022 Euratom
+# Copyright 2016-2022 United Kingdom Atomic Energy Authority
+# Copyright 2016-2022 Centro de Investigaciones Energéticas, Medioambientales y Tecnológicas
 #
 # Licensed under the EUPL, Version 1.1 or – as soon they will be approved by the
 # European Commission - subsequent versions of the EUPL (the "Licence");
@@ -22,7 +22,7 @@ import os
 Utilities for managing the local rate repository.
 """
 
-DEFAULT_REPOSITORY_PATH = os.path.expanduser('~/.cherab/openadas/repository')
+DEFAULT_REPOSITORY_PATH = os.path.expanduser('~/.cherab/atomicdata/default_repository')
 
 
 def encode_transition(transition):
@@ -48,6 +48,3 @@ def valid_charge(element, charge):
     :return: True/False.
     """
     return charge <= element.atomic_number
-
-
-

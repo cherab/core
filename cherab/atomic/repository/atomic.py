@@ -1,6 +1,6 @@
-# Copyright 2016-2018 Euratom
-# Copyright 2016-2018 United Kingdom Atomic Energy Authority
-# Copyright 2016-2018 Centro de Investigaciones Energéticas, Medioambientales y Tecnológicas
+# Copyright 2016-2022 Euratom
+# Copyright 2016-2022 United Kingdom Atomic Energy Authority
+# Copyright 2016-2022 Centro de Investigaciones Energéticas, Medioambientales y Tecnológicas
 #
 # Licensed under the EUPL, Version 1.1 or – as soon they will be approved by the
 # European Commission - subsequent versions of the EUPL (the "Licence");
@@ -64,7 +64,7 @@ def update_ionisation_rates(rates, repository_path=None):
 
         path = os.path.join(repository_path, 'ionisation/{}.json'.format(species.symbol.lower()))
 
-        _update_and_write_adf11(species, rate_data, path)
+        _update_and_write_bivariate_rate(species, rate_data, path)
 
 
 def add_recombination_rate(species, charge, rate, repository_path=None):
@@ -105,7 +105,7 @@ def update_recombination_rates(rates, repository_path=None):
 
         path = os.path.join(repository_path, 'recombination/{}.json'.format(species.symbol.lower()))
 
-        _update_and_write_adf11(species, rate_data, path)
+        _update_and_write_bivariate_rate(species, rate_data, path)
 
 
 def add_thermal_cx_rate(donor_element, donor_charge, receiver_element, rate, repository_path=None):
@@ -154,10 +154,10 @@ def update_thermal_cx_rates(rates, repository_path=None):
                                                                  donor_charge, receiver_element.symbol.lower())
                 path = os.path.join(repository_path, rate_path)
 
-                _update_and_write_adf11(receiver_element, rate_data, path)
+                _update_and_write_bivariate_rate(receiver_element, rate_data, path)
 
 
-def _update_and_write_adf11(species, rate_data, path):
+def _update_and_write_bivariate_rate(species, rate_data, path):
 
         # read in any existing rates
         try:

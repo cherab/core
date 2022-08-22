@@ -1,7 +1,7 @@
 
-# Copyright 2016-2018 Euratom
-# Copyright 2016-2018 United Kingdom Atomic Energy Authority
-# Copyright 2016-2018 Centro de Investigaciones Energéticas, Medioambientales y Tecnológicas
+# Copyright 2016-2022 Euratom
+# Copyright 2016-2022 United Kingdom Atomic Energy Authority
+# Copyright 2016-2022 Centro de Investigaciones Energéticas, Medioambientales y Tecnológicas
 #
 # Licensed under the EUPL, Version 1.1 or – as soon they will be approved by the
 # European Commission - subsequent versions of the EUPL (the "Licence");
@@ -66,7 +66,7 @@ def update_line_power_rates(rates, repository_path=None):
 
         path = os.path.join(repository_path, 'radiated_power/line/{}.json'.format(species.symbol.lower()))
 
-        _update_and_write_adf11(species, rate_data, path)
+        _update_and_write_bivariate_rate(species, rate_data, path)
 
 
 def add_continuum_power_rate(species, charge, rate, repository_path=None):
@@ -108,7 +108,7 @@ def update_continuum_power_rates(rates, repository_path=None):
 
         path = os.path.join(repository_path, 'radiated_power/continuum/{}.json'.format(species.symbol.lower()))
 
-        _update_and_write_adf11(species, rate_data, path)
+        _update_and_write_bivariate_rate(species, rate_data, path)
 
 
 def add_cx_power_rate(species, charge, rate, repository_path=None):
@@ -150,10 +150,10 @@ def update_cx_power_rates(rates, repository_path=None):
 
         path = os.path.join(repository_path, 'radiated_power/cx/{}.json'.format(species.symbol.lower()))
 
-        _update_and_write_adf11(species, rate_data, path)
+        _update_and_write_bivariate_rate(species, rate_data, path)
 
 
-def _update_and_write_adf11(species, rate_data, path):
+def _update_and_write_bivariate_rate(species, rate_data, path):
 
     # read in any existing rates
     try:

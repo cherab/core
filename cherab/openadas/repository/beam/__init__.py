@@ -17,4 +17,7 @@
 # under the Licence.
 
 # for backward compatibility
-from ....atomic.repository.beam import *
+from cherab.atomic.repository.beam.cx import *
+from cherab.atomic.repository.beam.stopping import *
+from cherab.atomic.repository.beam.population import *
+from cherab.atomic.repository.beam.emission import *

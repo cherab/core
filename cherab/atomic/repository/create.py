@@ -1,6 +1,6 @@
-# Copyright 2016-2018 Euratom
-# Copyright 2016-2018 United Kingdom Atomic Energy Authority
-# Copyright 2016-2018 Centro de Investigaciones Energéticas, Medioambientales y Tecnológicas
+# Copyright 2016-2022 Euratom
+# Copyright 2016-2022 United Kingdom Atomic Energy Authority
+# Copyright 2016-2022 Centro de Investigaciones Energéticas, Medioambientales y Tecnológicas
 #
 # Licensed under the EUPL, Version 1.1 or – as soon they will be approved by the
 # European Commission - subsequent versions of the EUPL (the "Licence");
@@ -19,12 +19,13 @@
 from cherab.core.utility import RecursiveDict
 from cherab.core.atomic.elements import *
 from cherab.openadas.install import install_files
-from cherab.openadas import repository
+from cherab.atomic import repository
 
 
 def populate(download=True, repository_path=None, adas_path=None):
     """
-    Populates the OpenADAS repository with a typical set of rates and wavelengths.
+    Populates the local atomic data repository with a typical set of rates and
+    wavelengths from OpenADAS.
 
     If an ADAS file is not note found an attempt will be made to download the
     file from the OpenADAS website. This behaviour can be disabled by setting

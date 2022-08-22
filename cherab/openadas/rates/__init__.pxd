@@ -17,5 +17,9 @@
 # under the Licence.
 
 # for backward compatibility
-from cherab.atomic.rates cimport *
+from cherab.atomic.rates.beam cimport *
+from cherab.atomic.rates.cx cimport *
+from cherab.atomic.rates.pec cimport *
+from cherab.atomic.rates.atomic cimport *
+from cherab.atomic.rates.radiated_power cimport *
 

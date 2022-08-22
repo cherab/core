@@ -17,7 +17,6 @@
 # under the Licence.
 
 # for backward compatibility
-from ..atomic import AtomicData as OpenADAS
+from cherab.atomic.atomicdata import AtomicData as OpenADAS
 
 from . import install
-from . import repository
