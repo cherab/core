@@ -16,7 +16,5 @@
 # See the Licence for the specific language governing permissions and limitations
 # under the Licence.
 
-from .cx import *
-from .stopping import *
-from .population import *
-from .emission import *
+# for backward compatibility
+from ....atomic.repository.beam import *

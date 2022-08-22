@@ -22,7 +22,7 @@ import os
 import urllib.parse
 import urllib.request
 
-from cherab.openadas import repository
+from cherab.atomic import repository
 from cherab.openadas.parse import *
 from cherab.core.utility import RecursiveDict, PerCm3ToPerM3, Cm3ToM3
 

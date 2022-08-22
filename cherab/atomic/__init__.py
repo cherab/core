@@ -16,6 +16,5 @@
 # See the Licence for the specific language governing permissions and limitations
 # under the Licence.
 
-# for backward compatibility
-from cherab.atomic.rates cimport *
-
+from . import repository
+from .atomicdata import AtomicData

@@ -1,3 +1,20 @@
+# Copyright 2016-2022 Euratom
+# Copyright 2016-2022 United Kingdom Atomic Energy Authority
+# Copyright 2016-2022 Centro de Investigaciones Energéticas, Medioambientales y Tecnológicas
+#
+# Licensed under the EUPL, Version 1.1 or – as soon they will be approved by the
+# European Commission - subsequent versions of the EUPL (the "Licence");
+# You may not use this work except in compliance with the Licence.
+# You may obtain a copy of the Licence at:
+#
+# https://joinup.ec.europa.eu/software/page/eupl5
+#
+# Unless required by applicable law or agreed to in writing, software distributed
+# under the Licence is distributed on an "AS IS" basis, WITHOUT WARRANTIES OR
+# CONDITIONS OF ANY KIND, either express or implied.
+#
+# See the Licence for the specific language governing permissions and limitations
+# under the Licence.
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -13,7 +30,7 @@ from cherab.core.math import sample3d, ScalarToVectorFunction3D
 from cherab.core.atomic import hydrogen, deuterium, carbon, Line
 from cherab.core.model import SingleRayAttenuator, BeamCXLine
 from cherab.tools.plasmas.slab import NeutralFunction, IonFunction
-from cherab.openadas import OpenADAS
+from cherab.atomic import AtomicData
 
 
 ###############
@@ -29,10 +46,10 @@ peak_temperature = 2500
 impurities = [(carbon, 6, 0.005)]
 
 world = World()
-adas = OpenADAS(permit_extrapolation=True, missing_rates_return_null=True)
+atomic_data = AtomicData(permit_extrapolation=True, missing_rates_return_null=True)
 
 plasma = Plasma(parent=world)
-plasma.atomic_data = adas
+plasma.atomic_data = atomic_data
 plasma.geometry = Box(Point3D(0, -width / 2, -height / 2), Point3D(length, width / 2, height / 2))
 
 species = []
@@ -126,7 +143,7 @@ beam_energy = 50000  # keV
 
 beam_full = Beam(parent=world, transform=beam_transform)
 beam_full.plasma = plasma
-beam_full.atomic_data = adas
+beam_full.atomic_data = atomic_data
 beam_full.energy = beam_energy
 beam_full.power = 3e6
 beam_full.element = deuterium
@@ -141,7 +158,7 @@ beam_full.integrator.min_samples = 10
 
 beam_half = Beam(parent=world, transform=beam_transform)
 beam_half.plasma = plasma
-beam_half.atomic_data = adas
+beam_half.atomic_data = atomic_data
 beam_half.energy = beam_energy / 2
 beam_half.power = 3e6
 beam_half.element = deuterium
@@ -156,7 +173,7 @@ beam_half.integrator.min_samples = 10
 
 beam_third = Beam(parent=world, transform=beam_transform)
 beam_third.plasma = plasma
-beam_third.atomic_data = adas
+beam_third.atomic_data = atomic_data
 beam_third.energy = beam_energy / 3
 beam_third.power = 3e6
 beam_third.element = deuterium

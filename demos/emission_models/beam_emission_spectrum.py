@@ -1,3 +1,20 @@
+# Copyright 2016-2022 Euratom
+# Copyright 2016-2022 United Kingdom Atomic Energy Authority
+# Copyright 2016-2022 Centro de Investigaciones Energéticas, Medioambientales y Tecnológicas
+#
+# Licensed under the EUPL, Version 1.1 or – as soon they will be approved by the
+# European Commission - subsequent versions of the EUPL (the "Licence");
+# You may not use this work except in compliance with the Licence.
+# You may obtain a copy of the Licence at:
+#
+# https://joinup.ec.europa.eu/software/page/eupl5
+#
+# Unless required by applicable law or agreed to in writing, software distributed
+# under the Licence is distributed on an "AS IS" basis, WITHOUT WARRANTIES OR
+# CONDITIONS OF ANY KIND, either express or implied.
+#
+# See the Licence for the specific language governing permissions and limitations
+# under the Licence.
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -13,7 +30,7 @@ from cherab.core.model import SingleRayAttenuator, BeamEmissionLine, \
 from cherab.core.model.beam.beam_emission import SIGMA_TO_PI, SIGMA1_TO_SIGMA0, \
     PI2_TO_PI3, PI4_TO_PI3
 from cherab.tools.plasmas.slab import build_slab_plasma
-from cherab.openadas import OpenADAS
+from cherab.atomic import AtomicData
 
 
 ###############
@@ -24,7 +41,7 @@ world = World()
 plasma = build_slab_plasma(width=1.0, height=3.0, peak_density=1e18, neutral_temperature=20.0,
                            impurities=[(carbon, 6, 0.005)], parent=world)
 plasma.b_field = Vector3D(0, 1.5, 0)
-plasma.atomic_data = OpenADAS(permit_extrapolation=True)
+plasma.atomic_data = AtomicData(permit_extrapolation=True)
 
 # add background emission
 h_alpha = Line(hydrogen, 0, (3, 2))
@@ -61,7 +78,7 @@ plt.title("Neutral Density profile in x-z plane")
 ###########################
 # Inject beam into plasma #
 
-adas = OpenADAS(permit_extrapolation=True, missing_rates_return_null=True)
+atomic_data = AtomicData(permit_extrapolation=True, missing_rates_return_null=True)
 
 integration_step = 0.0025
 beam_transform = translate(-0.5, 0.0, 0) * rotate_basis(Vector3D(1, 0, 0), Vector3D(0, 0, 1))
@@ -79,7 +96,7 @@ bes_full_model = BeamEmissionLine(Line(deuterium, 0, (3, 2)),
 
 beam_full = Beam(parent=world, transform=beam_transform)
 beam_full.plasma = plasma
-beam_full.atomic_data = adas
+beam_full.atomic_data = atomic_data
 beam_full.energy = beam_energy
 beam_full.power = 3e6  # beam_energy * beam_current
 beam_full.temperature = beam_temperature
@@ -99,7 +116,7 @@ bes_half_model = BeamEmissionLine(Line(deuterium, 0, (3, 2)),
 
 beam_half = Beam(parent=world, transform=beam_transform)
 beam_half.plasma = plasma
-beam_half.atomic_data = adas
+beam_half.atomic_data = atomic_data
 beam_half.energy = beam_energy / 2
 beam_half.power = 3e6  # beam_energy / 2 * beam_current
 beam_half.temperature = beam_temperature
@@ -119,7 +136,7 @@ bes_third_model = BeamEmissionLine(Line(deuterium, 0, (3, 2)),
 
 beam_third = Beam(parent=world, transform=beam_transform)
 beam_third.plasma = plasma
-beam_third.atomic_data = adas
+beam_third.atomic_data = atomic_data
 beam_third.energy = beam_energy / 3
 beam_third.power = 3e6  # beam_energy / 3 * beam_current
 beam_third.temperature = beam_temperature

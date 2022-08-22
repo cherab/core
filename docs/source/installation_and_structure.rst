@@ -120,7 +120,7 @@ the demos supplied with Cherab. To run the script please enter the following com
 
 .. code-block:: pycon
 
-    >>> from cherab.openadas.repository import populate
+    >>> from cherab.atomic.repository import populate
     >>> populate()
 
 
