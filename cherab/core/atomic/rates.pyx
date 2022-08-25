@@ -37,7 +37,7 @@ cdef class IonisationRate:
 
         :param temperature: Electron temperature in eV.
         :param density: Electron density in m^-3
-        :return: The effective ionisation rate in m^-3.
+        :return: The effective ionisation rate in m^3.s^-1.
         """
         raise NotImplementedError("The evaluate() virtual method must be implemented.")
 
@@ -59,7 +59,7 @@ cdef class RecombinationRate:
 
         :param temperature: Electron temperature in eV.
         :param density: Electron density in m^-3
-        :return: The effective ionisation rate in m^-3.
+        :return: The effective ionisation rate in m^3.s^-1.
         """
         raise NotImplementedError("The evaluate() virtual method must be implemented.")
 
@@ -81,7 +81,7 @@ cdef class ThermalCXRate:
 
         :param temperature: Electron temperature in eV.
         :param density: Electron density in m^-3
-        :return: The effective charge exchange rate in m^-3.
+        :return: The effective charge exchange rate in m^3.s^-1.
         """
         raise NotImplementedError("The evaluate() virtual method must be implemented.")
 
@@ -103,7 +103,7 @@ cdef class _PECRate:
 
         :param temperature: Receiver ion temperature in eV.
         :param density: Receiver ion density in m^-3
-        :return: The effective PEC rate in W/m^3.
+        :return: The effective PEC rate in W.m^3.
         """
         raise NotImplementedError("The evaluate() virtual method must be implemented.")
 

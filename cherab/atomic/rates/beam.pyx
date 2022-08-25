@@ -194,7 +194,7 @@ cdef class BeamEmissionPEC(CoreBeamEmissionPEC):
         e = data["e"]                                   # eV/amu
         n = data["n"]                                   # m^-3
         t = data["t"]                                   # eV
-        sen = np.log10(PhotonToJ.to(data["sen"], wavelength))     # W.m^3/s
+        sen = np.log10(PhotonToJ.to(data["sen"], wavelength))     # W.m^3
         st = np.log10(data["st"] / data["sref"])                  # dimensionless
 
         # store limits of data
