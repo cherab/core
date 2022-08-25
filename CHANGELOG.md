@@ -7,6 +7,7 @@ Release 1.4.0 (TBD)
 API changes:
 * Spectroscopic observers and their groups are deprecated and replaced by groups based on Raysect's 0D observers. (#332)
 * Move repository and rates functions from cherab.openadas to cherab.atomic. (#364)
+* Default path to atomic data repository changed to `~/.cherab/atomicdata/default_repository`.
 
 New:
 * Make f_profile (current flux) a read-only attribute of EFITEquilibrium. (#355)
