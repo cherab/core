@@ -51,15 +51,15 @@ method.
    >>> import numpy as np
    >>> import matplotlib.pyplot as plt
    >>> from cherab.core.atomic import deuterium
-   >>> from cherab.openadas import OpenADAS
+   >>> from cherab.atomic import AtomicData
    >>>
    >>> # initialise the atomic data provider
-   >>> adas = OpenADAS()
+   >>> atomic_data = AtomicData()
    >>>
    >>> # request d-alpha instance of ImpactExcitationRate
-   >>> dalpha_excit = adas.impact_excitation_pec(deuterium, 0, (3, 2))
+   >>> dalpha_excit = atomic_data.impact_excitation_pec(deuterium, 0, (3, 2))
    >>> # request d-alpha instance of RecombinationRate
-   >>> dalpha_recom = adas.recombination_pec(deuterium, 0, (3, 2))
+   >>> dalpha_recom = atomic_data.recombination_pec(deuterium, 0, (3, 2))
    >>>
    >>> # evaluate D-alpha ImpactExcitationRate PEC at n_e = 1E19 m^-3 and t_e = 2 eV
    >>> dalpha_excit(1E19, 2)
@@ -103,23 +103,23 @@ method.
 .. code-block:: pycon
 
    >>> from cherab.core.atomic import deuterium, carbon
-   >>> from cherab.openadas import OpenADAS
+   >>> from cherab.atomic import AtomicData
    >>>
    >>> # initialise the atomic data provider
-   >>> adas = OpenADAS(permit_extrapolation=True)
+   >>> atomic_data = AtomicData(permit_extrapolation=True)
    >>>
    >>> # Request beam stopping rate and sample
-   >>> bms = adas.beam_stopping_rate(deuterium, carbon, 6)
+   >>> bms = atomic_data.beam_stopping_rate(deuterium, carbon, 6)
    >>> bms(50000, 1E19, 1)
    1.777336e-13
    >>>
    >>> # Sample the beam population rate
-   >>> bmp = adas.beam_population_rate(deuterium, 2, carbon, 6)
+   >>> bmp = atomic_data.beam_population_rate(deuterium, 2, carbon, 6)
    >>> bmp(50000, 1E19, 1)
    7.599066e-4
    >>>
    >>> # Sample the beam emission rate
-   >>> bme = adas.beam_emission_pec(deuterium, deuterium, 1, (3, 2))
+   >>> bme = atomic_data.beam_emission_pec(deuterium, deuterium, 1, (3, 2))
    >>> bme(50000, 1E19, 1)
    8.651598e-34
 
@@ -131,12 +131,12 @@ Some example code for requesting beam CX rate object and sampling it with the __
 .. code-block:: pycon
 
    >>> from cherab.core.atomic import deuterium, carbon
-   >>> from cherab.openadas import OpenADAS
+   >>> from cherab.atomic import AtomicData
    >>>
    >>> # initialise the atomic data provider
-   >>> adas = OpenADAS(permit_extrapolation=True)
+   >>> atomic_data = AtomicData(permit_extrapolation=True)
    >>>
-   >>> cxr = adas.beam_cx_pec(deuterium, carbon, 6, (8, 7))
+   >>> cxr = atomic_data.beam_cx_pec(deuterium, carbon, 6, (8, 7))
    >>> cxr_n1, cxr_n2 = cxr
    >>> cxr_n1(50000, 100, 1E19, 1, 1)
    5.826619e-33

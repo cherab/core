@@ -29,13 +29,21 @@ from .utility import DEFAULT_REPOSITORY_PATH, valid_charge
 
 def add_line_power_rate(species, charge, rate, repository_path=None):
     """
-    Adds a single LineRadiationPower rate to the repository.
+    Adds a single line radiated power rate to the repository.
 
     If adding multiple rates, consider using the update_line_power_rates()
     function instead. The update function avoids repeatedly opening and closing
     the rate files.
 
-    :param repository_path:
+    :param species: Plasma species (Element/Isotope).
+    :param charge: Charge of the plasma species.
+    :param rate: Line radiated power rate dictionary containing the following fields:
+
+    |      'ne': array-like of size (N) with electron density in m^-3,
+    |      'te': array-like of size (M) with electron temperature in eV,
+    |      'rate': array-like of size (N, M) with line radiated power rate in W.m^3.
+
+    :param repository_path: Path to the atomic data repository.
     """
 
     update_line_power_rates({
@@ -47,13 +55,22 @@ def add_line_power_rate(species, charge, rate, repository_path=None):
 
 def update_line_power_rates(rates, repository_path=None):
     """
-    Update the repository of LineRadiationPower rates.
-
-    LineRadiationPower rate file structure
-
+    Update the files for the line radiated power rates:
     /radiated_power/line/<species>.json
+    in the atomic data repository.
 
     File contains multiple rates, indexed by the ion's charge state.
+
+    :param rates: Dictionary in the form {<species>: {<charge>: <rate>}}, where
+
+    |      <species> is the plasma species (Element/Isotope),
+    |      <charge> is the charge of the plasma species,
+    |      <rate> is the line radiated rate dictionary containing the following fields:
+    |          'ne': array-like of size (N) with electron density in m^-3,
+    |          'te': array-like of size (M) with electron temperature in eV,
+    |          'rate': array-like of size (N, M) with line radiated power rate in W.m^3.
+
+    :param repository_path: Path to the atomic data repository.
     """
 
     repository_path = repository_path or DEFAULT_REPOSITORY_PATH
@@ -71,13 +88,21 @@ def update_line_power_rates(rates, repository_path=None):
 
 def add_continuum_power_rate(species, charge, rate, repository_path=None):
     """
-    Adds a single ContinuumPower rate to the repository.
+    Adds a single continuum power rate to the repository.
 
     If adding multiple rates, consider using the update_continuum_power_rates()
     function instead. The update function avoids repeatedly opening and closing
     the rate files.
 
-    :param repository_path:
+    :param species: Plasma species (Element/Isotope).
+    :param charge: Charge of the plasma species.
+    :param rate: Continuum power rate dictionary containing the following fields:
+
+    |      'ne': array-like of size (N) with electron density in m^-3,
+    |      'te': array-like of size (M) with electron temperature in eV,
+    |      'rate': array-like of size (N, M) with continuum power rate in W.m^3.
+
+    :param repository_path: Path to the atomic data repository.
     """
 
     update_line_power_rates({
@@ -89,13 +114,22 @@ def add_continuum_power_rate(species, charge, rate, repository_path=None):
 
 def update_continuum_power_rates(rates, repository_path=None):
     """
-    Update the repository of ContinuumPower rates.
-
-    ContinuumPower rate file structure
-
+    Update the files for the continuum power rates:
     /radiated_power/continuum/<species>.json
+    in the atomic data repository.
 
     File contains multiple rates, indexed by ion's charge state.
+
+    :param rates: Dictionary in the form {<species>: {<charge>: <rate>}}, where
+
+    |      <species> is the plasma species (Element/Isotope),
+    |      <charge> is the charge of the plasma species,
+    |      <rate> is the continuum power rate dictionary containing the following fields:
+    |          'ne': array-like of size (N) with electron density in m^-3,
+    |          'te': array-like of size (M) with electron temperature in eV,
+    |          'rate': array-like of size (N, M) with continuum power rate in W.m^3.
+
+    :param repository_path: Path to the atomic data repository.    
     """
 
     repository_path = repository_path or DEFAULT_REPOSITORY_PATH
@@ -113,13 +147,22 @@ def update_continuum_power_rates(rates, repository_path=None):
 
 def add_cx_power_rate(species, charge, rate, repository_path=None):
     """
-    Adds a single CXRadiationPower rate to the repository.
+    Adds a single CX radiation power rate to the repository
+    (charge exchage with neutral hydrogen).
 
     If adding multiple rates, consider using the update_cx_power_rates()
     function instead. The update function avoids repeatedly opening and closing
     the rate files.
 
-    :param repository_path:
+    :param species: Plasma species (Element/Isotope).
+    :param charge: Charge of the plasma species.
+    :param rate: CX power rate dictionary containing the following fields:
+
+    |      'ne': array-like of size (N) with electron density in m^-3,
+    |      'te': array-like of size (M) with electron temperature in eV,
+    |      'rate': array-like of size (N, M) with CX power rate in W.m^3.
+
+    :param repository_path: Path to the atomic data repository.
     """
 
     update_line_power_rates({
@@ -131,13 +174,23 @@ def add_cx_power_rate(species, charge, rate, repository_path=None):
 
 def update_cx_power_rates(rates, repository_path=None):
     """
-    Update the repository of CXRadiationPower rates.
-
-    CXRadiationPower rate file structure
-
+    Update the files for the CX radiation power rates
+    (charge exchage with neutral hydrogen):
     /radiated_power/cx/<species>.json
+    in the atomic data repository.
 
     File contains multiple rates, indexed by ion's charge state.
+
+    :param rates: Dictionary in the form {<species>: {<charge>: <rate>}}, where
+
+    |      <species> is the plasma species (Element/Isotope),
+    |      <charge> is the charge of the plasma species,
+    |      <rate> is the thermal CX power rate dictionary containing the following fields:
+    |          'ne': array-like of size (N) with electron density in m^-3,
+    |          'te': array-like of size (M) with electron temperature in eV,
+    |          'rate': array-like of size (N, M) with thermal CX power rate in W.m^3.
+
+    :param repository_path: Path to the atomic data repository.    
     """
 
     repository_path = repository_path or DEFAULT_REPOSITORY_PATH
@@ -199,59 +252,74 @@ def _update_and_write_bivariate_rate(species, rate_data, path):
 
 
 def get_line_radiated_power_rate(element, charge, repository_path=None):
+    """
+    Reads the line radiated power rate for the given species and charge
+    from the atomic data repository.
 
-    repository_path = repository_path or DEFAULT_REPOSITORY_PATH
+    :param element: Plasma species (Element/Isotope).
+    :param charge: Charge of the plasma species.
+    :param repository_path: Path to the atomic data repository.
 
-    path = os.path.join(repository_path, 'radiated_power/line/{}.json'.format(element.symbol.lower()))
-    try:
-        with open(path, 'r') as f:
-            content = json.load(f)
-        d = content[str(charge)]
-    except (FileNotFoundError, KeyError):
-        raise RuntimeError('Requested radiated power rate (element={}, charge={})'
-                           ' is not available.'.format(element.symbol, charge))
+    :return rate: Line radiated power rate dictionary containing the following fields:
 
-    # convert to numpy arrays
-    d['ne'] = np.array(d['ne'], np.float64)
-    d['te'] = np.array(d['te'], np.float64)
-    d['rate'] = np.array(d['rate'], np.float64)
+    |      'ne': ndarray of size (N) with electron density in m^-3,
+    |      'te': ndarray of size (M) with electron temperature in eV,
+    |      'rate': ndarray of size (N, M) with line radiated power rate in W.m^3.
+    """
 
-    return d
+    return _get_radiated_power_rate('line', element, charge, repository_path)
 
 
 def get_continuum_radiated_power_rate(element, charge, repository_path=None):
+    """
+    Reads the continuum power rate for the given species and charge
+    from the atomic data repository.
 
-    repository_path = repository_path or DEFAULT_REPOSITORY_PATH
+    :param element: Plasma species (Element/Isotope).
+    :param charge: Charge of the plasma species.
+    :param repository_path: Path to the atomic data repository.
 
-    path = os.path.join(repository_path, 'radiated_power/continuum/{}.json'.format(element.symbol.lower()))
-    try:
-        with open(path, 'r') as f:
-            content = json.load(f)
-        d = content[str(charge)]
-    except (FileNotFoundError, KeyError):
-        raise RuntimeError('Requested radiated power rate (element={}, charge={})'
-                           ' is not available.'.format(element.symbol, charge))
+    :return rate: Continuum power rate dictionary containing the following fields:
 
-    # convert to numpy arrays
-    d['ne'] = np.array(d['ne'], np.float64)
-    d['te'] = np.array(d['te'], np.float64)
-    d['rate'] = np.array(d['rate'], np.float64)
+    |      'ne': ndarray of size (N) with electron density in m^-3,
+    |      'te': ndarray of size (M) with electron temperature in eV,
+    |      'rate': ndarray of size (N, M) with continuum power rate in W.m^3.
+    """
 
-    return d
+    return _get_radiated_power_rate('continuum', element, charge, repository_path)
 
 
 def get_cx_radiated_power_rate(element, charge, repository_path=None):
+    """
+    Reads the CX radiation power rate for the given species and charge
+    from the atomic data repository.
+
+    :param element: Plasma species (Element/Isotope).
+    :param charge: Charge of the plasma species.
+    :param repository_path: Path to the atomic data repository.
+
+    :return rate: CX radiation power rate dictionary containing the following fields:
+
+    |      'ne': ndarray of size (N) with electron density in m^-3,
+    |      'te': ndarray of size (M) with electron temperature in eV,
+    |      'rate': ndarray of size (N, M) with CX radiation power rate in W.m^3.
+    """
+
+    return _get_radiated_power_rate('cx', element, charge, repository_path)
+
+
+def _get_radiated_power_rate(cls, element, charge, repository_path=None):
 
     repository_path = repository_path or DEFAULT_REPOSITORY_PATH
 
-    path = os.path.join(repository_path, 'radiated_power/cx/{}.json'.format(element.symbol.lower()))
+    path = os.path.join(repository_path, 'radiated_power/{}/{}.json'.format(cls, element.symbol.lower()))
     try:
         with open(path, 'r') as f:
             content = json.load(f)
         d = content[str(charge)]
     except (FileNotFoundError, KeyError):
-        raise RuntimeError('Requested radiated power rate (element={}, charge={})'
-                           ' is not available.'.format(element.symbol, charge))
+        raise RuntimeError('Requested {} radiated power rate (element={}, charge={})'
+                           ' is not available.'.format(cls, element.symbol, charge))
 
     # convert to numpy arrays
     d['ne'] = np.array(d['ne'], np.float64)
