@@ -36,7 +36,7 @@ class Observer0DGroup(Node):
                                            Note that if the engine is shared, changing its
                                            parameters for one observer in a group will affect
                                            all observers.
-    :ivar list/int spectral_bins: The number of smaller sub-spectrum rays the full spectrum will be divided into.
+    :ivar list/int spectral_bins: The number of spectral samples over the wavelength range.
     :ivar list/int spectral_rays: The number of smaller sub-spectrum rays the full spectrum will be divided into.
     :ivar list/float max_wavelength: Upper wavelength bound for sampled spectral range.
     :ivar list/float min_wavelength: Lower wavelength bound for sampled spectral range.
