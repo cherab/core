@@ -65,13 +65,13 @@ class TestGaussianQuadrature(unittest.TestCase):
     def test_integrate(self):
         """Test integration."""
         func = (2 / sqrt(pi)) * Exp1D(- Arg1D() * Arg1D())
-        quadrature = GaussianQuadrature()
+        quadrature = GaussianQuadrature(relative_tolerance=1.e-8)
         a = -0.5
         b = 3.
         result, error = quadrature.integrate(func, a, b)
         exact_integral = erf(b) - erf(a)
 
-        self.assertAlmostEqual(result, exact_integral, places=7)
+        self.assertAlmostEqual(result, exact_integral, places=8)
 
 
 if __name__ == '__main__':
