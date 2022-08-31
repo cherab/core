@@ -24,6 +24,7 @@ cimport numpy as np
 from raysect.optical cimport Spectrum, Point3D, Vector3D
 from cherab.core cimport Line, Species, Plasma, Beam
 from cherab.core.math cimport Function1D, Function2D
+from cherab.core.math.integrators cimport Integrator1D
 from cherab.core.atomic.zeeman cimport ZeemanStructure
 
 
@@ -45,6 +46,11 @@ cdef class LineShapeModel:
     cpdef Spectrum add_line(self, double radiance, Point3D point, Vector3D direction, Spectrum spectrum)
 
 
+cdef class NumericallyIntegrableLineShapeModel(LineShapeModel):
+
+    cdef Integrator1D integrator
+
+
 cdef class GaussianLine(LineShapeModel):
     pass
 
@@ -57,7 +63,7 @@ cdef class MultipletLineShape(LineShapeModel):
         double[:,::1] _multiplet_mv
 
 
-cdef class StarkBroadenedLine(LineShapeModel):
+cdef class StarkBroadenedLine(NumericallyIntegrableLineShapeModel):
 
     cdef double _aij, _bij, _cij
 

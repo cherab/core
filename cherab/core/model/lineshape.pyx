@@ -22,10 +22,12 @@ import numpy as np
 cimport numpy as np
 from libc.math cimport sqrt, erf, M_SQRT2, floor, ceil, fabs
 from raysect.optical.spectrum cimport new_spectrum
+from raysect.core.math.function.float cimport Function1D
 
 from cherab.core cimport Plasma
 from cherab.core.atomic.elements import hydrogen, deuterium, tritium, helium, helium3, beryllium, boron, carbon, nitrogen, oxygen, neon
 from cherab.core.math.function cimport autowrap_function1d, autowrap_function2d
+from cherab.core.math.integrators cimport GaussianQuadrature
 from cherab.core.utility.constants cimport ATOMIC_MASS, ELEMENTARY_CHARGE, SPEED_OF_LIGHT
 
 cimport cython
@@ -159,6 +161,24 @@ cdef class LineShapeModel:
         raise NotImplementedError('Child lineshape class must implement this method.')
 
 
+cdef class NumericallyIntegrableLineShapeModel(LineShapeModel):
+    """
+    Line shape model to be numerically integrated over the spectral bin.
+
+    :param Line line: The emission line object for this line shape.
+    :param float wavelength: The rest wavelength for this emission line.
+    :param Species target_species: The target plasma species that is emitting.
+    :param Plasma plasma: The emitting plasma object.
+    :param Integrator1D integrator: Integrator1D instance to integrate the line shape
+        over the spectral bin. Default is `GaussianQuadrature()`.
+    """
+
+    def __init__(self, Line line, double wavelength, Species target_species, Plasma plasma, Integrator1D integrator=None):
+
+        super().__init__(line, wavelength, target_species, plasma)
+        self.integrator = integrator or GaussianQuadrature()
+
+
 cdef class GaussianLine(LineShapeModel):
     """
     Produces Gaussian line shape.
@@ -289,7 +309,21 @@ cdef class MultipletLineShape(LineShapeModel):
         return spectrum
 
 
-cdef class StarkBroadenedLine(LineShapeModel):
+cdef class StarkFunction(Function1D):
+
+    cdef double _a, _x0
+
+    def __init__(self, double wavelength, double lambda_1_2):
+        self._x0 = wavelength
+        self._a = (0.5 * lambda_1_2)**2.5
+
+    @cython.cdivision(True)
+    cdef double evaluate(self, double x) except? -1e999:
+
+        return 1. / ((fabs(x - self._x0))**2.5 + self._a)
+
+
+cdef class StarkBroadenedLine(NumericallyIntegrableLineShapeModel):
     """
     Parametrised Stark broadened line shape based on the Model Microfield Method (MMM).
     Contains embedded atomic data in the form of fits to MMM.
@@ -352,7 +386,8 @@ cdef class StarkBroadenedLine(LineShapeModel):
         Line(tritium, 0, (9, 3)): (5.588e-15, 0.7165, 0.033)
     }
 
-    def __init__(self, Line line, double wavelength, Species target_species, Plasma plasma, dict stark_model_coefficients=None):
+    def __init__(self, Line line, double wavelength, Species target_species, Plasma plasma, Integrator1D integrator=None,
+                 dict stark_model_coefficients=None):
 
         stark_model_coefficients = stark_model_coefficients or self.STARK_MODEL_COEFFICIENTS_DEFAULT
 
@@ -371,7 +406,7 @@ cdef class StarkBroadenedLine(LineShapeModel):
         except IndexError:
             raise ValueError('Stark broadening coefficients for {} is not currently available.'.format(line))
 
-        super().__init__(line, wavelength, target_species, plasma)
+        super().__init__(line, wavelength, target_species, plasma, integrator)
 
     def show_supported_transitions(self):
         """ Prints all supported transitions."""
@@ -384,11 +419,14 @@ cdef class StarkBroadenedLine(LineShapeModel):
     @cython.cdivision(True)
     cpdef Spectrum add_line(self, double radiance, Point3D point, Vector3D direction, Spectrum spectrum):
 
-        cdef double ne, te, lambda_1_2, lambda_5_2, wvl
-        cdef double cutoff_lower_wavelength, cutoff_upper_wavelength
-        cdef double lower_value, lower_wavelength, upper_value, upper_wavelength
-        cdef int start, end, i
-        cdef Spectrum raw_lineshape
+        cdef:
+            double ne, te, lambda_1_2, lambda_5_2, wvl
+            double cutoff_lower_wavelength, cutoff_upper_wavelength
+            double lower_wavelength, upper_wavelength
+            double bin_integral
+            int start, end, i
+            Spectrum raw_lineshape
+            StarkFunction stark_funcion
 
         ne = self.plasma.get_electron_distribution().density(point.x, point.y, point.z)
         if ne <= 0.0:
@@ -399,6 +437,8 @@ cdef class StarkBroadenedLine(LineShapeModel):
             return spectrum
 
         lambda_1_2 = self._cij * ne**self._aij / (te**self._bij)
+
+        stark_funcion = StarkFunction(self.wavelength, lambda_1_2)
 
         # calculate and check end of limits
         cutoff_lower_wavelength = self.wavelength - LORENZIAN_CUTOFF_GAMMA * lambda_1_2
@@ -413,21 +453,18 @@ cdef class StarkBroadenedLine(LineShapeModel):
         start = max(0, <int> floor((cutoff_lower_wavelength - spectrum.min_wavelength) / spectrum.delta_wavelength))
         end = min(spectrum.bins, <int> ceil((cutoff_upper_wavelength - spectrum.min_wavelength) / spectrum.delta_wavelength))
 
-        # TODO - replace with cumulative integrals
         # add line to spectrum
         raw_lineshape = spectrum.new_spectrum()
 
         lower_wavelength = raw_lineshape.min_wavelength + start * raw_lineshape.delta_wavelength
-        lower_value = 1 / ((fabs(lower_wavelength - self.wavelength))**2.5 + (0.5 * lambda_1_2)**2.5)
+
         for i in range(start, end):
-
             upper_wavelength = raw_lineshape.min_wavelength + raw_lineshape.delta_wavelength * (i + 1)
-            upper_value = 1 / ((fabs(upper_wavelength - self.wavelength))**2.5 + (0.5 * lambda_1_2)**2.5)
 
-            raw_lineshape.samples_mv[i] += 0.5 * (upper_value + lower_value)
+            bin_integral, _ = self.integrator.integrate(stark_funcion, lower_wavelength, upper_wavelength)
+            raw_lineshape.samples_mv[i] += bin_integral
 
             lower_wavelength = upper_wavelength
-            lower_value = upper_value
 
         # perform normalisation
         raw_lineshape.div_scalar(raw_lineshape.total())
