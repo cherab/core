@@ -14,6 +14,9 @@ New:
 * Add verbose parameter to SartOpencl solver (default is False). (#358)
 * Add Generomak core plasma profiles. (#360)
 * Add toroidal_mesh_from_polygon for making mesh for not fully-360 degrees axisymmetric elements. (#365)
+* Add GaussianQuadrature integration method for Function1D. (#366)
+* Add NumericallyIntegrableLineShapeModel for lineshapes that cannot be analytically integrated over a spectral bin. (#366)
+* Add a numerical integration of StarkBroadenedLine over the spectral bin. (#366)
 
 Bug Fixes:
 ----------
