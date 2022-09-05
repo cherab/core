@@ -89,7 +89,7 @@ cdef class GaussianSpectrum(LaserSpectrum):
 
     @stddev.setter
     def stddev(self, value):
-        if not value > 0:
+        if value <= 0:
             raise ValueError("Value has to be larger than 0")
 
         self._stddev = value
@@ -103,7 +103,7 @@ cdef class GaussianSpectrum(LaserSpectrum):
 
     @mean.setter
     def mean(self, double value):
-        if not value > 0:
+        if value <= 0:
             raise ValueError("Value has to be larger than 0")
 
         self._mean = value

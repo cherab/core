@@ -98,7 +98,7 @@ cdef class UniformEnergyDensity(LaserProfile):
 
     @energy_density.setter
     def energy_density(self, value):
-        if not value > 0:
+        if value <= 0:
             raise ValueError("Laser power density has to be larger than 0.")
 
         self._energy_density = value

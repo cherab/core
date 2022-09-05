@@ -255,7 +255,7 @@ cdef class GaussianBeamModel(Function3D):
 
     @wavelength.setter
     def wavelength(self, double value):
-        if not value > 0:
+        if value <= 0:
             raise ValueError("Value has to be larger than 0, but {0} passed.".format(value))
 
         self._wavelength = value
@@ -274,7 +274,7 @@ cdef class GaussianBeamModel(Function3D):
 
     @stddev_waist.setter
     def stddev_waist(self, double value):
-        if not value > 0:
+        if value <= 0:
             raise ValueError("Value has to be larger than 0, but {0} passed.".format(value))
 
         self._stddev_waist = value

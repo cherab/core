@@ -208,9 +208,9 @@ cdef class SeldenMatobaThomsonSpectrum(LaserModel):
         :return: Spectrum
         """
         # check for nonzero laser power, ne, te, wavelength
-        if not ne > 0 or not te > 0 or not laser_energy_density > 0:
+        if ne <= 0 or te <= 0 or not laser_energy_density > 0:
             return spectrum
-        if not laser_wavelength >= 0:
+        if laser_wavelength <= 0:
             raise ValueError("laser wavelength has to be larger than 0")
 
         angle_scattering = (180. - observation_angle)  # scattering direction is the opposite to obervation direction
