@@ -137,24 +137,6 @@ cdef class LaserProfile:
 
         return self._energy_density3d.evaluate(x, y, z)
 
-    @property
-    def laser(self):
-        return self._laser
-    
-    @laser.setter
-    def laser(self, value):
-        if not isinstance(value, Laser):
-            raise TypeError("Value has to instance of Laser class.")
-        
-        if self._laser is not None:
-            self.notifier.remove(self._laser._configure)
-        
-        self._laser = value
-        self.notifier.add(self._laser._configure)
-        self._change()
-        
-        self.notifier.notify()
-
     cpdef list generate_geometry(self):
         """
         returns list of raysect primitives composing the laser geometry

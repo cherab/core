@@ -211,7 +211,6 @@ cdef class Laser(Node):
     def laser_profile(self, LaserProfile value):
 
         self._laser_profile = value
-        self._laser_profile.laser = self
 
         self._configure()
 
