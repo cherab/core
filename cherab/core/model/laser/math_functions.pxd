@@ -22,7 +22,7 @@ from raysect.core.math.function.float cimport Function3D
 cdef class ConstantAxisymmetricGaussian3D(Function3D):
 
     cdef:
-        double _stddev, _recip_negative_2stddev2, _recip_2pistddev2
+        double _stddev, _normalisation, _kr
 
     cdef double evaluate(self, double x, double y, double z) except? -1e999
 
@@ -30,7 +30,7 @@ cdef class ConstantAxisymmetricGaussian3D(Function3D):
 cdef class ConstantBivariateGaussian3D(Function3D):
 
     cdef:
-        double _stddev_x, _stddev_y, _kx, _ky,_normalisation
+        double _stddev_x, _stddev_y, _kx, _ky, _normalisation
 
 
 cdef class TrivariateGaussian3D(Function3D):

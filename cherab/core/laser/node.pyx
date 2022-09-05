@@ -176,10 +176,6 @@ cdef class Laser(Node):
         if self._laser_profile is None:
             return
 
-        # update the plasma reference in models
-        for model in list(self._models):
-            model.plasma = self._plasma
-
         # clear geometry parents to remove segments
         for i in self._geometry:
             i.parent = None

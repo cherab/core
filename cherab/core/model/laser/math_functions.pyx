@@ -17,6 +17,8 @@
 # under the Licence.
 
 
+cimport cython
+
 from raysect.core.math.function.float cimport Function3D
 from raysect.core.math.cython.utility cimport find_index
 
@@ -262,7 +264,8 @@ cdef class GaussianBeamModel(Function3D):
         self._cache_constants()
 
     @property
-    def waist_z(self):GaussianBeamModel
+    def waist_z(self):
+        return self._waist_z
 
     @waist_z.setter
     def waist_z(self, double value):
@@ -286,6 +289,7 @@ cdef class GaussianBeamModel(Function3D):
         n = 1  # refractive index of vacuum
         self._rayleigh_range = 2 * pi * n * self._stddev_waist2 / self._wavelength / 1e-9
 
+    @cython.cdivision(True)
     cdef double evaluate(self, double x, double y, double z) except? -1e999:
 
         cdef:
