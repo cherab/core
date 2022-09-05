@@ -66,8 +66,6 @@ cdef class LaserSpectrum(Function1D):
     :ivar ndarray wavelengths: The wavelengt coordinate vector in nm.
     :ivar ndarray power_spectral_density: The values of the power
       spectral density in W / nm.
-    :ivar ndarray photon_spectral_density: The values corresponding to the number
-      of photons per nm.
     :ivar float delta_wavelength: Spectral width of the bins in nm.
     """
 
@@ -125,10 +123,6 @@ cdef class LaserSpectrum(Function1D):
         return self._power_spectral_density
 
     @property
-    def photon_spectral_density(self):
-        return self._photon_spectral_density
-
-    @property
     def delta_wavelength(self):
         return self._delta_wavelength
 
@@ -161,9 +155,6 @@ cdef class LaserSpectrum(Function1D):
         self._power = np.zeros(self._bins, dtype=np.double)  # power in a spectral bin (PSD * delta wavelength)
         self._power_mv = self._power
 
-        self._photon_spectral_density = np.zeros(self._bins, dtype=np.double)
-        self._photon_spectral_density_mv = self._photon_spectral_density
-
         delta_wvl_half = self._delta_wavelength * 0.5
         wvl_lower = self._wavelengths_mv[0] - delta_wvl_half
 
@@ -173,12 +164,8 @@ cdef class LaserSpectrum(Function1D):
 
             self._power_spectral_density_mv[index] = self._get_bin_power_spectral_density(wvl_lower, wvl_upper)
             self._power_mv[index] = self._power_spectral_density_mv[index] * self._delta_wavelength # power in the spectral bin for scattering calculations
-            self._photon_spectral_density_mv[index] = self._power_spectral_density_mv[index] / self._photon_energy(wvl)
 
             wvl_lower = wvl_upper
-
-    cdef double _photon_energy(self, double wavelength):
-        return SPEED_OF_LIGHT * PLANCK_CONSTANT / (wavelength * 1e-9)
 
     cpdef double evaluate_integral(self, double lower_limit, double upper_limit):
         raise NotImplementedError('Virtual method must be implemented in a sub-class.')
