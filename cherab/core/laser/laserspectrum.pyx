@@ -108,7 +108,7 @@ cdef class LaserSpectrum(Function1D):
 
     @bins.setter
     def bins(self, int value):
-        if not value > 0:
+        if value <= 0:
             raise ValueError("Value has to be larger than 0")
 
         self._bins = value
