@@ -20,10 +20,7 @@
 from raysect.optical cimport Vector3D, Point3D
 from raysect.optical.spectrum cimport Spectrum
 
-from cherab.core.laser.model cimport LaserModel
-from cherab.core.laser.node cimport Laser
-from cherab.core.laser.profile cimport LaserProfile
-from cherab.core.laser.laserspectrum cimport LaserSpectrum
+from cherab.core.laser cimport Laser, LaserModel, LaserSpectrum, LaserProfile
 
 
 cdef class SeldenMatobaThomsonSpectrum(LaserModel):

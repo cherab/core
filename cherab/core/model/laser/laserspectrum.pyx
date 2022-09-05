@@ -17,7 +17,7 @@
 # under the Licence.
 
 
-from cherab.core.laser.laserspectrum cimport LaserSpectrum
+from cherab.core.laser cimport LaserSpectrum
 from libc.math cimport sqrt, exp, M_PI, erf, M_SQRT2
 
 

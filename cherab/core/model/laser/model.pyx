@@ -24,10 +24,8 @@ from raysect.optical cimport Vector3D, Point3D
 from raysect.optical.spectrum cimport Spectrum
 
 from cherab.core cimport Plasma
-from cherab.core.laser.model cimport LaserModel
-from cherab.core.laser.profile cimport LaserProfile
+from cherab.core.laser cimport LaserModel, LaserProfile, LaserSpectrum
 from cherab.core.utility.constants cimport DEGREES_TO_RADIANS
-from cherab.core.laser.laserspectrum cimport LaserSpectrum
 from cherab.core.utility.constants cimport SPEED_OF_LIGHT, ELECTRON_CLASSICAL_RADIUS, ELECTRON_REST_MASS, ELEMENTARY_CHARGE
 
 

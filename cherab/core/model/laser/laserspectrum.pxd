@@ -17,7 +17,7 @@
 # under the Licence.
 
 
-from cherab.core.laser.laserspectrum cimport LaserSpectrum
+from cherab.core.laser cimport LaserSpectrum
 
 
 cdef class ConstantSpectrum(LaserSpectrum):
