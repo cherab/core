@@ -5,7 +5,6 @@ from raysect.optical.observer import FibreOptic
 
 from cherab.core.model.laser import ConstantBivariateGaussian, ConstantSpectrum, SeldenMatobaThomsonSpectrum
 from cherab.core.laser import Laser
-from cherab.generomak import equilibrium
 
 from cherab.generomak.plasma import get_core_plasma
 from cherab.generomak.equilibrium import load_equilibrium
@@ -28,7 +27,7 @@ laser.laser_spectrum = ConstantSpectrum(min_wavelength=1059.9, max_wavelength=10
 laser.models = [SeldenMatobaThomsonSpectrum()]
 
 # generate points on laser in world space to measure on
-laser_points = [Point3D(0, 0, round(z, 2)).transform(laser.to_root()) for z in np.linspace(2, 2.9, 5)]
+laser_points = [Point3D(0, 0, round(z, 2)).transform(laser.to_root()) for z in np.linspace(2, 2.8, 5)]
 te = [plasma.electron_distribution.effective_temperature(*point) for point in laser_points]
 ne = [plasma.electron_distribution.density(*point) for point in laser_points]
 
@@ -42,7 +41,7 @@ for point in laser_points:
     direction = fibre_position.vector_to(point)
     transform = translate(*fibre_position) * rotate_basis(direction, Vector3D(0, 0, 1))
 
-    fibre = FibreOptic(radius=1e-3, acceptance_angle=5,
+    fibre = FibreOptic(radius=1e-3, acceptance_angle=0.25,
                        parent=world, transform=transform,
                        min_wavelength=800, max_wavelength=1200,
                        spectral_bins=1000,
@@ -56,4 +55,7 @@ _, ax = plt.subplots()
 for z, fibre in fibres.items():
     pipeline = fibre.pipelines[0]
     ax.plot(pipeline.wavelengths, pipeline.samples.mean, label="z={:1.2f}m".format(z))
+ax.set_xlabel("wavelength [nm]")
+ax.set_ylabel("spectral power W/nm")
 ax.legend()
+plt.show()

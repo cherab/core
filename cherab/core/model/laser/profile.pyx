@@ -286,11 +286,6 @@ cdef class ConstantBivariateGaussian(LaserProfile):
         self._stddev_y = value
         self._function_changed()
 
-    def _geometry_changed(self):
-
-        if self._laser is not None:
-            self._laser._configure_geometry()
-
     def _function_changed(self):
         """
         Energy density should be returned in units [J/m ** 3]. Energy shape in xy
@@ -313,6 +308,7 @@ cdef class ConstantBivariateGaussian(LaserProfile):
     cpdef list generate_geometry(self):
 
         return generate_segmented_cylinder(self.laser_radius, self.laser_length)
+
 
 cdef class TrivariateGaussian(LaserProfile):
     """
@@ -742,6 +738,7 @@ cdef class GaussianBeamAxisymmetric(LaserProfile):
     cpdef list generate_geometry(self):
 
         return generate_segmented_cylinder(self.laser_radius, self.laser_length)
+
 
 def generate_segmented_cylinder(radius, length):
     """

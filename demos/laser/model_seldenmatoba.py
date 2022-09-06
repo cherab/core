@@ -69,3 +69,4 @@ for ao in angles_obs:
 ax.set_xlabel("Wavelength [nm]")
 ax.set_ylabel("Spectral Radiance [W/m^3/sr]")
 ax.legend()
+plt.show()
