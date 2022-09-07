@@ -1,13 +1,13 @@
 import unittest
 
 from raysect.optical import World
+from raysect.optical.material.emitter.inhomogeneous import NumericalIntegrator
 
 from cherab.core import Plasma
 from cherab.core.laser.node import Laser
 from cherab.core.model.laser.laserspectrum import ConstantSpectrum
 from cherab.core.model.laser.model import SeldenMatobaThomsonSpectrum
 from cherab.core.model.laser.profile import UniformEnergyDensity
-
 
 
 class TestLaser(unittest.TestCase):
@@ -84,3 +84,27 @@ class TestLaser(unittest.TestCase):
                                                    "is not set correctly.")
             self.assertIs(mod.laser_spectrum, laser_spectrum2, msg="laser_spectrum reference in emission model"
                                                                    "is not set correctly.")
+
+    def test_integrator_change(self):
+
+        world = World()
+
+        laser_profile = UniformEnergyDensity(laser_length=1, laser_radius=0.1)
+        laser_spectrum = ConstantSpectrum(min_wavelength=1059, max_wavelength=1061, bins=10)
+        plasma = Plasma(parent=world)
+        models = [SeldenMatobaThomsonSpectrum()]
+
+        laser = Laser(parent=world)
+
+        laser.laser_spectrum = laser_spectrum
+        laser.plasma = plasma
+        laser.laser_profile = laser_profile
+        laser.models = models
+
+        integrator = NumericalIntegrator(1e-4)
+
+        laser.integrator = integrator
+
+        for i in laser.get_geometry():
+            self.assertIs(i.material.integrator, integrator, msg="Integrator not updated properly")
+             

@@ -445,7 +445,6 @@ cdef class TrivariateGaussian(LaserProfile):
         self._laser_radius = value
         self.notifier.notify()
 
-
     @property
     def pulse_energy(self):
         return self._pulse_energy
