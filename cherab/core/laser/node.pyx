@@ -130,7 +130,6 @@ cdef class Laser(Node):
         self._integrator = NumericalIntegrator(step=1e-3)
 
         self._importance = 1.
-        self._configure()
 
     def _set_init_values(self):
         """
@@ -151,7 +150,9 @@ cdef class Laser(Node):
             self._plasma.notifier.remove(self._plasma_changed)
 
         self._plasma = value
-        self._configure()
+        self._plasma.notifier.add(self._plasma_changed)
+
+        self._configure_materials()
 
     @property
     def importance(self):
@@ -161,34 +162,7 @@ cdef class Laser(Node):
     def importance(self, double value):
         
         self._importance = value
-        self._configure()
-
-    def _configure(self):
-        """
-        Reconfigure the laser primitives and update references after changes.
-        """
-
-        # no further work if there are no emission models
-        if not list(self._models):
-            return
-        
-        #no further work if there is no laser profile connected
-        if self._laser_profile is None:
-            return
-
-        # clear geometry parents to remove segments
-        for i in self._geometry:
-            i.parent = None
-        self._geometry = []
-
-        # rebuild geometry
-        primitives = self._laser_profile.generate_geometry()
-
-        for i in primitives:
-            i.parent = self
-            i.material = LaserMaterial(self, i, list(self._models), self._integrator)
-
-        self._geometry = primitives
+        self._configure_materials()
 
     @property
     def laser_spectrum(self):
@@ -197,7 +171,7 @@ cdef class Laser(Node):
     @laser_spectrum.setter
     def laser_spectrum(self, LaserSpectrum value):
         self._laser_spectrum = value
-        self._configure()
+        self._configure_materials()
 
     @property
     def laser_profile(self):
@@ -206,9 +180,13 @@ cdef class Laser(Node):
     @laser_profile.setter
     def laser_profile(self, LaserProfile value):
 
-        self._laser_profile = value
+        if self._laser_profile is not None:
+            self._laser_profile.notifier.remove(self.configure_geometry)
 
-        self._configure()
+        self._laser_profile = value
+        self._laser_profile.notifier.add(self.configure_geometry)
+
+        self.configure_geometry()
 
     @property
     def models(self):
@@ -222,7 +200,7 @@ cdef class Laser(Node):
             raise ValueError("The plasma, laser_profile and laser_spectrum must be set before before specifying any models.")
 
         self._models.set(value)
-        self._configure()
+        self._configure_materials()
 
     @property
     def integrator(self):
@@ -231,14 +209,53 @@ cdef class Laser(Node):
     @integrator.setter
     def integrator(self, VolumeIntegrator value):
         self._integrator = value
-        self._configure()
+
+        for i in self._geometry:
+            i.material.integrator = value
+    
+    def configure_geometry(self):
+        """
+        Reconfigure the laser primitives and materials.
+        """
+
+        self._build_geometry()
+        self._configure_materials()
+
+    def _build_geometry(self):
+        """
+        Delete and build new laser segments
+        """
+        # remove old laser segments in any case
+        for i in self._geometry:
+            i.parent = None
+        self._geometry = []
+
+        # no point in adding segments if there is no model and profile
+        if self._laser_profile is None:
+            return
+        
+        # rebuild geometry
+        self._geometry = self._laser_profile.generate_geometry()
+
+        for i in self._geometry:
+            i.parent = self
+    
+    def _configure_materials(self):
+        """
+        Configure laser segment materials
+        """
+        if not list(self._models) or self._plasma is None or self._laser_spectrum is None:
+            return
+
+        for i in self._geometry:
+            i.material = LaserMaterial(self, i, list(self._models), self._integrator)
 
     def get_geometry(self):
         return self._geometry
 
     def _plasma_changed(self):
         """React to change of plasma and propagate the information."""
-        self._configure()
+        self._configure_materials()
 
     def _modified(self):
-        self._configure()
+        self._configure_materials()
