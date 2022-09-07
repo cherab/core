@@ -12,6 +12,7 @@ New:
 * Add group observer class for each of Raysect's 0D observers. (#332)
 * Add a demo for observer group handling and plotting.
 * Add verbose parameter to SartOpencl solver (default is False). (#358)
+* Add Thomson Scattering model. (#97)
 
 Bug Fixes:
 ----------
