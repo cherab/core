@@ -33,7 +33,7 @@ cdef class LaserMaterial(InhomogeneousVolumeEmitter):
         super().__init__(integrator)
 
         self._laser_segment_to_laser_node = laser_segment.to(laser)
-        self._laser_to_plasma = laser_segment.to(laser._plasma)
+        self._laser_to_plasma = laser_segment.to(laser.plasma)
         self.importance = laser.importance
         
         #validate and set models
