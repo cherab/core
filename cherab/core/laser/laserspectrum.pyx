@@ -136,6 +136,18 @@ cdef class LaserSpectrum(Function1D):
         if min_wavelength >= max_wavelength:
             raise ValueError("min_wavelength has to be smaller than max_wavelength: min_wavelength={} > max_wavelength={}".format(min_wavelength, max_wavelength))
 
+    cpdef double get_min_wavelenth(self):
+        return self._min_wavelength
+
+    cpdef double get_max_wavelenth(self):
+        return self._min_wavelength
+
+    cpdef int get_spectral_bins(self):
+        return self._bins
+
+    cpdef double get_delta_wavelength(self):
+        return self._delta_wavelength
+
     cpdef void _update_cache(self):
 
         cdef:
@@ -144,26 +156,26 @@ cdef class LaserSpectrum(Function1D):
 
         self._delta_wavelength = (self._max_wavelength - self._min_wavelength) / self._bins
         self._wavelengths = np.zeros(self.bins, dtype=np.double)
-        self._wavelengths_mv = self._wavelengths
+        self.wavelengths_mv = self._wavelengths
 
         for index in range(self._bins):
             self._wavelengths[index] = self._min_wavelength + (0.5 + index) * self._delta_wavelength
 
         self._power_spectral_density = np.zeros(self._bins, dtype=np.double)  # power spectral density (PSD)
-        self._power_spectral_density_mv = self._power_spectral_density
+        self.power_spectral_density_mv = self._power_spectral_density
         
         self._power = np.zeros(self._bins, dtype=np.double)  # power in a spectral bin (PSD * delta wavelength)
-        self._power_mv = self._power
+        self.power_mv = self._power
 
         delta_wvl_half = self._delta_wavelength * 0.5
-        wvl_lower = self._wavelengths_mv[0] - delta_wvl_half
+        wvl_lower = self.wavelengths_mv[0] - delta_wvl_half
 
         for index in range(self._bins):
             wvl = wvl_lower + delta_wvl_half
             wvl_upper = wvl_lower + self._delta_wavelength
 
-            self._power_spectral_density_mv[index] = self._get_bin_power_spectral_density(wvl_lower, wvl_upper)
-            self._power_mv[index] = self._power_spectral_density_mv[index] * self._delta_wavelength # power in the spectral bin for scattering calculations
+            self.power_spectral_density_mv[index] = self._get_bin_power_spectral_density(wvl_lower, wvl_upper)
+            self.power_mv[index] = self.power_spectral_density_mv[index] * self._delta_wavelength # power in the spectral bin for scattering calculations
 
             wvl_lower = wvl_upper
 
