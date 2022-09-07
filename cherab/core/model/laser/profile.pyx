@@ -505,14 +505,8 @@ cdef class TrivariateGaussian(LaserProfile):
 
     def _function_changed(self):
         """
-        Energy density should be returned in units [J/m ** 3]. Energy shape in xy
-        plane is defined by normal distribution (integral over xy plane for
-        constant z is 1). The units of such distribution are [m ** -2].
-        In the z axis direction (direction of laser propagation),
-        the laser_energy is spread along the z axis using the velocity
-        of light SPEED_OF_LIGHT and the temporal duration of the pulse:
-        length = SPEED_OF_LIGTH * pulse_length. Combining the normal distribution with the normalisation
-         pulse_energy / length gives the units [J / m ** 3].
+        Energy density should be returned in units [J/m ** 3]. The integral value of the _distribution
+        is 1, thus multiplying _distribution by _pulse_energy gives correct values.
         """
 
         self._distribution = TrivariateGaussian3D(self._mean_z, self._stddev_x, self._stddev_y,
