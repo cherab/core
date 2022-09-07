@@ -727,7 +727,7 @@ cdef class GaussianBeamAxisymmetric(LaserProfile):
          pulse_energy / length gives the units [J / m ** 3].
         """
 
-        self._distribution = GaussianBeamModel(self.laser_wavelength, self._waist_z, self.stddev_waist)
+        self._distribution = GaussianBeamModel(self._laser_wavelength, self._waist_z, self._stddev_waist)
         # calculate volumetric power dentiy
         length = SPEED_OF_LIGHT * self._pulse_length  # convert from temporal to spatial length of pulse
         normalisation = self._pulse_energy / length  # normalisation to have correct spatial energy density [J / m**3]
