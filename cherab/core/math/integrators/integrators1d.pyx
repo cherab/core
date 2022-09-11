@@ -21,28 +21,35 @@
 import numpy as np
 from scipy.special import roots_legendre
 
+from raysect.core.math.function.float cimport autowrap_function1d
+
 from libc.math cimport INFINITY
 cimport cython
 
 
-cdef class Integrator1D:
+cdef class Integrator1D(Function2D):
     """
     Compute a definite integral of a one-dimensional function.
+
+    :ivar Function1D integrand: A 1D function to integrate.
     """
 
-    cpdef (double, double) integrate(self, Function1D func, double a, double b):
+    @property
+    def integrand(self):
         """
-        Integrates a one-dimensional function over the given interval.
+        A 1D function to integrate.
 
-        :param Function1D func: A function to integrate.
-        :param double a: Lower limit of integration.
-        :param double b: Upper limit of integration.
-
-        :returns: Two-element tuple containing the integral of func from a to b
-                  and an estimate of the absolute error in the result.
+        :rtype: int
         """
+        return self.function
 
-        raise NotImplementedError("The integrate() virtual method must be implemented.")
+    @integrand.setter
+    def integrand(self, object func):
+
+        if func is None:
+            self.function = None
+        else:
+            self.function = autowrap_function1d(func)
 
 
 cdef class GaussianQuadrature(Integrator1D):
@@ -51,18 +58,20 @@ cdef class GaussianQuadrature(Integrator1D):
     using fixed-tolerance Gaussian quadrature.
     (see Scipy `quadrature <https://docs.scipy.org/doc/scipy/reference/generated/scipy.integrate.quadrature.html>`).
 
+    :param object integrand: A 1D function to integrate.
     :param double relative_tolerance: Iteration stops when relative error between
         last two iterates is less than this value. Default is 1.e-5.
     :param int max_order: Maximum order on Gaussian quadrature. Default is 50.
     :param int min_order: Minimum order on Gaussian quadrature. Default is 1.
 
+    :ivar Function1D integrand: A 1D function to integrate.
     :ivar double relative_tolerance: Iteration stops when relative error between
         last two iterates is less than this value.
     :ivar int max_order: Maximum order on Gaussian quadrature.
     :ivar int min_order: Minimum order on Gaussian quadrature.
     """
 
-    def __init__(self, double relative_tolerance=1.e-5, int max_order=50, int min_order=1):
+    def __init__(self, object integrand=None, double relative_tolerance=1.e-5, int max_order=50, int min_order=1):
 
         if min_order < 1 or max_order < 1:
             raise ValueError("Order of Gaussian quadrature must be >= 1.")
@@ -73,6 +82,8 @@ cdef class GaussianQuadrature(Integrator1D):
         self._min_order = min_order
         self._max_order = max_order
         self._build_cash()
+
+        self.integrand = integrand
 
         self.relative_tolerance = relative_tolerance
 
@@ -162,31 +173,34 @@ cdef class GaussianQuadrature(Integrator1D):
     @cython.wraparound(False)
     @cython.cdivision(True)
     @cython.initializedcheck(False)
-    cpdef (double, double) integrate(self, Function1D func, double a, double b):
+    cdef double evaluate(self, double a, double b) except? -1e999:
         """
         Integrates a one-dimensional function over a finite interval.
 
-        :param Function1D func: A function to integrate.
         :param double a: Lower limit of integration.
         :param double b: Upper limit of integration.
 
-        :returns: Two-element tuple containing Gaussian quadrature approximation to integral
-                  and difference between last two estimates of the integral.
+        :returns: Gaussian quadrature approximation to integral.
         """
 
         cdef:
             int order, i, ibegin
-            double newval, oldval, error, x
+            double newval, oldval, error, x, c, d
+
+        if self.function is None:
+            raise AttributeError("Integrand is not set.")
 
         oldval = INFINITY
         ibegin = 0
+        c = 0.5 * (a + b)
+        d = 0.5 * (b - a)
 
         for order in range(self._min_order, self._max_order + 1):
             newval = 0
             for i in range(ibegin, ibegin + order):
-                x = a + 0.5 * (b - a) * (self._roots_mv[i] + 1.)
-                newval += self._weights_mv[i] * func.evaluate(x)
-            newval *= 0.5 * (b - a)
+                x = c + d * self._roots_mv[i]
+                newval += self._weights_mv[i] * self.function.evaluate(x)
+            newval *= d
 
             error = abs(newval - oldval)
             oldval = newval
@@ -196,4 +210,4 @@ cdef class GaussianQuadrature(Integrator1D):
             if error < self._rtol * abs(newval):
                 break
 
-        return newval, error
+        return newval

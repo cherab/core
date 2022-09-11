@@ -17,12 +17,13 @@
 # under the Licence.
 
 from numpy cimport ndarray
-from raysect.core.math.function.float cimport Function1D
+from raysect.core.math.function.float cimport Function1D, Function2D
 
 
-cdef class Integrator1D:
+cdef class Integrator1D(Function2D):
 
-    cpdef (double, double) integrate(self, Function1D func, double a, double b)
+    cdef:
+        Function1D function
 
 
 cdef class GaussianQuadrature(Integrator1D):

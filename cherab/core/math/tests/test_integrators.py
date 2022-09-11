@@ -31,11 +31,12 @@ class TestGaussianQuadrature(unittest.TestCase):
         min_order = 3
         max_order = 30
         reltol = 1.e-6
-        quadrature = GaussianQuadrature(relative_tolerance=reltol, max_order=max_order, min_order=min_order)
+        quadrature = GaussianQuadrature(integrand=Arg1D, relative_tolerance=reltol, max_order=max_order, min_order=min_order)
 
         self.assertEqual(quadrature.relative_tolerance, reltol)
         self.assertEqual(quadrature.max_order, max_order)
         self.assertEqual(quadrature.min_order, min_order)
+        self.assertEqual(quadrature.integrand, Arg1D)
 
         min_order = 0
         max_order = 2  # < min_order
@@ -57,21 +58,26 @@ class TestGaussianQuadrature(unittest.TestCase):
         quadrature.relative_tolerance = reltol
         quadrature.min_order = min_order
         quadrature.max_order = max_order
+        quadrature.integrand = Exp1D
 
         self.assertEqual(quadrature.relative_tolerance, reltol)
         self.assertEqual(quadrature.min_order, min_order)
         self.assertEqual(quadrature.max_order, max_order)
+        self.assertEqual(quadrature.integrand, Exp1D)
 
     def test_integrate(self):
         """Test integration."""
-        func = (2 / sqrt(pi)) * Exp1D(- Arg1D() * Arg1D())
         quadrature = GaussianQuadrature(relative_tolerance=1.e-8)
         a = -0.5
         b = 3.
-        result, error = quadrature.integrate(func, a, b)
+
+        with self.assertRaises(AttributeError):  # integrand is not set
+            quadrature(a, b)
+
+        quadrature.integrand = (2 / sqrt(pi)) * Exp1D(- Arg1D() * Arg1D())
         exact_integral = erf(b) - erf(a)
 
-        self.assertAlmostEqual(result, exact_integral, places=8)
+        self.assertAlmostEqual(quadrature(a, b), exact_integral, places=8)
 
 
 if __name__ == '__main__':
