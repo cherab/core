@@ -42,13 +42,9 @@ cdef class LineShapeModel:
         double wavelength
         Species target_species
         Plasma plasma
+        Integrator1D integrator
 
     cpdef Spectrum add_line(self, double radiance, Point3D point, Vector3D direction, Spectrum spectrum)
-
-
-cdef class NumericallyIntegrableLineShapeModel(LineShapeModel):
-
-    cdef Integrator1D integrator
 
 
 cdef class GaussianLine(LineShapeModel):
@@ -63,7 +59,7 @@ cdef class MultipletLineShape(LineShapeModel):
         double[:,::1] _multiplet_mv
 
 
-cdef class StarkBroadenedLine(NumericallyIntegrableLineShapeModel):
+cdef class StarkBroadenedLine(LineShapeModel):
 
     cdef double _aij, _bij, _cij
 
