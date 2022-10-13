@@ -26,11 +26,11 @@ jobs:
       with:
         python-version: ${{ matrix.python-version }}
     - name: Install Python dependencies
-      run: python -m pip install cython>=0.28 numpy==${{ matrix.numpy-version }} scipy matplotlib pyopencl[pocl]
+      run: python -m pip install cython>=0.28 numpy==${{ matrix.numpy-version }} scipy matplotlib pyopencl[pocl]==2022.1
     - name: Work around PyOpenCL issue 537
       run: echo OCL_ICD_VENDORS=$(python -c 'import os, pyopencl; print(os.path.join(*pyopencl.__path__, ".libs"))') >> $GITHUB_ENV
     - name: Install Raysect from pypi
-      run: pip install raysect
+      run: pip install raysect==0.7.1
     - name: Build cherab
       run: dev/build.sh
     - name: Run tests
