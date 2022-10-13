@@ -1,6 +1,6 @@
-# Copyright 2016-2018 Euratom
-# Copyright 2016-2018 United Kingdom Atomic Energy Authority
-# Copyright 2016-2018 Centro de Investigaciones Energéticas, Medioambientales y Tecnológicas
+# Copyright 2016-2022 Euratom
+# Copyright 2016-2022 United Kingdom Atomic Energy Authority
+# Copyright 2016-2022 Centro de Investigaciones Energéticas, Medioambientales y Tecnológicas
 #
 # Licensed under the EUPL, Version 1.1 or – as soon they will be approved by the
 # European Commission - subsequent versions of the EUPL (the "Licence");
@@ -20,7 +20,7 @@ from raysect.optical cimport Point3D, Vector3D, Spectrum, World, Ray, Primitive,
 from raysect.optical.material.emitter cimport InhomogeneousVolumeEmitter, NumericalIntegrator
 from cherab.core.math.function cimport Function3D, autowrap_function3d
 from libc.math cimport M_PI
-import cython
+cimport cython
 
 
 cdef class RadiationFunction(InhomogeneousVolumeEmitter):
@@ -51,10 +51,6 @@ cdef class RadiationFunction(InhomogeneousVolumeEmitter):
        >>> def rad_function_3d(x, y, z): return 0
        >>> radiation_emitter = RadiationFunction(rad_function_3d)
     """
-
-    cdef:
-        readonly Function3D radiation_function
-
     def __init__(self, radiation_function, step=0.1):
 
         super().__init__(NumericalIntegrator(step=step))
@@ -68,7 +64,7 @@ cdef class RadiationFunction(InhomogeneousVolumeEmitter):
                                      AffineMatrix3D world_to_local, AffineMatrix3D local_to_world):
 
         cdef int index
-        cdef double wvl_range = ray.max_wavelength - ray.min_wavelength
+        cdef double wvl_range = ray.get_max_wavelength() - ray.get_min_wavelength()
         cdef double emission
 
         emission = self.radiation_function.evaluate(point.x, point.y, point.z) / (4 * M_PI * wvl_range)
