@@ -19,6 +19,8 @@
 # under the Licence.
 
 import numpy as np
+from scipy.special import hyp2f1
+
 cimport numpy as np
 from libc.math cimport sqrt, erf, M_SQRT2, floor, ceil, fabs
 from raysect.optical.spectrum cimport new_spectrum
@@ -79,8 +81,6 @@ cpdef double thermal_broadening(double wavelength, double temperature, double at
 
 # the number of standard deviations outside the rest wavelength the line is considered to add negligible value (including a margin for safety)
 DEF GAUSSIAN_CUTOFF_SIGMA = 10.0
-
-DEF LORENZIAN_CUTOFF_GAMMA = 50.0
 
 
 @cython.cdivision(True)
@@ -294,18 +294,36 @@ cdef class MultipletLineShape(LineShapeModel):
         return spectrum
 
 
-cdef class StarkFunction(Function1D):
+DEF LORENZIAN_CUTOFF_GAMMA = 50.0
 
-    cdef double _a, _x0
+
+cdef class StarkFunction(Function1D):
+    """
+    Normalised Stark function for the StarkBroadenedLine line shape.
+    """
+
+    cdef double _a, _x0, _norm
+
+    STARK_NORM_COEFFICIENT = 4 * LORENZIAN_CUTOFF_GAMMA * hyp2f1(0.4, 1, 1.4, -(2 * LORENZIAN_CUTOFF_GAMMA)**2.5)
 
     def __init__(self, double wavelength, double lambda_1_2):
+
+        if wavelength <= 0:
+            raise ValueError("Argument 'wavelength' must be positive.")
+
+        if lambda_1_2 <= 0:
+            raise ValueError("Argument 'lambda_1_2' must be positive.")
+
         self._x0 = wavelength
         self._a = (0.5 * lambda_1_2)**2.5
+        # normalise, so the integral over x is equal to 1 in the limits
+        # (_x0 - LORENZIAN_CUTOFF_GAMMA * lambda_1_2, _x0 + LORENZIAN_CUTOFF_GAMMA * lambda_1_2)
+        self._norm = (0.5 * lambda_1_2)**1.5 / <double> self.STARK_NORM_COEFFICIENT
 
     @cython.cdivision(True)
     cdef double evaluate(self, double x) except? -1e999:
 
-        return 1. / ((fabs(x - self._x0))**2.5 + self._a)
+        return self._norm / ((fabs(x - self._x0))**2.5 + self._a)
 
 
 cdef class StarkBroadenedLine(LineShapeModel):
@@ -441,24 +459,15 @@ cdef class StarkBroadenedLine(LineShapeModel):
         end = min(spectrum.bins, <int> ceil((cutoff_upper_wavelength - spectrum.min_wavelength) / spectrum.delta_wavelength))
 
         # add line to spectrum
-        raw_lineshape = spectrum.new_spectrum()
-
-        lower_wavelength = raw_lineshape.min_wavelength + start * raw_lineshape.delta_wavelength
+        lower_wavelength = spectrum.min_wavelength + start * spectrum.delta_wavelength
 
         for i in range(start, end):
-            upper_wavelength = raw_lineshape.min_wavelength + raw_lineshape.delta_wavelength * (i + 1)
+            upper_wavelength = spectrum.min_wavelength + spectrum.delta_wavelength * (i + 1)
 
             bin_integral = self.integrator.evaluate(lower_wavelength, upper_wavelength)
-            raw_lineshape.samples_mv[i] += bin_integral
+            spectrum.samples_mv[i] += radiance * bin_integral / spectrum.delta_wavelength
 
             lower_wavelength = upper_wavelength
-
-        # perform normalisation
-        raw_lineshape.div_scalar(raw_lineshape.total())
-
-        for i in range(start, end):
-            # Radiance ???
-            spectrum.samples_mv[i] += radiance * raw_lineshape.samples_mv[i]
 
         return spectrum
 
