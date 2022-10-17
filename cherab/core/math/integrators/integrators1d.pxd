@@ -20,10 +20,12 @@ from numpy cimport ndarray
 from raysect.core.math.function.float cimport Function1D, Function2D
 
 
-cdef class Integrator1D(Function2D):
+cdef class Integrator1D:
 
     cdef:
         Function1D function
+
+    cdef double evaluate(self, double a, double b) except? -1e999
 
 
 cdef class GaussianQuadrature(Integrator1D):
@@ -34,4 +36,4 @@ cdef class GaussianQuadrature(Integrator1D):
         ndarray _roots, _weights
         double[:] _roots_mv, _weights_mv
 
-    cdef _build_cash(self)
+    cdef _build_cache(self)

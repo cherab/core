@@ -21,13 +21,13 @@
 import numpy as np
 from scipy.special import roots_legendre
 
-from raysect.core.math.function.float cimport autowrap_function1d
+from raysect.core.math.function.float cimport autowrap_function1d, Constant1D
 
 from libc.math cimport INFINITY
 cimport cython
 
 
-cdef class Integrator1D(Function2D):
+cdef class Integrator1D:
     """
     Compute a definite integral of a one-dimensional function.
 
@@ -44,12 +44,25 @@ cdef class Integrator1D(Function2D):
         return self.function
 
     @integrand.setter
-    def integrand(self, object func):
+    def integrand(self, object func not None):
 
-        if func is None:
-            self.function = None
-        else:
-            self.function = autowrap_function1d(func)
+        self.function = autowrap_function1d(func)
+
+    cdef double evaluate(self, double a, double b) except? -1e999:
+
+        raise NotImplementedError("The evaluate() method has not been implemented.")
+
+    def __call__(self, double a, double b):
+        """
+        Integrates a one-dimensional function over a finite interval.
+
+        :param double a: Lower limit of integration.
+        :param double b: Upper limit of integration.
+
+        :returns: Definite integral of a one-dimensional function.
+        """
+
+        return self.evaluate(a, b)
 
 
 cdef class GaussianQuadrature(Integrator1D):
@@ -58,7 +71,7 @@ cdef class GaussianQuadrature(Integrator1D):
     using fixed-tolerance Gaussian quadrature.
     (see Scipy `quadrature <https://docs.scipy.org/doc/scipy/reference/generated/scipy.integrate.quadrature.html>`).
 
-    :param object integrand: A 1D function to integrate.
+    :param object integrand: A 1D function to integrate. Default is Constant1D(0).
     :param double relative_tolerance: Iteration stops when relative error between
         last two iterates is less than this value. Default is 1.e-5.
     :param int max_order: Maximum order on Gaussian quadrature. Default is 50.
@@ -71,7 +84,7 @@ cdef class GaussianQuadrature(Integrator1D):
     :ivar int min_order: Minimum order on Gaussian quadrature.
     """
 
-    def __init__(self, object integrand=None, double relative_tolerance=1.e-5, int max_order=50, int min_order=1):
+    def __init__(self, object integrand=Constant1D(0), double relative_tolerance=1.e-5, int max_order=50, int min_order=1):
 
         if min_order < 1 or max_order < 1:
             raise ValueError("Order of Gaussian quadrature must be >= 1.")
@@ -81,7 +94,7 @@ cdef class GaussianQuadrature(Integrator1D):
 
         self._min_order = min_order
         self._max_order = max_order
-        self._build_cash()
+        self._build_cache()
 
         self.integrand = integrand
 
@@ -107,7 +120,7 @@ cdef class GaussianQuadrature(Integrator1D):
 
         self._min_order = value
 
-        self._build_cash()
+        self._build_cache()
 
     @property
     def max_order(self):
@@ -129,7 +142,7 @@ cdef class GaussianQuadrature(Integrator1D):
 
         self._max_order = value
 
-        self._build_cash()
+        self._build_cache()
 
     @property
     def relative_tolerance(self):
@@ -148,7 +161,7 @@ cdef class GaussianQuadrature(Integrator1D):
 
         self._rtol = value
 
-    cdef _build_cash(self):
+    cdef _build_cache(self):
         """
         Caches the roots and weights of the Gauss-Legendre quadrature.
         """
@@ -186,9 +199,6 @@ cdef class GaussianQuadrature(Integrator1D):
         cdef:
             int order, i, ibegin
             double newval, oldval, error, x, c, d
-
-        if self.function is None:
-            raise AttributeError("Integrand is not set.")
 
         oldval = INFINITY
         ibegin = 0

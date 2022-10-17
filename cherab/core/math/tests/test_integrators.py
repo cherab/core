@@ -70,10 +70,6 @@ class TestGaussianQuadrature(unittest.TestCase):
         quadrature = GaussianQuadrature(relative_tolerance=1.e-8)
         a = -0.5
         b = 3.
-
-        with self.assertRaises(AttributeError):  # integrand is not set
-            quadrature(a, b)
-
         quadrature.integrand = (2 / sqrt(pi)) * Exp1D(- Arg1D() * Arg1D())
         exact_integral = erf(b) - erf(a)
 
