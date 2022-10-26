@@ -20,18 +20,27 @@ from raysect.optical cimport World, Primitive, Ray, Spectrum, SpectralFunction, 
 from raysect.optical.material.emitter cimport InhomogeneousVolumeEmitter
 from raysect.optical.material.emitter.inhomogeneous cimport VolumeIntegrator
 from cherab.core.beam.model cimport BeamModel
+from cherab.core.beam.distribution cimport BeamDistribution
 
 
 cdef class BeamMaterial(InhomogeneousVolumeEmitter):
 
-    def __init__(self, Beam beam not None, Plasma plasma not None, AtomicData atomic_data not None,
-                 list models not None, VolumeIntegrator integrator not None):
+    def __init__(self,
+                 Beam beam not None,
+                 BeamDistribution distribution not None,
+                 Primitive beam_primitive not None,
+                 Plasma plasma not None,
+                 AtomicData atomic_data not None,
+                 list models not None,
+                 VolumeIntegrator integrator not None):
 
         super().__init__(integrator)
 
         self._beam = beam
+        self._distribution = distribution
         self._plasma = plasma
         self._atomic_data = atomic_data
+        self._beam_primitive = beam_primitive
 
         # validate
         for model in models:
@@ -42,6 +51,7 @@ cdef class BeamMaterial(InhomogeneousVolumeEmitter):
         for model in models:
             model.beam = beam
             model.plasma = plasma
+            model.distribution = distribution
             model.atomic_data = atomic_data
 
         self._models = models
@@ -53,20 +63,17 @@ cdef class BeamMaterial(InhomogeneousVolumeEmitter):
         cdef:
             BeamModel model
             Point3D plasma_point
-            Vector3D beam_direction, observation_direction
-
-        beam_direction = self._beam.direction(point.x, point.y, point.z)
+            Vector3D observation_direction
 
         # transform points and directions
         # todo: cache this transform and rebuild if beam or plasma notifies
-        beam_to_plasma = self._beam.to(self._plasma)
+        beam_to_plasma = self._beam_primitive.to(self._plasma)
         plasma_point = point.transform(beam_to_plasma)
-        beam_direction = beam_direction.transform(beam_to_plasma)
         observation_direction = direction.transform(beam_to_plasma)
 
         # call each model and accumulate spectrum
         for model in self._models:
-            spectrum = model.emission(point, plasma_point, beam_direction, observation_direction, spectrum)
+            spectrum = model.emission(point, plasma_point, observation_direction, spectrum)
 
         return spectrum
 

@@ -17,7 +17,7 @@
 # under the Licence.
 
 from cherab.core.utility import Notifier
-
+from raysect.core cimport AffineMatrix3D
 
 cdef class BeamModel:
 
@@ -72,6 +72,24 @@ cdef class BeamModel:
         self._change()
 
     @property
+    def distribution(self):
+        return self._distribution
+
+    @distribution.setter
+    def distribution(self, BeamDistribution value not None):
+
+        # disconnect from previous beam's notifications
+        if self._distribution:
+            self._distribution.notifier.remove(self._change)
+
+        # attach to beam to inform model of changes to beam properties
+        self._distribution = value
+        self._distribution.notifier.add(self._change)
+
+        # inform model source data has changed
+        self._change()
+
+    @property
     def atomic_data(self):
         return self._atomic_data
 
@@ -83,7 +101,7 @@ cdef class BeamModel:
         # inform model source data has changed
         self._change()
 
-    cpdef Spectrum emission(self, Point3D beam_point, Point3D plasma_point, Vector3D beam_direction, Vector3D observation_direction, Spectrum spectrum):
+    cpdef Spectrum emission(self, Point3D beam_point, Point3D plasma_point, Vector3D observation_direction, Spectrum spectrum):
         """
         Calculate the emission for a point on the beam in a specified direction.
 
@@ -115,23 +133,36 @@ cdef class BeamModel:
 
 cdef class BeamAttenuator:
 
-    def __init__(self, Beam beam=None, Plasma plasma=None, AtomicData atomic_data=None):
+    def __init__(self, BeamDistribution distribution=None, Plasma plasma=None, AtomicData atomic_data=None):
 
-        # must notify beam if the attenuator properties change, affecting the density values
+        # must notify distribution if the attenuator properties change, affecting the density values
         self.notifier = Notifier()
 
         # configure
-        self._beam = beam
+        self._distribution = distribution
         self._plasma = plasma
         self._atomic_data = atomic_data
+        self._transform = AffineMatrix3D() 
+        self._transform_inv = AffineMatrix3D() 
+
 
         # setup property change notifications for plasma
         if self._plasma:
             self._plasma.notifier.add(self._change)
 
-        # setup property change notifications for beam
-        if self._beam:
-            self._beam.notifier.add(self._change)
+        # setup property change notifications for distribution
+        if self._distribution:
+            self._distribution.notifier.add(self._change)
+    
+    @property
+    def transform(self):
+        return self._transform
+    
+    @transform.setter
+    def transform(self, AffineMatrix3D value):
+        self._transform = value
+        self._transform_inv = value.inverse()
+        self._change()
 
     @property
     def plasma(self):
@@ -152,19 +183,19 @@ cdef class BeamAttenuator:
         self._change()
 
     @property
-    def beam(self):
-        return self._beam
+    def distribution(self):
+        return self._distribution
 
-    @beam.setter
-    def beam(self, Beam value not None):
+    @distribution.setter
+    def distribution(self, BeamDistribution value not None):
 
         # disconnect from previous beam's notifications
-        if self._beam:
-            self._beam.notifier.remove(self._change)
+        if self._distribution:
+            self._distribution.notifier.remove(self._change)
 
-        # attach to beam to inform model of changes to beam properties
-        self._beam = value
-        self._beam.notifier.add(self._change)
+        # attach to distribution to inform model of changes to distribution properties
+        self._distribution = value
+        self._distribution.notifier.add(self._change)
 
         # inform model source data has changed
         self._change()

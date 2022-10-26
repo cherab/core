@@ -25,6 +25,7 @@ from raysect.optical cimport Spectrum, Point3D, Vector3D
 from cherab.core cimport Line, Species, Plasma, Beam
 from cherab.core.math cimport Function1D, Function2D
 from cherab.core.atomic.zeeman cimport ZeemanStructure
+from cherab.core.beam.distribution cimport BeamDistribution
 
 
 cpdef double doppler_shift(double wavelength, Vector3D observation_direction, Vector3D velocity)
@@ -97,14 +98,16 @@ cdef class BeamLineShapeModel:
         Line line
         double wavelength
         Beam beam
+        BeamDistribution distribution
 
     cpdef Spectrum add_line(self, double radiance, Point3D beam_point, Point3D plasma_point,
-                            Vector3D beam_direction, Vector3D observation_direction, Spectrum spectrum)
+                            Vector3D beam_velocity, Vector3D observation_direction, Spectrum spectrum)
 
 
 cdef class BeamEmissionMultiplet(BeamLineShapeModel):
 
     cdef:
 
+        double _mstoevamu
         Function2D _sigma_to_pi
         Function1D _sigma1_to_sigma0, _pi2_to_pi3, _pi4_to_pi3

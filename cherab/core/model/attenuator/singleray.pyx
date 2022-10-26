@@ -27,7 +27,8 @@ from raysect.core.math.function.float cimport Interpolator1DArray
 from cherab.core.utility import EvAmuToMS, EvToJ
 from cherab.core.atomic cimport BeamStoppingRate, AtomicData
 from cherab.core.plasma cimport Plasma
-from cherab.core.beam cimport Beam
+from cherab.core.beam.node cimport Beam
+from cherab.core.beam.distribution cimport BeamDistribution
 from cherab.core.species cimport Species
 from cherab.core.utility.constants cimport DEGREES_TO_RADIANS
 
@@ -38,9 +39,10 @@ cimport cython
 # todo: attenuation calculation could be optimised further using memory views etc...
 cdef class SingleRayAttenuator(BeamAttenuator):
 
-    def __init__(self, double step=0.01, bint clamp_to_zero=False, double clamp_sigma=5.0, Beam beam=None, Plasma plasma=None, AtomicData atomic_data=None):
+    def __init__(self, double step=0.01, bint clamp_to_zero=False, double clamp_sigma=5.0,
+                 BeamDistribution distribution=None, Plasma plasma=None, AtomicData atomic_data=None):
 
-        super().__init__(beam, plasma, atomic_data)
+        super().__init__(distribution, plasma, atomic_data)
 
         self._source_density = 0.
         self._density = None
@@ -91,13 +93,18 @@ cdef class SingleRayAttenuator(BeamAttenuator):
         
         The point is specified in beam space.
         
-        :param x: x coordinate in meters.
-        :param y: y coordinate in meters. 
-        :param z: z coordinate in meters.
+        :param x: x coordinate in the beam space in meters.
+        :param y: y coordinate in the beam space in meters. 
+        :param z: z coordinate in the beam space in meters.
         :return: Density in m^-3. 
         """
 
-        cdef double sigma_x, sigma_y, norm_radius_sqr, gaussian_sample
+        cdef:
+            double sigma_x, sigma_y, norm_radius_sqr, gaussian_sample
+            Point3D att_pnt
+
+        # transform x, y, z from beam into attenuator's reference frame
+        att_pnt = new_point3d(x, y, z).transform(self._transform_inv)
 
         # use cached data if available
         if self._stopping_data is None:
@@ -107,11 +114,11 @@ cdef class SingleRayAttenuator(BeamAttenuator):
             self._calc_attenuation()
 
         # calculate beam width
-        sigma_x = self._beam.get_sigma() + z * self._tanxdiv
-        sigma_y = self._beam.get_sigma() + z * self._tanydiv
+        sigma_x = self._distribution.get_sigma() + att_pnt.z * self._tanxdiv
+        sigma_y = self._distribution.get_sigma() + att_pnt.z * self._tanydiv
 
         # normalised radius squared
-        norm_radius_sqr = ((x / sigma_x)**2 + (y / sigma_y)**2)
+        norm_radius_sqr = ((att_pnt.x / sigma_x)**2 + (att_pnt.y / sigma_y)**2)
 
         # clamp low densities to zero (beam models can skip their calculation if density is zero)
         # comparison is done using the squared radius to avoid a costly square root
@@ -149,15 +156,17 @@ cdef class SingleRayAttenuator(BeamAttenuator):
             Vector3D direction
             int nbeam, i
             np.ndarray beam_z, xaxis, yaxis, zaxis, beam_density
+            Beam beam
             double bzv
 
         # calculate transform to plasma space
-        beam_to_plasma = self._beam.to(self._plasma)
-        direction = self._beam.BEAM_AXIS.transform(beam_to_plasma)
+        beam = self._distribution.get_beam()
+        att_to_plasma = beam.to(self._plasma).mul(self._transform)
+        direction = self._distribution.BEAM_AXIS.transform(att_to_plasma)
 
         # sample points along the beam
-        nbeam = max(1 + int(np.ceil(self._beam.length / self._step)), 4)
-        beam_z = np.linspace(0.0, self._beam.length, nbeam)
+        nbeam = max(1 + int(np.ceil(self._distribution.length / self._step)), 4)
+        beam_z = np.linspace(0.0, self._distribution.length, nbeam)
 
         xaxis = np.zeros(nbeam)
         yaxis = np.zeros(nbeam)
@@ -165,17 +174,17 @@ cdef class SingleRayAttenuator(BeamAttenuator):
 
         for i, bzv in enumerate(beam_z):
 
-            paxis = new_point3d(0.0, 0.0, bzv).transform(beam_to_plasma)
+            paxis = new_point3d(0.0, 0.0, bzv).transform(att_to_plasma)
             xaxis[i] = paxis.x
             yaxis[i] = paxis.y
             zaxis[i] = paxis.z
 
         beam_density = self._beam_attenuation(beam_z, xaxis, yaxis, zaxis,
-                                              self._beam.energy, self._beam.power,
-                                              self._beam.element.atomic_weight, direction)
+                                              self._distribution.energy, self._distribution.power,
+                                              self._distribution.element.atomic_weight, direction)
 
-        self._tanxdiv = tan(DEGREES_TO_RADIANS * self._beam.divergence_x)
-        self._tanydiv = tan(DEGREES_TO_RADIANS * self._beam.divergence_y)
+        self._tanxdiv = tan(DEGREES_TO_RADIANS * self._distribution.divergence_x)
+        self._tanydiv = tan(DEGREES_TO_RADIANS * self._distribution.divergence_y)
 
         # a tiny degree of extrapolation is permitted to handle numerical accuracy issues with the end of the array
         self._density = Interpolator1DArray(beam_z, beam_density, 'linear', 'nearest', extrapolation_range=1e-9)
@@ -207,7 +216,7 @@ cdef class SingleRayAttenuator(BeamAttenuator):
 
         naxis = axis.size
 
-        speed = EvAmuToMS.to(energy)
+        speed = self._distribution.get_speed()
         beam_velocity = direction.normalise() * speed
 
         beam_particle_rate = power / EvToJ.to(energy * mass)
@@ -282,7 +291,7 @@ cdef class SingleRayAttenuator(BeamAttenuator):
             BeamStoppingRate stopping_coeff
 
         # sanity checks
-        if not self._beam:
+        if not self._distribution:
             raise ValueError("The beam attenuator is not connected to a beam object.")
 
         if not self._plasma:
@@ -293,7 +302,7 @@ cdef class SingleRayAttenuator(BeamAttenuator):
 
         self._stopping_data = []
         for species in self._plasma.composition:
-            stopping_coeff = self._atomic_data.beam_stopping_rate(self._beam.element, species.element, species.charge)
+            stopping_coeff = self._atomic_data.beam_stopping_rate(self._distribution.element, species.element, species.charge)
             self._stopping_data.append((species, stopping_coeff))
 
     def _change(self):

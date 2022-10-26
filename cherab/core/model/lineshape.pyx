@@ -19,6 +19,7 @@
 # under the Licence.
 
 import numpy as np
+from scipy.constants import atomic_mass, elementary_charge
 cimport numpy as np
 from libc.math cimport sqrt, erf, M_SQRT2, floor, ceil, fabs
 from raysect.optical.spectrum cimport new_spectrum
@@ -829,11 +830,12 @@ cdef class BeamLineShapeModel:
     :param Beam beam: The beam class that is emitting.
     """
 
-    def __init__(self, Line line, double wavelength, Beam beam):
+    def __init__(self, Line line, double wavelength, Beam beam, BeamDistribution distribution):
 
         self.line = line
         self.wavelength = wavelength
         self.beam = beam
+        self.distribution = distribution
 
     cpdef Spectrum add_line(self, double radiance, Point3D beam_point, Point3D plasma_point,
                             Vector3D beam_direction, Vector3D observation_direction, Spectrum spectrum):
@@ -848,19 +850,20 @@ cdef class BeamEmissionMultiplet(BeamLineShapeModel):
     Produces Beam Emission Multiplet line shape, also known as the Motional Stark Effect spectrum.
     """
 
-    def __init__(self, Line line, double wavelength, Beam beam, object sigma_to_pi,
-                 object sigma1_to_sigma0, object pi2_to_pi3, object pi4_to_pi3):
+    def __init__(self, Line line, double wavelength, Beam beam, BeamDistribution distribution,
+                 object sigma_to_pi, object sigma1_to_sigma0, object pi2_to_pi3, object pi4_to_pi3):
 
-        super().__init__(line, wavelength, beam)
+        super().__init__(line, wavelength, beam, distribution)
 
         self._sigma_to_pi = autowrap_function2d(sigma_to_pi)
         self._sigma1_to_sigma0 = autowrap_function1d(sigma1_to_sigma0)
         self._pi2_to_pi3 = autowrap_function1d(pi2_to_pi3)
         self._pi4_to_pi3 = autowrap_function1d(pi4_to_pi3)
+        self._mstoevamu = atomic_mass / (2 * elementary_charge)
 
     @cython.cdivision(True)
     cpdef Spectrum add_line(self, double radiance, Point3D beam_point, Point3D plasma_point,
-                            Vector3D beam_direction, Vector3D observation_direction, Spectrum spectrum):
+                            Vector3D beam_velocity, Vector3D observation_direction, Spectrum spectrum):
 
         cdef double x, y, z
         cdef Plasma plasma
@@ -869,7 +872,7 @@ cdef class BeamEmissionMultiplet(BeamLineShapeModel):
         cdef double sigma_to_pi, d, intensity_sig, intensity_pi, e_field
         cdef double s1_to_s0, intensity_s0, intensity_s1
         cdef double pi2_to_pi3, pi4_to_pi3, intensity_pi2, intensity_pi3, intensity_pi4
-        cdef Vector3D b_field, beam_velocity
+        cdef Vector3D b_field
 
         # extract for more compact code
         x = plasma_point.x
@@ -886,11 +889,10 @@ cdef class BeamEmissionMultiplet(BeamLineShapeModel):
         if ne <= 0.0:
             return spectrum
 
-        beam_energy = self.beam.get_energy()
+        beam_energy = beam_velocity.get_length() ** 2 * self._mstoevamu
 
         # calculate Stark splitting
         b_field = plasma.get_b_field().evaluate(x, y, z)
-        beam_velocity = beam_direction.normalise().mul(evamu_to_ms(beam_energy))
         e_field = beam_velocity.cross(b_field).get_length()
         stark_split = fabs(STARK_SPLITTING_FACTOR * e_field)  # TODO - calculate splitting factor? Reject other lines?
 
@@ -899,8 +901,8 @@ cdef class BeamEmissionMultiplet(BeamLineShapeModel):
         central_wavelength = doppler_shift(natural_wavelength, observation_direction, beam_velocity)
 
         # calculate doppler broadening
-        beam_ion_mass = self.beam.get_element().atomic_weight
-        beam_temperature = self.beam.get_temperature()
+        beam_ion_mass = self.distribution.get_element().atomic_weight
+        beam_temperature = self.distribution.effective_temperature(beam_point.x, beam_point.y, beam_point.z)
         sigma = thermal_broadening(self.wavelength, beam_temperature, beam_ion_mass)
 
         # calculate relative intensities of sigma and pi lines

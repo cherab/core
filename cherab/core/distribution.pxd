@@ -23,7 +23,9 @@ from cherab.core.math cimport Function3D, VectorFunction3D
 
 cdef class DistributionFunction:
 
-    cdef object notifier
+    cdef:
+        object __weakref__
+        object notifier
 
     cdef double evaluate(self, double x, double y, double z, double vx, double vy, double vz) except? -1e999
 

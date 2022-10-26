@@ -79,11 +79,11 @@ cdef class BeamCXLine(BeamModel):
     @cython.wraparound(False)
     @cython.cdivision(True)
     @cython.initializedcheck(False)
-    cpdef Spectrum emission(self, Point3D beam_point, Point3D plasma_point, Vector3D beam_direction,
+    cpdef Spectrum emission(self, Point3D beam_point, Point3D plasma_point,
                             Vector3D observation_direction, Spectrum spectrum):
 
         cdef:
-            double x, y, z
+            double p_x, p_y, p_z
             double donor_density
             double receiver_temperature, receiver_density, receiver_ion_mass, interaction_speed, interaction_energy, emission_rate
             Vector3D receiver_velocity, donor_velocity, interaction_velocity
@@ -92,40 +92,45 @@ cdef class BeamCXLine(BeamModel):
         # cache data on first run
         if self._target_species is None:
             self._populate_cache()
+        
+        # extract for compact code
+        b_x = beam_point.x
+        b_y = beam_point.y
+        b_z = beam_point.z 
 
         # obtain donor density from beam
-        donor_density = self._beam.density(beam_point.x, beam_point.y, beam_point.z)
+        donor_density = self._distribution.density(b_x, b_y, b_z)
 
         # abort calculation if donor density is zero
         if donor_density == 0.0:
             return spectrum
 
         # extract for more compact code
-        x = plasma_point.x
-        y = plasma_point.y
-        z = plasma_point.z
+        p_x = plasma_point.x
+        p_y = plasma_point.y
+        p_z = plasma_point.z
 
         # abort calculation if receiver density is zero
-        receiver_density = self._target_species.distribution.density(x, y, z)
+        receiver_density = self._target_species.distribution.density(p_x, p_y, p_z)
         if receiver_density == 0:
             return spectrum
 
         # abort calculation if receiver temperature is zero
-        receiver_temperature = self._target_species.distribution.effective_temperature(x, y, z)
+        receiver_temperature = self._target_species.distribution.effective_temperature(p_x, p_y, p_z)
         if receiver_temperature == 0:
             return spectrum
 
-        receiver_velocity = self._target_species.distribution.bulk_velocity(x, y, z)
+        receiver_velocity = self._target_species.distribution.bulk_velocity(p_x, p_y, p_z)
         receiver_ion_mass = self._target_species.element.atomic_weight
 
-        donor_velocity = beam_direction.normalise().mul(evamu_to_ms(self._beam.get_energy()))
+        donor_velocity = self._distribution.bulk_velocity(b_x, b_y, b_z)
 
         interaction_velocity = donor_velocity.sub(receiver_velocity)
         interaction_speed = interaction_velocity.get_length()
         interaction_energy = ms_to_evamu(interaction_speed)
 
         # calculate the composite charge-exchange emission coefficient
-        emission_rate = self._composite_cx_rate(x, y, z, interaction_energy, donor_velocity, receiver_temperature, receiver_density)
+        emission_rate = self._composite_cx_rate(p_x, p_y, p_z, interaction_energy, donor_velocity, receiver_temperature, receiver_density)
 
         # calculate emission line central wavelength, doppler shifted along observation direction
         natural_wavelength = self._wavelength
@@ -272,6 +277,8 @@ cdef class BeamCXLine(BeamModel):
         # sanity checks
         if self._beam is None:
             raise RuntimeError("The emission model is not connected to a beam object.")
+        if self._distribution is None:
+            raise RuntimeError("The emission model is not connected to a distribution object.")
         if self._plasma is None:
             raise RuntimeError("The emission model is not connected to a plasma object.")
         if self._atomic_data is None:
@@ -281,7 +288,7 @@ cdef class BeamCXLine(BeamModel):
 
         receiver_element = self._line.element
         receiver_charge = self._line.charge + 1
-        donor_element = self._beam.element
+        donor_element = self._distribution.element
         transition = self._line.transition
 
         # locate target species
