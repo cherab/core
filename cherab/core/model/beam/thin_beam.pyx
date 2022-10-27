@@ -308,14 +308,12 @@ cdef class ThinBeam(BeamDistribution):
         # there must be an attenuator present to configure
         if not self._attenuator:
             return
-
-        # check necessary data is available
+        # there must be plasma present to configure
         if not self._plasma:
-            raise ValueError('The distribution must have a reference to a plasma object to be used with an attenuator.')
-
+            return
+        # there must be atomic_data present to configure
         if not self._atomic_data:
-            raise ValueError('The distribution must have an atomic data source to be used with an emission model.')
-
+            return
 
         # setup attenuator
         self._attenuator.distribution = self

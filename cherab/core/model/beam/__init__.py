@@ -21,3 +21,4 @@
 
 from .charge_exchange import BeamCXLine
 from .beam_emission import BeamEmissionLine
+from .thin_beam import ThinBeam
