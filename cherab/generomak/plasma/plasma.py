@@ -123,7 +123,6 @@ def get_edge_interpolators():
     return mesh_interp.freeze()
 
 
-
 def get_edge_distributions():
     """
     Provides Generomak edge Maxwellian distribution of plasma species
