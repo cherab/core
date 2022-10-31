@@ -19,4 +19,4 @@
 
 from raysect.primitive.mesh cimport Mesh
 
-cpdef Mesh axisymmetric_mesh_from_polygon(object polygon, int num_toroidal_segments=*)
+cpdef Mesh toroidal_mesh_from_polygon(object polygon, double toroidal_extent, object polygon_triangles=*, int num_toroidal_segments=*)

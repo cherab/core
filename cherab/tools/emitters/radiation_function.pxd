@@ -1,4 +1,3 @@
-
 # Copyright 2016-2022 Euratom
 # Copyright 2016-2022 United Kingdom Atomic Energy Authority
 # Copyright 2016-2022 Centro de Investigaciones Energéticas, Medioambientales y Tecnológicas
@@ -17,6 +16,10 @@
 # See the Licence for the specific language governing permissions and limitations
 # under the Licence.
 
-from raysect.primitive.mesh cimport Mesh
+from raysect.optical.material.emitter cimport InhomogeneousVolumeEmitter
+from cherab.core.math.function cimport Function3D
 
-cpdef Mesh axisymmetric_mesh_from_polygon(object polygon, int num_toroidal_segments=*)
+
+cdef class RadiationFunction(InhomogeneousVolumeEmitter):
+    cdef:
+        readonly Function3D radiation_function

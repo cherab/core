@@ -13,6 +13,8 @@ New:
 * Add a demo for observer group handling and plotting.
 * Add verbose parameter to SartOpencl solver (default is False). (#358)
 * Add Thomson Scattering model. (#97)
+* Add Generomak core plasma profiles. (#360)
+* Add toroidal_mesh_from_polygon for making mesh for not fully-360 degrees axisymmetric elements. (#365)
 
 Bug Fixes:
 ----------
