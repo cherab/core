@@ -17,6 +17,7 @@ New:
 
 Bug Fixes:
 ----------
+* Fixed Bremsstrahlung trapezium evaluation (#384).
 * Fixed generomak plasma edge data paths.
 * Fix and improve OpenCL utility functions. (#358)
 

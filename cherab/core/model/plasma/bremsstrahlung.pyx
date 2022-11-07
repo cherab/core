@@ -74,7 +74,7 @@ cdef class Bremsstrahlung(PlasmaModel):
         lower_sample = self._bremsstrahlung(lower_wavelength, te, ne, z_effective)
         for i in range(spectrum.bins):
 
-            upper_wavelength = spectrum.min_wavelength + spectrum.delta_wavelength * i
+            upper_wavelength = spectrum.min_wavelength + spectrum.delta_wavelength * (i + 1)
             upper_sample = self._bremsstrahlung(upper_wavelength, te, ne, z_effective)
 
             spectrum.samples_mv[i] += 0.5 * (lower_sample + upper_sample)
