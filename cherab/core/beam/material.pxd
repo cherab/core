@@ -16,11 +16,14 @@
 # See the Licence for the specific language governing permissions and limitations
 # under the Licence.
 
+
+from raysect.optical cimport Primitive
 from raysect.optical.material.emitter cimport InhomogeneousVolumeEmitter
 
 from cherab.core.plasma cimport Plasma
 from cherab.core.beam cimport Beam
 from cherab.core.atomic cimport AtomicData
+from cherab.core.beam.distribution cimport BeamDistribution
 
 
 cdef class BeamMaterial(InhomogeneousVolumeEmitter):
@@ -29,5 +32,7 @@ cdef class BeamMaterial(InhomogeneousVolumeEmitter):
         Beam _beam
         Plasma _plasma
         AtomicData _atomic_data
+        Primitive _beam_primitive
+        BeamDistribution _distribution
         list _models
 

@@ -18,3 +18,4 @@
 
 from cherab.core.beam.node cimport Beam
 from cherab.core.beam.model cimport BeamModel, BeamAttenuator
+from cherab.core.beam.distribution cimport BeamDistribution

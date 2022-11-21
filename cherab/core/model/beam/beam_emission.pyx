@@ -96,26 +96,32 @@ cdef class BeamEmissionLine(BeamModel):
     @cython.wraparound(False)
     @cython.cdivision(True)
     @cython.initializedcheck(False)
-    cpdef Spectrum emission(self, Point3D beam_point, Point3D plasma_point, Vector3D beam_direction,
+    cpdef Spectrum emission(self, Point3D beam_point, Point3D plasma_point,
                             Vector3D observation_direction, Spectrum spectrum):
 
         cdef:
+            double b_x, b_y, b_z
             double beam_density, rate, radiance
-            Vector3D beam_velocity
+            Vector3D beam_velocity, beam_direction
 
         # cache data on first run
         if self._rates_list is None:
             self._populate_cache()
 
+        # unpack beam point coordinates
+        b_x = beam_point.x
+        b_y = beam_point.y
+        b_z = beam_point.z
+
         # obtain beam density from beam
-        beam_density = self._beam.density(beam_point.x, beam_point.y, beam_point.z)
+        beam_density = self._distribution.density(b_x, b_y, b_z)
 
         # abort calculation if beam density is zero
         if beam_density == 0.0:
             return spectrum
 
         # obtain beam velocity
-        beam_velocity = beam_direction.normalise().mul(evamu_to_ms(self._beam.get_energy()))
+        beam_velocity = self._distribution.bulk_velocity(b_x, b_y, b_z)
 
         # beam emission rate in W
         rate = self._beam_emission_rate(plasma_point.x, plasma_point.y, plasma_point.z, beam_velocity)
@@ -124,7 +130,7 @@ cdef class BeamEmissionLine(BeamModel):
         radiance = RECIP_4_PI * beam_density * rate
 
         return self._lineshape.add_line(radiance, beam_point, plasma_point,
-                                        beam_direction, observation_direction, spectrum)
+                                        beam_velocity, observation_direction, spectrum)
 
     @cython.cdivision(True)
     cdef double _beam_emission_rate(self, double x, double y, double z, Vector3D beam_velocity) except? -1e999:
@@ -165,7 +171,7 @@ cdef class BeamEmissionLine(BeamModel):
 
             # calculate mean beam interaction energy
             interaction_velocity = beam_velocity - target_velocity
-            interaction_speed = interaction_velocity.length
+            interaction_speed = interaction_velocity.get_length()
             interaction_energy = ms_to_evamu(interaction_speed)
 
             # species equivalent electron density
@@ -185,6 +191,8 @@ cdef class BeamEmissionLine(BeamModel):
         # sanity checks
         if self._beam is None:
             raise RuntimeError("The emission model is not connected to a beam object.")
+        if self._distribution is None:
+            raise RuntimeError("The emission model is not connected to a distribution object.")
         if self._plasma is None:
             raise RuntimeError("The emission model is not connected to a plasma object.")
         if self._atomic_data is None:
@@ -193,7 +201,7 @@ cdef class BeamEmissionLine(BeamModel):
             raise RuntimeError("The emission line has not been set.")
 
         # check specified emission line is consistent with attached beam object
-        beam_element = self._beam.element
+        beam_element = self._distribution.element
         transition = self._line.transition
         if beam_element != self._line.element:
             raise TypeError("The specified line element '{}' is incompatible with the attached neutral "
@@ -210,8 +218,8 @@ cdef class BeamEmissionLine(BeamModel):
             rate = self._atomic_data.beam_emission_pec(beam_element, species.element, species.charge, transition)
             self._rates_list.append((species, rate))
 
+        self._lineshape = BeamEmissionMultiplet(self._line, self._wavelength, self._beam, self._distribution, self._sigma_to_pi,
         # instance line shape renderer
-        self._lineshape = BeamEmissionMultiplet(self._line, self._wavelength, self._beam, self._sigma_to_pi,
                                                 self._sigma1_to_sigma0, self._pi2_to_pi3, self._pi4_to_pi3)
 
     def _change(self):

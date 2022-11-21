@@ -16,37 +16,19 @@
 # See the Licence for the specific language governing permissions and limitations
 # under the Licence.
 
-from raysect.core cimport AffineMatrix3D
-from raysect.optical cimport Spectrum, Point3D, Vector3D
-
-from cherab.core.plasma.node cimport Plasma
+from cherab.core.atomic cimport Element
+from cherab.core.distribution cimport DistributionFunction
 from cherab.core.beam.node cimport Beam
-from cherab.core.beam.distribution cimport BeamDistribution
-from cherab.core.atomic cimport AtomicData
 
+cdef class BeamDistribution(DistributionFunction):
 
-cdef class BeamModel:
 
     cdef:
-        Plasma _plasma
         Beam _beam
-        AtomicData _atomic_data
-        BeamDistribution _distribution
+        Element _element
 
-    cdef object __weakref__
+    cdef Element get_element(self)
 
-    cpdef Spectrum emission(self, Point3D beam_point, Point3D plasma_point, Vector3D observation_direction, Spectrum spectrum)
+    cpdef Beam get_beam(self) 
 
-
-cdef class BeamAttenuator:
-
-    cdef:
-        readonly object notifier
-        Plasma _plasma
-        BeamDistribution _distribution
-        AtomicData _atomic_data
-        AffineMatrix3D _transform, _transform_inv
-
-    cdef object __weakref__
-
-    cpdef double density(self, double x, double y, double z) except? -1e999
+    cpdef list get_geometry(self)

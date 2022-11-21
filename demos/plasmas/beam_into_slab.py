@@ -9,7 +9,7 @@ from raysect.optical.observer import PinholeCamera
 from cherab.core import Beam
 from cherab.core.math import sample3d
 from cherab.core.atomic import hydrogen, deuterium, carbon, Line
-from cherab.core.model import SingleRayAttenuator, BeamCXLine
+from cherab.core.model import SingleRayAttenuator, BeamCXLine, ThinBeam
 from cherab.tools.plasmas.slab import build_slab_plasma
 from cherab.openadas import OpenADAS
 
@@ -67,47 +67,59 @@ beam_transform = translate(-0.5, 0.0, 0) * rotate_basis(Vector3D(1, 0, 0), Vecto
 
 beam_energy = 50000  # keV
 
+# set up full energy component
+dist_full = ThinBeam()
+dist_full.energy = beam_energy
+dist_full.power = 3e6
+dist_full.element = deuterium
+dist_full.sigma = 0.05
+dist_full.divergence_x = 0.5
+dist_full.divergence_y = 0.5
+dist_full.length = 3.0
+dist_full.attenuator = SingleRayAttenuator(clamp_to_zero=True)
+
 beam_full = Beam(parent=world, transform=beam_transform)
 beam_full.plasma = plasma
 beam_full.atomic_data = adas
-beam_full.energy = beam_energy
-beam_full.power = 3e6
-beam_full.element = deuterium
-beam_full.sigma = 0.05
-beam_full.divergence_x = 0.5
-beam_full.divergence_y = 0.5
-beam_full.length = 3.0
-beam_full.attenuator = SingleRayAttenuator(clamp_to_zero=True)
+beam_full.distribution = dist_full
 beam_full.models = [BeamCXLine(Line(carbon, 5, (8, 7)))]
 beam_full.integrator.step = integration_step
 beam_full.integrator.min_samples = 10
 
+# set up 1/2 energy component
+dist_half = ThinBeam()
+dist_half.energy = beam_energy / 2
+dist_half.power = 3e6
+dist_half.element = deuterium
+dist_half.sigma = 0.05
+dist_half.divergence_x = 0.5
+dist_half.divergence_y = 0.5
+dist_half.length = 3.0
+dist_half.attenuator = SingleRayAttenuator(clamp_to_zero=True)
+
 beam_half = Beam(parent=world, transform=beam_transform)
 beam_half.plasma = plasma
 beam_half.atomic_data = adas
-beam_half.energy = beam_energy / 2
-beam_half.power = 3e6
-beam_half.element = deuterium
-beam_half.sigma = 0.05
-beam_half.divergence_x = 0.5
-beam_half.divergence_y = 0.5
-beam_half.length = 3.0
-beam_half.attenuator = SingleRayAttenuator(clamp_to_zero=True)
+beam_half.distribution = dist_half
 beam_half.models = [BeamCXLine(Line(carbon, 5, (8, 7)))]
 beam_half.integrator.step = integration_step
 beam_half.integrator.min_samples = 10
 
+# set up 1/3 energy component
+dist_third = ThinBeam()
+dist_third.energy = beam_energy / 3
+dist_third.power = 3e6
+dist_third.element = deuterium
+dist_third.sigma = 0.05
+dist_third.divergence_x = 0.5
+dist_third.divergence_y = 0.5
+dist_third.length = 3.0
+dist_third.attenuator = SingleRayAttenuator(clamp_to_zero=True)
+
 beam_third = Beam(parent=world, transform=beam_transform)
 beam_third.plasma = plasma
 beam_third.atomic_data = adas
-beam_third.energy = beam_energy / 3
-beam_third.power = 3e6
-beam_third.element = deuterium
-beam_third.sigma = 0.05
-beam_third.divergence_x = 0.5
-beam_third.divergence_y = 0.5
-beam_third.length = 3.0
-beam_third.attenuator = SingleRayAttenuator(clamp_to_zero=True)
+beam_third.distribution = dist_third
 beam_third.models = [BeamCXLine(Line(carbon, 5, (8, 7)))]
 beam_third.integrator.step = integration_step
 beam_third.integrator.min_samples = 10
@@ -118,7 +130,7 @@ beam_third.integrator.min_samples = 10
 
 
 plt.figure()
-x, _, z, beam_density = sample3d(beam_full.density, (-0.5, 0.5, 200), (0, 0, 1), (0, 3, 200))
+x, _, z, beam_density = sample3d(beam_full.distribution.density, (-0.5, 0.5, 200), (0, 0, 1), (0, 3, 200))
 plt.imshow(np.transpose(np.squeeze(beam_density)), extent=[-0.5, 0.5, 0, 3], origin='lower')
 plt.colorbar()
 plt.axis('equal')
@@ -128,9 +140,9 @@ plt.title("Beam full energy density profile in r-z plane")
 
 
 z = np.linspace(0, 3, 200)
-beam_full_densities = [beam_full.density(0, 0, zz) for zz in z]
-beam_half_densities = [beam_half.density(0, 0, zz) for zz in z]
-beam_third_densities = [beam_third.density(0, 0, zz) for zz in z]
+beam_full_densities = [beam_full.distribution.density(0, 0, zz) for zz in z]
+beam_half_densities = [beam_half.distribution.density(0, 0, zz) for zz in z]
+beam_third_densities = [beam_third.distribution.density(0, 0, zz) for zz in z]
 plt.figure()
 plt.plot(z, beam_full_densities, label="full energy")
 plt.plot(z, beam_half_densities, label="half energy")

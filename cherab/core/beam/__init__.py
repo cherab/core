@@ -18,3 +18,4 @@
 
 from .node import Beam
 from .model import BeamModel, BeamAttenuator
+from cherab.core.beam.distribution import BeamDistribution

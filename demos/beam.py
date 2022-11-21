@@ -31,7 +31,7 @@ from raysect.optical.material.emitter import Checkerboard
 from cherab.core import Plasma, Beam, Species, Maxwellian
 from cherab.core.atomic import elements, Line
 from cherab.openadas import OpenADAS
-from cherab.core.model import SingleRayAttenuator, BeamCXLine
+from cherab.core.model import SingleRayAttenuator, BeamCXLine, ThinBeam
 from cherab.tools.plasmas import GaussianVolume
 
 integration_step = 0.02
@@ -74,17 +74,20 @@ plasma.electron_distribution = e_distribution
 plasma.composition = [d_species, he2_species, c6_species, ne10_species]
 
 # BEAM ------------------------------------------------------------------------
+distribution = ThinBeam()
+distribution.energy = 60000
+distribution.power = 3e6
+distribution.element = elements.deuterium
+distribution.sigma = 0.025
+distribution.divergence_x = 0.5
+distribution.divergence_y = 0.5
+distribution.length = 3.0
+distribution.attenuator = SingleRayAttenuator(clamp_to_zero=True)
+
 beam = Beam(parent=world, transform=translate(1.0, 0.0, 0) * rotate(90, 0, 0))
 beam.plasma = plasma
 beam.atomic_data = adas
-beam.energy = 60000
-beam.power = 3e6
-beam.element = elements.deuterium
-beam.sigma = 0.025
-beam.divergence_x = 0.5
-beam.divergence_y = 0.5
-beam.length = 3.0
-beam.attenuator = SingleRayAttenuator(clamp_to_zero=True)
+beam.distribution = distribution
 beam.models = [
     BeamCXLine(Line(elements.helium, 1, (4, 3))),
     BeamCXLine(Line(elements.helium, 1, (6, 4))),
@@ -97,17 +100,20 @@ beam.models = [
 beam.integrator.step = integration_step
 beam.integrator.min_samples = 10
 
+distribution = ThinBeam()
+distribution.energy = 60000 / 2
+distribution.power = 3e6
+distribution.element = elements.deuterium
+distribution.sigma = 0.025
+distribution.divergence_x = 0.5
+distribution.divergence_y = 0.5
+distribution.length = 3.0
+distribution.attenuator = SingleRayAttenuator(clamp_to_zero=True)
+
 beam = Beam(parent=world, transform=translate(1.0, 0.0, 0) * rotate(90, 0, 0))
 beam.plasma = plasma
 beam.atomic_data = adas
-beam.energy = 60000 / 2
-beam.power = 3e6
-beam.element = elements.deuterium
-beam.sigma = 0.025
-beam.divergence_x = 0.5
-beam.divergence_y = 0.5
-beam.length = 3.0
-beam.attenuator = SingleRayAttenuator(clamp_to_zero=True)
+beam.distribution = distribution
 beam.models = [
     BeamCXLine(Line(elements.helium, 1, (4, 3))),
     BeamCXLine(Line(elements.helium, 1, (6, 4))),
@@ -120,17 +126,20 @@ beam.models = [
 beam.integrator.step = integration_step
 beam.integrator.min_samples = 10
 
+distribution = ThinBeam()
+distribution.energy = 60000 / 2
+distribution.power = 3e6
+distribution.element = elements.deuterium
+distribution.sigma = 0.025
+distribution.divergence_x = 0.5
+distribution.divergence_y = 0.5
+distribution.length = 3.0
+distribution.attenuator = SingleRayAttenuator(clamp_to_zero=True)
+
 beam = Beam(parent=world, transform=translate(1.0, 0.0, 0) * rotate(90, 0, 0))
 beam.plasma = plasma
 beam.atomic_data = adas
-beam.energy = 60000 / 3
-beam.power = 3e6
-beam.element = elements.deuterium
-beam.sigma = 0.025
-beam.divergence_x = 0.5
-beam.divergence_y = 0.5
-beam.length = 3.0
-beam.attenuator = SingleRayAttenuator(clamp_to_zero=True)
+beam.distribution = distribution
 beam.models = [
     BeamCXLine(Line(elements.helium, 1, (4, 3))),
     BeamCXLine(Line(elements.helium, 1, (6, 4))),

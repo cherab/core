@@ -25,6 +25,7 @@ from cherab.core.atomic cimport AtomicData, Element
 from cherab.core.plasma cimport Plasma
 from cherab.core.beam.model cimport BeamAttenuator
 from cherab.core.beam.model cimport BeamModel
+from cherab.core.beam.distribution cimport BeamDistribution
 
 
 cdef class ModelManager:
@@ -44,40 +45,13 @@ cdef class Beam(Node):
 
     cdef:
         object notifier
-        Vector3D BEAM_AXIS
-        double _energy, _power, _temperature
-        Element _element
-        double _divergence_x, _divergence_y
-        double _length, _sigma
         Plasma _plasma
+        BeamDistribution _distribution
         AtomicData _atomic_data
         ModelManager _models
-        BeamAttenuator _attenuator
-        Primitive _geometry
+        list _geometry
         VolumeIntegrator _integrator
 
     cdef object __weakref__
 
-    cpdef double density(self, double x, double y, double z) except? -1e999
-
-    cpdef Vector3D direction(self, double x, double y, double z)
-
-    cdef double get_energy(self)
-
-    cdef double get_power(self)
-
-    cdef double get_temperature(self)
-
-    cdef Element get_element(self)
-
-    cdef double get_divergence_x(self)
-
-    cdef double get_divergence_y(self)
-
-    cdef double get_length(self)
-
-    cdef double get_sigma(self)
-
     cdef Plasma get_plasma(self)
-
-    cdef int _modified(self) except -1
