@@ -1,6 +1,6 @@
-# Copyright 2016-2018 Euratom
-# Copyright 2016-2018 United Kingdom Atomic Energy Authority
-# Copyright 2016-2018 Centro de Investigaciones Energéticas, Medioambientales y Tecnológicas
+# Copyright 2016-2022 Euratom
+# Copyright 2016-2022 United Kingdom Atomic Energy Authority
+# Copyright 2016-2022 Centro de Investigaciones Energéticas, Medioambientales y Tecnológicas
 #
 # Licensed under the EUPL, Version 1.1 or – as soon they will be approved by the
 # European Commission - subsequent versions of the EUPL (the "Licence");
@@ -31,6 +31,11 @@ from .interpolators import Interpolate3DLinear, Interpolate3DCubic
 from .caching import Caching1D, Caching2D, Caching3D
 from .clamp import ClampOutput1D, ClampOutput2D, ClampOutput3D
 from .clamp import ClampInput1D, ClampInput2D, ClampInput3D
-from .mappers import IsoMapper2D, IsoMapper3D, Swizzle2D, Swizzle3D, AxisymmetricMapper, VectorAxisymmetricMapper
+from .mappers import IsoMapper2D, IsoMapper3D
+from .mappers import Swizzle2D, Swizzle3D
+from .mappers import AxisymmetricMapper, VectorAxisymmetricMapper
+from .mappers import CylindricalMapper, VectorCylindricalMapper
+from .mappers import PeriodicMapper1D, PeriodicMapper2D, PeriodicMapper3D
+from .mappers import VectorPeriodicMapper1D, VectorPeriodicMapper2D, VectorPeriodicMapper3D
 from .mask import PolygonMask2D
 from .slice import Slice2D, Slice3D

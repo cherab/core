@@ -20,7 +20,10 @@
 
 from libc.math cimport sqrt, atan2, M_PI
 
-from cherab.core.math.function cimport autowrap_function1d, autowrap_function2d, autowrap_function3d, autowrap_vectorfunction2d
+from raysect.core.math.function.float cimport autowrap_function1d, autowrap_function2d, autowrap_function3d
+from raysect.core.math.function.vector3d cimport autowrap_function1d as autowrap_vectorfunction1d
+from raysect.core.math.function.vector3d cimport autowrap_function2d as autowrap_vectorfunction2d
+from raysect.core.math.function.vector3d cimport autowrap_function3d as autowrap_vectorfunction3d
 from raysect.core cimport rotate_z
 cimport cython
 
@@ -251,12 +254,9 @@ cdef class AxisymmetricMapper(Function3D):
     def __init__(self, object function2d):
 
         if not callable(function2d):
-            raise TypeError("Function3D is not callable.")
+            raise TypeError("Function2D is not callable.")
 
         self.function2d = autowrap_function2d(function2d)
-
-    def __call__(self, double x, double y, double z):
-        return self.evaluate(x, y, z)
 
     cdef double evaluate(self, double x, double y, double z) except? -1e999:
         """Return the value of function2d when it is y-axis symmetrically
@@ -299,13 +299,11 @@ cdef class VectorAxisymmetricMapper(VectorFunction3D):
 
         self.function2d = autowrap_vectorfunction2d(vectorfunction2d)
 
-    def __call__(self, double x, double y, double z):
-        return self.evaluate(x, y, z)
-
     @cython.cdivision(True)
     cdef Vector3D evaluate(self, double x, double y, double z):
         """Return the value of function2d when it is y-axis symmetrically
         extended to the 3D space."""
+        cdef double r, phi
 
         # convert to cylindrical coordinates
         phi = atan2(y, x) / M_PI * 180
@@ -313,3 +311,436 @@ cdef class VectorAxisymmetricMapper(VectorFunction3D):
 
         # perform axisymmetric rotation
         return self.function2d.evaluate(r, z).transform(rotate_z(phi))
+
+
+cdef class CylindricalMapper(Function3D):
+    """
+    Converts Cartesian coordinates to cylindrical coordinates and calls a 3D function
+    defined in cylindrical coordinates, f(r, :math:`\\phi`, z).
+
+    The angular coordinate is given in radians.
+
+    Positive angular coordinate is measured counterclockwise from the xz plane.
+    
+    :param Function3D function3d: The function to be mapped. Must be defined
+                                  in the interval (:math:`-\\pi`, :math:`\\pi`]
+                                  on the angular axis.
+
+    .. code-block:: pycon
+
+       >>> from math import sqrt, cos
+       >>> from cherab.core.math import CylindricalMapper
+       >>>
+       >>> def my_func(r, phi, z):
+       >>>     return r * cos(phi)
+       >>>
+       >>> f = CylindricalMapper(my_func)
+       >>>
+       >>> f(1, 0, 0)
+       1.0
+       >>> f(0.5 * sqrt(3), 0.5, 0)
+       0.8660254037844385
+    """
+
+    def __init__(self, object function3d):
+
+        if not callable(function3d):
+            raise TypeError("Function3D is not callable.")
+
+        self.function3d = autowrap_function3d(function3d)
+
+    cdef double evaluate(self, double x, double y, double z) except? -1e999:
+        """
+        Converts to cylindrical coordinates and evaluates the function
+        defined in cylindrical coordinates.
+        """
+        cdef double r, phi
+
+        r = sqrt(x * x + y * y)
+        phi = atan2(y, x)
+
+        return self.function3d.evaluate(r, phi, z)
+
+
+cdef class VectorCylindricalMapper(VectorFunction3D):
+    """
+    Converts Cartesian coordinates to cylindrical coordinates, calls
+    a 3D vector function defined in cylindrical coordinates, f(r, :math:`\\phi`, z),
+    then converts the returned 3D vector to Cartesian coordinates.
+
+    The angular coordinate is given in radians.
+
+    Positive angular coordinate is measured counterclockwise from the xz plane.
+    
+    :param VectorFunction3D function3d: The function to be mapped. Must be defined
+                                        in the interval (:math:`-\\pi`, :math:`\\pi`]
+                                        on the angular axis.
+
+    .. code-block:: pycon
+
+       >>> from math import sqrt, cos
+       >>> from raysect.core.math import Vector3D
+       >>> from cherab.core.math import VectorCylindricalMapper
+       >>>
+       >>> def my_vec_func(r, phi, z):
+       >>>     v = Vector3D(0, 1, 0)
+       >>>     v.length = r * abs(cos(phi))
+       >>>     return v
+       >>>
+       >>> f = VectorCylindricalMapper(my_vec_func)
+       >>>
+       >>> f(1, 0, 0)
+       Vector3D(0.0, 1.0, 0.0)
+       >>> f(1/sqrt(2), 1/sqrt(2), 0)
+       Vector3D(-0.5, 0.5, 0.0)
+    """
+
+    def __init__(self, object function3d):
+
+        if not callable(function3d):
+            raise TypeError("Function3D is not callable.")
+
+        self.function3d = autowrap_vectorfunction3d(function3d)
+
+    @cython.cdivision(True)
+    cdef Vector3D evaluate(self, double x, double y, double z):
+        """
+        Converts to cylindrical coordinates, evaluates the vector function
+        defined in cylindrical coordinates and rotates the resulting vector
+        around z-axis.
+        """
+        cdef double r, phi
+
+        r = sqrt(x * x + y * y)
+        phi = atan2(y, x)
+
+        return self.function3d.evaluate(r, phi, z).transform(rotate_z(phi / M_PI * 180))
+
+
+cdef class PeriodicMapper1D(Function1D):
+    """
+    Maps a periodic 1D function into 1D space.
+
+    :param Function1D function1d: The periodic 1D function to map defined
+                                  in the [0, period) interval.
+    :param double period: The period of the function.
+
+    .. code-block:: pycon
+
+       >>> from cherab.core.math import PeriodicMapper1D
+       >>>
+       >>> def f1(x):
+       >>>     return x
+       >>>
+       >>> f2 = PeriodicMapper1D(f1, 1.)
+       >>>
+       >>> f2(1.5)
+       0.5
+       >>> f2(-0.3)
+       0.7
+    """
+
+    def __init__(self, object function1d, double period):
+
+        if not callable(function1d):
+            raise TypeError("function1d is not callable.")
+
+        self.function1d = autowrap_function1d(function1d)
+
+        if period <= 0:
+            raise ValueError("Argument period must be positive.")
+
+        self.period = period
+
+    cdef double evaluate(self, double x) except? -1e999:
+        """Return the value of periodic function."""
+
+        return self.function1d.evaluate(remainder(x, self.period))
+
+
+cdef class PeriodicMapper2D(Function2D):
+    """
+    Maps a periodic 2D function into 2D space.
+
+    Set period_x/period_y to 0 if the function is not periodic along x/y axis.
+
+    :param Function2D function2d: The periodic 2D function to map defined
+                                  in the ([0, period_x), [0, period_y)) intervals.
+    :param double period_x: The period of the function along x-axis.
+                            0 if not periodic.
+    :param double period_y: The period of the function along y-axis.
+                            0 if not periodic.
+
+    .. code-block:: pycon
+
+       >>> from cherab.core.math import PeriodicMapper2D
+       >>>
+       >>> def f1(x, y):
+       >>>     return x * y
+       >>>
+       >>> f2 = PeriodicMapper2D(f1, 1., 1.)
+       >>>
+       >>> f2(1.5, 1.5)
+       0.25
+       >>> f2(-0.3, -1.3)
+       0.49
+       >>>
+       >>> f3 = PeriodicMapper2D(f1, 1., 0)
+       >>>
+       >>> f3(1.5, 1.5)
+       0.75
+       >>> f3(-0.3, -1.3)
+       -0.91
+    """
+
+    def __init__(self, object function2d, double period_x, double period_y):
+
+        if not callable(function2d):
+            raise TypeError("function2d is not callable.")
+
+        self.function2d = autowrap_function2d(function2d)
+
+        if period_x < 0:
+            raise ValueError("Argument period_x must be >= 0.")
+        if period_y < 0:
+            raise ValueError("Argument period_y must be >= 0.")
+
+        self.period_x = period_x
+        self.period_y = period_y
+
+    cdef double evaluate(self, double x, double y) except? -1e999:
+        """Return the value of periodic function."""
+
+        x = remainder(x, self.period_x)
+        y = remainder(y, self.period_y)
+
+        return self.function2d.evaluate(x, y)
+
+
+cdef class PeriodicMapper3D(Function3D):
+    """
+    Maps a periodic 3D function into 3D space.
+
+    Set period_x/period_y/period_z to 0 if the function is not periodic along x/y/z axis.
+
+    :param Function3D function3d: The periodic 3D function to map defined in the
+                                  ([0, period_x), [0, period_y), [0, period_z)) intervals.
+    :param double period_x: The period of the function along x-axis.
+                            0 if not periodic.
+    :param double period_y: The period of the function along y-axis.
+                            0 if not periodic.
+    :param double period_z: The period of the function along z-axis.
+                            0 if not periodic.
+
+    .. code-block:: pycon
+
+       >>> from cherab.core.math import PeriodicMapper3D
+       >>>
+       >>> def f1(x, y, z):
+       >>>     return x * y * z
+       >>>
+       >>> f2 = PeriodicMapper3D(f1, 1., 1., 1.)
+       >>>
+       >>> f2(1.5, 1.5, 1.5)
+       0.125
+       >>> f2(-0.3, -1.3, -2.3)
+       0.343
+       >>>
+       >>> f3 = PeriodicMapper3D(f1, 0, 1., 0)
+       >>>
+       >>> f3(1.5, 1.5, 1.5)
+       1.125
+       >>> f3(-0.3, -1.3, -0.3)
+       0.063
+    """
+
+    def __init__(self, object function3d, double period_x, double period_y, double period_z):
+
+        if not callable(function3d):
+            raise TypeError("function2d is not callable.")
+
+        self.function3d = autowrap_function3d(function3d)
+
+        if period_x < 0:
+            raise ValueError("Argument period_x must be >= 0.")
+        if period_y < 0:
+            raise ValueError("Argument period_y must be >= 0.")
+        if period_z < 0:
+            raise ValueError("Argument period_z must be >= 0.")
+
+        self.period_x = period_x
+        self.period_y = period_y
+        self.period_z = period_z
+
+    cdef double evaluate(self, double x, double y, double z) except? -1e999:
+        """Return the value of periodic function."""
+
+        x = remainder(x, self.period_x)
+        y = remainder(y, self.period_y)
+        z = remainder(z, self.period_z)
+
+        return self.function3d.evaluate(x, y, z)
+
+
+cdef class VectorPeriodicMapper1D(VectorFunction1D):
+    """
+    Maps a periodic 1D vector function into 1D space.
+
+    :param VectorFunction1D function1d: The periodic 1D vector function to map
+                                        defined in the [0, period) interval.
+    :param double period: The period of the function.
+
+    .. code-block:: pycon
+
+       >>> from raysect.core.math import Vector3D
+       >>> from cherab.core.math import VectorPeriodicMapper1D
+       >>>
+       >>> def f1(x):
+       >>>     return Vector3D(x, 0, 0)
+       >>>
+       >>> f2 = VectorPeriodicMapper1D(f1, 1.)
+       >>>
+       >>> f2(1.5)
+       Vector3D(0.5, 0, 0)
+       >>> f2(-0.3)
+       Vector3D(0.7, 0, 0)
+    """
+
+    def __init__(self, object function1d, double period):
+
+        if not callable(function1d):
+            raise TypeError("function1d is not callable.")
+
+        self.function1d = autowrap_vectorfunction1d(function1d)
+
+        if period <= 0:
+            raise ValueError("Argument period must be positive.")
+
+        self.period = period
+
+    cdef Vector3D evaluate(self, double x):
+        """Return the value of periodic function."""
+
+        return self.function1d.evaluate(remainder(x, self.period))
+
+
+cdef class VectorPeriodicMapper2D(VectorFunction2D):
+    """
+    Maps a periodic 2D vector function into 2D space.
+
+    Set period_x/period_y to 0 if the function is not periodic along x/y axis.
+
+    :param VectorFunction2D function2d: The periodic 2D vector function to map defined in
+                                        the ([0, period_x), [0, period_y)) intervals.
+    :param double period_x: The period of the function along x-axis.
+                            0 if not periodic.
+    :param double period_y: The period of the function along y-axis.
+                            0 if not periodic.
+
+    .. code-block:: pycon
+
+       >>> from cherab.core.math import VectorPeriodicMapper2D
+       >>>
+       >>> def f1(x, y):
+       >>>     return Vector3D(x, y, 0)
+       >>>
+       >>> f2 = VectorPeriodicMapper2D(f1, 1., 1.)
+       >>>
+       >>> f2(1.5, 1.5)
+       Vector3D(0.5, 0.5, 0)
+       >>> f2(-0.3, -1.3)
+       Vector3D(0.7, 0.7, 0)
+       >>>
+       >>> f3 = VectorPeriodicMapper2D(f1, 1., 0)
+       >>>
+       >>> f3(1.5, 1.5)
+       Vector3D(0.5, 1.5, 0)
+       >>> f3(-0.3, -1.3)
+       Vector3D(0.7, -1.3, 0)
+    """
+
+    def __init__(self, object function2d, double period_x, double period_y):
+
+        if not callable(function2d):
+            raise TypeError("function2d is not callable.")
+
+        self.function2d = autowrap_vectorfunction2d(function2d)
+
+        if period_x < 0:
+            raise ValueError("Argument period_x must be >= 0.")
+        if period_y < 0:
+            raise ValueError("Argument period_y must be >= 0.")
+
+        self.period_x = period_x
+        self.period_y = period_y
+
+    cdef Vector3D evaluate(self, double x, double y):
+        """Return the value of periodic function."""
+
+        x = remainder(x, self.period_x)
+        y = remainder(y, self.period_y)
+
+        return self.function2d.evaluate(x, y)
+
+
+cdef class VectorPeriodicMapper3D(VectorFunction3D):
+    """
+    Maps a periodic 3D vector function into 3D space.
+
+    Set period_x/period_y/period_z to 0 if the function is not periodic along x/y/z axis.
+
+    :param VectorFunction3D function3d: The periodic 3D vector function to map defined in the
+                                        ([0, period_x), [0, period_y), [0, period_z)) intervals.
+    :param double period_x: The period of the function along x-axis.
+                            0 if not periodic.
+    :param double period_y: The period of the function along y-axis.
+                            0 if not periodic.
+    :param double period_z: The period of the function along z-axis.
+                            0 if not periodic.
+
+    .. code-block:: pycon
+
+       >>> from cherab.core.math import PeriodicMapper3D
+       >>>
+       >>> def f1(x, y, z):
+       >>>     return Vector3D(x, y, z)
+       >>>
+       >>> f2 = VectorPeriodicMapper3D(f1, 1., 1., 1.)
+       >>>
+       >>> f2(1.5, 1.5, 1.5)
+       Vector3D(0.5, 0.5, 0.5)
+       >>> f2(-0.3, -1.3, -2.3)
+       Vector3D(0.7, 0.7, 0.7)
+       >>>
+       >>> f3 = VectorPeriodicMapper3D(f1, 0, 1., 0)
+       >>>
+       >>> f3(1.5, 0.5, 1.5)
+       Vector3D(1.5, 0.5, 1.5)
+    """
+
+    def __init__(self, object function3d, double period_x, double period_y, double period_z):
+
+        if not callable(function3d):
+            raise TypeError("function2d is not callable.")
+
+        self.function3d = autowrap_vectorfunction3d(function3d)
+
+        if period_x < 0:
+            raise ValueError("Argument period_x must be >= 0.")
+        if period_y < 0:
+            raise ValueError("Argument period_y must be >= 0.")
+        if period_z < 0:
+            raise ValueError("Argument period_z must be >= 0.")
+
+        self.period_x = period_x
+        self.period_y = period_y
+        self.period_z = period_z
+
+    cdef Vector3D evaluate(self, double x, double y, double z):
+        """Return the value of periodic function."""
+
+        x = remainder(x, self.period_x)
+        y = remainder(y, self.period_y)
+        z = remainder(z, self.period_z)
+
+        return self.function3d.evaluate(x, y, z)
