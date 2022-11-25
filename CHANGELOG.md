@@ -14,6 +14,8 @@ New:
 * Add verbose parameter to SartOpencl solver (default is False). (#358)
 * Add Generomak core plasma profiles. (#360)
 * Add toroidal_mesh_from_polygon for making mesh for not fully-360 degrees axisymmetric elements. (#365)
+* Add PeriodicMapperXD and VectorPeriodicMapperXD to support the data simulated with periodic boundary conditions. (#387)
+* Add CylindricalMapper and VectorCylindricalMapper to map functions from cylindrical to Cartesian coordinates. (#387)
 
 Bug Fixes:
 ----------
