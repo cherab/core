@@ -13,10 +13,13 @@ New:
 * Add a demo for observer group handling and plotting.
 * Add verbose parameter to SartOpencl solver (default is False). (#358)
 * Add Generomak core plasma profiles. (#360)
+* Add toroidal_mesh_from_polygon for making mesh for not fully-360 degrees axisymmetric elements. (#365)
 * Add common spectroscopic instruments: Polychromator, SurveySpectrometer, CzernyTurnerSpectrometer. (#299)
+
 
 Bug Fixes:
 ----------
+* Fixed Bremsstrahlung trapezium evaluation (#384).
 * Fixed generomak plasma edge data paths.
 * Fix and improve OpenCL utility functions. (#358)
 

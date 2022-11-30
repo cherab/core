@@ -21,3 +21,4 @@ build/
 .nfs*
 .coverage
 htmlcov*
+cherab.egg-info/
