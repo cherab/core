@@ -34,6 +34,8 @@ from cherab.core.utility import RecursiveDict
 from cherab.core.math.mappers import AxisymmetricMapper, VectorAxisymmetricMapper
 from cherab.core.math.clamp import ClampInput1D
 
+from cherab.tools.plasmas.ionisation_balance import interpolators1d_from_elementdensity, interpolators1d_match_plasma_neutrality
+
 from cherab.openadas import OpenADAS
 
 from cherab.generomak.equilibrium import load_equilibrium
@@ -318,21 +320,16 @@ def get_core_profiles_arguments(**kwargs):
         te_core core: (default 3e3) electron temperature
         te_convexity: (default 2.35) convexity of the electron temperature profile
         te_concavity: (default 1.26) concavity of the electron temperature profile
-        nh_core: (default 5e19) density of H1+
-        nh_convexity: (default 1.09) convexity of H1+ density profile
-        nh_concavity: (default 0.24) concavity of H1+ density profile
         th_core: (default 2.8e3) H1+ temperature
-        th_convexity: (default 1) convexity of H1+ temperature profile
-        th_concavity: (default 0.82) concavity of H1+ temperature profile
+        th_convexity: (default 2) convexity of H1+ temperature profile
+        th_concavity: (default 1.26) concavity of H1+ temperature profile
         th0_fraction: (default 0.8) H0 temperature factor
-        nh0_decay decay: (default 20) rate of H0 density profile
-        timp_core: (default 2.7e3) core impurity temperature
-        timp_convexity: (default 1) convexity of impurity temperature profile
-        timp_concavity: (default 0.82) concavity of impurity temperature profile
+        timp_core: (default 2.8e3) core impurity temperature
+        timp_convexity: (default 2) convexity of impurity temperature profile
+        timp_concavity: (default 1.26) concavity of impurity temperature profile
         nimp_core: (default 5e17) impurity density
         nimp_convexity: (default 1.09) convexity of impurity density profile
         nimp_concavity: (default 0.24) concavity of impurity density profile
-        nimp_decay: (default 30) decay rate of impurity density profile (except bare nuclei)
         vtor_core: (default 1e5) toroidal rotation velocity m/s
         vtor_edge: (default 1e4) toroidal rotation velocity at the edge m/s
         vtor_convexity: (default 2) convexity of the toroidal rotation profile
@@ -343,19 +340,13 @@ def get_core_profiles_arguments(**kwargs):
     :return: dictionary of profile arguments
     """
 
-    core_args = {"ne_core": 5e19, "ne_convexity": 1.09,
-                 "ne_concavity": 0.24, "te_core": 3e3,
-                 "te_convexity": 2.35, "te_concavity": 1.26,
-                 "nh_core": 5e19, "nh_convexity": 1.09,
-                 "nh_concavity": 0.24, "th_core": 2.8e3,
-                 "th_convexity": 1, "th_concavity": 0.82,
-                 "th0_fraction": 0.8, "nh0_decay": 20,
-                 "timp_core": 2.7e3, "timp_convexity": 1,
-                 "timp_concavity": 0.82, "nimp_core": 5e17,
-                 "nimp_convexity": 1.09, "nimp_concavity": 0.24,
-                 "nimp_decay": 30,
-                 "vtor_core": 1e5, "vtor_edge": 1e4,
-                 "vtor_convexity": 2, "vtor_concavity": 4,
+    core_args = {"ne_core": 5e19, "ne_convexity": 1.09, "ne_concavity": 0.24,
+                 "te_core": 3e3, "te_convexity": 2.35, "te_concavity": 1.26,
+                 "th_core": 2.8e3, "th_convexity": 2, "th_concavity": 1.26,
+                 "th0_fraction": 0.8,
+                 "timp_core": 2.8e3, "timp_convexity": 2, "timp_concavity": 1.26,
+                 "nimp_core": 5e17, "nimp_convexity": 1.09, "nimp_concavity": 0.24,
+                 "vtor_core": 1e5, "vtor_edge": 1e4, "vtor_convexity": 2, "vtor_concavity": 4,
                  "vpol_lcfs": 2e4, "vpol_decay": 0.08}
 
     if not kwargs:
@@ -390,13 +381,8 @@ def get_core_profiles_description(lcfs_values=None, core_args=None):
         z = 0
         lcfs_values = get_edge_profile_values(r, z)
 
-        # manually correcting the LCFS densities for neutral species and low ionised carbon
-        # to better match the edge profiles
-        lcfs_values["composition"]["hydrogen"][0]["density"] = 1.e15
-        lcfs_values["composition"]["carbon"][0]["density"] = 1.e5
-        lcfs_values["composition"]["carbon"][1]["density"] = 1.5e5
-        lcfs_values["composition"]["carbon"][2]["density"] = 1.e9
-        lcfs_values["composition"]["carbon"][3]["density"] = 1.e13
+    # total carbon impurity density at lcfs
+    nimp_lcfs = sum([value["density"] for _, value in lcfs_values["composition"]["carbon"].items()])
 
     if core_args is None:
         core_args = get_core_profiles_arguments()
@@ -425,47 +411,38 @@ def get_core_profiles_description(lcfs_values=None, core_args=None):
     profiles["electron"]["f1d_vpol"] = Constant1D(0)
     profiles["electron"]["f1d_vnorm"] = Constant1D(0)
 
-    # Setup H1+ profiles with double parabola shapes
-    profiles["composition"]["hydrogen"][1]["f1d_temperature"] = get_double_parabola(lcfs_values["composition"]["hydrogen"][1]["temperature"],
-                                                                                    core_args["th_core"], core_args["th_convexity"], core_args["th_concavity"],
-                                                                                    xmin=1, xmax=0)
-    profiles["composition"]["hydrogen"][1]["f1d_density"] = get_double_parabola(lcfs_values["composition"]["hydrogen"][1]["density"],
-                                                                                core_args["nh_core"], core_args["nh_convexity"],
-                                                                                core_args["nh_concavity"], xmin=1, xmax=0)
-    profiles["composition"]["hydrogen"][1]["f1d_vtor"] = f1d_vtor
-    profiles["composition"]["hydrogen"][1]["f1d_vpol"] = f1d_vpol
-    profiles["composition"]["hydrogen"][1]["f1d_vnorm"] = f1d_vnorm
+    # total carbon density
+    carbon_total_density = get_double_parabola(nimp_lcfs, core_args["nimp_core"],
+                                               core_args["nimp_convexity"], core_args["nimp_concavity"], xmin=1, xmax=0)
 
-    # setup H0+ profile shapes with temperature as a fraction of H1+ and density with decaying exponential
-    profiles["composition"]["hydrogen"][0]["f1d_temperature"] = core_args["th0_fraction"] * get_double_parabola(lcfs_values["composition"]["hydrogen"][0]["temperature"],
-                                                                                                                core_args["th_core"], core_args["th_convexity"],
-                                                                                                                core_args["th_concavity"], xmin=1, xmax=0)
-    profiles["composition"]["hydrogen"][0]["f1d_density"] = get_exponential_growth(
-        lcfs_values["composition"]["hydrogen"][0]["density"], core_args["nh0_decay"])
-    profiles["composition"]["hydrogen"][0]["f1d_vtor"] = f1d_vtor
-    profiles["composition"]["hydrogen"][0]["f1d_vpol"] = f1d_vpol
-    profiles["composition"]["hydrogen"][0]["f1d_vnorm"] = f1d_vnorm
+    # solve ionisation balance
+    openadas = OpenADAS(permit_extrapolation=True)
+    psin_1d = np.linspace(0, 1, 256)
+    density_profiles = {}
+    density_profiles["carbon"] = interpolators1d_from_elementdensity(openadas, carbon, psin_1d, carbon_total_density,
+                                                                     profiles["electron"]["f1d_density"],
+                                                                     profiles["electron"]["f1d_temperature"])
 
-    # setup C6+ profile shapes with double parabolas
-    profiles["composition"]["carbon"][6]["f1d_temperature"] = get_double_parabola(lcfs_values["composition"]["carbon"][6]["temperature"],
-                                                                                  core_args["timp_core"], core_args["timp_convexity"], core_args["timp_concavity"],
-                                                                                  xmin=1, xmax=0)
-    profiles["composition"]["carbon"][6]["f1d_density"] = get_double_parabola(lcfs_values["composition"]["carbon"][6]["density"], core_args["nimp_core"],
-                                                                              core_args["nimp_convexity"], core_args["nimp_concavity"], xmin=1, xmax=0)
-    profiles["composition"]["carbon"][6]["f1d_vtor"] = f1d_vtor
-    profiles["composition"]["carbon"][6]["f1d_vpol"] = f1d_vpol
-    profiles["composition"]["carbon"][6]["f1d_vnorm"] = f1d_vnorm
+    density_profiles["hydrogen"] = interpolators1d_match_plasma_neutrality(openadas, hydrogen, psin_1d, [density_profiles["carbon"]],
+                                                                           profiles["electron"]["f1d_density"],
+                                                                           profiles["electron"]["f1d_temperature"])
 
-    # setup CX+ profile shapes with temperature as double parabolas and density with decaying exponentials
-    for chrg in range(6):
-        profiles["composition"]["carbon"][chrg]["f1d_temperature"] = get_double_parabola(lcfs_values["composition"]["carbon"][chrg]["temperature"],
-                                                                                         core_args["timp_core"], core_args["timp_convexity"], core_args["timp_concavity"],
+    # Setup ion profiles
+    for element, prefix in ((hydrogen, "h"), (carbon, "imp")):
+        name = element.name
+        for chrg in range(element.atomic_number + 1):
+            profiles["composition"][name][chrg]["f1d_temperature"] = get_double_parabola(lcfs_values["composition"][name][chrg]["temperature"],
+                                                                                         core_args["t{}_core".format(prefix)],
+                                                                                         core_args["t{}_convexity".format(prefix)],
+                                                                                         core_args["t{}_concavity".format(prefix)],
                                                                                          xmin=1, xmax=0)
-        profiles["composition"]["carbon"][chrg]["f1d_density"] = get_exponential_growth(
-            lcfs_values["composition"]["carbon"][chrg]["density"], core_args["nimp_decay"])
-        profiles["composition"]["carbon"][chrg]["f1d_vtor"] = f1d_vtor
-        profiles["composition"]["carbon"][chrg]["f1d_vpol"] = f1d_vpol
-        profiles["composition"]["carbon"][chrg]["f1d_vnorm"] = f1d_vnorm
+            profiles["composition"][name][chrg]["f1d_density"] = density_profiles[name][chrg]
+            profiles["composition"][name][chrg]["f1d_vtor"] = f1d_vtor
+            profiles["composition"][name][chrg]["f1d_vpol"] = f1d_vpol
+            profiles["composition"][name][chrg]["f1d_vnorm"] = f1d_vnorm
+
+    # multiply H0 temperature by th0_fraction
+    profiles["composition"]["hydrogen"][0]["f1d_temperature"] *= core_args["th0_fraction"]
 
     return profiles.freeze()
 
