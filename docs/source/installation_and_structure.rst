@@ -39,7 +39,7 @@ that Cherab can calculate. This package is strictly managed by the Cherab develo
 require some type of atomic data for their calculations. The base types of reaction rates and
 photon emissivity coefficients are defined in the Core API Module,
 `cherab <https://pypi.org/project/cherab>`_. A default atomic data source module based on
- the `OpenADAS project <http://open.adas.ac.uk/>`_, is included in the package. In future
+the `OpenADAS project <http://open.adas.ac.uk/>`_, is included in the package. In future
 other atomic data sources, such as the ALADDIN database for example, could be made available
 through additional packages.
 
@@ -78,7 +78,9 @@ The easiest way to install Cherab with OpenADAS is using `pip <https://pip.pypa.
 
 This will either install a binary package or build Cherab from source (which may take some time).
 If you don't have administrator access to install the packages, add the ``--user`` flag to the above
-line to install the packages under your own user account.
+line to install the packages under your own user account. Alternatively, consider using a
+`virtual environment <https://docs.python.org/3/tutorial/venv.html>`_ to avoid the risk of
+conflicting versions of packages in your Python environment.
 
 
 Installing from source
@@ -94,17 +96,29 @@ If all the required dependencies are present (cython, numpy, scipy, matplotlib a
 start the Cherab compilation and installation process. If you don't have administrator access to install
 the package, add the ``--user`` flag to the above line to install the package under your own user account.
 
-When developing cherab it is usually preferred that the packages be installed in "develop" mode::
-
-    python setup.py develop
-
-This will cause the original installation folder to be added to the site-package path. Modifications to
-the code will therefore be visible to python next time the code is imported. The ``--user`` flag should be
-used if you do not have administrative permission for your python installation.
-
 As all the Cherab packages are dependent on the core ``cherab`` package, this package must be installed first.
 Note that other packages may have their own inter-dependencies, see the specific package documentation for
 more information.
+
+Installing for development
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+When developing cherab it is usually preferred that the packages be installed in "develop" mode.
+Clone the project from the development repository, locate the folder containing setup.py and run::
+
+    pip install -e .
+
+The alternative command if pip is not available is::
+
+    python setup.py develop
+
+Either command will cause the original installation folder to be added to the
+site-package path. Modifications to the code will therefore be visible to python next
+time the code is imported. If you are modifying Cython source files then run
+``./dev/build.sh`` to re-build those files in order for the changes to be visible. A
+virtual environment, or the ``--user`` flag, should be used if you do not have
+administrative permission for your python installation.
+
 
 When developing new features for Cherab, the development branch should be used as the base.
 
@@ -128,9 +142,9 @@ Testing
 ~~~~~~~
 
 A selection of test scripts can be run with the `nose` testing framework. These are routinely
-run on the development version.  Running ``nosetests`` at the terminal in the source directory
+run on the development version.  Running ``./dev/test.sh`` at the terminal in the source directory
 should run all of these tests to completion without errors or failures.
 
-Many of the demos used throughout the Raysect documentation are distributed with the source code in
+Many of the demos used throughout the documentation are distributed with the source code in
 the ``demo`` folder.
 

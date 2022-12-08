@@ -17,7 +17,15 @@ New:
 * Add group observer class for each of Raysect's 0D observers. (#332)
 * Add a demo for observer group handling and plotting.
 * Add verbose parameter to SartOpencl solver (default is False). (#358)
+* Add Generomak core plasma profiles. (#360)
+* Add toroidal_mesh_from_polygon for making mesh for not fully-360 degrees axisymmetric elements. (#365)
 * Add new classes for free-free Gaunt factors and improve accuracy of the Gaunt factor used in Bremsstrahlung emission model. (#352)
+
+Bug Fixes:
+----------
+* Fixed Bremsstrahlung trapezium evaluation (#384).
+* Fixed generomak plasma edge data paths.
+* Fix and improve OpenCL utility functions. (#358)
 
 
 Release 1.3.0 (8 Dec 2021)
