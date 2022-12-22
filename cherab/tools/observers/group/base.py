@@ -32,22 +32,22 @@ class Observer0DGroup(Node):
     all observers, or each observer can be assigned with individual value.
 
     :ivar list names: A list of observer names.
-    :ivar list pipelines: A list of all pipelines connected to each observer in the group.
     :ivar list/RenderEngine render_engine: Rendering engine used by the observers.
                                            Note that if the engine is shared, changing its
                                            parameters for one observer in a group will affect
                                            all observers.
-    :ivar list/float min_wavelength: Lower wavelength bound for sampled spectral range.
-    :ivar list/float max_wavelength: Upper wavelength bound for sampled spectral range.
     :ivar list/int spectral_bins: The number of spectral samples over the wavelength range.
-    :ivar list/float ray_extinction_prob: Probability of ray extinction after every material
-                                          intersection.
-    :ivar list/float ray_extinction_min_depth: Minimum number of paths before russian roulette
-                                               style ray extinction.
+    :ivar list/int spectral_rays: The number of smaller sub-spectrum rays the full spectrum will be divided into.
+    :ivar list/float max_wavelength: Upper wavelength bound for sampled spectral range.
+    :ivar list/float min_wavelength: Lower wavelength bound for sampled spectral range.
+    :ivar list/float ray_extinction_prob: Probability of ray extinction after every material intersection.
     :ivar list/int ray_max_depth: Maximum number of Ray paths before terminating Ray.
+    :ivar list/float ray_extinction_min_depth: Minimum number of paths before russian roulette style ray extinction.
+    :ivar list/bool ray_importance_sampling: Toggle importance sampling behaviour (default=True).
     :ivar list/float ray_important_path_weight: Relative weight of important path sampling.
     :ivar list/int pixel_samples: The number of samples to take per pixel.
     :ivar list/int samples_per_task: Minimum number of samples to request per task.
+    :ivar list pipelines: A list of all pipelines connected to each observer in the group.
     """
     _OBSERVER_TYPE = Observer0D
 
@@ -110,7 +110,9 @@ class Observer0DGroup(Node):
 
     @property
     def names(self):
-        # A list of observer names.
+        """
+        A list of observer names.
+        """
         return [observer.name for observer in self._observers]
 
     @names.setter
@@ -125,24 +127,14 @@ class Observer0DGroup(Node):
         else:
             raise TypeError("The names attribute must be a list or tuple.")
 
-    @property
-    def pipelines(self):
+    def observe(self):
         """
-        A list of all pipelines connected to each observer in the group
-        
-        :param list pipelist: list of lists/tuples of already instantiated pipelines
-        :rtype: list
+        Starts the observation.
         """
-        return [observer.pipelines for observer in self._observers]
+        for observer in self._observers:
+            observer.observe()
 
-    @pipelines.setter
-    def pipelines(self, pipelist):
-        if len(pipelist) == len(self._observers):
-            for observer, pipelines in zip(self._observers, pipelist):
-                observer.pipelines = pipelines
-        else:
-            raise ValueError('Length of pipelines list do not match number of observers in the group.')
-
+    # _ObserverBase attributes and properties
     @property
     def render_engine(self):
         """
@@ -170,22 +162,40 @@ class Observer0DGroup(Node):
                 observer.render_engine = value
 
     @property
-    def min_wavelength(self):
-        # Lower wavelength bound for sampled spectral range.
-        return [observer.min_wavelength for observer in self._observers]
+    def spectral_bins(self):
+        # The number of spectral samples over the wavelength range.
+        return [observer.spectral_bins for observer in self._observers]
 
-    @min_wavelength.setter
-    def min_wavelength(self, value):
+    @spectral_bins.setter
+    def spectral_bins(self, value):
         if isinstance(value, (list, tuple, ndarray)):
             if len(value) == len(self._observers):
                 for observer, v in zip(self._observers, value):
-                    observer.min_wavelength = v
+                    observer.spectral_bins = v
             else:
-                raise ValueError("The length of 'min_wavelength' ({}) "
+                raise ValueError("The length of 'spectral_bins' ({}) "
                                  "mismatches the number of observers ({}).".format(len(value), len(self._observers)))
         else:
             for observer in self._observers:
-                observer.min_wavelength = value
+                observer.spectral_bins = value
+
+    @property
+    def spectral_rays(self):
+        # The number of spectral samples over the wavelength range.
+        return [observer.spectral_rays for observer in self._observers]
+
+    @spectral_rays.setter
+    def spectral_rays(self, value):
+        if isinstance(value, (list, tuple, ndarray)):
+            if len(value) == len(self._observers):
+                for observer, v in zip(self._observers, value):
+                    observer.spectral_rays = v
+            else:
+                raise ValueError("The length of 'spectral_rays' ({}) "
+                                 "mismatches the number of observers ({}).".format(len(value), len(self._observers)))
+        else:
+            for observer in self._observers:
+                observer.spectral_rays = value
 
     @property
     def max_wavelength(self):
@@ -206,22 +216,22 @@ class Observer0DGroup(Node):
                 observer.max_wavelength = value
 
     @property
-    def spectral_bins(self):
-        # The number of spectral samples over the wavelength range.
-        return [observer.spectral_bins for observer in self._observers]
+    def min_wavelength(self):
+        # Lower wavelength bound for sampled spectral range.
+        return [observer.min_wavelength for observer in self._observers]
 
-    @spectral_bins.setter
-    def spectral_bins(self, value):
+    @min_wavelength.setter
+    def min_wavelength(self, value):
         if isinstance(value, (list, tuple, ndarray)):
             if len(value) == len(self._observers):
                 for observer, v in zip(self._observers, value):
-                    observer.spectral_bins = v
+                    observer.min_wavelength = v
             else:
-                raise ValueError("The length of 'spectral_bins' ({}) "
+                raise ValueError("The length of 'min_wavelength' ({}) "
                                  "mismatches the number of observers ({}).".format(len(value), len(self._observers)))
         else:
             for observer in self._observers:
-                observer.spectral_bins = value
+                observer.min_wavelength = value
 
     @property
     def ray_extinction_prob(self):
@@ -242,6 +252,24 @@ class Observer0DGroup(Node):
                 observer.ray_extinction_prob = value
 
     @property
+    def ray_max_depth(self):
+        # Maximum number of Ray paths before terminating Ray.
+        return [observer.ray_max_depth for observer in self._observers]
+
+    @ray_max_depth.setter
+    def ray_max_depth(self, value):
+        if isinstance(value, (list, tuple, ndarray)):
+            if len(value) == len(self._observers):
+                for observer, v in zip(self._observers, value):
+                    observer.ray_max_depth = v
+            else:
+                raise ValueError("The length of 'ray_max_depth' ({}) "
+                                 "mismatches the number of observers ({}).".format(len(value), len(self._observers)))
+        else:
+            for observer in self._observers:
+                observer.ray_max_depth = value
+
+    @property
     def ray_extinction_min_depth(self):
         # Minimum number of paths before russian roulette style ray extinction.
         return [observer.ray_extinction_min_depth for observer in self._observers]
@@ -260,22 +288,22 @@ class Observer0DGroup(Node):
                 observer.ray_extinction_min_depth = value
 
     @property
-    def ray_max_depth(self):
-        # Maximum number of Ray paths before terminating Ray.
-        return [observer.ray_max_depth for observer in self._observers]
+    def ray_importance_sampling(self):
+        # Relative weight of important path sampling.
+        return [observer.ray_importance_sampling for observer in self._observers]
 
-    @ray_max_depth.setter
-    def ray_max_depth(self, value):
+    @ray_importance_sampling.setter
+    def ray_importance_sampling(self, value):
         if isinstance(value, (list, tuple, ndarray)):
             if len(value) == len(self._observers):
                 for observer, v in zip(self._observers, value):
-                    observer.ray_max_depth = v
+                    observer.ray_importance_sampling = v
             else:
-                raise ValueError("The length of 'ray_max_depth' ({}) "
+                raise ValueError("The length of 'ray_importance_sampling' ({}) "
                                  "mismatches the number of observers ({}).".format(len(value), len(self._observers)))
         else:
             for observer in self._observers:
-                observer.ray_max_depth = value
+                observer.ray_importance_sampling = value
 
     @property
     def ray_important_path_weight(self):
@@ -295,6 +323,25 @@ class Observer0DGroup(Node):
             for observer in self._observers:
                 observer.ray_important_path_weight = value
 
+    @property
+    def quiet(self):
+        return [observer.quiet for observer in self._observers]
+
+    @quiet.setter
+    def quiet(self, value):
+        if isinstance(value, (list, tuple, ndarray)):
+            if len(value) == len(self._observers):
+                for observer, v in zip(self._observers, value):
+                    observer.quiet = v
+            else:
+                raise ValueError("The length of 'quiet' ({}) "
+                                 "mismatches the number of observers ({}).".format(len(value), len(self._observers)))
+        else:
+            for observer in self._observers:
+                observer.quiet = value
+
+
+    # Observer0D attributes and properties
     @property
     def pixel_samples(self):
         # The number of samples to take per pixel.
@@ -331,12 +378,23 @@ class Observer0DGroup(Node):
             for observer in self._observers:
                 observer.samples_per_task = value
 
-    def observe(self):
+    @property
+    def pipelines(self):
         """
-        Starts the observation.
+        A list of all pipelines connected to each observer in the group
+        
+        :param list pipelist: list of lists/tuples of already instantiated pipelines
+        :rtype: list
         """
-        for observer in self._observers:
-            observer.observe()
+        return [observer.pipelines for observer in self._observers]
+
+    @pipelines.setter
+    def pipelines(self, pipelist):
+        if len(pipelist) == len(self._observers):
+            for observer, pipelines in zip(self._observers, pipelist):
+                observer.pipelines = pipelines
+        else:
+            raise ValueError('Length of pipelines list do not match number of observers in the group.')
 
     def connect_pipelines(self, pipeline_classes, keywords_list=None, suppress_display_progress=True):
         """

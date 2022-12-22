@@ -1,6 +1,6 @@
-# Copyright 2016-2018 Euratom
-# Copyright 2016-2018 United Kingdom Atomic Energy Authority
-# Copyright 2016-2018 Centro de Investigaciones Energéticas, Medioambientales y Tecnológicas
+# Copyright 2016-2022 Euratom
+# Copyright 2016-2022 United Kingdom Atomic Energy Authority
+# Copyright 2016-2022 Centro de Investigaciones Energéticas, Medioambientales y Tecnológicas
 #
 # Licensed under the EUPL, Version 1.1 or – as soon they will be approved by the
 # European Commission - subsequent versions of the EUPL (the "Licence");
@@ -15,6 +15,8 @@
 #
 # See the Licence for the specific language governing permissions and limitations
 # under the Licence.
+
+from .gaunt import MaxwellianFreeFreeGauntFactor
 
 
 cdef class AtomicData:
@@ -92,3 +94,14 @@ cdef class AtomicData:
 
     cpdef ZeemanStructure zeeman_structure(self, Line line, object b_field=None):
         raise NotImplementedError("The zeeman_structure() virtual method is not implemented for this atomic data source.")
+
+    cpdef FreeFreeGauntFactor free_free_gaunt_factor(self):
+        """
+        Returns the Maxwellian-averaged free-free Gaunt factor interpolated over the data
+        from Table A.1 in M.A. de Avillez and D. Breitschwerdt, 2015, Astron. & Astrophys. 580,
+        `A124 <https://www.aanda.org/articles/aa/full_html/2015/08/aa26104-15/aa26104-15.html>`_.
+
+        The Born approximation is used outside the interpolation range.
+        """
+
+        return MaxwellianFreeFreeGauntFactor()
