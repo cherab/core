@@ -8,6 +8,7 @@ Tools
    materials
    primitives
    observers
+   spectroscopy
    tomography
    utility
 
