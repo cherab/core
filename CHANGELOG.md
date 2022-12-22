@@ -22,6 +22,9 @@ New:
 * Add toroidal_mesh_from_polygon for making mesh for not fully-360 degrees axisymmetric elements. (#365)
 * Add common spectroscopic instruments: Polychromator, SurveySpectrometer, CzernyTurnerSpectrometer. (#299)
 * Add new classes for free-free Gaunt factors and improve accuracy of the Gaunt factor used in Bremsstrahlung emission model. (#352)
+* Add GaussianQuadrature integration method for Function1D. (#366)
+* Add integrator attribute to LineShapeModel to use with lineshapes that cannot be analytically integrated over a spectral bin. (#366)
+* Add a numerical integration of StarkBroadenedLine over the spectral bin. (#366)
 
 Bug Fixes:
 ----------

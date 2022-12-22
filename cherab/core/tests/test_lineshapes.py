@@ -18,17 +18,17 @@
 
 import unittest
 
-import os
 import numpy as np
-from scipy.special import erf
+from scipy.special import erf, hyp2f1
+from scipy.integrate import quadrature
 
 from raysect.core import Point3D, Vector3D
 from raysect.core.math.function.float import Arg1D, Constant1D
 from raysect.optical import Spectrum
 
 from cherab.core import Line
+from cherab.core.math.integrators import GaussianQuadrature
 from cherab.core.atomic import deuterium, nitrogen, ZeemanStructure
-from cherab.openadas import OpenADAS
 from cherab.tools.plasmas.slab import build_constant_slab_plasma
 from cherab.core.model import GaussianLine, MultipletLineShape, StarkBroadenedLine, ZeemanTriplet, ParametrisedZeemanTriplet, ZeemanMultiplet
 
@@ -116,7 +116,7 @@ class TestLineShapes(unittest.TestCase):
 
         for i in range(bins):
             self.assertAlmostEqual(multi_gaussian[i], spectrum.samples[i], delta=1e-10,
-                                   msg='GaussianLine.add_line() method gives a wrong value at {} nm.'.format(wavelengths[i]))
+                                   msg='MultipletLineShape.add_line() method gives a wrong value at {} nm.'.format(wavelengths[i]))
 
     def test_zeeman_triplet(self):
         # setting up a line shape model
@@ -167,7 +167,7 @@ class TestLineShapes(unittest.TestCase):
         for pol in ('no', 'pi', 'sigma'):
             for i in range(bins):
                 self.assertAlmostEqual(tri_gaussian[pol][i], spectrum[pol].samples[i], delta=1e-10,
-                                       msg='GaussianLine.add_line() method gives a wrong value at {} nm.'.format(wavelengths[i]))
+                                       msg='ZeemanTriplet.add_line() method gives a wrong value at {} nm.'.format(wavelengths[i]))
 
     def test_parametrised_zeeman_triplet(self):
         # setting up a line shape model
@@ -219,7 +219,7 @@ class TestLineShapes(unittest.TestCase):
         for pol in ('no', 'pi', 'sigma'):
             for i in range(bins):
                 self.assertAlmostEqual(tri_gaussian[pol][i], spectrum[pol].samples[i], delta=1e-10,
-                                       msg='GaussianLine.add_line() method gives a wrong value at {} nm.'.format(wavelengths[i]))
+                                       msg='ParametrisedZeemanTriplet.add_line() method gives a wrong value at {} nm.'.format(wavelengths[i]))
 
     def test_zeeman_multiplet(self):
         # setting up a line shape model
@@ -277,14 +277,15 @@ class TestLineShapes(unittest.TestCase):
         for pol in ('no', 'pi', 'sigma'):
             for i in range(bins):
                 self.assertAlmostEqual(tri_gaussian[pol][i], spectrum[pol].samples[i], delta=1e-10,
-                                       msg='GaussianLine.add_line() method gives a wrong value at {} nm.'.format(wavelengths[i]))
+                                       msg='ZeemanMultiplet.add_line() method gives a wrong value at {} nm.'.format(wavelengths[i]))
 
     def test_stark_broadened_line(self):
         # setting up a line shape model
         line = Line(deuterium, 0, (6, 2))  # D-delta line
         target_species = self.plasma.composition.get(line.element, line.charge)
         wavelength = 656.104
-        stark_line = StarkBroadenedLine(line, wavelength, target_species, self.plasma)
+        integrator = GaussianQuadrature(relative_tolerance=1.e-5)
+        stark_line = StarkBroadenedLine(line, wavelength, target_species, self.plasma, integrator=integrator)
 
         # spectrum parameters
         min_wavelength = wavelength - 0.2
@@ -304,14 +305,19 @@ class TestLineShapes(unittest.TestCase):
         te = self.plasma.electron_distribution.effective_temperature(point.x, point.y, point.z)
         lambda_1_2 = cij * ne**aij / (te**bij)
 
+        lorenzian_cutoff_gamma = 50
+        stark_norm_coeff = 4 * lorenzian_cutoff_gamma * hyp2f1(0.4, 1, 1.4, -(2 * lorenzian_cutoff_gamma)**2.5)
+        norm = (0.5 * lambda_1_2)**1.5 / stark_norm_coeff
+
         wavelengths, delta = np.linspace(min_wavelength, max_wavelength, bins + 1, retstep=True)
-        stark_lineshape = 1 / ((np.abs(wavelengths - wavelength))**2.5 + (0.5 * lambda_1_2)**2.5)
-        stark_lineshape = 0.5 * (stark_lineshape[1:] + stark_lineshape[:-1])
-        stark_lineshape /= stark_lineshape.sum() * delta
+
+        def stark_lineshape(x):
+            return norm / ((np.abs(x - wavelength))**2.5 + (0.5 * lambda_1_2)**2.5)
 
         for i in range(bins):
-            self.assertAlmostEqual(stark_lineshape[i], spectrum.samples[i], delta=1e-10,
-                                   msg='GaussianLine.add_line() method gives a wrong value at {} nm.'.format(wavelengths[i]))
+            stark_bin = quadrature(stark_lineshape, wavelengths[i], wavelengths[i + 1], rtol=integrator.relative_tolerance)[0] / delta
+            self.assertAlmostEqual(stark_bin, spectrum.samples[i], delta=1e-9,
+                                   msg='StarkBroadenedLine.add_line() method gives a wrong value at {} nm.'.format(wavelengths[i]))
 
 
 if __name__ == '__main__':
