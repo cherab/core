@@ -24,6 +24,7 @@ cimport numpy as np
 from raysect.optical cimport Spectrum, Point3D, Vector3D
 from cherab.core cimport Line, Species, Plasma, Beam
 from cherab.core.math cimport Function1D, Function2D
+from cherab.core.math.integrators cimport Integrator1D
 from cherab.core.atomic.zeeman cimport ZeemanStructure
 
 
@@ -41,6 +42,7 @@ cdef class LineShapeModel:
         double wavelength
         Species target_species
         Plasma plasma
+        Integrator1D integrator
 
     cpdef Spectrum add_line(self, double radiance, Point3D point, Vector3D direction, Spectrum spectrum)
 
