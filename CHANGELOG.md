@@ -15,6 +15,8 @@ New:
 * Add Thomson Scattering model. (#97)
 * Add Generomak core plasma profiles. (#360)
 * Add toroidal_mesh_from_polygon for making mesh for not fully-360 degrees axisymmetric elements. (#365)
+* Add common spectroscopic instruments: Polychromator, SurveySpectrometer, CzernyTurnerSpectrometer. (#299)
+
 
 Bug Fixes:
 ----------
