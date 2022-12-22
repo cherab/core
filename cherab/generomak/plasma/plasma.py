@@ -125,7 +125,6 @@ def get_edge_interpolators():
             mesh_interp["composition"][elem_name][stage]["temperature"] = t
             mesh_interp["composition"][elem_name][stage]["density"] = n
             mesh_interp["composition"][elem_name][stage]["velocity"] = v
-            mesh_interp["composition"][elem_name][stage]["element"] = stage_data["element"]
 
     return mesh_interp.freeze()
 
@@ -193,6 +192,84 @@ def get_edge_plasma(atomic_data=None, parent=None, name="Generomak edge plasma")
     return get_plasma(equilibrium=equilibrium, distributions=distributions,
                       r_range=r_range, z_range=z_range, atomic_data=atomic_data,
                       parent=parent, name=name)
+
+
+def load_core_profiles():
+    """
+    Loads Generomak default core plasma profiles.
+
+    Return a single dictionary with available core plasma species temperature and
+    density profiles on a magnetic surface coordinate grid.
+
+    :return: dictionary with electron and plasma composition profiles
+    """
+    profiles_dir = os.path.join(os.path.dirname(__file__), "data/core")
+
+    core_data = RecursiveDict()
+    path = os.path.join(profiles_dir, "psi_norm.json")
+    with open(path, "r") as fhl:
+        core_data["psi_norm"] = json.load(fhl)["psi_norm"]
+
+    path = os.path.join(profiles_dir, "electrons.json")
+    with open(path, "r") as fhl:
+        core_data["electron"] = json.load(fhl)
+
+    saved_elements = (hydrogen, carbon)
+
+    for element in saved_elements:
+        for chrg in range(element.atomic_number + 1):
+            path = os.path.join(profiles_dir, "{}{:d}.json".format(element.name, chrg))
+
+            with open(path, "r") as fhl:
+                file_data = json.load(fhl)
+                element_name = file_data["element"]
+                charge = file_data["charge"]
+
+                core_data["composition"][element_name][charge] = file_data
+
+    return core_data.freeze()
+
+
+def get_core_interpolators():
+    """
+    Provides 1d interpolators for Generomak default core profiles.
+
+    :return: dictionary holding 1D interpolators of density,
+             temperature and velocity for plasma species
+    """
+
+    profiles = load_core_profiles()
+
+    core_interp = RecursiveDict()
+
+    te = Interpolator1DArray(profiles["psi_norm"], profiles["electron"]["temperature"], 'cubic', 'nearest', 1.e-5)
+    ne = Interpolator1DArray(profiles["psi_norm"], profiles["electron"]["density"], 'cubic', 'nearest', 1.e-5)
+    ve_tor = Interpolator1DArray(profiles["psi_norm"], profiles["electron"]["vtor"], 'cubic', 'nearest', 1.e-5)
+    ve_pol = Interpolator1DArray(profiles["psi_norm"], profiles["electron"]["vpol"], 'cubic', 'nearest', 1.e-5)
+    ve_norm = Interpolator1DArray(profiles["psi_norm"], profiles["electron"]["vnorm"], 'cubic', 'nearest', 1.e-5)
+
+    core_interp["electron"]["f1d_temperature"] = te
+    core_interp["electron"]["f1d_density"] = ne
+    core_interp["electron"]["f1d_vtor"] = ve_tor
+    core_interp["electron"]["f1d_vpol"] = ve_pol
+    core_interp["electron"]["f1d_vnorm"] = ve_norm
+
+    for elem_name, elem_data in profiles["composition"].items():
+        for stage, stage_data in elem_data.items():
+
+            t = Interpolator1DArray(profiles["psi_norm"], stage_data["temperature"], 'cubic', 'nearest', 1.e-5)
+            n = Interpolator1DArray(profiles["psi_norm"], stage_data["density"], 'cubic', 'nearest', 1.e-5)
+            vtor = Interpolator1DArray(profiles["psi_norm"], stage_data["vtor"], 'cubic', 'nearest', 1.e-5)
+            vpol = Interpolator1DArray(profiles["psi_norm"], stage_data["vpol"], 'cubic', 'nearest', 1.e-5)
+            vnorm = Interpolator1DArray(profiles["psi_norm"], stage_data["vnorm"], 'cubic', 'nearest', 1.e-5)
+
+            core_interp["composition"][elem_name][stage]["f1d_temperature"] = t
+            core_interp["composition"][elem_name][stage]["f1d_density"] = n
+            core_interp["composition"][elem_name][stage]["f1d_vtor"] = vtor
+            core_interp["composition"][elem_name][stage]["f1d_vpol"] = vpol
+            core_interp["composition"][elem_name][stage]["f1d_vnorm"] = vnorm
+
+    return core_interp.freeze()
 
 
 def get_double_parabola(v_min, v_max, convexity, concavity, xmin=0, xmax=1):
@@ -417,7 +494,7 @@ def get_core_profiles_description(lcfs_values=None, core_args=None):
 
     # solve ionisation balance
     openadas = OpenADAS(permit_extrapolation=True)
-    psin_1d = np.linspace(0, 1, 256)
+    psin_1d = np.append(1. - np.geomspace(1.e-4, 1, 1023)[::-1], [1.])  # density profiles are sharp near psin=1
     density_profiles = {}
     density_profiles["carbon"] = interpolators1d_from_elementdensity(openadas, carbon, psin_1d, carbon_total_density,
                                                                      profiles["electron"]["f1d_density"],
@@ -451,15 +528,17 @@ def get_core_distributions(profiles=None, equilibrium=None):
     """
     Returns a dictionary of core plasma species Maxwellian distributions.
 
-    :param profiles: Dictionary of core particle profiles.  The dictionary has to have the same form
-                     as the one returned by the function get_core_profiles_description.
-                     The default value is the value returned by the call get_core_profiles_description().
+    :param profiles: Dictionary with core interpolators. The dictionary has to have
+                     the same form as the one returned by the function
+                     get_core_profiles_description or get_core_interpolators.
+                     The default value is the value returned by the call
+                     get_core_interpolators().
     :param equilibrium: an instance of EFITEquilibrium.
     :return:  dictionary of core plasma species with Maxwellian distribution
     """
     # get core profile data if not passed sa argument
     if profiles is None:
-        profiles = get_core_profiles_description()
+        profiles = get_core_interpolators()
 
     # load plasma equilibrium if not passed as argument
     if equilibrium is None:
@@ -504,11 +583,11 @@ def get_full_profiles(equilibrium=None, core_profiles=None, edge_profiles=None, 
 
     :param equilibrium: an instance of EFITEquilibrium. The default value is the value returned by
                         load_equilibrium().
-    :param core_profiles: Dictionary of core particle profiles.  The dictionary has to have
+    :param core_profiles: Dictionary with core interpolators. The dictionary has to have
                           the same form as the one returned by the function
-                          get_core_profiles_description.
+                          get_core_profiles_description or get_core_interpolators.
                           The default value is the value returned by the call
-                          get_core_profiles_description().
+                          get_core_interpolators().
     :param edge_profiles: Dictionary with edge interpolators in the shape
                           returned by the get_edge_interpolators function.
                           If not specified, will use the value returned by
@@ -524,7 +603,7 @@ def get_full_profiles(equilibrium=None, core_profiles=None, edge_profiles=None, 
 
     equilibrium = equilibrium or load_equilibrium()
 
-    core_profiles = core_profiles or get_core_profiles_description()
+    core_profiles = core_profiles or get_core_interpolators()
 
     edge_profiles = edge_profiles or get_edge_interpolators()
 

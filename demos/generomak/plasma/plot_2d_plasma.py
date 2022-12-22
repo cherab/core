@@ -28,7 +28,7 @@ from matplotlib import pyplot as plt
 from cherab.core.math import sample3d
 from cherab.core.atomic.elements import hydrogen, carbon
 
-from cherab.generomak.plasma.plasma import get_core_plasma, get_edge_plasma, get_plasma
+from cherab.generomak.plasma import get_core_plasma, get_edge_plasma, get_plasma
 
 
 def plot_profiles(core_profile, edge_profile, full_profile, r_range, z_range, label):

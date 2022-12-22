@@ -30,7 +30,7 @@ from cherab.core.math import sample2d
 from cherab.core.utility import RecursiveDict
 
 from cherab.generomak.equilibrium import load_equilibrium
-from cherab.generomak.plasma.plasma import get_core_profiles_description, load_edge_profiles, get_full_profiles
+from cherab.generomak.plasma.plasma import get_core_interpolators, load_edge_profiles, get_full_profiles
 
 
 def plot_profiles(core_profile, edge_mesh, edge_data, full_profile, label):
@@ -90,7 +90,7 @@ def plot_profiles(core_profile, edge_mesh, edge_data, full_profile, label):
 equilibrium = load_equilibrium()
 
 # load 1D core profiles, f(psi_norm)
-core_profiles_1d = get_core_profiles_description()
+core_profiles_1d = get_core_interpolators()
 
 # load 2D edge profiles defined on a quadrilateral mesh
 edge_data = load_edge_profiles()
