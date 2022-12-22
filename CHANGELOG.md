@@ -25,6 +25,7 @@ New:
 * Add GaussianQuadrature integration method for Function1D. (#366)
 * Add integrator attribute to LineShapeModel to use with lineshapes that cannot be analytically integrated over a spectral bin. (#366)
 * Add a numerical integration of StarkBroadenedLine over the spectral bin. (#366)
+* Add Generomak full plasma profiles obtained by blending the core and edge profiles. (#372)
 
 Bug Fixes:
 ----------
