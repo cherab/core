@@ -16,19 +16,24 @@
 # See the Licence for the specific language governing permissions and limitations
 # under the Licence.
 
-cdef:
+from cherab.core.math cimport Function2D
 
-    # sourced c standard maths library
-    double RECIP_2_PI = 1 / (2 * M_PI)
-    double RECIP_4_PI = 1 / (4 * M_PI)
-    double DEGREES_TO_RADIANS = M_PI / 180
-    double RADIANS_TO_DEGREES = 180 / M_PI
 
-    # sourced from NIST, CODATA 2018: https://physics.nist.gov/cuu/Constants/Table/allascii.txt
-    double ATOMIC_MASS = 1.66053906660e-27
-    double ELEMENTARY_CHARGE = 1.602176634e-19
-    double SPEED_OF_LIGHT = 299792458.0
-    double PLANCK_CONSTANT = 6.62607015e-34
-    double ELECTRON_CLASSICAL_RADIUS = 2.8179403262e-15
-    double ELECTRON_REST_MASS = 9.1093837015e-31
-    double RYDBERG_CONSTANT_EV = 13.605693122994
+cdef class FreeFreeGauntFactor():
+
+    cpdef double evaluate(self, double z, double temperature, double wavelength) except? -1e999
+
+
+cdef class InterpolatedFreeFreeGauntFactor(FreeFreeGauntFactor):
+
+    cdef:
+        readonly tuple u_range, gamma2_range
+        readonly dict raw_data
+        double _u_min, _u_max, _gamma2_min, _gamma2_max
+        Function2D _gaunt_factor
+
+
+cdef class MaxwellianFreeFreeGauntFactor(InterpolatedFreeFreeGauntFactor):
+
+    pass
+

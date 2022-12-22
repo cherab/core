@@ -6,3 +6,4 @@ Atomic Data
    elements_and_isotopes
    emission_lines
    rate_coefficients
+   gaunt_factors
