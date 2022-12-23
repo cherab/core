@@ -1,6 +1,6 @@
-# Copyright 2016-2018 Euratom
-# Copyright 2016-2018 United Kingdom Atomic Energy Authority
-# Copyright 2016-2018 Centro de Investigaciones Energéticas, Medioambientales y Tecnológicas
+# Copyright 2016-2022 Euratom
+# Copyright 2016-2022 United Kingdom Atomic Energy Authority
+# Copyright 2016-2022 Centro de Investigaciones Energéticas, Medioambientales y Tecnológicas
 #
 # Licensed under the EUPL, Version 1.1 or – as soon they will be approved by the
 # European Commission - subsequent versions of the EUPL (the "Licence");
@@ -31,4 +31,4 @@ cdef:
     double PLANCK_CONSTANT = 6.62607015e-34
     double ELECTRON_CLASSICAL_RADIUS = 2.8179403262e-15
     double ELECTRON_REST_MASS = 9.1093837015e-31
-
+    double RYDBERG_CONSTANT_EV = 13.605693122994
