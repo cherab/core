@@ -6,11 +6,13 @@ Release 1.4.0 (TBD)
 
 API changes:
 * Spectroscopic observers and their groups are deprecated and replaced by groups based on Raysect's 0D observers. (#332)
+* Support for Python 3.6 is dropped. It may still work, but is no longer actively tested.
 
 Bug fixes:
 * Fixed generomak plasma edge data paths.
 * Fix and improve OpenCL utility functions. (#358)
-* Fix wavelength indexing in Bremsstrahlung emission model. (#352)
+* Fixed Bremsstrahlung trapezium evaluation (#384).
+* Fixed generomak plasma edge data paths.
 
 New:
 * Make f_profile (current flux) a read-only attribute of EFITEquilibrium. (#355)
@@ -26,12 +28,8 @@ New:
 * Add integrator attribute to LineShapeModel to use with lineshapes that cannot be analytically integrated over a spectral bin. (#366)
 * Add a numerical integration of StarkBroadenedLine over the spectral bin. (#366)
 * Add Generomak full plasma profiles obtained by blending the core and edge profiles. (#372)
-
-Bug Fixes:
-----------
-* Fixed Bremsstrahlung trapezium evaluation (#384).
-* Fixed generomak plasma edge data paths.
-* Fix and improve OpenCL utility functions. (#358)
+* Clean up build/install dependencies. (#353)
+* Test against Python 3.10 and latest released Numpy. Drop Python 3.6 and older Numpy from tests. (#391)
 
 
 Release 1.3.0 (8 Dec 2021)
