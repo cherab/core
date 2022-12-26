@@ -34,8 +34,8 @@ from .clamp import ClampInput1D, ClampInput2D, ClampInput3D
 from .mappers import IsoMapper2D, IsoMapper3D
 from .mappers import Swizzle2D, Swizzle3D
 from .mappers import AxisymmetricMapper, VectorAxisymmetricMapper
-from .mappers import CylindricalMapper, VectorCylindricalMapper
-from .mappers import PeriodicMapper1D, PeriodicMapper2D, PeriodicMapper3D
-from .mappers import VectorPeriodicMapper1D, VectorPeriodicMapper2D, VectorPeriodicMapper3D
 from .mask import PolygonMask2D
 from .slice import Slice2D, Slice3D
+from .transform import CylindricalTransform, VectorCylindricalTransform
+from .transform import PeriodicTransform1D, PeriodicTransform2D, PeriodicTransform3D
+from .transform import VectorPeriodicTransform1D, VectorPeriodicTransform2D, VectorPeriodicTransform3D

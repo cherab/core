@@ -36,6 +36,9 @@ class TestMappers(unittest.TestCase):
         def f3d(x, y, z): return x*x*np.exp(y)-2*z*y
         self.function3d = f3d
 
+        def vecf2d(r, z): return Vector3D(0, r, z)
+        self.vectorfunction2d = vecf2d
+
 
     def test_iso_mapper_2d(self):
         """Composition of a 1D and a 2D function."""
@@ -143,111 +146,16 @@ class TestMappers(unittest.TestCase):
         """An error must be raised if the given argument is not callable."""
         self.assertRaises(TypeError, mappers.AxisymmetricMapper, "blah")
 
-    def test_cylindrical_mapper(self):
-        """Cylindrical mapper."""
-        def f3d(r, phi, z): return r * np.cos(phi) + z
-        cyl_func = mappers.CylindricalMapper(f3d)
-        self.assertAlmostEqual(cyl_func(1., 1., 0.5),
-                               f3d(np.sqrt(2.), 0.25 * np.pi, 0.5),
-                               places=10)
-
-    def test_cylindrical_mapper_invalid_arg(self):
-        """An error must be raised if the given argument is not callable."""
-        self.assertRaises(TypeError, mappers.CylindricalMapper, "blah")
-
-    def test_vector_cylindrical_mapper(self):
-        """Cylindrical mapper."""
-        def f3d(r, phi, z): return Vector3D(np.sin(phi), r * z, np.cos(phi))
-        cyl_func = mappers.VectorCylindricalMapper(f3d)
-        vec1 = cyl_func(1., 1., 1.)
-        vec2 = Vector3D(-0.5, 1.5, 1 / np.sqrt(2))
+    def test_vector_axisymmetric_mapper(self):
+        """Vector axisymmetric mapper."""
+        symm_func = mappers.VectorAxisymmetricMapper(self.vectorfunction2d)
+        vec1 = symm_func(1., 1., 1.)
+        vec2 = Vector3D(-1., 1., 1.)
         np.testing.assert_almost_equal([vec1.x, vec1.y, vec1.z], [vec2.x, vec2.y, vec2.z], decimal=10)
 
-    def test_vector_cylindrical_mapper_invalid_arg(self):
+    def test_vector_axisymmetric_mapper_invalid_arg(self):
         """An error must be raised if the given argument is not callable."""
-        self.assertRaises(TypeError, mappers.VectorCylindricalMapper, "blah")
-
-    def test_periodic_mapper_1d(self):
-        """1D periodic mapper"""
-        period_func = mappers.PeriodicMapper1D(self.function1d, np.pi)
-        self.assertAlmostEqual(period_func(1.4 * np.pi),
-                               self.function1d(0.4 * np.pi),
-                               places=10)
-        self.assertAlmostEqual(period_func(-0.4 * np.pi),
-                               self.function1d(0.6 * np.pi),
-                               places=10)
-
-    def test_periodic_mapper_1d_invalid_arg(self):
-        """1D periodic mapper. Invalid arguments."""
-        # 1st argument is not callable
-        self.assertRaises(TypeError, mappers.PeriodicMapper1D, "blah", np.pi)
-        # period is not a number
-        self.assertRaises(TypeError, mappers.PeriodicMapper1D, self.function1d, "blah")
-        # period is negative
-        self.assertRaises(ValueError, mappers.PeriodicMapper1D, self.function1d, -1)
-
-    def test_periodic_mapper_2d(self):
-        """2D periodic mapper"""
-        period_func = mappers.PeriodicMapper2D(self.function2d, 1, np.pi)
-        self.assertAlmostEqual(period_func(-0.4, 1.4 * np.pi),
-                               self.function2d(0.6, 0.4 * np.pi),
-                               places=10)
-        # Periodic only along x
-        period_func = mappers.PeriodicMapper2D(self.function2d, 1., 0)
-        self.assertAlmostEqual(period_func(-0.4, 1.4 * np.pi),
-                               self.function2d(0.6, 1.4 * np.pi),
-                               places=10)
-        # Periodic only along y
-        period_func = mappers.PeriodicMapper2D(self.function2d, 0, np.pi)
-        self.assertAlmostEqual(period_func(-0.4, 1.4 * np.pi),
-                               self.function2d(-0.4, 0.4 * np.pi),
-                               places=10)
-
-    def test_periodic_mapper_2d_invalid_arg(self):
-        """2D periodic mapper. Invalid arguments."""
-        # 1st argument is not callable
-        self.assertRaises(TypeError, mappers.PeriodicMapper2D, "blah", np.pi, np.pi)
-        # period is not a number
-        self.assertRaises(TypeError, mappers.PeriodicMapper2D, self.function2d, "blah", np.pi)
-        self.assertRaises(TypeError, mappers.PeriodicMapper2D, self.function2d, np.pi, "blah")
-        # period is negative
-        self.assertRaises(ValueError, mappers.PeriodicMapper2D, self.function2d, -1, np.pi)
-        self.assertRaises(ValueError, mappers.PeriodicMapper2D, self.function2d, np.pi, -1)
-
-    def test_periodic_mapper_3d(self):
-        """3D periodic mapper"""
-        period_func = mappers.PeriodicMapper3D(self.function3d, 1, 1, 1)
-        self.assertAlmostEqual(period_func(-0.4, 1.4, 2.1),
-                               self.function3d(0.6, 0.4, 0.1),
-                               places=10)
-        # Periodic only along y and z
-        period_func = mappers.PeriodicMapper3D(self.function3d, 0, 1, 1)
-        self.assertAlmostEqual(period_func(-0.4, 1.4, 2.1),
-                               self.function3d(-0.4, 0.4, 0.1),
-                               places=10)
-        # Periodic only along x and z
-        period_func = mappers.PeriodicMapper3D(self.function3d, 1, 0, 1)
-        self.assertAlmostEqual(period_func(-0.4, 1.4, 2.1),
-                               self.function3d(0.6, 1.4, 0.1),
-                               places=10)
-        # Periodic only along x and y
-        period_func = mappers.PeriodicMapper3D(self.function3d, 1, 1, 0)
-        self.assertAlmostEqual(period_func(-0.4, 1.4, 2.1),
-                               self.function3d(0.6, 0.4, 2.1),
-                               places=10)
-
-    def test_periodic_mapper_3d_invalid_arg(self):
-        """2D periodic mapper. Invalid arguments."""
-        # 1st argument is not callable
-        self.assertRaises(TypeError, mappers.PeriodicMapper3D, "blah", np.pi, np.pi, np.pi)
-        # period is not a number
-        self.assertRaises(TypeError, mappers.PeriodicMapper3D, self.function3d, "blah", np.pi, np.pi)
-        self.assertRaises(TypeError, mappers.PeriodicMapper3D, self.function3d, np.pi, "blah", np.pi)
-        self.assertRaises(TypeError, mappers.PeriodicMapper3D, self.function3d, np.pi, np.pi, "blah")
-        # period is negative
-        self.assertRaises(ValueError, mappers.PeriodicMapper3D, self.function3d, -1, np.pi, np.pi)
-        self.assertRaises(ValueError, mappers.PeriodicMapper3D, self.function3d, np.pi, -1, np.pi)
-        self.assertRaises(ValueError, mappers.PeriodicMapper3D, self.function3d, np.pi, np.pi, -1)
+        self.assertRaises(TypeError, mappers.VectorAxisymmetricMapper, "blah")
 
 
 if __name__ == '__main__':
