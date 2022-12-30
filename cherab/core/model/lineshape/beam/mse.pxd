@@ -1,6 +1,8 @@
-# Copyright 2016-2022 Euratom
-# Copyright 2016-2022 United Kingdom Atomic Energy Authority
-# Copyright 2016-2022 Centro de Investigaciones Energéticas, Medioambientales y Tecnológicas
+# cython: language_level=3
+
+# Copyright 2016-2023 Euratom
+# Copyright 2016-2023 United Kingdom Atomic Energy Authority
+# Copyright 2016-2023 Centro de Investigaciones Energéticas, Medioambientales y Tecnológicas
 #
 # Licensed under the EUPL, Version 1.1 or – as soon they will be approved by the
 # European Commission - subsequent versions of the EUPL (the "Licence");
@@ -16,19 +18,13 @@
 # See the Licence for the specific language governing permissions and limitations
 # under the Licence.
 
-from libc.math cimport M_PI
+from cherab.core.math cimport Function1D, Function2D
+from cherab.core.model.lineshape.beam.base cimport BeamLineShapeModel
 
-cdef:
-    double RECIP_2_PI
-    double RECIP_4_PI
-    double DEGREES_TO_RADIANS
-    double RADIANS_TO_DEGREES
-    double ATOMIC_MASS
-    double ELEMENTARY_CHARGE
-    double SPEED_OF_LIGHT
-    double PLANCK_CONSTANT
-    double HC_EV_NM
-    double ELECTRON_CLASSICAL_RADIUS
-    double ELECTRON_REST_MASS
-    double RYDBERG_CONSTANT_EV
-    double BOHR_MAGNETON
+
+cdef class BeamEmissionMultiplet(BeamLineShapeModel):
+
+    cdef:
+
+        Function2D _sigma_to_pi
+        Function1D _sigma1_to_sigma0, _pi2_to_pi3, _pi4_to_pi3

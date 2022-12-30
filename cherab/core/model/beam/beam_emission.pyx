@@ -22,7 +22,8 @@
 cimport cython
 from libc.math cimport sqrt
 from raysect.core cimport Point3D, Vector3D
-from cherab.core cimport Species, Plasma, Beam, Element, BeamEmissionPEC, Spectrum, AtomicData
+from raysect.optical cimport Spectrum
+from cherab.core cimport Species, Plasma, Beam, Element, BeamEmissionPEC, AtomicData
 from cherab.core.math.function cimport autowrap_function1d, autowrap_function2d
 from cherab.core.atomic.elements import Isotope, hydrogen
 from cherab.core.model.lineshape cimport BeamEmissionMultiplet

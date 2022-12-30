@@ -18,7 +18,7 @@
 
 from raysect.optical cimport Spectrum, Point3D, Vector3D
 from cherab.core cimport Plasma, AtomicData
-from cherab.core.model.lineshape cimport GaussianLine, LineShapeModel
+from cherab.core.model.lineshape cimport GaussianLine
 from cherab.core.utility.constants cimport RECIP_4_PI
 
 
