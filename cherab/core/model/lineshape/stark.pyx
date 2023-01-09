@@ -254,17 +254,19 @@ cdef class StarkBroadenedLine(ZeemanLineShapeModel):
         if fwhm_lorentz == 0 and fwhm_gauss == 0:
             return spectrum
 
-        # calculating total FWHM
+        # calculating full FWHM
         if fwhm_gauss <= fwhm_lorentz:
             fwhm_ratio = fwhm_gauss / fwhm_lorentz
             fwhm_full = self._fwhm_poly_coeff_gauss[0]
             for i in range(1, 7):
                 fwhm_full += self._fwhm_poly_coeff_gauss[i] * fwhm_ratio**i
+            fwhm_full *= fwhm_lorentz
         else:
             fwhm_ratio = fwhm_lorentz / fwhm_gauss
             fwhm_full = self._fwhm_poly_coeff_lorentz[0]
             for i in range(1, 7):
                 fwhm_full += self._fwhm_poly_coeff_lorentz[i] * fwhm_ratio**i
+            fwhm_full *= fwhm_gauss
 
         sigma = fwhm_full / _SIGMA2FWHM
 
@@ -274,11 +276,11 @@ cdef class StarkBroadenedLine(ZeemanLineShapeModel):
         if fwhm_lorentz_to_total < 0.01:
             lorentz_weight = 0
             fwhm_full = 0  # force add_lorentzian_line() to immediately return
-        elif fwhm_lorentz_to_total > 0.9999:
+        elif fwhm_lorentz_to_total > 0.999:
             lorentz_weight = 1
             sigma = 0  # force add_gaussian_line() to immediately return
         else:
-            lorentz_weight = self._weight_poly_coeff[i]
+            lorentz_weight = self._weight_poly_coeff[0]
             for i in range(1, 6):
                 lorentz_weight += self._weight_poly_coeff[i] * log(fwhm_lorentz_to_total)**i
             lorentz_weight = exp(lorentz_weight)
