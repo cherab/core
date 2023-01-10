@@ -34,7 +34,7 @@ from cherab.tools.plasmas import GaussianVolume
 
 
 # tunables
-ion_density = 1e20
+ion_density = 2e20
 sigma = 0.25
 
 # setup scenegraph
@@ -99,4 +99,5 @@ plt.plot(s.wavelengths, s.samples)
 plt.xlabel('Wavelength (nm)')
 plt.ylabel('Radiance (W/m^2/str/nm)')
 plt.title('Observed Spectrum')
+plt.yscale('log')
 plt.show()
