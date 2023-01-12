@@ -300,23 +300,75 @@ class TestLineShapes(unittest.TestCase):
         spectrum = stark_line.add_line(radiance, point, direction, spectrum)
 
         # validating
+        velocity = target_species.distribution.bulk_velocity(point.x, point.y, point.z)
+        doppler_factor = (1 + velocity.dot(direction.normalise()) / SPEED_OF_LIGHT)
+
+        b_field = self.plasma.b_field(point.x, point.y, point.z)
+        b_magn = b_field.length
+        photon_energy = HC_EV_NM / wavelength
+        wl_sigma_plus = HC_EV_NM / (photon_energy - BOHR_MAGNETON * b_magn)
+        wl_sigma_minus = HC_EV_NM / (photon_energy + BOHR_MAGNETON * b_magn)
+        cos_sqr = (b_field.dot(direction.normalise()) / b_magn)**2
+        sin_sqr = 1. - cos_sqr
+
+        # Gaussian parameters
+        temperature = target_species.distribution.effective_temperature(point.x, point.y, point.z)
+        sigma = np.sqrt(temperature * ELEMENTARY_CHARGE / (line.element.atomic_weight * ATOMIC_MASS)) * wavelength / SPEED_OF_LIGHT
+        fwhm_gauss = 2 * np.sqrt(2 * np.log(2)) * sigma
+
+        # Lorentzian parameters
         cij, aij, bij = stark_line.STARK_MODEL_COEFFICIENTS_DEFAULT[line]
         ne = self.plasma.electron_distribution.density(point.x, point.y, point.z)
         te = self.plasma.electron_distribution.effective_temperature(point.x, point.y, point.z)
-        lambda_1_2 = cij * ne**aij / (te**bij)
+        fwhm_lorentz = cij * ne**aij / (te**bij)
 
-        lorenzian_cutoff_gamma = 50
-        stark_norm_coeff = 4 * lorenzian_cutoff_gamma * hyp2f1(0.4, 1, 1.4, -(2 * lorenzian_cutoff_gamma)**2.5)
-        norm = (0.5 * lambda_1_2)**1.5 / stark_norm_coeff
+        # Total FWHM
+        if fwhm_gauss <= fwhm_lorentz:
+            fwhm_poly_coeff = [1., 0, 0.57575, 0.37902, -0.42519, -0.31525, 0.31718]
+            fwhm_ratio = fwhm_gauss / fwhm_lorentz
+            fwhm_full = fwhm_lorentz * np.poly1d(fwhm_poly_coeff[::-1])(fwhm_ratio)
+        else:
+            fwhm_poly_coeff = [1., 0.15882, 1.04388, -1.38281, 0.46251, 0.82325, -0.58026]
+            fwhm_ratio = fwhm_lorentz / fwhm_gauss
+            fwhm_full = fwhm_gauss * np.poly1d(fwhm_poly_coeff[::-1])(fwhm_ratio)
 
         wavelengths, delta = np.linspace(min_wavelength, max_wavelength, bins + 1, retstep=True)
 
-        def stark_lineshape(x):
-            return norm / ((np.abs(x - wavelength))**2.5 + (0.5 * lambda_1_2)**2.5)
+        # Gaussian part
+        temp = 2 * np.sqrt(np.log(2)) / fwhm_full
+        erfs = erf((wavelengths - wavelength * doppler_factor) * temp)
+        gaussian = 0.25 * sin_sqr * (erfs[1:] - erfs[:-1]) / delta
+        erfs = erf((wavelengths - wl_sigma_plus * doppler_factor) * temp)
+        gaussian += 0.5 * (0.25 * sin_sqr + 0.5 * cos_sqr) * (erfs[1:] - erfs[:-1]) / delta
+        erfs = erf((wavelengths - wl_sigma_minus * doppler_factor) * temp)
+        gaussian += 0.5 * (0.25 * sin_sqr + 0.5 * cos_sqr) * (erfs[1:] - erfs[:-1]) / delta
+
+        # Lorentzian part
+        lorenzian_cutoff_gamma = 50
+        stark_norm_coeff = 4 * lorenzian_cutoff_gamma * hyp2f1(0.4, 1, 1.4, -(2 * lorenzian_cutoff_gamma)**2.5)
+        norm = (0.5 * fwhm_full)**1.5 / stark_norm_coeff
+
+        def stark_lineshape_pi(x):
+            return norm / ((np.abs(x - wavelength * doppler_factor))**2.5 + (0.5 * fwhm_full)**2.5)
+
+        def stark_lineshape_sigma_plus(x):
+            return norm / ((np.abs(x - wl_sigma_plus * doppler_factor))**2.5 + (0.5 * fwhm_full)**2.5)
+
+        def stark_lineshape_sigma_minus(x):
+            return norm / ((np.abs(x - wl_sigma_minus * doppler_factor))**2.5 + (0.5 * fwhm_full)**2.5)
+
+        weight_poly_coeff = [5.14820e-04, 1.38821e+00, -9.60424e-02, -3.83995e-02, -7.40042e-03, -5.47626e-04]
+        lorentz_weight = np.exp(np.poly1d(weight_poly_coeff[::-1])(np.log(fwhm_lorentz / fwhm_full)))
 
         for i in range(bins):
-            stark_bin = quadrature(stark_lineshape, wavelengths[i], wavelengths[i + 1], rtol=integrator.relative_tolerance)[0] / delta
-            self.assertAlmostEqual(stark_bin, spectrum.samples[i], delta=1e-9,
+            lorentz_bin = 0.5 * sin_sqr * quadrature(stark_lineshape_pi, wavelengths[i], wavelengths[i + 1],
+                                                     rtol=integrator.relative_tolerance)[0] / delta
+            lorentz_bin += (0.25 * sin_sqr + 0.5 * cos_sqr) * quadrature(stark_lineshape_sigma_plus, wavelengths[i], wavelengths[i + 1],
+                                                                         rtol=integrator.relative_tolerance)[0] / delta
+            lorentz_bin += (0.25 * sin_sqr + 0.5 * cos_sqr) * quadrature(stark_lineshape_sigma_minus, wavelengths[i], wavelengths[i + 1],
+                                                                         rtol=integrator.relative_tolerance)[0] / delta
+            ref_value = lorentz_bin * lorentz_weight + gaussian[i] * (1. - lorentz_weight)
+            self.assertAlmostEqual(ref_value, spectrum.samples[i], delta=1e-9,
                                    msg='StarkBroadenedLine.add_line() method gives a wrong value at {} nm.'.format(wavelengths[i]))
 
 
