@@ -261,9 +261,10 @@ cdef class ParametrisedZeemanTriplet(ZeemanLineShapeModel):
         except KeyError:
             raise ValueError('Data for {} is not available.'.format(self.line))
 
-    def show_supported_transitions(self):
+    @classmethod
+    def show_supported_transitions(cls):
         """ Prints all supported transitions."""
-        for line, param in self.LINE_PARAMETERS_DEFAULT.items():
+        for line, param in cls.LINE_PARAMETERS_DEFAULT.items():
             print('{}: alpha={}, beta={}, gamma={}'.format(line, param[0], param[1], param[2]))
 
     @cython.boundscheck(False)

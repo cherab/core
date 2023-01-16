@@ -224,9 +224,10 @@ cdef class StarkBroadenedLine(ZeemanLineShapeModel):
 
         super().__init__(line, wavelength, target_species, plasma, polarisation, integrator)
 
-    def show_supported_transitions(self):
+    @classmethod
+    def show_supported_transitions(cls):
         """ Prints all supported transitions."""
-        for line, coeff in self.STARK_MODEL_COEFFICIENTS_DEFAULT.items():
+        for line, coeff in cls.STARK_MODEL_COEFFICIENTS_DEFAULT.items():
             print('{}: c_ij={}, a_ij={}, b_ij={}'.format(line, coeff[0], coeff[1], coeff[2]))
 
     @cython.boundscheck(False)
