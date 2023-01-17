@@ -1,6 +1,15 @@
 Project Changelog
 =================
 
+Release 1.5.0 (TBD)
+-------------------
+
+API changes:
+* The line shape models are moved to a dedicated submodule. The user code should not be affected though. (#396)
+
+New:
+* StarkBroadenedLine now supports Doppler broadening and Zeeman splitting. (#393)
+
 Release 1.4.0 (TBD)
 -------------------
 

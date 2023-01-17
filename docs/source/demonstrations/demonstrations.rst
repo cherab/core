@@ -151,16 +151,21 @@ Passive Spectroscopy
      - .. image:: ./passive_spectroscopy/multiplet_spectrum.png
           :height: 150px
           :width: 150px
-   * - :ref:`Stark Broadened Lines <stark_broadening>`
-     - Specifying a Stark broadened lineshape instead of Doppler broadening.
-     - .. image:: ./passive_spectroscopy/stark_line_zoomed.png
-          :height: 150px
-          :width: 150px
    * - :ref:`Zeeman Spectroscopy <zeeman_spectroscopy>`
      - Specifying a Zeeman triplet or multiplet line shapes.
      - .. image:: ./passive_spectroscopy/zeeman_spectrum_45deg.png
           :height: 150px
-          :width: 150px   
+          :width: 150px
+   * - :ref:`Stark Broadened Lines <stark_broadening>`
+     - Specifying a Stark broadened lineshape.
+     - .. image:: ./passive_spectroscopy/stark_spectrum.png
+          :height: 150px
+          :width: 150px
+   * - :ref:`Stark-Zeeman Lines <stark_zeeman>`
+     - Modelling Stark-Zeeman lineshapes.
+     - .. image:: ./passive_spectroscopy/stark_zeeman_balmer_alpha.png
+          :height: 150px
+          :width: 150px
 
 
 Bolometry
