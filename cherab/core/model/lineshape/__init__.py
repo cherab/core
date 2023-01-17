@@ -21,5 +21,5 @@ from .base import LineShapeModel
 from .doppler import doppler_shift, thermal_broadening
 from .gaussian import add_gaussian_line, GaussianLine
 from .multiplet import MultipletLineShape
-from .stark import StarkBroadenedLine
+from .stark import add_lorentzian_line, StarkBroadenedLine
 from .zeeman import ZeemanLineShapeModel, ZeemanTriplet, ParametrisedZeemanTriplet, ZeemanMultiplet

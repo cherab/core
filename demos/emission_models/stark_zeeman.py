@@ -17,15 +17,16 @@
 # under the Licence.
 
 """
-Plots Balmer-alpha and Paschen-beta Stark-Zeeman spectral lines
-as in Figure 2 in B.A. Lomanowski at al, Nucl. Fusion 55 (2015) 123028,
+Calculates Balmer-alpha and Paschen-beta Stark-Zeeman spectral lines.
+
+Compare the figures with Figure 2 in B.A. Lomanowski at al, Nucl. Fusion 55 (2015) 123028,
 https://iopscience.iop.org/article/10.1088/0029-5515/55/12/123028
 """
 
 
 # External imports
 import matplotlib.pyplot as plt
-from raysect.optical import World, translate, rotate, Vector3D, Point3D, Ray
+from raysect.optical import World, Vector3D, Point3D, Ray
 
 # Cherab imports
 from cherab.core import Line
@@ -58,7 +59,7 @@ plasma.atomic_data = adas
 # add Balmer-alpha line to the plasma
 plasma.models = [ExcitationLine(balmer_alpha, lineshape=StarkBroadenedLine)]
 
-# Ray-trace and plot the results
+# Ray-trace perpendicular to magnetic field and plot the results
 r = Ray(origin=Point3D(-5, 0, 0), direction=Vector3D(1, 0, 0),
         min_wavelength=655.9, max_wavelength=656.3, bins=200)
 s = r.trace(world)
@@ -80,7 +81,7 @@ plasma.atomic_data = adas
 # add Paschen-beta line to the plasma
 plasma.models = [ExcitationLine(paschen_beta, lineshape=StarkBroadenedLine)]
 
-# Ray-trace and plot the results
+# Ray-trace perpendicular to magnetic field and plot the results
 r = Ray(origin=Point3D(-5, 0, 0), direction=Vector3D(1, 0, 0),
         min_wavelength=1280.3, max_wavelength=1282.6, bins=200)
 s = r.trace(world)
