@@ -16,8 +16,8 @@ The StarkBroadenedLine() follows the Lomanowski's paper, but introduces a couple
 approximations:
 
 * Zeeman splitting is taken in the form of a simple triplet with a :math:`\pi`-component
-  centred at :math:`h\nu`, :math:`\sigma^{+}`-component at :math:`\frac{hc}{h\nu-\mu B}`
-  and :math:`\sigma^{-}`-component at :math:`\frac{hc}{h\nu+\mu B}`.
+  centred at :math:`\lambda`, :math:`\sigma^{+}`-component at :math:`\frac{hc}{hc/\lambda -\mu B}`
+  and :math:`\sigma^{-}`-component at :math:`\frac{hc}{hc/\lambda +\mu B}`.
 * The convolution of Stark-Zeeman and Doppler profiles is replaced with the weighted sum
   to speed-up calculations (`pseudo-Voigt <https://en.wikipedia.org/wiki/Voigt_profile#Pseudo-Voigt_approximation>`_ approximation).
 

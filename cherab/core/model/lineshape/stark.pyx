@@ -156,12 +156,12 @@ cdef class StarkBroadenedLine(ZeemanLineShapeModel):
 
     The following approximations are used:
 
-      - The Zeeman and Stark effects are considered independently.
-      - Zeeman splitting is taken in the form of a simple triplet with a :math:`\pi`-component
-        centred at :math:`h\nu`, :math:`\sigma^{+}`-component at :math:`\frac{hc}{h\nu-\mu B}`
-        and :math:`\sigma^{-}`-component at :math:`\frac{hc}{h\nu+\mu B}`.
-      - The model of Stark broadening is obtained by fitting the Model Microfield Method (MMM).
-      - The convolution of Stark-Zeeman and Doppler profiles is replaced with the weighted sum
+      * The Zeeman and Stark effects are considered independently.
+      * Zeeman splitting is taken in the form of a simple triplet with a :math:`\pi`-component
+        centred at :math:`\lambda`, :math:`\sigma^{+}`-component at :math:`\frac{hc}{hc/\lambda -\mu B}`
+        and :math:`\sigma^{-}`-component at :math:`\frac{hc}{hc/\lambda +\mu B}`.
+      * The model of Stark broadening is obtained by fitting the Model Microfield Method (MMM).
+      * The convolution of Stark-Zeeman and Doppler profiles is replaced with the weighted sum
         to speed-up calculations (so-called pseudo-Voigt profile).
 
     The Stark-broadened line shape is modelled as modified Lorentzian:
