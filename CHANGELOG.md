@@ -6,6 +6,7 @@ Release 1.5.0 (TBD)
 
 API changes:
 * The line shape models are moved to a dedicated submodule. The user code should not be affected though. (#396)
+* The method show_supported_transitions() of StarkBroadenedLine and ParametrisedZeemanTriplet is made a class method.
 
 New:
 * StarkBroadenedLine now supports Doppler broadening and Zeeman splitting. (#393)
