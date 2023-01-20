@@ -1,6 +1,12 @@
 Project Changelog
 =================
 
+Release 1.5.0 (TBD)
+-------------------
+
+New:
+* Add custom line shape support to BeamCXLine model. (#394)
+
 Release 1.4.0 (TBD)
 -------------------
 
