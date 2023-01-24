@@ -110,13 +110,13 @@ cdef class Bremsstrahlung(PlasmaModel):
                                    over the spectral bin. Default is `GaussianQuadrature`.
     """
 
-    def __init__(self, Plasma plasma=None, AtomicData atomic_data=None, FreeFreeGauntFactor gaunt_factor=None, Integrator1D integrator=GaussianQuadrature()):
+    def __init__(self, Plasma plasma=None, AtomicData atomic_data=None, FreeFreeGauntFactor gaunt_factor=None, Integrator1D integrator=None):
 
         super().__init__(plasma, atomic_data)
 
         self._brems_func = BremsFunction.__new__(BremsFunction)
         self.gaunt_factor = gaunt_factor
-        self.integrator = integrator
+        self.integrator = integrator or GaussianQuadrature()
 
         # ensure that cache is initialised
         self._change()

@@ -1,6 +1,13 @@
 Project Changelog
 =================
 
+Release 1.5.0 (TBD)
+-------------------
+
+New:
+* Add numerical integration of Bremsstrahlung spectrum over a spectral bin. (#395)
+
+
 Release 1.4.0 (TBD)
 -------------------
 
