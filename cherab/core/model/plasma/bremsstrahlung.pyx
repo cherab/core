@@ -141,6 +141,7 @@ cdef class Bremsstrahlung(PlasmaModel):
     def integrator(self, Integrator1D value not None):
 
         self._integrator = value
+        self._integrator.function = self._brems_func
 
     def __repr__(self):
         return '<PlasmaModel - Bremsstrahlung>'
@@ -177,8 +178,6 @@ cdef class Bremsstrahlung(PlasmaModel):
             if species.charge > 0:
                 self._brems_func.species_density_mv[i] = species.distribution.density(point.x, point.y, point.z)
                 i += 1
-
-        self._integrator.function = self._brems_func
 
         # add bremsstrahlung to spectrum
         lower_wavelength = spectrum.min_wavelength
