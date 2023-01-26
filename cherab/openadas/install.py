@@ -419,6 +419,6 @@ def _thermalcx_adf15_2dto3d_converter(rates):
                             'te': rate['te'],
                             'td': np.array([0.01, 10000]),
                             'rate': data}
-                new_rates[hydrogen][0][element][charge][transition] = new_rate
+                new_rates[hydrogen][0][element][charge + 1][transition] = new_rate
 
     return new_rates
