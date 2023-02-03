@@ -1,7 +1,7 @@
 Project Changelog
 =================
 
-Release 1.4.0 (TBD)
+Release 1.4.0 (3 Feb 2023)
 -------------------
 
 API changes:
