@@ -27,6 +27,9 @@ from .base import _SpectroscopicObserver0DBase
 class SpectroscopicFibreOptic(FibreOptic, _SpectroscopicObserver0DBase):
 
     """
+    .. deprecated:: 1.4.0
+       Use Raysect's FibreOptic observer instead.
+
     An optic fibre spectroscopic observer with non-zero acceptance angle.
 
     Rays are sampled over a circular area at the fibre tip and a conical solid angle

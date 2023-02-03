@@ -88,6 +88,9 @@ for the :class:`BolometerFoil`.
 Spectroscopic lines of sight
 ----------------------------
 
+.. deprecated:: 1.4.0
+   Use Raysect's observer classes instead
+
 Spectroscopic line of sight allows to control main parameters of the pipeline
 without accessing the pipeline directly. Multiple spectroscopic line of sight can be
 combined into a group.
@@ -106,10 +109,11 @@ combined into a group.
 Group observers
 ---------------
 
-Group observer is a collection of observers of the same type, for example an array of line of
-sight. The parameters of individual observers in a group may differ.
-Group observer allows combined observation, namely, calling the observe function for a group
-leads to a sequential call of this function for each observer in the group.
+Group observer is a collection of observers of the same type. All Observer0D classes 
+defined in Raysect are supoorted. The parameters of individual observers in a group 
+may differ. Group observer allows combined observation, namely, calling the observe
+function for a group leads to a sequential call of this function for each observer 
+in the group.
 
 .. autoclass:: cherab.tools.observers.group.base.Observer0DGroup
    :members:
@@ -119,3 +123,27 @@ leads to a sequential call of this function for each observer in the group.
 
 .. autoclass:: cherab.tools.observers.group.FibreOpticGroup
    :members:
+
+.. autoclass:: cherab.tools.observers.group.PixelGroup
+   :members:
+
+.. autoclass:: cherab.tools.observers.group.TargettedPixelGroup
+   :members:
+
+Spectroscopic Groups
+^^^^^^^^^^^^^^^^^^^^
+
+.. deprecated:: 1.4.0
+   Use groups based on Raysect's observer classes instead
+
+These groups take control of spectroscopic lines of sight observers. They support 
+direction and origin positioning and contain methods for plotting the power and 
+spectrum. Originally, these were called group observers and did not include the 
+Spectroscopic prefix in class name.
+
+.. autoclass:: cherab.tools.observers.SpectroscopicSightLine
+   :members
+
+.. autoclass:: cherab.tools.observers.SpectroscopicFibreOptic
+   :members
+
