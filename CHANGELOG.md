@@ -12,7 +12,6 @@ Bug fixes:
 * Fixed generomak plasma edge data paths.
 * Fix and improve OpenCL utility functions. (#358)
 * Fixed Bremsstrahlung trapezium evaluation (#384).
-* Fixed generomak plasma edge data paths.
 
 New:
 * Make f_profile (current flux) a read-only attribute of EFITEquilibrium. (#355)
