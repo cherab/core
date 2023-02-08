@@ -22,4 +22,5 @@ from cherab.core.atomic.line cimport Line
 from cherab.core.atomic.interface cimport AtomicData
 from cherab.core.atomic.rates cimport *
 from cherab.core.atomic.zeeman cimport ZeemanStructure
+from cherab.core.atomic.gaunt cimport *
 

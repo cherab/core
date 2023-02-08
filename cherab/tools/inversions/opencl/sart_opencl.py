@@ -17,10 +17,7 @@
 #
 # See the Licence for the specific language governing permissions and limitations
 # under the Licence.
-#
-# The following code is created by Vladislav Neverov (NRC "Kurchatov Institute") for Cherab Spectroscopy Modelling Framework
 
-from __future__ import print_function
 import os
 import numpy as np
 from timeit import default_timer as timer
@@ -44,29 +41,37 @@ class SartOpencl:
     performed with single precision.
 
     :param np.ndarray geometry_matrix: The sensitivity matrix describing the coupling between
-        the detectors and the voxels. Must be an array with shape :math:`(N_d, N_s)`.
+                                       the detectors and the voxels. Must be an array
+                                       with shape :math:`(N_d, N_s)`.
     :param np.ndarray laplacian_matrix:  The laplacian regularisation matrix of
-        shape :math:`(N_s, N_s)`. Default value: `laplacian_matrix=None`.
+                                         shape :math:`(N_s, N_s)`.
+                                         Default value: `laplacian_matrix=None`.
     :param pyopencl.Device device: OpenCL device which will be used for computations.
-        Default value: `device=None` (autoselect).
+                                   Default value: `device=None` (autoselect).
     :param int block_size: Number of GPU threads per block. Must be the power of 2.
-        For the best performance try from 256 to 1024 for Nvidia (use 1024 on high-end GPUs),
-        from 64 to 256 for AMD and from 16 to 64 for Intel GPUs. Default value: `block_size=256`.
+                           For the best performance try from 256 to 1024 for Nvidia
+                           (use 1024 on high-end GPUs), from 64 to 256 for AMD and from 16 to 64
+                           for Intel GPUs. Default value: `block_size=256`.
     :param bool copy_column_major: If True, the two copies of geometry matrix will be stored in
-        GPU memory. One in row-major order and the other one in column-major order. This
-        provides much better performance of the inversions but requires twice as much GPU memory.
-        Default value: `copy_column_major=True`.
+                                   GPU memory. One in row-major order and the other one in
+                                   column-major order. This provides much better performance
+                                   of the inversions but requires twice as much GPU memory.
+                                   Default value: `copy_column_major=True`.
     :param int block_size_row_maj: If `copy_column_major` is set to False, this parameter defines
-        the number of GPU threads per block in mat_vec_mult_row_maj() kernel used to calculate
-        y_hat. Must be lower than `block_size`. Default value: `block_size_row_maj=64` (optimal
-        value for Nvidia GPUs).
+                                   the number of GPU threads per block in mat_vec_mult_row_maj()
+                                   kernel used to calculate y_hat. Must be lower than
+                                   `block_size`. Default value: `block_size_row_maj=64` (optimal
+                                   value for Nvidia GPUs).
     :param bool use_atomic: If True, increases the number of thread blocks that can run in
-        parallel with the help of atomic operations (custom atomic add on floats). Set this
-        to False, if the atomic operations are running slow on your device (Nvidia GPUs before
-        Kepler, some AMD APUs, some Intel GPUs). Default value: `use_atomic=True`.
+                            parallel with the help of atomic operations (custom atomic add on floats).
+                            Set this to False, if the atomic operations are running slow on your device
+                            (Nvidia GPUs before Kepler, some AMD APUs, some Intel GPUs).
+                            Default value: `use_atomic=True`.
     :param int steps_per_thread: If `use_atomic` is set to True, this parameters defines the
-        maximum number of loop steps performed by the parallel threads in a single thread block.
-        Default value: `steps_per_thread=64` (optimal for Nvidia GPUs).
+                                 maximum number of loop steps performed by the parallel threads
+                                 in a single thread block. Default value: `steps_per_thread=64`
+                                 (optimal for Nvidia GPUs).
+    :param bool verbose: Verbose output, defaults to `verbose=False`.
 
     .. code-block:: pycon
 
@@ -79,92 +84,99 @@ class SartOpencl:
     """
 
     def __init__(self, geometry_matrix, laplacian_matrix=None, device=None, block_size=256, copy_column_major=True, block_size_row_maj=64,
-                 use_atomic=True, steps_per_thread=64):
+                 use_atomic=True, steps_per_thread=64, verbose=False):
         if not _has_pyopencl:
             raise RuntimeError("The pyopencl module is required to use the SartOpencl() inversion class.")
+
+        self._verbose = verbose
+
         if geometry_matrix.dtype != np.float32:  # converting geometry_matrix to float32 if needed
             geometry_matrix = geometry_matrix.astype(np.float32)
-        self.m_detectors, self.n_sources = geometry_matrix.shape
+
+        self._m_detectors, self._n_sources = geometry_matrix.shape
         cell_ray_densities = geometry_matrix.sum(0)
         ray_lengths = geometry_matrix.sum(1)
-        device = device or device_select()
-        self.use_atomic = use_atomic
+        device = device or device_select(verbose=verbose)
+        self._use_atomic = use_atomic
         steps_per_thread = min(block_size, steps_per_thread)
         steps_per_thread_row_maj = min(block_size_row_maj, steps_per_thread)
 
         # creating OpenCL context
-        self.cl_context = cl.Context([device])
+        self._cl_context = cl.Context([device])
 
         # reading and compiling OpenCL kernels
         kernels_filename = 'sart_kernels_atomic.cl' if use_atomic else 'sart_kernels.cl'
         kernel_source_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), kernels_filename)
         with open(kernel_source_file) as f_kernel:
             kernel_source = f_kernel.read()
-        compile_options = ['-DBLOCK_SIZE=%d' % block_size, '-DSTEPS_PER_THREAD=%d' % steps_per_thread,
-                           '-DSTEPS_PER_THREAD_ROW_MAJ=%d' % steps_per_thread_row_maj,
-                           '-DBLOCK_SIZE_ROW_MAJ=%d' % block_size_row_maj, '-cl-fast-relaxed-math']
-        self.cl_prog = cl.Program(self.cl_context, kernel_source).build(options=compile_options)
+        compile_options = ['-DBLOCK_SIZE={}'.format(block_size), '-DSTEPS_PER_THREAD={}'.format(steps_per_thread),
+                           '-DSTEPS_PER_THREAD_ROW_MAJ={}'.format(steps_per_thread_row_maj),
+                           '-DBLOCK_SIZE_ROW_MAJ={}'.format(block_size_row_maj), '-cl-fast-relaxed-math']
+        self._cl_prog = cl.Program(self._cl_context, kernel_source).build(options=compile_options)
 
         # creating buffers in device memory
         mf = cl.mem_flags
-        self.geometry_matrix_device = cl.Buffer(self.cl_context, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=geometry_matrix)
+
+        self._geometry_matrix_device = cl.Buffer(self._cl_context, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=geometry_matrix)
         if copy_column_major:
             geometry_matric_col_maj = geometry_matrix.flatten(order='F')
-            self.geometry_matric_col_maj_device = cl.Buffer(self.cl_context, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=geometry_matric_col_maj)
+            self._geometry_matric_col_maj_device = cl.Buffer(self._cl_context, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=geometry_matric_col_maj)
         else:
-            self.geometry_matric_col_maj_device = None
+            self._geometry_matric_col_maj_device = None
+
         if laplacian_matrix is not None:
             laplacian_matrix = laplacian_matrix.flatten(order='F').astype(np.float32)
-            self.laplacian_matrix_device = cl.Buffer(self.cl_context, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=laplacian_matrix)
+            self._laplacian_matrix_device = cl.Buffer(self._cl_context, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=laplacian_matrix)
         else:
-            self.laplacian_matrix_device = None
-        self.cell_ray_densities_device = cl.Buffer(self.cl_context, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=cell_ray_densities)
-        self.ray_lengths_device = cl.Buffer(self.cl_context, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=ray_lengths)
-        grad_penalty = np.zeros(self.n_sources, dtype=np.float32)
-        self.grad_penalty_device = cl.Buffer(self.cl_context, mf.READ_WRITE | mf.COPY_HOST_PTR, hostbuf=grad_penalty)
-        self.solution_device = cl.Buffer(self.cl_context, mf.READ_WRITE, cell_ray_densities.nbytes)
-        self.detectors_device = cl.Buffer(self.cl_context, mf.READ_ONLY, ray_lengths.nbytes)
-        self.y_hat_device = cl.Buffer(self.cl_context, mf.READ_WRITE, ray_lengths.nbytes)
+            self._laplacian_matrix_device = None
+
+        self._cell_ray_densities_device = cl.Buffer(self._cl_context, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=cell_ray_densities)
+        self._ray_lengths_device = cl.Buffer(self._cl_context, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=ray_lengths)
+        grad_penalty = np.zeros(self._n_sources, dtype=np.float32)
+        self._grad_penalty_device = cl.Buffer(self._cl_context, mf.READ_WRITE | mf.COPY_HOST_PTR, hostbuf=grad_penalty)
+        self._solution_device = cl.Buffer(self._cl_context, mf.READ_WRITE, cell_ray_densities.nbytes)
+        self._detectors_device = cl.Buffer(self._cl_context, mf.READ_ONLY, ray_lengths.nbytes)
+        self._y_hat_device = cl.Buffer(self._cl_context, mf.READ_WRITE, ray_lengths.nbytes)
 
         # calculating global and local work sizes
-        nrem = self.n_sources % block_size
-        gws_sources_x = self.n_sources + bool(nrem) * (block_size - nrem)
-        mrem = self.m_detectors % block_size
-        gws_detectors_x = self.m_detectors + bool(mrem) * (block_size - mrem)
-        mrem_rm = self.m_detectors % block_size_row_maj
-        gws_detectors_row_maj_x = self.m_detectors + bool(mrem_rm) * (block_size - mrem_rm)
+        nrem = self._n_sources % block_size
+        gws_sources_x = self._n_sources + bool(nrem) * (block_size - nrem)
+        mrem = self._m_detectors % block_size
+        gws_detectors_x = self._m_detectors + bool(mrem) * (block_size - mrem)
+        mrem_rm = self._m_detectors % block_size_row_maj
+        gws_detectors_row_maj_x = self._m_detectors + bool(mrem_rm) * (block_size - mrem_rm)
         if use_atomic:
-            gws_sources_row_maj_y = self.n_sources // steps_per_thread_row_maj + bool(self.n_sources % steps_per_thread_row_maj)
-            gws_sources_y = self.n_sources // steps_per_thread + bool(self.n_sources % steps_per_thread)
-            gws_detectors_y = self.m_detectors // steps_per_thread + bool(self.m_detectors % steps_per_thread)
+            gws_sources_row_maj_y = self._n_sources // steps_per_thread_row_maj + bool(self._n_sources % steps_per_thread_row_maj)
+            gws_sources_y = self._n_sources // steps_per_thread + bool(self._n_sources % steps_per_thread)
+            gws_detectors_y = self._m_detectors // steps_per_thread + bool(self._m_detectors % steps_per_thread)
         else:
             gws_sources_row_maj_y = gws_sources_y = gws_detectors_y = 1
-        self.global_work_size = {}
-        self.local_work_size = {'default': (block_size, 1)}
-        self.global_work_size['trivial_sources'] = (gws_sources_x, 1)
-        self.global_work_size['trivial_detectors'] = (gws_detectors_x, 1)
-        self.global_work_size['iter'] = (gws_sources_x, gws_detectors_y)
+        self._global_work_size = {}
+        self._local_work_size = {'default': (block_size, 1)}
+        self._global_work_size['trivial_sources'] = (gws_sources_x, 1)
+        self._global_work_size['trivial_detectors'] = (gws_detectors_x, 1)
+        self._global_work_size['iter'] = (gws_sources_x, gws_detectors_y)
         if copy_column_major:
-            self.local_work_size['mult'] = self.local_work_size['default']
-            self.global_work_size['mult'] = (gws_detectors_x, gws_sources_y)
+            self._local_work_size['mult'] = self._local_work_size['default']
+            self._global_work_size['mult'] = (gws_detectors_x, gws_sources_y)
         else:
-            self.local_work_size['mult'] = (block_size_row_maj, 1)
-            self.global_work_size['mult'] = (gws_detectors_row_maj_x, gws_sources_row_maj_y)
-        self.global_work_size['grad'] = (gws_sources_x, gws_sources_y)
+            self._local_work_size['mult'] = (block_size_row_maj, 1)
+            self._global_work_size['mult'] = (gws_detectors_row_maj_x, gws_sources_row_maj_y)
+        self._global_work_size['grad'] = (gws_sources_x, gws_sources_y)
 
     def clean(self):
         """ Releases GPU buffers"""
-        self.geometry_matrix_device.release()
-        if self.geometry_matric_col_maj_device is not None:
-            self.geometry_matric_col_maj_device.release()
-        if self.laplacian_matrix_device is not None:
-            self.laplacian_matrix_device.release()
-        self.cell_ray_densities_device.release()
-        self.ray_lengths_device.release()
-        self.solution_device.release()
-        self.grad_penalty_device.release()
-        self.detectors_device.release()
-        self.y_hat_device.release()
+        self._geometry_matrix_device.release()
+        if self._geometry_matric_col_maj_device is not None:
+            self._geometry_matric_col_maj_device.release()
+        if self._laplacian_matrix_device is not None:
+            self._laplacian_matrix_device.release()
+        self._cell_ray_densities_device.release()
+        self._ray_lengths_device.release()
+        self._solution_device.release()
+        self._grad_penalty_device.release()
+        self._detectors_device.release()
+        self._y_hat_device.release()
 
     def __enter__(self):
         return self
@@ -179,14 +191,14 @@ class SartOpencl:
         :param np.ndarray laplacian_matrix:  The laplacian regularisation matrix of
             shape :math:`(N_s, N_s)`.
         """
-        if self.laplacian_matrix_device is not None:
+        if self._laplacian_matrix_device is not None:
             laplacian_matrix = laplacian_matrix.flatten(order='F').astype(np.float32)
-            queue = cl.CommandQueue(self.cl_context)
-            cl.enqueue_copy(queue, self.laplacian_matrix_device, laplacian_matrix)
+            queue = cl.CommandQueue(self._cl_context)
+            cl.enqueue_copy(queue, self._laplacian_matrix_device, laplacian_matrix)
 
     def __call__(self, measurement_vector, initial_guess=None, max_iterations=250, relaxation=1.0,
                  beta_laplace=0.01, conv_tol=1.e-4, time_limit=None):
-        """
+        r"""
         Performs the inversion for a given measurement vector.
 
         :param np.ndarray measurement_vector: The measured power/radiance vector with
@@ -211,12 +223,13 @@ class SartOpencl:
             shape :math:`(N_s)`, and the list of convergence values achieved after each iteration
             step.
         """
+
         time_start = timer()
         time_limit = time_limit or 1.e7
         if initial_guess is None:
-            solution = np.zeros(self.n_sources, dtype=np.float32) + 1 / np.e
+            solution = np.zeros(self._n_sources, dtype=np.float32) + 1 / np.e
         elif isinstance(initial_guess, (float, int)):
-            solution = np.zeros(self.n_sources, dtype=np.float32) + initial_guess
+            solution = np.zeros(self._n_sources, dtype=np.float32) + initial_guess
         else:
             solution = initial_guess.astype(np.float32)  # making a copy even if initial_guess is in float32 already
         measurement_max = measurement_vector.max()
@@ -224,11 +237,11 @@ class SartOpencl:
         measurement_vector = (measurement_vector / measurement_max).astype(np.float32)
         measurement_squared = np.dot(measurement_vector, measurement_vector)
         y_hat_vector = np.empty_like(measurement_vector)  # host y_hat
-        queue = cl.CommandQueue(self.cl_context)
+        queue = cl.CommandQueue(self._cl_context)
 
         # copying initial guess and measurement_vector to device
-        cl.enqueue_copy(queue, self.solution_device, solution)
-        cl.enqueue_copy(queue, self.detectors_device, measurement_vector)
+        cl.enqueue_copy(queue, self._solution_device, solution)
+        cl.enqueue_copy(queue, self._detectors_device, measurement_vector)
 
         # calculating y_hat on device
         self._calc_y_hat(queue)
@@ -238,7 +251,6 @@ class SartOpencl:
         conv_tol = np.float32(conv_tol)
         success = False
         for k in range(max_iterations):
-            # print('Iteration: %d' % k)
             # making one iteration on device
             self._make_iteration(queue, relaxation, beta_laplace)
 
@@ -246,7 +258,7 @@ class SartOpencl:
             self._calc_y_hat(queue)
 
             # copying y_hat to host
-            cl.enqueue_copy(queue, y_hat_vector, self.y_hat_device)
+            cl.enqueue_copy(queue, y_hat_vector, self._y_hat_device)
 
             # calculating convergence
             y_hat_squared = np.dot(y_hat_vector, y_hat_vector)
@@ -256,48 +268,51 @@ class SartOpencl:
             # checking conditions
             if k > 0 and np.abs(convergence[k] - convergence[k - 1]) < conv_tol:
                 success = True
-                print('Convergence limit is reached in %.4f s with %d iterations' % (time_passed, k + 1))
+                if self._verbose:
+                    print('Convergence limit is reached in {:.4f} s with {} iterations.'.format(time_passed, k + 1))
                 break
             if time_passed > time_limit:
-                print('Time limit is exceeded')
+                # if no success, the user must be informed even if verbose is False
+                print('The time limit has been exceeded, but the convergence limit has not been reached.')
                 break
 
         if (not success) and k == max_iterations - 1:
-            print('Maximum number of iterations is reached. Time passed: %.4f s' % time_passed)
+            # if no success, the user must be informed even if verbose is False
+            print('Maximum number of iterations is reached. Time passed: {:.4f} s.'.format(time_passed))
 
         # copying solution to host
-        cl.enqueue_copy(queue, solution, self.solution_device)
+        cl.enqueue_copy(queue, solution, self._solution_device)
 
         return solution * measurement_max, convergence
 
     def _calc_y_hat(self, queue):
-        if self.use_atomic:
-            self.cl_prog.zero_all(queue, self.global_work_size['trivial_detectors'], self.local_work_size['default'],
-                                  self.y_hat_device, np.uint32(self.m_detectors))
-        if self.geometry_matric_col_maj_device is None:
-            self.cl_prog.mat_vec_mult_row_major(queue, self.global_work_size['mult'], self.local_work_size['mult'],
-                                                self.geometry_matrix_device, self.solution_device, self.y_hat_device,
-                                                np.uint32(self.m_detectors), np.uint32(self.n_sources))
+        if self._use_atomic:
+            self._cl_prog.zero_all(queue, self._global_work_size['trivial_detectors'], self._local_work_size['default'],
+                                   self._y_hat_device, np.uint32(self._m_detectors))
+        if self._geometry_matric_col_maj_device is None:
+            self._cl_prog.mat_vec_mult_row_major(queue, self._global_work_size['mult'], self._local_work_size['mult'],
+                                                 self._geometry_matrix_device, self._solution_device, self._y_hat_device,
+                                                 np.uint32(self._m_detectors), np.uint32(self._n_sources))
         else:
-            self.cl_prog.mat_vec_mult_col_major(queue, self.global_work_size['mult'], self.local_work_size['mult'],
-                                                self.geometry_matric_col_maj_device, self.solution_device, self.y_hat_device,
-                                                np.uint32(self.m_detectors), np.uint32(self.n_sources))
+            self._cl_prog.mat_vec_mult_col_major(queue, self._global_work_size['mult'], self._local_work_size['mult'],
+                                                 self._geometry_matric_col_maj_device, self._solution_device, self._y_hat_device,
+                                                 np.uint32(self._m_detectors), np.uint32(self._n_sources))
 
     def _make_iteration(self, queue, relaxation, beta_laplace):
-        if self.laplacian_matrix_device is not None:
-            if self.use_atomic:
-                self.cl_prog.zero_all(queue, self.global_work_size['trivial_sources'], self.local_work_size['default'],
-                                      self.grad_penalty_device, np.uint32(self.n_sources))
-            self.cl_prog.mat_vec_mult_col_major(queue, self.global_work_size['grad'], self.local_work_size['default'],
-                                                self.laplacian_matrix_device, self.solution_device, self.grad_penalty_device,
-                                                np.uint32(self.n_sources), np.uint32(self.n_sources))
-            self.cl_prog.vec_scalar_mult(queue, self.global_work_size['trivial_sources'], self.local_work_size['default'],
-                                         self.grad_penalty_device, np.float32(beta_laplace), np.uint32(self.n_sources))
+        if self._laplacian_matrix_device is not None:
+            if self._use_atomic:
+                self._cl_prog.zero_all(queue, self._global_work_size['trivial_sources'], self._local_work_size['default'],
+                                       self._grad_penalty_device, np.uint32(self._n_sources))
+            self._cl_prog.mat_vec_mult_col_major(queue, self._global_work_size['grad'], self._local_work_size['default'],
+                                                 self._laplacian_matrix_device, self._solution_device, self._grad_penalty_device,
+                                                 np.uint32(self._n_sources), np.uint32(self._n_sources))
+            self._cl_prog.vec_scalar_mult(queue, self._global_work_size['trivial_sources'], self._local_work_size['default'],
+                                          self._grad_penalty_device, np.float32(beta_laplace), np.uint32(self._n_sources))
         # grad_penalty is just an all-zero array if laplacian_matrix is not provided on initialisation
-        self.cl_prog.sart_iteration(queue, self.global_work_size['iter'], self.local_work_size['default'],
-                                    self.geometry_matrix_device, self.cell_ray_densities_device, self.ray_lengths_device,
-                                    self.y_hat_device, self.detectors_device, self.solution_device, self.grad_penalty_device,
-                                    np.float32(relaxation), np.uint32(self.n_sources), np.uint32(self.m_detectors))
-        if self.use_atomic:
-            self.cl_prog.zero_negative(queue, self.global_work_size['trivial_sources'], self.local_work_size['default'],
-                                       self.solution_device, np.uint32(self.n_sources))
+        self._cl_prog.sart_iteration(queue, self._global_work_size['iter'], self._local_work_size['default'],
+                                     self._geometry_matrix_device, self._cell_ray_densities_device, self._ray_lengths_device,
+                                     self._y_hat_device, self._detectors_device, self._solution_device, self._grad_penalty_device,
+                                     np.float32(relaxation), np.uint32(self._n_sources), np.uint32(self._m_detectors))
+        if self._use_atomic:
+            self._cl_prog.zero_negative(queue, self._global_work_size['trivial_sources'], self._local_work_size['default'],
+                                        self._solution_device, np.uint32(self._n_sources))
