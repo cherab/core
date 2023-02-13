@@ -103,7 +103,7 @@ setup(
         "numpy>=1.14",
         "scipy",
         "matplotlib",
-        "raysect==0.8.0",
+        "raysect==0.8.1",
     ],
     packages=find_packages(),
     include_package_data=True,

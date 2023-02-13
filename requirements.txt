@@ -2,4 +2,4 @@ cython>=0.28
 numpy>=1.14
 scipy
 matplotlib
-raysect==0.8.0
+raysect==0.8.1
