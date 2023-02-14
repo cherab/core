@@ -9,9 +9,11 @@ API changes:
 * The method show_supported_transitions() of StarkBroadenedLine and ParametrisedZeemanTriplet is made a class method.
 
 New:
+* Support Raysect 0.8
 * StarkBroadenedLine now supports Doppler broadening and Zeeman splitting. (#393)
 
-Release 1.4.0 (TBD)
+
+Release 1.4.0 (3 Feb 2023)
 -------------------
 
 API changes:
@@ -22,7 +24,6 @@ Bug fixes:
 * Fixed generomak plasma edge data paths.
 * Fix and improve OpenCL utility functions. (#358)
 * Fixed Bremsstrahlung trapezium evaluation (#384).
-* Fixed generomak plasma edge data paths.
 
 New:
 * Make f_profile (current flux) a read-only attribute of EFITEquilibrium. (#355)
