@@ -5,9 +5,11 @@ Release 1.5.0 (TBD)
 -------------------
 
 New:
+* Support Raysect 0.8
 * Add custom line shape support to BeamCXLine model. (#394)
 
-Release 1.4.0 (TBD)
+
+Release 1.4.0 (3 Feb 2023)
 -------------------
 
 API changes:
@@ -18,7 +20,6 @@ Bug fixes:
 * Fixed generomak plasma edge data paths.
 * Fix and improve OpenCL utility functions. (#358)
 * Fixed Bremsstrahlung trapezium evaluation (#384).
-* Fixed generomak plasma edge data paths.
 
 New:
 * Make f_profile (current flux) a read-only attribute of EFITEquilibrium. (#355)
