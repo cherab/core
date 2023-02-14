@@ -121,53 +121,79 @@ class Observer0DGroupTestCase(unittest.TestCase):
         with self.assertRaises(ValueError):
             group.min_wavelength = [90] * (len(group) - 1)
 
-        # bins        
+        # spectral
         bins = [200 + i*100 for i in range(len(group))]
+        rays = [2] * len(group)
         group.spectral_bins = bins
+        group.spectral_rays = rays
         self.assertListEqual(group.spectral_bins, bins)
 
         bins = 300
+        rays = 1
         group.spectral_bins = bins
+        group.spectral_rays = rays
         for observer in group.observers:
             self.assertEqual(observer.spectral_bins, bins)
+            self.assertEqual(observer.spectral_rays, rays)
 
         with self.assertRaises(ValueError):
             group.spectral_bins = [1000] * (len(group) + 1)
-    
+
+        # quiet        
+        quiet = [True] * len(group)
+        group.quiet = quiet
+        self.assertListEqual(group.quiet, quiet)
+
+        quiet = False
+        group.quiet = quiet
+        for observer in group.observers:
+            self.assertEqual(observer.quiet, quiet)
+
+        with self.assertRaises(ValueError):
+            group.quiet = [False] * (len(group) + 1)
+
         # rays        
         probs = [0.2 + i*0.1 for i in range(len(group))]
-        min_depths = [2 + i for i in range(len(group))]
         max_depths = [5 + i for i in range(len(group))]
+        min_depths = [2 + i for i in range(len(group))]
+        sampling = [False] * len(group)
         weights = [0.5 + i * 0.1 for i in range(len(group))]
         group.ray_extinction_prob = probs
-        group.ray_extinction_min_depth = min_depths
         group.ray_max_depth = max_depths
+        group.ray_extinction_min_depth = min_depths
+        group.ray_importance_sampling = sampling
         group.ray_important_path_weight = weights
         self.assertListEqual(group.ray_extinction_prob, probs)
-        self.assertListEqual(group.ray_extinction_min_depth, min_depths)
         self.assertListEqual(group.ray_max_depth, max_depths)
+        self.assertListEqual(group.ray_extinction_min_depth, min_depths)
+        self.assertListEqual(group.ray_importance_sampling, sampling)
         self.assertListEqual(group.ray_important_path_weight, weights)
 
         probs = 0.3
-        min_depths = 3
         max_depths = 6
+        min_depths = 3
+        sampling = True
         weights = 0.7
         group.ray_extinction_prob = probs
-        group.ray_extinction_min_depth = min_depths
         group.ray_max_depth = max_depths
+        group.ray_extinction_min_depth = min_depths
+        group.ray_importance_sampling = sampling
         group.ray_important_path_weight = weights
         for observer in group.observers:
             self.assertEqual(observer.ray_extinction_prob, probs)
-            self.assertEqual(observer.ray_extinction_min_depth, min_depths)
             self.assertEqual(observer.ray_max_depth, max_depths)
+            self.assertEqual(observer.ray_extinction_min_depth, min_depths)
+            self.assertEqual(observer.ray_importance_sampling, sampling)
             self.assertEqual(observer.ray_important_path_weight, weights)
 
         with self.assertRaises(ValueError):
             group.ray_extinction_prob = [0.5] * (len(group) + 1)
         with self.assertRaises(ValueError):
+            group.ray_max_depth = [8] * (len(group) + 1)
+        with self.assertRaises(ValueError):
             group.ray_extinction_min_depth = [4] * (len(group) + 1)
         with self.assertRaises(ValueError):
-            group.ray_max_depth = [8] * (len(group) + 1)
+            group.ray_importance_sampling = [False] * (len(group) + 1)
         with self.assertRaises(ValueError):
             group.ray_important_path_weight = [0.7] * (len(group) + 1)
         
