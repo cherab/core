@@ -1,6 +1,13 @@
 Project Changelog
 =================
 
+Release 1.5.0 (TBD)
+-------------------
+
+New:
+* Support Raysect 0.8
+
+
 Release 1.4.0 (3 Feb 2023)
 -------------------
 
