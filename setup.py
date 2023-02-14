@@ -31,7 +31,7 @@ if "--install-rates" in sys.argv:
 
 source_paths = ["cherab", "demos"]
 compilation_includes = [".", numpy.get_include()]
-compilation_args = []
+compilation_args = ["-O3"]
 cython_directives = {"language_level": 3}
 setup_path = path.dirname(path.abspath(__file__))
 
