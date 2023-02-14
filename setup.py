@@ -31,7 +31,7 @@ if "--install-rates" in sys.argv:
 
 source_paths = ["cherab", "demos"]
 compilation_includes = [".", numpy.get_include()]
-compilation_args = []
+compilation_args = ["-O3"]
 cython_directives = {"language_level": 3}
 setup_path = path.dirname(path.abspath(__file__))
 
@@ -103,7 +103,7 @@ setup(
         "numpy>=1.14",
         "scipy",
         "matplotlib",
-        "raysect==0.7.1",
+        "raysect==0.8.1",
     ],
     packages=find_packages(),
     include_package_data=True,
