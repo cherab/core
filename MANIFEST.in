@@ -1,6 +1,3 @@
-include README.md CHANGELOG.md LICENSE.txt CITE.md AUTHORS.md MANIFEST.in setup.py requirements.txt .gitignore
+include CHANGELOG.md CITE.md AUTHORS.md
 include cherab/core/VERSION
-recursive-include cherab *.py *.pyx *.pxd *.json *.cl *.npy *.obj
-prune demos*
-
-
+recursive-include cherab *.pyx *.pxd *.json *.cl *.npy *.obj
