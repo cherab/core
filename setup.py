@@ -1,11 +1,11 @@
-from setuptools import setup, find_packages, Extension
 from collections import defaultdict
 import sys
-import numpy
 import os
 import os.path as path
 from pathlib import Path
 import multiprocessing
+import numpy
+from setuptools import setup, find_packages, Extension
 from Cython.Build import cythonize
 
 multiprocessing.set_start_method('fork')
@@ -117,8 +117,12 @@ setup(
         "matplotlib",
         "raysect==0.8.1",
     ],
-    packages=find_packages(include=["cherab*"]),
-    include_package_data=True,
+    packages=find_packages(include=["cherab"]),
+    package_data={"": [
+        "**/*.pyx", "**/*.pxd",  # Needed to build Cython extensions.
+        "**/*.json", "**/*.cl", "**/*.npy", "**/*.obj",  # Supplementary data
+        "cherab/core/VERSION",  # Used by cherab.core to determine version at run time
+    ]},
     data_files=data_files,
     zip_safe=False,
     ext_modules=extensions,

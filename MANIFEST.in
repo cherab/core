@@ -1,3 +1,0 @@
-include CHANGELOG.md CITE.md AUTHORS.md
-include cherab/core/VERSION
-recursive-include cherab *.pyx *.pxd *.json *.cl *.npy *.obj
