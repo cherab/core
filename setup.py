@@ -117,12 +117,13 @@ setup(
         "matplotlib",
         "raysect==0.8.1",
     ],
-    packages=find_packages(include=["cherab"]),
+    packages=find_packages(include=["cherab*"]),
     package_data={"": [
         "**/*.pyx", "**/*.pxd",  # Needed to build Cython extensions.
         "**/*.json", "**/*.cl", "**/*.npy", "**/*.obj",  # Supplementary data
-        "cherab/core/VERSION",  # Used by cherab.core to determine version at run time
-    ]},
+    ],
+                  "cherab.core": ["VERSION"],  # Used to determine version at run time
+    },
     data_files=data_files,
     zip_safe=False,
     ext_modules=extensions,
