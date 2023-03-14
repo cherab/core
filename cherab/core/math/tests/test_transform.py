@@ -28,10 +28,12 @@ class TestCylindricalTransform(unittest.TestCase):
     def setUp(self):
         """Initialisation with functions to map."""
 
-        def f3d(r, phi, z): return r * np.cos(phi) + z
+        def f3d(r, phi, z):
+            return r * np.cos(phi) + z
         self.function3d = f3d
 
-        def vecf3d(r, phi, z): return Vector3D(np.sin(phi), r * z, np.cos(phi))
+        def vecf3d(r, phi, z):
+            return Vector3D(np.sin(phi), r * z, np.cos(phi))
         self.vectorfunction3d = vecf3d
 
     def test_cylindrical_transform(self):
@@ -63,12 +65,29 @@ class TestPeriodicTransform(unittest.TestCase):
     def setUp(self):
         """Initialisation with functions to map."""
 
-        def f1d(x): return x*np.cos(x-3)
+        def f1d(x):
+            return x * np.cos(x - 3)
         self.function1d = f1d
-        def f2d(x, y): return x*np.sin(y)
+
+        def f2d(x, y):
+            return x * np.sin(y)
         self.function2d = f2d
-        def f3d(x, y, z): return x*x*np.exp(y)-2*z*y
+
+        def f3d(x, y, z):
+            return x * x * np.exp(y) - 2 * z * y
         self.function3d = f3d
+
+        def vecf1d(x):
+            return Vector3D(x, x**2, x**3)
+        self.vectorfunction1d = vecf1d
+
+        def vecf2d(x, y):
+            return Vector3D(x, y, x * y)
+        self.vectorfunction2d = vecf2d
+
+        def vecf3d(x, y, z):
+            return Vector3D(x + y + z, (x + y) * z, x * y * z)
+        self.vectorfunction3d = vecf3d
 
     def test_periodic_transform_1d(self):
         """1D periodic transform"""
@@ -140,7 +159,7 @@ class TestPeriodicTransform(unittest.TestCase):
                                places=10)
 
     def test_periodic_transform_3d_invalid_arg(self):
-        """2D periodic transform. Invalid arguments."""
+        """3D periodic transform. Invalid arguments."""
         # 1st argument is not callable
         self.assertRaises(TypeError, transform.PeriodicTransform3D, "blah", np.pi, np.pi, np.pi)
         # period is not a number
@@ -151,6 +170,90 @@ class TestPeriodicTransform(unittest.TestCase):
         self.assertRaises(ValueError, transform.PeriodicTransform3D, self.function3d, -1, np.pi, np.pi)
         self.assertRaises(ValueError, transform.PeriodicTransform3D, self.function3d, np.pi, -1, np.pi)
         self.assertRaises(ValueError, transform.PeriodicTransform3D, self.function3d, np.pi, np.pi, -1)
+
+    def test_vector_periodic_transform_1d(self):
+        """1D vector periodic transform"""
+        period_func = transform.VectorPeriodicTransform1D(self.vectorfunction1d, 1)
+        vec1 = period_func(1.4)
+        vec2 = Vector3D(0.4, 0.16, 0.064)
+        np.testing.assert_almost_equal([vec1.x, vec1.y, vec1.z], [vec2.x, vec2.y, vec2.z], decimal=10)
+
+    def test_vector_periodic_transform_1d_invalid_arg(self):
+        """1D vector periodic transform. Invalid arguments."""
+        # 1st argument is not callable
+        self.assertRaises(TypeError, transform.VectorPeriodicTransform1D, "blah", 1.)
+        # period is not a number
+        self.assertRaises(TypeError, transform.VectorPeriodicTransform1D, self.vectorfunction1d, "blah")
+        # period is negative
+        self.assertRaises(ValueError, transform.VectorPeriodicTransform1D, self.vectorfunction1d, -1)
+
+    def test_vector_periodic_transform_2d(self):
+        """2D vector periodic transform"""
+        period_func = transform.VectorPeriodicTransform2D(self.vectorfunction2d, 1, 1)
+        vec1 = period_func(-0.4, 1.6)
+        vec2 = Vector3D(0.6, 0.6, 0.36)
+        np.testing.assert_almost_equal([vec1.x, vec1.y, vec1.z], [vec2.x, vec2.y, vec2.z], decimal=10)
+
+        # Periodic only along x
+        period_func = transform.VectorPeriodicTransform2D(self.vectorfunction2d, 1, 0)
+        vec1 = period_func(-0.4, 1.6)
+        vec2 = Vector3D(0.6, 1.6, 0.96)
+        np.testing.assert_almost_equal([vec1.x, vec1.y, vec1.z], [vec2.x, vec2.y, vec2.z], decimal=10)
+
+        # Periodic only along y
+        period_func = transform.VectorPeriodicTransform2D(self.vectorfunction2d, 0, 1)
+        vec1 = period_func(-0.4, 1.6)
+        vec2 = Vector3D(-0.4, 0.6, -0.24)
+        np.testing.assert_almost_equal([vec1.x, vec1.y, vec1.z], [vec2.x, vec2.y, vec2.z], decimal=10)
+
+    def test_vector_periodic_transform_2d_invalid_arg(self):
+        """2D vector periodic transform. Invalid arguments."""
+        # 1st argument is not callable
+        self.assertRaises(TypeError, transform.VectorPeriodicTransform2D, "blah", 1, 1)
+        # period is not a number
+        self.assertRaises(TypeError, transform.VectorPeriodicTransform2D, self.function2d, "blah", 1)
+        self.assertRaises(TypeError, transform.VectorPeriodicTransform2D, self.function2d, 1, "blah")
+        # period is negative
+        self.assertRaises(ValueError, transform.VectorPeriodicTransform2D, self.function2d, -1, 1)
+        self.assertRaises(ValueError, transform.VectorPeriodicTransform2D, self.function2d, 1, -1)
+
+    def test_vector_periodic_transform_3d(self):
+        """3D vector periodic transform"""
+        period_func = transform.VectorPeriodicTransform3D(self.vectorfunction3d, 1, 1, 1)
+        vec1 = period_func(-0.4, 1.6, 1.2)
+        vec2 = Vector3D(1.4, 0.24, 0.072)
+        np.testing.assert_almost_equal([vec1.x, vec1.y, vec1.z], [vec2.x, vec2.y, vec2.z], decimal=10)
+
+        # Periodic along y and z
+        period_func = transform.VectorPeriodicTransform3D(self.vectorfunction3d, 0, 1, 1)
+        vec1 = period_func(-0.4, 1.6, 1.2)
+        vec2 = Vector3D(0.4, 0.04, -0.048)
+        np.testing.assert_almost_equal([vec1.x, vec1.y, vec1.z], [vec2.x, vec2.y, vec2.z], decimal=10)
+
+        # Periodic along x and z
+        period_func = transform.VectorPeriodicTransform3D(self.vectorfunction3d, 1, 0, 1)
+        vec1 = period_func(-0.4, 1.6, 1.2)
+        vec2 = Vector3D(2.4, 0.44, 0.192)
+        np.testing.assert_almost_equal([vec1.x, vec1.y, vec1.z], [vec2.x, vec2.y, vec2.z], decimal=10)
+
+        # Periodic along x and y
+        period_func = transform.VectorPeriodicTransform3D(self.vectorfunction3d, 1, 1, 0)
+        vec1 = period_func(-0.4, 1.6, 1.2)
+        vec2 = Vector3D(2.4, 1.44, 0.432)
+        np.testing.assert_almost_equal([vec1.x, vec1.y, vec1.z], [vec2.x, vec2.y, vec2.z], decimal=10)
+
+    def test_vector_periodic_transform_3d_invalid_arg(self):
+        """2D vector periodic transform. Invalid arguments."""
+        # 1st argument is not callable
+        self.assertRaises(TypeError, transform.VectorPeriodicTransform3D, "blah", 1, 1, 1)
+        # period is not a number
+        self.assertRaises(TypeError, transform.VectorPeriodicTransform3D, self.vectorfunction3d, "blah", 1, 1)
+        self.assertRaises(TypeError, transform.VectorPeriodicTransform3D, self.vectorfunction3d, 1, "blah", 1)
+        self.assertRaises(TypeError, transform.VectorPeriodicTransform3D, self.vectorfunction3d, 1, 1, "blah")
+        # period is negative
+        self.assertRaises(ValueError, transform.VectorPeriodicTransform3D, self.vectorfunction3d, -1, 1, 1)
+        self.assertRaises(ValueError, transform.VectorPeriodicTransform3D, self.vectorfunction3d, 1, -1, 1)
+        self.assertRaises(ValueError, transform.VectorPeriodicTransform3D, self.vectorfunction3d, 1, 1, -1)
 
 
 if __name__ == '__main__':
