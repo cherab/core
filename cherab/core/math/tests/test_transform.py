@@ -211,11 +211,11 @@ class TestPeriodicTransform(unittest.TestCase):
         # 1st argument is not callable
         self.assertRaises(TypeError, transform.VectorPeriodicTransform2D, "blah", 1, 1)
         # period is not a number
-        self.assertRaises(TypeError, transform.VectorPeriodicTransform2D, self.function2d, "blah", 1)
-        self.assertRaises(TypeError, transform.VectorPeriodicTransform2D, self.function2d, 1, "blah")
+        self.assertRaises(TypeError, transform.VectorPeriodicTransform2D, self.vectorfunction2d, "blah", 1)
+        self.assertRaises(TypeError, transform.VectorPeriodicTransform2D, self.vectorfunction2d, 1, "blah")
         # period is negative
-        self.assertRaises(ValueError, transform.VectorPeriodicTransform2D, self.function2d, -1, 1)
-        self.assertRaises(ValueError, transform.VectorPeriodicTransform2D, self.function2d, 1, -1)
+        self.assertRaises(ValueError, transform.VectorPeriodicTransform2D, self.vectorfunction2d, -1, 1)
+        self.assertRaises(ValueError, transform.VectorPeriodicTransform2D, self.vectorfunction2d, 1, -1)
 
     def test_vector_periodic_transform_3d(self):
         """3D vector periodic transform"""
@@ -243,7 +243,7 @@ class TestPeriodicTransform(unittest.TestCase):
         np.testing.assert_almost_equal([vec1.x, vec1.y, vec1.z], [vec2.x, vec2.y, vec2.z], decimal=10)
 
     def test_vector_periodic_transform_3d_invalid_arg(self):
-        """2D vector periodic transform. Invalid arguments."""
+        """3D vector periodic transform. Invalid arguments."""
         # 1st argument is not callable
         self.assertRaises(TypeError, transform.VectorPeriodicTransform3D, "blah", 1, 1, 1)
         # period is not a number
