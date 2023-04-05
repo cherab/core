@@ -26,11 +26,12 @@ from raysect.core import Point3D, Vector3D
 from raysect.core.math.function.float import Arg1D, Constant1D
 from raysect.optical import Spectrum
 
-from cherab.core import Line
+from cherab.core import Beam, Line
 from cherab.core.math.integrators import GaussianQuadrature
 from cherab.core.atomic import deuterium, nitrogen, ZeemanStructure
 from cherab.tools.plasmas.slab import build_constant_slab_plasma
 from cherab.core.model import GaussianLine, MultipletLineShape, StarkBroadenedLine, ZeemanTriplet, ParametrisedZeemanTriplet, ZeemanMultiplet
+from cherab.core.model import BeamEmissionMultiplet
 
 
 ATOMIC_MASS = 1.66053906660e-27
@@ -46,6 +47,11 @@ class TestLineShapes(unittest.TestCase):
                       (nitrogen, 1, 1.e17, 10., Vector3D(1.e4, 5.e4, 0))]
     plasma = build_constant_slab_plasma(length=1, width=1, height=1, electron_density=1e19, electron_temperature=20.,
                                         plasma_species=plasma_species, b_field=Vector3D(0, 5., 0))
+    beam = Beam()
+    beam.plasma = plasma
+    beam.energy = 60000
+    beam.temperature = 10
+    beam.element = deuterium
 
     def test_gaussian_line(self):
         # setting up a line shape model
@@ -370,6 +376,89 @@ class TestLineShapes(unittest.TestCase):
             ref_value = lorentz_bin * lorentz_weight + gaussian[i] * (1. - lorentz_weight)
             self.assertAlmostEqual(ref_value, spectrum.samples[i], delta=1e-9,
                                    msg='StarkBroadenedLine.add_line() method gives a wrong value at {} nm.'.format(wavelengths[i]))
+
+    def test_beam_emission_multiplet(self):
+        # Test MSE line shape
+        # setting up a line shape model
+        line = Line(deuterium, 0, (3, 2))  # D-alpha line
+        wavelength = 656.104
+        sigma_to_pi = 0.56
+        sigma1_to_sigma0 = 0.7060001671878492
+        pi2_to_pi3 = 0.3140003593919741
+        pi4_to_pi3 = 0.7279994935840365
+        mse_line = BeamEmissionMultiplet(line, wavelength, self.beam, sigma_to_pi,
+                                         sigma1_to_sigma0, pi2_to_pi3, pi4_to_pi3)
+
+        # spectrum parameters
+        min_wavelength = wavelength - 3
+        max_wavelength = wavelength + 3
+        bins = 512
+        point = Point3D(0.5, 0.5, 0.5)
+        direction = Vector3D(-1, 1, 0) / np.sqrt(2)
+        beam_direction = self.beam.direction(point.x, point.y, point.z)
+
+        # obtaining spectrum
+        radiance = 1.0
+        spectrum = Spectrum(min_wavelength, max_wavelength, bins)
+        spectrum = mse_line.add_line(radiance, point, point, beam_direction, direction, spectrum)
+
+        # validating
+
+        # calculate Stark splitting
+        b_field = self.plasma.b_field(point.x, point.y, point.z)
+        beam_velocity = beam_direction.normalise() * np.sqrt(2 * self.beam.energy * ELEMENTARY_CHARGE / ATOMIC_MASS)
+        e_field = beam_velocity.cross(b_field).length
+        STARK_SPLITTING_FACTOR = 2.77e-8
+        stark_split = np.abs(STARK_SPLITTING_FACTOR * e_field)
+
+        # calculate emission line central wavelength, doppler shifted along observation direction
+        central_wavelength = wavelength * (1 + beam_velocity.dot(direction.normalise()) / SPEED_OF_LIGHT)
+
+        # calculate doppler broadening
+        beam_ion_mass = self.beam.element.atomic_weight
+        beam_temperature = self.beam.temperature
+        sigma = np.sqrt(beam_temperature * ELEMENTARY_CHARGE / (beam_ion_mass * ATOMIC_MASS)) * wavelength / SPEED_OF_LIGHT
+        temp = 1. / (np.sqrt(2.) * sigma)
+
+        # calculate relative intensities of sigma and pi lines
+        d = 1 / (1 + sigma_to_pi)
+        intensity_sig = sigma_to_pi * d * radiance
+        intensity_pi = 0.5 * d * radiance
+
+        wavelengths, delta = np.linspace(min_wavelength, max_wavelength, bins + 1, retstep=True)
+
+        # add Sigma lines to output
+        intensity_s0 = 1 / (sigma1_to_sigma0 + 1)
+        intensity_s1 = 0.5 * sigma1_to_sigma0 * intensity_s0
+
+        erfs = erf((wavelengths - central_wavelength) * temp)
+        test_spectrum = 0.5 * intensity_sig * intensity_s0 * (erfs[1:] - erfs[:-1]) / delta
+        erfs = erf((wavelengths - central_wavelength - stark_split) * temp)
+        test_spectrum += 0.5 * intensity_sig * intensity_s1 * (erfs[1:] - erfs[:-1]) / delta
+        erfs = erf((wavelengths - central_wavelength + stark_split) * temp)
+        test_spectrum += 0.5 * intensity_sig * intensity_s1 * (erfs[1:] - erfs[:-1]) / delta
+
+        # add Pi lines to output
+        intensity_pi3 = 1 / (1 + pi2_to_pi3 + pi4_to_pi3)
+        intensity_pi2 = pi2_to_pi3 * intensity_pi3
+        intensity_pi4 = pi4_to_pi3 * intensity_pi3
+
+        erfs = erf((wavelengths - central_wavelength - 2 * stark_split) * temp)
+        test_spectrum += 0.5 * intensity_pi * intensity_pi2 * (erfs[1:] - erfs[:-1]) / delta
+        erfs = erf((wavelengths - central_wavelength + 2 * stark_split) * temp)
+        test_spectrum += 0.5 * intensity_pi * intensity_pi2 * (erfs[1:] - erfs[:-1]) / delta
+        erfs = erf((wavelengths - central_wavelength - 3 * stark_split) * temp)
+        test_spectrum += 0.5 * intensity_pi * intensity_pi3 * (erfs[1:] - erfs[:-1]) / delta
+        erfs = erf((wavelengths - central_wavelength + 3 * stark_split) * temp)
+        test_spectrum += 0.5 * intensity_pi * intensity_pi3 * (erfs[1:] - erfs[:-1]) / delta
+        erfs = erf((wavelengths - central_wavelength - 4 * stark_split) * temp)
+        test_spectrum += 0.5 * intensity_pi * intensity_pi4 * (erfs[1:] - erfs[:-1]) / delta
+        erfs = erf((wavelengths - central_wavelength + 4 * stark_split) * temp)
+        test_spectrum += 0.5 * intensity_pi * intensity_pi4 * (erfs[1:] - erfs[:-1]) / delta
+
+        for i in range(bins):
+            self.assertAlmostEqual(test_spectrum[i], spectrum.samples[i], delta=1e-10,
+                                   msg='BeamEmissionMultiplet.add_line() method gives a wrong value at {} nm.'.format(wavelengths[i]))
 
 
 if __name__ == '__main__':
