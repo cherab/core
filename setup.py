@@ -108,6 +108,10 @@ setup(
         "matplotlib",
         "raysect==0.8.1",
     ],
+    extras_require={
+        # Running ./dev/build_docs.sh runs setup.py, which requires cython.
+        "docs": ["cython", "sphinx", "sphinx-rtd-theme", "sphinx-tabs"],
+    },
     packages=find_packages(),
     include_package_data=True,
     zip_safe=False,

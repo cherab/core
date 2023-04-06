@@ -39,6 +39,7 @@ html_sidebars = {
 extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.mathjax',
+    'sphinx_tabs.tabs',
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -142,6 +143,7 @@ html_static_path = ['static']
 
 html_context = {'css_files': [
     '_static/theme_overrides.css',  # override wide tables in RTD theme
+    '_static/tabs.css',
     ]
 }
 
