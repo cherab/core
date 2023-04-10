@@ -60,6 +60,13 @@ with a build-time dependency on Cherab need to use a Cython version newer than
 3.0a5, due to a [bug](https://github.com/cython/cython/issues/2918) in how
 earlier versions of Cython handle namespaces.
 
+By default, pip will install from wheel archives on PyPI. If a binary wheel is not
+available for your version of Python, or if you are installing in editable mode
+for development, the package will be compiled locally on your machine. Compilation
+is done in parallel by default, using all available processors, but can be
+overridden by setting the environment variable `CHERAB_NCPU` to the number of
+processors to use.
+
 Governance
 ----------
 

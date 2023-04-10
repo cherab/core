@@ -20,7 +20,9 @@
 
 from libc.math cimport sqrt, atan2, M_PI
 
-from cherab.core.math.function cimport autowrap_function1d, autowrap_function2d, autowrap_function3d, autowrap_vectorfunction2d
+from raysect.core.math cimport Vector3D
+from raysect.core.math.function.float cimport autowrap_function1d, autowrap_function2d, autowrap_function3d
+from raysect.core.math.function.vector3d cimport autowrap_function2d as autowrap_vectorfunction2d
 from raysect.core cimport rotate_z
 cimport cython
 
@@ -251,12 +253,9 @@ cdef class AxisymmetricMapper(Function3D):
     def __init__(self, object function2d):
 
         if not callable(function2d):
-            raise TypeError("Function3D is not callable.")
+            raise TypeError("Function2D is not callable.")
 
         self.function2d = autowrap_function2d(function2d)
-
-    def __call__(self, double x, double y, double z):
-        return self.evaluate(x, y, z)
 
     cdef double evaluate(self, double x, double y, double z) except? -1e999:
         """Return the value of function2d when it is y-axis symmetrically
@@ -299,13 +298,11 @@ cdef class VectorAxisymmetricMapper(VectorFunction3D):
 
         self.function2d = autowrap_vectorfunction2d(vectorfunction2d)
 
-    def __call__(self, double x, double y, double z):
-        return self.evaluate(x, y, z)
-
     @cython.cdivision(True)
     cdef Vector3D evaluate(self, double x, double y, double z):
         """Return the value of function2d when it is y-axis symmetrically
         extended to the 3D space."""
+        cdef double r, phi
 
         # convert to cylindrical coordinates
         phi = atan2(y, x) / M_PI * 180
