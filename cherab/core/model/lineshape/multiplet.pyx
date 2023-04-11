@@ -22,7 +22,7 @@ import numpy as np
 
 from raysect.optical cimport Spectrum, Point3D, Vector3D
 
-from cherab.core.atomic cimport Line
+from cherab.core.atomic cimport Line, AtomicData
 from cherab.core.species cimport Species
 from cherab.core.plasma cimport Plasma
 from cherab.core.model.lineshape.doppler cimport doppler_shift, thermal_broadening
@@ -53,6 +53,7 @@ cdef class MultipletLineShape(LineShapeModel):
     :param float wavelength: The rest wavelength of the base emission line.
     :param Species target_species: The target plasma species that is emitting.
     :param Plasma plasma: The emitting plasma object.
+    :param AtomicData atomic_data: The atomic data provider.
     :param multiplet: An Nx2 array that specifies the multiplet wavelengths and line ratios.
 
     .. code-block:: pycon
@@ -69,10 +70,10 @@ cdef class MultipletLineShape(LineShapeModel):
        >>> plasma.models.add(excit)
     """
 
-    def __init__(self, Line line, double wavelength, Species target_species, Plasma plasma,
+    def __init__(self, Line line, double wavelength, Species target_species, Plasma plasma, AtomicData atomic_data,
                  object multiplet):
 
-        super().__init__(line, wavelength, target_species, plasma)
+        super().__init__(line, wavelength, target_species, plasma, atomic_data)
 
         multiplet = np.array(multiplet, dtype=np.float64)
 

@@ -21,7 +21,7 @@
 from libc.math cimport erf, M_SQRT2, floor, ceil
 from raysect.optical cimport Point3D, Vector3D
 
-from cherab.core.atomic cimport Line
+from cherab.core.atomic cimport Line, AtomicData
 from cherab.core.species cimport Species
 from cherab.core.plasma cimport Plasma
 from cherab.core.model.lineshape.doppler cimport doppler_shift, thermal_broadening
@@ -98,6 +98,7 @@ cdef class GaussianLine(LineShapeModel):
     :param float wavelength: The rest wavelength for this emission line.
     :param Species target_species: The target plasma species that is emitting.
     :param Plasma plasma: The emitting plasma object.
+    :param AtomicData atomic_data: The atomic data provider.
 
     .. code-block:: pycon
 
@@ -110,9 +111,9 @@ cdef class GaussianLine(LineShapeModel):
        >>> plasma.models.add(excit)
     """
 
-    def __init__(self, Line line, double wavelength, Species target_species, Plasma plasma):
+    def __init__(self, Line line, double wavelength, Species target_species, Plasma plasma, AtomicData atomic_data):
 
-        super().__init__(line, wavelength, target_species, plasma)
+        super().__init__(line, wavelength, target_species, plasma, atomic_data)
 
     @cython.boundscheck(False)
     @cython.wraparound(False)

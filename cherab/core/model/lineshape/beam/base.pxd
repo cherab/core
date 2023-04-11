@@ -21,6 +21,7 @@
 from raysect.optical cimport Spectrum, Point3D, Vector3D
 from cherab.core.atomic cimport Line
 from cherab.core.beam cimport Beam
+from cherab.core.atomic cimport AtomicData
 
 
 cdef class BeamLineShapeModel:
@@ -30,6 +31,7 @@ cdef class BeamLineShapeModel:
         Line line
         double wavelength
         Beam beam
+        AtomicData atomic_data
 
     cpdef Spectrum add_line(self, double radiance, Point3D beam_point, Point3D plasma_point,
                             Vector3D beam_direction, Vector3D observation_direction, Spectrum spectrum)

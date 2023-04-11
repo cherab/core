@@ -23,6 +23,7 @@ from raysect.optical cimport Spectrum, Point3D, Vector3D
 
 from cherab.core.plasma cimport Plasma
 from cherab.core.beam cimport Beam
+from cherab.core.atomic cimport AtomicData
 from cherab.core.atomic cimport Line
 from cherab.core.math.function cimport autowrap_function1d, autowrap_function2d
 from cherab.core.utility.constants cimport ATOMIC_MASS, ELEMENTARY_CHARGE
@@ -47,10 +48,10 @@ cdef class BeamEmissionMultiplet(BeamLineShapeModel):
     Produces Beam Emission Multiplet line shape, also known as the Motional Stark Effect spectrum.
     """
 
-    def __init__(self, Line line, double wavelength, Beam beam, object sigma_to_pi,
-                 object sigma1_to_sigma0, object pi2_to_pi3, object pi4_to_pi3):
+    def __init__(self, Line line, double wavelength, Beam beam, AtomicData atomic_data,
+                 object sigma_to_pi, object sigma1_to_sigma0, object pi2_to_pi3, object pi4_to_pi3):
 
-        super().__init__(line, wavelength, beam)
+        super().__init__(line, wavelength, beam, atomic_data)
 
         self._sigma_to_pi = autowrap_function2d(sigma_to_pi)
         self._sigma1_to_sigma0 = autowrap_function1d(sigma1_to_sigma0)

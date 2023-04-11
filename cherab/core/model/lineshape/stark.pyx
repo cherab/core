@@ -24,7 +24,7 @@ from libc.math cimport sqrt, floor, ceil, fabs, log, exp
 from raysect.core.math.function.float cimport Function1D
 from raysect.optical cimport Point3D, Vector3D
 
-from cherab.core.atomic cimport Line
+from cherab.core.atomic cimport Line, AtomicData
 from cherab.core.species cimport Species
 from cherab.core.plasma cimport Plasma
 from cherab.core.atomic.elements import hydrogen, deuterium, tritium
@@ -202,16 +202,14 @@ cdef class StarkBroadenedLine(ZeemanLineShapeModel):
 
     `c` = [5.14820e-04, 1.38821e+00, -9.60424e-02, -3.83995e-02, -7.40042e-03, -5.47626e-04].
 
-    Call `show_supported_transitions()` to see the list of supported transitions and
-    default model coefficients.
-
     :param Line line: The emission line object for this line shape.
     :param float wavelength: The rest wavelength for this emission line.
     :param Species target_species: The target plasma species that is emitting.
     :param Plasma plasma: The emitting plasma object.
-    :param dict stark_model_coefficients: Alternative model coefficients in the form
-                                          {line_ij: (c_ij, a_ij, b_ij), ...}.
-                                          If None, the default model parameters will be used.
+    :param AtomicData atomic_data: The atomic data provider.
+    :param tuple stark_model_coefficients: Stark model coefficients in the form (c_ij, a_ij, b_ij).
+                                           Default is None (will use
+                                           `atomic_data.stark_model_coefficients`).
     :param Integrator1D integrator: Integrator1D instance to integrate the line shape
         over the spectral bin. Default is `GaussianQuadrature()`.
     :param str polarisation: Leaves only :math:`\pi`-/:math:`\sigma`-polarised components:
@@ -220,56 +218,14 @@ cdef class StarkBroadenedLine(ZeemanLineShapeModel):
                              "no" - leave all components (default).
     """
 
-    STARK_MODEL_COEFFICIENTS_DEFAULT = {
-        Line(hydrogen, 0, (3, 2)): (3.71e-18, 0.7665, 0.064),
-        Line(hydrogen, 0, (4, 2)): (8.425e-18, 0.7803, 0.050),
-        Line(hydrogen, 0, (5, 2)): (1.31e-15, 0.6796, 0.030),
-        Line(hydrogen, 0, (6, 2)): (3.954e-16, 0.7149, 0.028),
-        Line(hydrogen, 0, (7, 2)): (6.258e-16, 0.712, 0.029),
-        Line(hydrogen, 0, (8, 2)): (7.378e-16, 0.7159, 0.032),
-        Line(hydrogen, 0, (9, 2)): (8.947e-16, 0.7177, 0.033),
-        Line(hydrogen, 0, (4, 3)): (1.330e-16, 0.7449, 0.045),
-        Line(hydrogen, 0, (5, 3)): (6.64e-16, 0.7356, 0.044),
-        Line(hydrogen, 0, (6, 3)): (2.481e-15, 0.7118, 0.016),
-        Line(hydrogen, 0, (7, 3)): (3.270e-15, 0.7137, 0.029),
-        Line(hydrogen, 0, (8, 3)): (4.343e-15, 0.7133, 0.032),
-        Line(hydrogen, 0, (9, 3)): (5.588e-15, 0.7165, 0.033),
-        Line(deuterium, 0, (3, 2)): (3.71e-18, 0.7665, 0.064),
-        Line(deuterium, 0, (4, 2)): (8.425e-18, 0.7803, 0.050),
-        Line(deuterium, 0, (5, 2)): (1.31e-15, 0.6796, 0.030),
-        Line(deuterium, 0, (6, 2)): (3.954e-16, 0.7149, 0.028),
-        Line(deuterium, 0, (7, 2)): (6.258e-16, 0.712, 0.029),
-        Line(deuterium, 0, (8, 2)): (7.378e-16, 0.7159, 0.032),
-        Line(deuterium, 0, (9, 2)): (8.947e-16, 0.7177, 0.033),
-        Line(deuterium, 0, (4, 3)): (1.330e-16, 0.7449, 0.045),
-        Line(deuterium, 0, (5, 3)): (6.64e-16, 0.7356, 0.044),
-        Line(deuterium, 0, (6, 3)): (2.481e-15, 0.7118, 0.016),
-        Line(deuterium, 0, (7, 3)): (3.270e-15, 0.7137, 0.029),
-        Line(deuterium, 0, (8, 3)): (4.343e-15, 0.7133, 0.032),
-        Line(deuterium, 0, (9, 3)): (5.588e-15, 0.7165, 0.033),
-        Line(tritium, 0, (3, 2)): (3.71e-18, 0.7665, 0.064),
-        Line(tritium, 0, (4, 2)): (8.425e-18, 0.7803, 0.050),
-        Line(tritium, 0, (5, 2)): (1.31e-15, 0.6796, 0.030),
-        Line(tritium, 0, (6, 2)): (3.954e-16, 0.7149, 0.028),
-        Line(tritium, 0, (7, 2)): (6.258e-16, 0.712, 0.029),
-        Line(tritium, 0, (8, 2)): (7.378e-16, 0.7159, 0.032),
-        Line(tritium, 0, (9, 2)): (8.947e-16, 0.7177, 0.033),
-        Line(tritium, 0, (4, 3)): (1.330e-16, 0.7449, 0.045),
-        Line(tritium, 0, (5, 3)): (6.64e-16, 0.7356, 0.044),
-        Line(tritium, 0, (6, 3)): (2.481e-15, 0.7118, 0.016),
-        Line(tritium, 0, (7, 3)): (3.270e-15, 0.7137, 0.029),
-        Line(tritium, 0, (8, 3)): (4.343e-15, 0.7133, 0.032),
-        Line(tritium, 0, (9, 3)): (5.588e-15, 0.7165, 0.033)
-    }
+    def __init__(self, Line line, double wavelength, Species target_species, Plasma plasma, AtomicData atomic_data,
+                 tuple stark_model_coefficients=None, Integrator1D integrator=GaussianQuadrature(), polarisation='no'):
 
-    def __init__(self, Line line, double wavelength, Species target_species, Plasma plasma,
-                 dict stark_model_coefficients=None, Integrator1D integrator=GaussianQuadrature(), polarisation='no'):
-
-        stark_model_coefficients = stark_model_coefficients or self.STARK_MODEL_COEFFICIENTS_DEFAULT
+        super().__init__(line, wavelength, target_species, plasma, atomic_data, polarisation, integrator)
 
         try:
             # Fitted Stark Constants
-            cij, aij, bij = stark_model_coefficients[line]
+            cij, aij, bij = stark_model_coefficients or self.atomic_data.stark_model_coefficients(line)
             if cij <= 0:
                 raise ValueError('Coefficient c_ij must be positive.')
             if aij <= 0:
@@ -287,14 +243,6 @@ cdef class StarkBroadenedLine(ZeemanLineShapeModel):
         self._fwhm_poly_coeff_lorentz = [1., 0.15882, 1.04388, -1.38281, 0.46251, 0.82325, -0.58026]
 
         self._weight_poly_coeff = [5.14820e-04, 1.38821e+00, -9.60424e-02, -3.83995e-02, -7.40042e-03, -5.47626e-04]
-
-        super().__init__(line, wavelength, target_species, plasma, polarisation, integrator)
-
-    @classmethod
-    def show_supported_transitions(cls):
-        """ Prints all supported transitions."""
-        for line, coeff in cls.STARK_MODEL_COEFFICIENTS_DEFAULT.items():
-            print('{}: c_ij={}, a_ij={}, b_ij={}'.format(line, coeff[0], coeff[1], coeff[2]))
 
     @cython.boundscheck(False)
     @cython.wraparound(False)

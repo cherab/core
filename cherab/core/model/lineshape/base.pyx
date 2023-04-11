@@ -27,16 +27,18 @@ cdef class LineShapeModel:
     :param float wavelength: The rest wavelength for this emission line.
     :param Species target_species: The target plasma species that is emitting.
     :param Plasma plasma: The emitting plasma object.
+    :param AtomicData atomic_data: The atomic data provider.
     :param Integrator1D integrator: Integrator1D instance to integrate the line shape
         over the spectral bin. Default is None.
     """
 
-    def __init__(self, Line line, double wavelength, Species target_species, Plasma plasma, Integrator1D integrator=None):
+    def __init__(self, Line line, double wavelength, Species target_species, Plasma plasma, AtomicData atomic_data, Integrator1D integrator=None):
 
         self.line = line
         self.wavelength = wavelength
         self.target_species = target_species
         self.plasma = plasma
+        self.atomic_data = atomic_data
         self.integrator = integrator
 
     cpdef Spectrum add_line(self, double radiance, Point3D point, Vector3D direction, Spectrum spectrum):

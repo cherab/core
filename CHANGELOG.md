@@ -6,7 +6,10 @@ Release 1.5.0 (TBD)
 
 API changes:
 * The line shape models are moved to a dedicated submodule. The user code should not be affected though. (#396)
-* The method show_supported_transitions() of StarkBroadenedLine and ParametrisedZeemanTriplet is made a class method.
+* The line shape models now have AtomicData as a required parameter.
+* The method show_supported_transitions() of StarkBroadenedLine and ParametrisedZeemanTriplet is removed.
+* The argument stark_model_coefficients of StarkBroadenedLine is now a tuple instead of a dict.
+* The argument line_parameters of ParametrisedZeemanTriplet is now a tuple instead of a dict.
 
 New:
 * Support Raysect 0.8

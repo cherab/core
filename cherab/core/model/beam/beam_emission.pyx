@@ -1,8 +1,8 @@
 # cython: language_level=3
 
-# Copyright 2016-2018 Euratom
-# Copyright 2016-2018 United Kingdom Atomic Energy Authority
-# Copyright 2016-2018 Centro de Investigaciones Energéticas, Medioambientales y Tecnológicas
+# Copyright 2016-2023 Euratom
+# Copyright 2016-2023 United Kingdom Atomic Energy Authority
+# Copyright 2016-2023 Centro de Investigaciones Energéticas, Medioambientales y Tecnológicas
 #
 # Licensed under the EUPL, Version 1.1 or – as soon they will be approved by the
 # European Commission - subsequent versions of the EUPL (the "Licence");
@@ -212,8 +212,8 @@ cdef class BeamEmissionLine(BeamModel):
             self._rates_list.append((species, rate))
 
         # instance line shape renderer
-        self._lineshape = BeamEmissionMultiplet(self._line, self._wavelength, self._beam, self._sigma_to_pi,
-                                                self._sigma1_to_sigma0, self._pi2_to_pi3, self._pi4_to_pi3)
+        self._lineshape = BeamEmissionMultiplet(self._line, self._wavelength, self._beam, self._atomic_data,
+                                                self._sigma_to_pi, self._sigma1_to_sigma0, self._pi2_to_pi3, self._pi4_to_pi3)
 
     def _change(self):
 

@@ -26,13 +26,15 @@ cdef class BeamLineShapeModel:
     :param Line line: The emission line object for this line shape.
     :param float wavelength: The rest wavelength for this emission line.
     :param Beam beam: The beam class that is emitting.
+    :param AtomicData atomic_data: The atomic data provider.
     """
 
-    def __init__(self, Line line, double wavelength, Beam beam):
+    def __init__(self, Line line, double wavelength, Beam beam, AtomicData atomic_data):
 
         self.line = line
         self.wavelength = wavelength
         self.beam = beam
+        self.atomic_data = atomic_data
 
     cpdef Spectrum add_line(self, double radiance, Point3D beam_point, Point3D plasma_point,
                             Vector3D beam_direction, Vector3D observation_direction, Spectrum spectrum):

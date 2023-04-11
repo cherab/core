@@ -22,6 +22,7 @@ from raysect.optical cimport Spectrum, Point3D, Vector3D
 from cherab.core.atomic cimport Line
 from cherab.core.species cimport Species
 from cherab.core.plasma cimport Plasma
+from cherab.core.atomic cimport AtomicData
 from cherab.core.math.integrators cimport Integrator1D
 
 
@@ -32,6 +33,7 @@ cdef class LineShapeModel:
         double wavelength
         Species target_species
         Plasma plasma
+        AtomicData atomic_data
         Integrator1D integrator
 
     cpdef Spectrum add_line(self, double radiance, Point3D point, Vector3D direction, Spectrum spectrum)

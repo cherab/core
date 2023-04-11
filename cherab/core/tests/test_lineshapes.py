@@ -1,6 +1,6 @@
-# Copyright 2016-2018 Euratom
-# Copyright 2016-2018 United Kingdom Atomic Energy Authority
-# Copyright 2016-2018 Centro de Investigaciones Energéticas, Medioambientales y Tecnológicas
+# Copyright 2016-2023 Euratom
+# Copyright 2016-2023 United Kingdom Atomic Energy Authority
+# Copyright 2016-2023 Centro de Investigaciones Energéticas, Medioambientales y Tecnológicas
 #
 # Licensed under the EUPL, Version 1.1 or – as soon they will be approved by the
 # European Commission - subsequent versions of the EUPL (the "Licence");
@@ -26,7 +26,7 @@ from raysect.core import Point3D, Vector3D
 from raysect.core.math.function.float import Arg1D, Constant1D
 from raysect.optical import Spectrum
 
-from cherab.core import Beam, Line
+from cherab.core import Beam, Line, AtomicData
 from cherab.core.math.integrators import GaussianQuadrature
 from cherab.core.atomic import deuterium, nitrogen, ZeemanStructure
 from cherab.tools.plasmas.slab import build_constant_slab_plasma
@@ -47,6 +47,7 @@ class TestLineShapes(unittest.TestCase):
                       (nitrogen, 1, 1.e17, 10., Vector3D(1.e4, 5.e4, 0))]
     plasma = build_constant_slab_plasma(length=1, width=1, height=1, electron_density=1e19, electron_temperature=20.,
                                         plasma_species=plasma_species, b_field=Vector3D(0, 5., 0))
+    atomic_data = AtomicData()
     beam = Beam()
     beam.plasma = plasma
     beam.energy = 60000
@@ -58,7 +59,7 @@ class TestLineShapes(unittest.TestCase):
         line = Line(deuterium, 0, (3, 2))  # D-alpha line
         target_species = self.plasma.composition.get(line.element, line.charge)
         wavelength = 656.104
-        gaussian_line = GaussianLine(line, wavelength, target_species, self.plasma)
+        gaussian_line = GaussianLine(line, wavelength, target_species, self.plasma, self.atomic_data)
 
         # spectrum parameters
         min_wavelength = wavelength - 0.5
@@ -93,7 +94,7 @@ class TestLineShapes(unittest.TestCase):
         target_species = self.plasma.composition.get(line.element, line.charge)
         multiplet = [[403.509, 404.132, 404.354, 404.479, 405.692], [0.205, 0.562, 0.175, 0.029, 0.029]]
         wavelength = 404.21
-        multiplet_line = MultipletLineShape(line, wavelength, target_species, self.plasma, multiplet)
+        multiplet_line = MultipletLineShape(line, wavelength, target_species, self.plasma, self.atomic_data, multiplet)
 
         # spectrum parameters
         min_wavelength = min(multiplet[0]) - 0.5
@@ -129,7 +130,7 @@ class TestLineShapes(unittest.TestCase):
         line = Line(deuterium, 0, (3, 2))  # D-alpha line
         target_species = self.plasma.composition.get(line.element, line.charge)
         wavelength = 656.104
-        triplet = ZeemanTriplet(line, wavelength, target_species, self.plasma)
+        triplet = ZeemanTriplet(line, wavelength, target_species, self.plasma, self.atomic_data)
 
         # spectrum parameters
         min_wavelength = wavelength - 0.5
@@ -180,7 +181,7 @@ class TestLineShapes(unittest.TestCase):
         line = Line(deuterium, 0, (3, 2))  # D-alpha line
         target_species = self.plasma.composition.get(line.element, line.charge)
         wavelength = 656.104
-        triplet = ParametrisedZeemanTriplet(line, wavelength, target_species, self.plasma)
+        triplet = ParametrisedZeemanTriplet(line, wavelength, target_species, self.plasma, self.atomic_data)
 
         # spectrum parameters
         min_wavelength = wavelength - 0.5
@@ -198,7 +199,7 @@ class TestLineShapes(unittest.TestCase):
             spectrum[pol] = triplet.add_line(radiance, point, direction, spectrum[pol])
 
         # validating
-        alpha, beta, gamma = triplet.LINE_PARAMETERS_DEFAULT[line]
+        alpha, beta, gamma = self.atomic_data.zeeman_triplet_parameters(line)
         temperature = target_species.distribution.effective_temperature(point.x, point.y, point.z)
         velocity = target_species.distribution.bulk_velocity(point.x, point.y, point.z)
         sigma = np.sqrt(temperature * ELEMENTARY_CHARGE / (line.element.atomic_weight * ATOMIC_MASS)) * wavelength / SPEED_OF_LIGHT
@@ -239,7 +240,7 @@ class TestLineShapes(unittest.TestCase):
         sigma_minus_components = [(HC_EV_NM / (photon_energy + BOHR_MAGNETON * Arg1D()), Constant1D(0.5))]
 
         zeeman_structure = ZeemanStructure(pi_components, sigma_plus_components, sigma_minus_components)
-        multiplet = ZeemanMultiplet(line, wavelength, target_species, self.plasma, zeeman_structure)
+        multiplet = ZeemanMultiplet(line, wavelength, target_species, self.plasma, self.atomic_data, zeeman_structure)
 
         # spectrum parameters
         min_wavelength = wavelength - 0.5
@@ -291,7 +292,7 @@ class TestLineShapes(unittest.TestCase):
         target_species = self.plasma.composition.get(line.element, line.charge)
         wavelength = 656.104
         integrator = GaussianQuadrature(relative_tolerance=1.e-5)
-        stark_line = StarkBroadenedLine(line, wavelength, target_species, self.plasma, integrator=integrator)
+        stark_line = StarkBroadenedLine(line, wavelength, target_species, self.plasma, self.atomic_data, integrator=integrator)
 
         # spectrum parameters
         min_wavelength = wavelength - 0.2
@@ -323,7 +324,7 @@ class TestLineShapes(unittest.TestCase):
         fwhm_gauss = 2 * np.sqrt(2 * np.log(2)) * sigma
 
         # Lorentzian parameters
-        cij, aij, bij = stark_line.STARK_MODEL_COEFFICIENTS_DEFAULT[line]
+        cij, aij, bij = self.atomic_data.stark_model_coefficients(line)
         ne = self.plasma.electron_distribution.density(point.x, point.y, point.z)
         te = self.plasma.electron_distribution.effective_temperature(point.x, point.y, point.z)
         fwhm_lorentz = cij * ne**aij / (te**bij)
@@ -386,8 +387,8 @@ class TestLineShapes(unittest.TestCase):
         sigma1_to_sigma0 = 0.7060001671878492
         pi2_to_pi3 = 0.3140003593919741
         pi4_to_pi3 = 0.7279994935840365
-        mse_line = BeamEmissionMultiplet(line, wavelength, self.beam, sigma_to_pi,
-                                         sigma1_to_sigma0, pi2_to_pi3, pi4_to_pi3)
+        mse_line = BeamEmissionMultiplet(line, wavelength, self.beam, self.atomic_data,
+                                         sigma_to_pi, sigma1_to_sigma0, pi2_to_pi3, pi4_to_pi3)
 
         # spectrum parameters
         min_wavelength = wavelength - 3

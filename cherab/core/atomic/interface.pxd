@@ -57,5 +57,8 @@ cdef class AtomicData:
 
     cpdef ZeemanStructure zeeman_structure(self, Line line, object b_field=*)
 
-    cpdef FreeFreeGauntFactor free_free_gaunt_factor(self)
+    cpdef tuple zeeman_triplet_parameters(self, Line line)
 
+    cpdef tuple stark_model_coefficients(self, Line line)
+
+    cpdef FreeFreeGauntFactor free_free_gaunt_factor(self)
