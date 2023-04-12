@@ -16,42 +16,15 @@
 # See the Licence for the specific language governing permissions and limitations
 # under the Licence.
 
-from raysect.core.math.function.float cimport Function1D, Function2D, Function3D
-from raysect.core.math.function.vector3d cimport Function2D as VectorFunction2D
+from raysect.core.math.function.float cimport Function3D
 from raysect.core.math.function.vector3d cimport Function3D as VectorFunction3D
 
 
-cdef class IsoMapper2D(Function2D):
+cdef class CylindricalTransform(Function3D):
 
-    cdef:
-        readonly Function1D function1d
-        readonly Function2D function2d
+    cdef readonly Function3D function3d
 
 
-cdef class IsoMapper3D(Function3D):
+cdef class VectorCylindricalTransform(VectorFunction3D):
 
-    cdef:
-        readonly Function3D function3d
-        readonly Function1D function1d
-
-
-cdef class Swizzle2D(Function2D):
-
-    cdef readonly Function2D function2d
-
-
-cdef class Swizzle3D(Function3D):
-
-    cdef:
-        readonly Function3D function3d
-        int shape[3]
-
-
-cdef class AxisymmetricMapper(Function3D):
-
-    cdef readonly Function2D function2d
-
-
-cdef class VectorAxisymmetricMapper(VectorFunction3D):
-
-    cdef readonly VectorFunction2D function2d
+    cdef readonly VectorFunction3D function3d

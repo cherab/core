@@ -7,6 +7,8 @@ Release 1.5.0 (TBD)
 New:
 * Support Raysect 0.8
 * Add custom line shape support to BeamCXLine model. (#394)
+* Add PeriodicTransformXD and VectorPeriodicTransformXD functions to support the data simulated with periodic boundary conditions. (#387)
+* Add CylindricalTransform and VectorCylindricalTransform to transform functions from cylindrical to Cartesian coordinates. (#387)
 
 
 Release 1.4.0 (3 Feb 2023)
@@ -17,7 +19,6 @@ API changes:
 * Support for Python 3.6 is dropped. It may still work, but is no longer actively tested.
 
 Bug fixes:
-* Fixed generomak plasma edge data paths.
 * Fix and improve OpenCL utility functions. (#358)
 * Fixed Bremsstrahlung trapezium evaluation (#384).
 
