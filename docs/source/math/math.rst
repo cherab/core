@@ -18,6 +18,7 @@ utilities that Cherab provides for slicing, dicing and projecting these function
    function
    interpolators
    mappers
+   transform
    mask
    samplers
    slice

@@ -34,6 +34,9 @@ compilation_includes = [".", numpy.get_include()]
 compilation_args = ["-O3"]
 cython_directives = {"language_level": 3}
 setup_path = path.dirname(path.abspath(__file__))
+num_processes = int(os.getenv("CHERAB_NCPU", "-1"))
+if num_processes == -1:
+    num_processes = multiprocessing.cpu_count()
 
 if line_profile:
     compilation_args.append("-DCYTHON_TRACE=1")
@@ -105,10 +108,17 @@ setup(
         "matplotlib",
         "raysect==0.8.1",
     ],
+    extras_require={
+        # Running ./dev/build_docs.sh runs setup.py, which requires cython.
+        "docs": ["cython", "sphinx", "sphinx-rtd-theme", "sphinx-tabs"],
+    },
     packages=find_packages(),
     include_package_data=True,
     zip_safe=False,
     ext_modules=extensions,
+    options=dict(
+        build_ext={"parallel": num_processes},
+    ),
 )
 
 # setup a rate repository with common rates
