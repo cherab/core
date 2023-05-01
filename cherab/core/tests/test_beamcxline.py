@@ -19,15 +19,13 @@
 import unittest
 
 import numpy as np
-from scipy.special import erf
 
 from raysect.core import Point3D, Vector3D, translate
 from raysect.optical import World, Spectrum, Ray
 
 from cherab.core import Beam
 from cherab.core.atomic import Line, AtomicData, BeamCXPEC, BeamStoppingRate
-from cherab.core.math.integrators import GaussianQuadrature
-from cherab.core.atomic import deuterium, nitrogen
+from cherab.core.atomic import deuterium
 from cherab.tools.plasmas.slab import build_constant_slab_plasma
 from cherab.core.model import SingleRayAttenuator, BeamCXLine, GaussianLine, ZeemanTriplet
 
