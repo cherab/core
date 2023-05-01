@@ -112,6 +112,8 @@ cdef class Bremsstrahlung(PlasmaModel):
     where the emission :math:`\\epsilon_{\\mathrm{ff}}(\\lambda)` is in units of radiance (W/sr/m^3/nm),
     :math:`T_\\mathrm{e}` is in eV and :math:`\\lambda` is in nm.
 
+    :math:`g_\\mathrm{ff} (Z_\\mathrm{i}, T_\\mathrm{e}, \\lambda)` is the free-free Gaunt factor.
+
     :ivar Plasma plasma: The plasma to which this emission model is attached. Default is None.
     :ivar AtomicData atomic_data: The atomic data provider for this model. Default is None.
     :ivar FreeFreeGauntFactor gaunt_factor: Free-free Gaunt factor as a function of Z, Te and
