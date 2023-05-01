@@ -23,14 +23,17 @@ from raysect.optical cimport Spectrum, Point3D, Vector3D
 from cherab.core cimport Plasma, AtomicData
 from cherab.core.math.integrators cimport GaussianQuadrature
 from cherab.core.species cimport Species
-from cherab.core.utility.constants cimport RECIP_4_PI, ELEMENTARY_CHARGE, SPEED_OF_LIGHT, PLANCK_CONSTANT
-from libc.math cimport sqrt, log, exp
+from cherab.core.utility.constants cimport RECIP_4_PI, ELEMENTARY_CHARGE, SPEED_OF_LIGHT, PLANCK_CONSTANT, ELECTRON_REST_MASS, VACUUM_PERMITTIVITY
+from libc.math cimport sqrt, log, exp, M_PI
 cimport cython
 
 
-cdef double PH_TO_J_FACTOR = PLANCK_CONSTANT * SPEED_OF_LIGHT * 1e9
+cdef double EXP_FACTOR = PLANCK_CONSTANT * SPEED_OF_LIGHT * 1e9 / ELEMENTARY_CHARGE
 
-cdef double EXP_FACTOR = PH_TO_J_FACTOR / ELEMENTARY_CHARGE
+cdef double BREMS_CONST = (ELEMENTARY_CHARGE**2 * RECIP_4_PI / VACUUM_PERMITTIVITY)**3
+BREMS_CONST *= 32 * M_PI**2 / (3 * sqrt(3) * ELECTRON_REST_MASS**2 * SPEED_OF_LIGHT**3)
+BREMS_CONST *= sqrt(2 * ELECTRON_REST_MASS / (M_PI * ELEMENTARY_CHARGE))
+BREMS_CONST *= SPEED_OF_LIGHT * 1e9 * RECIP_4_PI
 
 
 cdef class BremsFunction(Function1D):
@@ -80,9 +83,9 @@ cdef class BremsFunction(Function1D):
             if ni > 0:
                 ni_gff_z2 += ni * self.gaunt_factor.evaluate(z, self.te, wvl) * z * z
 
-        # bremsstrahlung equation W/m^3/str/nm
-        pre_factor = 0.95e-19 * RECIP_4_PI * ni_gff_z2 * self.ne / (sqrt(self.te) * wvl)
-        radiance = pre_factor * exp(- EXP_FACTOR / (self.te * wvl)) * PH_TO_J_FACTOR
+        # bremsstrahlung equation W/m^3/str
+        pre_factor = BREMS_CONST * ni_gff_z2 * self.ne / (sqrt(self.te) * wvl)
+        radiance = pre_factor * exp(- EXP_FACTOR / (self.te * wvl))
 
         # convert to W/m^3/str/nm
         return radiance / wvl
@@ -93,13 +96,21 @@ cdef class Bremsstrahlung(PlasmaModel):
     """
     Emitter that calculates bremsstrahlung emission from a plasma object.
 
-    The bremmstrahlung formula implemented is equation 2 from M. Beurskens,
-    et. al., 'ITER LIDAR performance analysis', Rev. Sci. Instrum. 79, 10E727 (2008),
+    The bremmstrahlung formula implemented is equation 5.3.40
+    from I. H. Hutchinson, 'Principles of Plasma Diagnostics', second edition,
+    Cambridge University Press, 2002, ISBN: 9780511613630,
+    https://doi.org/10.1017/CBO9780511613630
 
     .. math::
-        \\epsilon (\\lambda) = \\frac{0.95 \\times 10^{-19}}{\\lambda 4 \\pi} \\sum_{i} \\left(g_{ff}(Z_i, T_e, \\lambda) n_i Z_i^2\\right) n_e T_e^{-1/2} \\times \\exp{\\frac{-hc}{\\lambda T_e}},
+        \\epsilon_{\\mathrm{ff}}(\\lambda) = \\left( \\frac{e^2}{4 \\pi \\varepsilon_0} \\right)^3
+        \\frac{32 \\pi^2}{3 \\sqrt{3} m_\\mathrm{e}^2 c^3}
+        \\sqrt{\\frac{2 m_\\mathrm{e}^3}{\\pi e T_\\mathrm{e}}}
+        \\frac{10^{9} c}{4 \\pi \\lambda^2}
+        n_\\mathrm{e} \\sum_i \\left( n_\\mathrm{i} g_\\mathrm{ff} (Z_\\mathrm{i}, T_\\mathrm{e}, \\lambda) Z_\\mathrm{i}^2 \\right)
+        \\mathrm{e}^{-\\frac{10^9 hc}{e T_\\mathrm{e}}}\\,,
 
-    where the emission :math:`\\epsilon (\\lambda)` is in units of radiance (ph/s/sr/m^3/nm).
+    where the emission :math:`\\epsilon_{\\mathrm{ff}}(\\lambda)` is in units of radiance (W/sr/m^3/nm),
+    :math:`T_\\mathrm{e}` is in eV and :math:`\\lambda` is in nm.
 
     :ivar Plasma plasma: The plasma to which this emission model is attached. Default is None.
     :ivar AtomicData atomic_data: The atomic data provider for this model. Default is None.
