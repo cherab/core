@@ -18,9 +18,10 @@
 
 import unittest
 import numpy as np
-from raysect.optical import World, Ray, Point3D, Point2D, Vector3D, NumericalIntegrator
+from raysect.optical import World, Ray, Point3D, Point2D, Vector3D, NumericalIntegrator, Spectrum
 from raysect.primitive import Box, Cylinder, Subtract
 from cherab.tools.raytransfer import RayTransferBox, RayTransferCylinder, CartesianRayTransferEmitter, CylindricalRayTransferEmitter
+from cherab.tools.raytransfer import RayTransferPipeline0D, RayTransferPipeline1D, RayTransferPipeline2D
 from cherab.tools.inversions import ToroidalVoxelGrid
 
 
@@ -239,3 +240,158 @@ class TestCylindricalRayTransferEmitter(unittest.TestCase):
         spectrum_test = np.zeros(12)
         spectrum_test[2] = spectrum_test[9] = np.sqrt(2.)
         self.assertTrue(np.allclose(spectrum_test, spectrum.samples, atol=0.001))
+
+
+class TestRayTransferPipeline0D(unittest.TestCase):
+    """
+    Test cases for RayTransferPipeline0D class.
+    """
+
+    def test_initialise(self):
+        """
+        Test initialise method.
+        """
+        nbins = 10
+        pipeline = RayTransferPipeline0D('test_pipeline_0D', units='power')
+        pipeline.initialise(0, 0, nbins, 0, 0)
+
+        self.assertTrue(pipeline.matrix.shape == (nbins,))
+        self.assertTrue(pipeline.name == 'test_pipeline_0D')
+        self.assertTrue(pipeline.units == 'power')
+
+        self.assertRaises(ValueError, RayTransferPipeline0D, 'test_pipeline_0D', 'blah')
+
+    def test_units(self):
+        """
+        Test if the 'units' attribute works properly.
+        """
+        nbins = 10
+        sensitivity = 2.
+        spectral_value = 1.
+        spectrum = Spectrum(1., 2., nbins)
+        spectrum.samples[:] = spectral_value
+
+        pipeline = RayTransferPipeline0D('test_pipeline_0D', units='power')
+        pipeline.initialise(0, 0, nbins, 0, 0)
+
+        pixel_processor = pipeline.pixel_processor(0)
+
+        pixel_processor.add_sample(spectrum, sensitivity)
+
+        matrix, _ = pixel_processor.pack_results()  # multiplied by sensitivity
+        self.assertTrue(np.all(matrix == sensitivity * spectral_value))
+
+        pipeline.units = 'radiance'
+        pixel_processor = pipeline.pixel_processor(0)
+        pixel_processor.add_sample(spectrum, sensitivity)
+
+        matrix, _ = pixel_processor.pack_results()  # not multiplied by sensitivity
+        self.assertTrue(np.all(matrix == spectral_value))
+
+
+class TestRayTransferPipeline1D(unittest.TestCase):
+    """
+    Test cases for RayTransferPipeline1D class.
+    """
+
+    def test_initialise(self):
+        """
+        Test initialise method.
+        """
+        nbins = 10
+        pixels = 20
+        samples = 1
+        pipeline = RayTransferPipeline1D('test_pipeline_1D', units='radiance')
+        pipeline.initialise(pixels, samples, 0, 0, nbins, 1, 0)
+
+        self.assertTrue(pipeline.matrix.shape == (pixels, nbins))
+        self.assertTrue(pipeline.name == 'test_pipeline_1D')
+        self.assertTrue(pipeline.units == 'radiance')
+        self.assertTrue(pipeline._samples == samples)
+
+        self.assertRaises(ValueError, RayTransferPipeline1D, 'test_pipeline_1D', 'blah')
+
+    def test_units(self):
+        """
+        Test if the 'units' attribute works properly.
+        """
+        nbins = 10
+        pixels = 20
+        samples = 1
+        sensitivity = 2.
+        spectral_value = 1.
+        spectrum = Spectrum(1., 2., nbins)
+        spectrum.samples[:] = spectral_value
+
+        pipeline = RayTransferPipeline1D('test_pipeline_1D', units='power')
+        pipeline.initialise(pixels, samples, 0, 0, nbins, 1, 0)
+
+        pixel_processor = pipeline.pixel_processor(0, 0)
+
+        pixel_processor.add_sample(spectrum, sensitivity)
+
+        matrix, _ = pixel_processor.pack_results()  # multiplied by sensitivity
+        self.assertTrue(np.all(matrix == sensitivity * spectral_value))
+
+        pipeline.units = 'radiance'
+        pixel_processor = pipeline.pixel_processor(0, 0)
+        pixel_processor.add_sample(spectrum, sensitivity)
+
+        matrix, _ = pixel_processor.pack_results()  # not multiplied by sensitivity
+        self.assertTrue(np.all(matrix == spectral_value))
+
+
+class TestRayTransferPipeline2D(unittest.TestCase):
+    """
+    Test cases for RayTransferPipeline2D class.
+    """
+
+    def test_initialise(self):
+        """
+        Test initialise method.
+        """
+        nbins = 10
+        pixels = (20, 5)
+        samples = 1
+        pipeline = RayTransferPipeline2D('test_pipeline_2D', units='radiance')
+        pipeline.initialise(pixels, samples, 0, 0, nbins, 1, 0)
+
+        self.assertTrue(pipeline.matrix.shape == (pixels[0], pixels[1], nbins))
+        self.assertTrue(pipeline.name == 'test_pipeline_2D')
+        self.assertTrue(pipeline.units == 'radiance')
+        self.assertTrue(pipeline._samples == samples)
+
+        self.assertRaises(ValueError, RayTransferPipeline2D, 'test_pipeline_2D', 'blah')
+
+    def test_units(self):
+        """
+        Test if the 'units' attribute works properly.
+        """
+        nbins = 10
+        pixels = (20, 5)
+        samples = 1
+        sensitivity = 2.
+        spectral_value = 1.
+        spectrum = Spectrum(1., 2., nbins)
+        spectrum.samples[:] = spectral_value
+
+        pipeline = RayTransferPipeline2D('test_pipeline_2D', units='power')
+        pipeline.initialise(pixels, samples, 0, 0, nbins, 1, 0)
+
+        pixel_processor = pipeline.pixel_processor(0, 0, 0)
+
+        pixel_processor.add_sample(spectrum, sensitivity)
+
+        matrix, _ = pixel_processor.pack_results()  # multiplied by sensitivity
+        self.assertTrue(np.all(matrix == sensitivity * spectral_value))
+
+        pipeline.units = 'radiance'
+        pixel_processor = pipeline.pixel_processor(0, 0, 0)
+        pixel_processor.add_sample(spectrum, sensitivity)
+
+        matrix, _ = pixel_processor.pack_results()  # not multiplied by sensitivity
+        self.assertTrue(np.all(matrix == spectral_value))
+
+
+if __name__ == '__main__':
+    unittest.main()

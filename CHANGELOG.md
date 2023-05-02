@@ -4,6 +4,9 @@ Project Changelog
 Release 1.5.0 (TBD)
 -------------------
 
+Bug fixes:
+* Fix improper multiplication by sensitivity factor in RayTransferPixelProcessor resulting in wrong units (m^3 sr instead of m) of ray transfer matrices. (#412)
+
 New:
 * Support Raysect 0.8
 * Add PeriodicTransformXD and VectorPeriodicTransformXD functions to support the data simulated with periodic boundary conditions. (#387)

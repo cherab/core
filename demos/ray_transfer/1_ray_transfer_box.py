@@ -36,8 +36,8 @@ from raysect.optical import World, translate, rotate, Point3D
 from raysect.optical.observer import PinholeCamera, FullFrameSampler2D
 
 # RayTransferPipeline2D is optimised for calculation of ray transfer matrices.
-# It's also possible to use SpectralRadiancePipeline2D but for the matrices with >1000 elements
-# the performance will be lower.
+# It's also possible to use SpectralRadiancePipeline2D or SpectralPowerPipeline2D but
+# for the matrices with >1000 elements the performance will be lower.
 from cherab.tools.raytransfer import RayTransferPipeline2D, RayTransferBox
 
 # Here we use special materials optimised for calculation of ray transfer matrices.
@@ -66,6 +66,9 @@ rtb = RayTransferBox(120., 80., 10., 12, 8, 1, transform=translate(-60., 0, 0), 
 rtb.step = 0.2
 
 # creating ray transfer pipeline
+# Be careful when choosing pipeline units ('power' or 'radiance').
+# In case of 'power', the matrix [m] is multiplied by the detector's sensitivity [m^2 sr].
+# For the PinholeCamera this does not matter, because its pixel sensitivity is 1.
 pipeline = RayTransferPipeline2D()
 
 # setting up the camera

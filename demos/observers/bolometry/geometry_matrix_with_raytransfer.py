@@ -240,7 +240,7 @@ sensitivity_matrix = []
 for camera in cameras:
     for foil in camera:
         print("Calculating sensitivity for {}...".format(foil.name))
-        foil.pipelines = [RayTransferPipeline0D()]
+        foil.pipelines = [RayTransferPipeline0D(units=foil.units)]
         # All objects in world have wavelength-independent material properties,
         # so it doesn't matter which wavelength range we use (as long as
         # max_wavelength - min_wavelength = 1)
