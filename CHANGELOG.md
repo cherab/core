@@ -4,13 +4,11 @@ Project Changelog
 Release 1.5.0 (TBD)
 -------------------
 
-Bug fixes:
-* Fix improper multiplication by sensitivity factor in RayTransferPixelProcessor resulting in wrong units (m^3 sr instead of m) of ray transfer matrices. (#412)
-
 New:
 * Support Raysect 0.8
 * Add PeriodicTransformXD and VectorPeriodicTransformXD functions to support the data simulated with periodic boundary conditions. (#387)
 * Add CylindricalTransform and VectorCylindricalTransform to transform functions from cylindrical to Cartesian coordinates. (#387)
+* Add the units attribute to RayTransferPipelineXD that determines whether the ray transfer matrix is multiplied by sensitivity or not. (#412)
 
 
 Release 1.4.0 (3 Feb 2023)
