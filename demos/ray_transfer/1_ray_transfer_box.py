@@ -66,8 +66,8 @@ rtb = RayTransferBox(120., 80., 10., 12, 8, 1, transform=translate(-60., 0, 0), 
 rtb.step = 0.2
 
 # creating ray transfer pipeline
-# Be careful when choosing pipeline units ('power' or 'radiance').
-# In case of 'power', the matrix [m] is multiplied by the detector's sensitivity [m^2 sr].
+# Be careful when setting the 'kind' attribute of the pipeline to 'power' or 'radiance'.
+# In the case of 'power', the matrix [m] is multiplied by the detector's sensitivity [m^2 sr].
 # For the PinholeCamera this does not matter, because its pixel sensitivity is 1.
 pipeline = RayTransferPipeline2D()
 

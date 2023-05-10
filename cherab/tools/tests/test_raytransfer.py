@@ -252,18 +252,18 @@ class TestRayTransferPipeline0D(unittest.TestCase):
         Test initialise method.
         """
         nbins = 10
-        pipeline = RayTransferPipeline0D('test_pipeline_0D', units='power')
+        pipeline = RayTransferPipeline0D('test_pipeline_0D', kind='power')
         pipeline.initialise(0, 0, nbins, 0, 0)
 
         self.assertTrue(pipeline.matrix.shape == (nbins,))
         self.assertTrue(pipeline.name == 'test_pipeline_0D')
-        self.assertTrue(pipeline.units == 'power')
+        self.assertTrue(pipeline.kind == 'power')
 
         self.assertRaises(ValueError, RayTransferPipeline0D, 'test_pipeline_0D', 'blah')
 
-    def test_units(self):
+    def test_kind(self):
         """
-        Test if the 'units' attribute works properly.
+        Test if the 'kind' attribute works properly.
         """
         nbins = 10
         sensitivity = 2.
@@ -271,7 +271,7 @@ class TestRayTransferPipeline0D(unittest.TestCase):
         spectrum = Spectrum(1., 2., nbins)
         spectrum.samples[:] = spectral_value
 
-        pipeline = RayTransferPipeline0D('test_pipeline_0D', units='power')
+        pipeline = RayTransferPipeline0D('test_pipeline_0D', kind='power')
         pipeline.initialise(0, 0, nbins, 0, 0)
 
         pixel_processor = pipeline.pixel_processor(0)
@@ -281,7 +281,7 @@ class TestRayTransferPipeline0D(unittest.TestCase):
         matrix, _ = pixel_processor.pack_results()  # multiplied by sensitivity
         self.assertTrue(np.all(matrix == sensitivity * spectral_value))
 
-        pipeline.units = 'radiance'
+        pipeline.kind = 'radiance'
         pixel_processor = pipeline.pixel_processor(0)
         pixel_processor.add_sample(spectrum, sensitivity)
 
@@ -301,19 +301,19 @@ class TestRayTransferPipeline1D(unittest.TestCase):
         nbins = 10
         pixels = 20
         samples = 1
-        pipeline = RayTransferPipeline1D('test_pipeline_1D', units='radiance')
+        pipeline = RayTransferPipeline1D('test_pipeline_1D', kind='radiance')
         pipeline.initialise(pixels, samples, 0, 0, nbins, 1, 0)
 
         self.assertTrue(pipeline.matrix.shape == (pixels, nbins))
         self.assertTrue(pipeline.name == 'test_pipeline_1D')
-        self.assertTrue(pipeline.units == 'radiance')
+        self.assertTrue(pipeline.kind == 'radiance')
         self.assertTrue(pipeline._samples == samples)
 
         self.assertRaises(ValueError, RayTransferPipeline1D, 'test_pipeline_1D', 'blah')
 
-    def test_units(self):
+    def test_kind(self):
         """
-        Test if the 'units' attribute works properly.
+        Test if the 'kind' attribute works properly.
         """
         nbins = 10
         pixels = 20
@@ -323,7 +323,7 @@ class TestRayTransferPipeline1D(unittest.TestCase):
         spectrum = Spectrum(1., 2., nbins)
         spectrum.samples[:] = spectral_value
 
-        pipeline = RayTransferPipeline1D('test_pipeline_1D', units='power')
+        pipeline = RayTransferPipeline1D('test_pipeline_1D', kind='power')
         pipeline.initialise(pixels, samples, 0, 0, nbins, 1, 0)
 
         pixel_processor = pipeline.pixel_processor(0, 0)
@@ -333,7 +333,7 @@ class TestRayTransferPipeline1D(unittest.TestCase):
         matrix, _ = pixel_processor.pack_results()  # multiplied by sensitivity
         self.assertTrue(np.all(matrix == sensitivity * spectral_value))
 
-        pipeline.units = 'radiance'
+        pipeline.kind = 'radiance'
         pixel_processor = pipeline.pixel_processor(0, 0)
         pixel_processor.add_sample(spectrum, sensitivity)
 
@@ -353,19 +353,19 @@ class TestRayTransferPipeline2D(unittest.TestCase):
         nbins = 10
         pixels = (20, 5)
         samples = 1
-        pipeline = RayTransferPipeline2D('test_pipeline_2D', units='radiance')
+        pipeline = RayTransferPipeline2D('test_pipeline_2D', kind='radiance')
         pipeline.initialise(pixels, samples, 0, 0, nbins, 1, 0)
 
         self.assertTrue(pipeline.matrix.shape == (pixels[0], pixels[1], nbins))
         self.assertTrue(pipeline.name == 'test_pipeline_2D')
-        self.assertTrue(pipeline.units == 'radiance')
+        self.assertTrue(pipeline.kind == 'radiance')
         self.assertTrue(pipeline._samples == samples)
 
         self.assertRaises(ValueError, RayTransferPipeline2D, 'test_pipeline_2D', 'blah')
 
     def test_units(self):
         """
-        Test if the 'units' attribute works properly.
+        Test if the 'kind' attribute works properly.
         """
         nbins = 10
         pixels = (20, 5)
@@ -375,7 +375,7 @@ class TestRayTransferPipeline2D(unittest.TestCase):
         spectrum = Spectrum(1., 2., nbins)
         spectrum.samples[:] = spectral_value
 
-        pipeline = RayTransferPipeline2D('test_pipeline_2D', units='power')
+        pipeline = RayTransferPipeline2D('test_pipeline_2D', kind='power')
         pipeline.initialise(pixels, samples, 0, 0, nbins, 1, 0)
 
         pixel_processor = pipeline.pixel_processor(0, 0, 0)
@@ -385,7 +385,7 @@ class TestRayTransferPipeline2D(unittest.TestCase):
         matrix, _ = pixel_processor.pack_results()  # multiplied by sensitivity
         self.assertTrue(np.all(matrix == sensitivity * spectral_value))
 
-        pipeline.units = 'radiance'
+        pipeline.kind = 'radiance'
         pixel_processor = pipeline.pixel_processor(0, 0, 0)
         pixel_processor.add_sample(spectrum, sensitivity)
 

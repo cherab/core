@@ -36,29 +36,34 @@ from raysect.optical.observer.base import Pipeline0D, Pipeline1D, Pipeline2D, Pi
 
 class RayTransferPipelineBase():
 
-    def __init__(self, name=None, units='power'):
+    def __init__(self, name=None, kind='power'):
 
         self.name = name
         self._matrix = None
         self._samples = 0
         self._bins = 0
-        self.units = units
+        self.kind = kind
 
     @property
-    def units(self):
+    def kind(self):
         """
-        The units in which the matrix is calculated. Can be 'power' or 'radiance'.
-        The 'power' stands for [m^3 sr] and the 'radiance' stands for [m].
+        The kind of the pipeline. Can be 'power' or 'radiance'.
+        In the case of 'power', the resulting matrix is multiplied by the sensitivity
+        of the detector, and the units of the matrix are [m^3 sr], which gives the units
+        of power [W] for the product of the ray transfer matrix and the emission profile.
+        In case of 'radiance', the sensitivity is not taken into account and
+        the matrix is calculated in [m], which gives the units of radiance [W m^-2 sr^-1]
+        for the product of the ray transfer matrix and the emission profile.
         """
-        return self._units
+        return self._kind
 
-    @units.setter
-    def units(self, value):
-        _units = value.lower()
-        if _units in ('power', 'radiance'):
-            self._units = _units
+    @kind.setter
+    def kind(self, value):
+        _kind = value.lower()
+        if _kind in ('power', 'radiance'):
+            self._kind = _kind
         else:
-            raise ValueError("The units property must be 'power' or 'radiance'.")
+            raise ValueError("The kind property must be 'power' or 'radiance'.")
 
     @property
     def matrix(self):
@@ -70,27 +75,27 @@ class RayTransferPipeline0D(Pipeline0D, RayTransferPipelineBase):
     Simple 0D pipeline for ray transfer matrix (geometry matrix) calculation.
 
     :param str name: The name of the pipeline. Default is 'RayTransferPipeline0D'.
-    :param str units: The units in which the matrix is calculated. Can
-                      be 'power' (default) or 'radiance'.
-                      The 'power' stands for [m^3 sr] and when the matrix is collapsed with
-                      the emission profile [W m^-3 sr-1 nm-1] it gives the power [W nm-1].
-                      The 'radiance' stands for [m] and when the matrix is collapsed with
-                      the emission profile it gives the radiance [W m^-2 sr-1 nm-1].
-                      If the 'power' is selected, the matrix is multiplied by the detector sensitivity.
-                      Note that if the detector sensitivity is 1, the 'power' and 'radiance'
-                      give the same results.
+    :param str kind: The kind of the pipeline. Can be 'power' or 'radiance'.
+        In the case of 'power', the resulting matrix is multiplied by the sensitivity
+        of the detector, and the units of the matrix are [m^3 sr], which gives the units
+        of power [W] for the product of the ray transfer matrix and the emission profile.
+        In case of 'radiance', the sensitivity is not taken into account and
+        the matrix is calculated in [m], which gives the units of radiance [W m^-2 sr^-1]
+        for the product of the ray transfer matrix and the emission profile.
+        Note that if the sensitivity of the detector is 1 (e.g. `PinholeCamera`, `VectorCamera`),
+        the 'power' and 'radiance' give the same results.
 
     :ivar np.ndarray matrix: Ray transfer matrix, a 1D array of size :math:`N_{bin}`.
 
     .. code-block:: pycon
 
        >>> from cherab.tools.raytransfer import RayTransferPipeline0D
-       >>> pipeline = RayTransferPipeline0D(units='radiance')
+       >>> pipeline = RayTransferPipeline0D(kind='radiance')
     """
 
-    def __init__(self, name='RayTransferPipeline0D', units='power'):
+    def __init__(self, name='RayTransferPipeline0D', kind='power'):
 
-        RayTransferPipelineBase.__init__(self, name, units)
+        RayTransferPipelineBase.__init__(self, name, kind)
 
     def initialise(self, min_wavelength, max_wavelength, spectral_bins, spectral_slices, quiet):
         self._samples = 0
@@ -98,7 +103,7 @@ class RayTransferPipeline0D(Pipeline0D, RayTransferPipelineBase):
         self._matrix = np.zeros(spectral_bins)
 
     def pixel_processor(self, slice_id):
-        if self._units == 'power':
+        if self._kind == 'power':
             return PowerRayTransferPixelProcessor(self._bins)
         else:
             return RadianceRayTransferPixelProcessor(self._bins)
@@ -116,27 +121,27 @@ class RayTransferPipeline1D(Pipeline1D, RayTransferPipelineBase):
     Simple 1D pipeline for ray transfer matrix (geometry matrix) calculation.
 
     :param str name: The name of the pipeline. Default is 'RayTransferPipeline0D'.
-    :param str units: The units in which the matrix is calculated. Can
-                      be 'power' (default) or 'radiance'.
-                      The 'power' stands for [m^3 sr] and when the matrix is collapsed with
-                      the emission profile [W m^-3 sr-1 nm-1] it gives the power [W nm-1].
-                      The 'radiance' stands for [m] and when the matrix is collapsed with
-                      the emission profile it gives the radiance [W m^-2 sr-1 nm-1].
-                      If the 'power' is selected, the matrix is multiplied by the detector sensitivity.
-                      Note that if the detector sensitivity is 1, the 'power' and 'radiance'
-                      give the same results.
+    :param str kind: The kind of the pipeline. Can be 'power' or 'radiance'.
+        In the case of 'power', the resulting matrix is multiplied by the sensitivity
+        of the detector, and the units of the matrix are [m^3 sr], which gives the units
+        of power [W] for the product of the ray transfer matrix and the emission profile.
+        In case of 'radiance', the sensitivity is not taken into account and
+        the matrix is calculated in [m], which gives the units of radiance [W m^-2 sr^-1]
+        for the product of the ray transfer matrix and the emission profile.
+        Note that if the sensitivity of the detector is 1 (e.g. `PinholeCamera`, `VectorCamera`),
+        the 'power' and 'radiance' give the same results.
 
     :ivar np.ndarray matrix: Ray transfer matrix, a 2D array of shape :math:`(N_{pixel}, N_{bin})`.
 
     .. code-block:: pycon
 
        >>> from cherab.tools.raytransfer import RayTransferPipeline1D
-       >>> pipeline = RayTransferPipeline1D(units='radiance')
+       >>> pipeline = RayTransferPipeline1D(kind='radiance')
     """
 
-    def __init__(self, name='RayTransferPipeline1D', units='power'):
+    def __init__(self, name='RayTransferPipeline1D', kind='power'):
 
-        RayTransferPipelineBase.__init__(self, name, units)
+        RayTransferPipelineBase.__init__(self, name, kind)
         self._pixels = None
 
     def initialise(self, pixels, pixel_samples, min_wavelength, max_wavelength, spectral_bins, spectral_slices, quiet):
@@ -146,7 +151,7 @@ class RayTransferPipeline1D(Pipeline1D, RayTransferPipelineBase):
         self._matrix = np.zeros((pixels, spectral_bins))
 
     def pixel_processor(self, pixel, slice_id):
-        if self._units == 'power':
+        if self._kind == 'power':
             return PowerRayTransferPixelProcessor(self._bins)
         else:
             return RadianceRayTransferPixelProcessor(self._bins)
@@ -163,27 +168,27 @@ class RayTransferPipeline2D(Pipeline2D, RayTransferPipelineBase):
     Simple 2D pipeline for ray transfer matrix (geometry matrix) calculation.
 
     :param str name: The name of the pipeline. Default is 'RayTransferPipeline0D'.
-    :param str units: The units in which the matrix is calculated. Can
-                      be 'power' (default) or 'radiance'.
-                      The 'power' stands for [m^3 sr] and when the matrix is collapsed with
-                      the emission profile [W m^-3 sr-1 nm-1] it gives the power [W nm-1].
-                      The 'radiance' stands for [m] and when the matrix is collapsed with
-                      the emission profile it gives the radiance [W m^-2 sr-1 nm-1].
-                      If the 'power' is selected, the matrix is multiplied by the detector sensitivity.
-                      Note that if the detector sensitivity is 1, the 'power' and 'radiance'
-                      give the same results.
+    :param str kind: The kind of the pipeline. Can be 'power' or 'radiance'.
+        In the case of 'power', the resulting matrix is multiplied by the sensitivity
+        of the detector, and the units of the matrix are [m^3 sr], which gives the units
+        of power [W] for the product of the ray transfer matrix and the emission profile.
+        In case of 'radiance', the sensitivity is not taken into account and
+        the matrix is calculated in [m], which gives the units of radiance [W m^-2 sr^-1]
+        for the product of the ray transfer matrix and the emission profile.
+        Note that if the sensitivity of the detector is 1 (e.g. `PinholeCamera`, `VectorCamera`),
+        the 'power' and 'radiance' give the same results.
 
     :ivar np.ndarray matrix: Ray transfer matrix, a 3D array of shape :math:`(N_x, N_y, N_{bin})`.
 
     .. code-block:: pycon
 
        >>> from cherab.tools.raytransfer import RayTransferPipeline2D
-       >>> pipeline = RayTransferPipeline2D(units='radiance')
+       >>> pipeline = RayTransferPipeline2D(kind='radiance')
     """
 
-    def __init__(self, name='RayTransferPipeline2D', units='power'):
+    def __init__(self, name='RayTransferPipeline2D', kind='power'):
 
-        RayTransferPipelineBase.__init__(self, name, units)
+        RayTransferPipelineBase.__init__(self, name, kind)
         self._pixels = None
 
     def initialise(self, pixels, pixel_samples, min_wavelength, max_wavelength, spectral_bins, spectral_slices, quiet):
@@ -193,7 +198,7 @@ class RayTransferPipeline2D(Pipeline2D, RayTransferPipelineBase):
         self._matrix = np.zeros((pixels[0], pixels[1], spectral_bins))
 
     def pixel_processor(self, x, y, slice_id):
-        if self._units == 'power':
+        if self._kind == 'power':
             return PowerRayTransferPixelProcessor(self._bins)
         else:
             return RadianceRayTransferPixelProcessor(self._bins)
