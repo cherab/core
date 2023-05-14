@@ -39,6 +39,9 @@ ELEMENTARY_CHARGE = 1.602176634e-19
 SPEED_OF_LIGHT = 299792458.0
 BOHR_MAGNETON = 5.78838180123e-5  # in eV/T
 HC_EV_NM = 1239.8419738620933  # (Planck constant in eV s) x (speed of light in nm/s)
+VACUUM_PERMITTIVITY = 8.8541878128e-12
+ELECTRON_REST_MASS = 9.1093837015e-31
+PLANCK_CONSTANT = 6.62607015e-34
 
 
 class TestLineShapes(unittest.TestCase):
@@ -384,9 +387,9 @@ class TestLineShapes(unittest.TestCase):
         line = Line(deuterium, 0, (3, 2))  # D-alpha line
         wavelength = 656.104
         sigma_to_pi = 0.56
-        sigma1_to_sigma0 = 0.7060001671878492
-        pi2_to_pi3 = 0.3140003593919741
-        pi4_to_pi3 = 0.7279994935840365
+        sigma1_to_sigma0 = 0.706
+        pi2_to_pi3 = 0.314
+        pi4_to_pi3 = 0.728
         mse_line = BeamEmissionMultiplet(line, wavelength, self.beam, self.atomic_data,
                                          sigma_to_pi, sigma1_to_sigma0, pi2_to_pi3, pi4_to_pi3)
 
@@ -397,23 +400,28 @@ class TestLineShapes(unittest.TestCase):
         point = Point3D(0.5, 0.5, 0.5)
         direction = Vector3D(-1, 1, 0) / np.sqrt(2)
         beam_direction = self.beam.direction(point.x, point.y, point.z)
+        beam_velocity = beam_direction.normalise() * np.sqrt(2 * self.beam.energy * ELEMENTARY_CHARGE / ATOMIC_MASS)
 
         # obtaining spectrum
         radiance = 1.0
-        spectrum = Spectrum(min_wavelength, max_wavelength, bins)
-        spectrum = mse_line.add_line(radiance, point, point, beam_direction, direction, spectrum)
+        spectrum = {}
+        for pol in ('no', 'pi', 'sigma'):
+            spectrum[pol] = Spectrum(min_wavelength, max_wavelength, bins)
+            mse_line.polarisation = pol
+            spectrum[pol] = mse_line.add_line(radiance, point, point, beam_velocity, direction, spectrum[pol])
 
         # validating
 
         # calculate Stark splitting
         b_field = self.plasma.b_field(point.x, point.y, point.z)
-        beam_velocity = beam_direction.normalise() * np.sqrt(2 * self.beam.energy * ELEMENTARY_CHARGE / ATOMIC_MASS)
-        e_field = beam_velocity.cross(b_field).length
-        STARK_SPLITTING_FACTOR = 2.77e-8
-        stark_split = np.abs(STARK_SPLITTING_FACTOR * e_field)
+        e_field = beam_velocity.cross(b_field)
+        e_field_magn = e_field.length
+        STARK_ENERGY_SPLITTING_FACTOR = 3 * VACUUM_PERMITTIVITY * PLANCK_CONSTANT**2 / (2 * np.pi * ELECTRON_REST_MASS * ELEMENTARY_CHARGE**2)
+        stark_split = STARK_ENERGY_SPLITTING_FACTOR * e_field_magn
 
         # calculate emission line central wavelength, doppler shifted along observation direction
-        central_wavelength = wavelength * (1 + beam_velocity.dot(direction.normalise()) / SPEED_OF_LIGHT)
+        shifted_wavelength = wavelength * (1 + beam_velocity.dot(direction.normalise()) / SPEED_OF_LIGHT)
+        photon_energy = HC_EV_NM / shifted_wavelength
 
         # calculate doppler broadening
         beam_ion_mass = self.beam.element.atomic_weight
@@ -421,45 +429,52 @@ class TestLineShapes(unittest.TestCase):
         sigma = np.sqrt(beam_temperature * ELEMENTARY_CHARGE / (beam_ion_mass * ATOMIC_MASS)) * wavelength / SPEED_OF_LIGHT
         temp = 1. / (np.sqrt(2.) * sigma)
 
+        # coefficients for intensities parallel and perpendicular to electric field
+        cos_sqr = e_field.normalise().dot(direction.normalise())**2
+        sin_sqr = 1. - cos_sqr
+
         # calculate relative intensities of sigma and pi lines
-        d = 1 / (1 + sigma_to_pi)
-        intensity_sig = sigma_to_pi * d * radiance
-        intensity_pi = 0.5 * d * radiance
+        pi_to_total = 1 / (1 + sigma_to_pi)
+        intensity_sig = (sin_sqr * sigma_to_pi * pi_to_total + cos_sqr) * radiance
+        intensity_pi = sin_sqr * pi_to_total * radiance
 
         wavelengths, delta = np.linspace(min_wavelength, max_wavelength, bins + 1, retstep=True)
+        test_spectrum = {}
 
         # add Sigma lines to output
         intensity_s0 = 1 / (sigma1_to_sigma0 + 1)
         intensity_s1 = 0.5 * sigma1_to_sigma0 * intensity_s0
-
-        erfs = erf((wavelengths - central_wavelength) * temp)
-        test_spectrum = 0.5 * intensity_sig * intensity_s0 * (erfs[1:] - erfs[:-1]) / delta
-        erfs = erf((wavelengths - central_wavelength - stark_split) * temp)
-        test_spectrum += 0.5 * intensity_sig * intensity_s1 * (erfs[1:] - erfs[:-1]) / delta
-        erfs = erf((wavelengths - central_wavelength + stark_split) * temp)
-        test_spectrum += 0.5 * intensity_sig * intensity_s1 * (erfs[1:] - erfs[:-1]) / delta
+        erfs = erf((wavelengths - shifted_wavelength) * temp)
+        test_spectrum['sigma'] = 0.5 * intensity_sig * intensity_s0 * (erfs[1:] - erfs[:-1]) / delta
+        erfs = erf((wavelengths - HC_EV_NM / (photon_energy + stark_split)) * temp)
+        test_spectrum['sigma'] += 0.5 * intensity_sig * intensity_s1 * (erfs[1:] - erfs[:-1]) / delta
+        erfs = erf((wavelengths - HC_EV_NM / (photon_energy - stark_split)) * temp)
+        test_spectrum['sigma'] += 0.5 * intensity_sig * intensity_s1 * (erfs[1:] - erfs[:-1]) / delta
 
         # add Pi lines to output
-        intensity_pi3 = 1 / (1 + pi2_to_pi3 + pi4_to_pi3)
+        intensity_pi3 = 0.5 / (1 + pi2_to_pi3 + pi4_to_pi3)
         intensity_pi2 = pi2_to_pi3 * intensity_pi3
         intensity_pi4 = pi4_to_pi3 * intensity_pi3
 
-        erfs = erf((wavelengths - central_wavelength - 2 * stark_split) * temp)
-        test_spectrum += 0.5 * intensity_pi * intensity_pi2 * (erfs[1:] - erfs[:-1]) / delta
-        erfs = erf((wavelengths - central_wavelength + 2 * stark_split) * temp)
-        test_spectrum += 0.5 * intensity_pi * intensity_pi2 * (erfs[1:] - erfs[:-1]) / delta
-        erfs = erf((wavelengths - central_wavelength - 3 * stark_split) * temp)
-        test_spectrum += 0.5 * intensity_pi * intensity_pi3 * (erfs[1:] - erfs[:-1]) / delta
-        erfs = erf((wavelengths - central_wavelength + 3 * stark_split) * temp)
-        test_spectrum += 0.5 * intensity_pi * intensity_pi3 * (erfs[1:] - erfs[:-1]) / delta
-        erfs = erf((wavelengths - central_wavelength - 4 * stark_split) * temp)
-        test_spectrum += 0.5 * intensity_pi * intensity_pi4 * (erfs[1:] - erfs[:-1]) / delta
-        erfs = erf((wavelengths - central_wavelength + 4 * stark_split) * temp)
-        test_spectrum += 0.5 * intensity_pi * intensity_pi4 * (erfs[1:] - erfs[:-1]) / delta
+        erfs = erf((wavelengths - HC_EV_NM / (photon_energy + 2 * stark_split)) * temp)
+        test_spectrum['pi'] = 0.5 * intensity_pi * intensity_pi2 * (erfs[1:] - erfs[:-1]) / delta
+        erfs = erf((wavelengths - HC_EV_NM / (photon_energy - 2 * stark_split)) * temp)
+        test_spectrum['pi'] += 0.5 * intensity_pi * intensity_pi2 * (erfs[1:] - erfs[:-1]) / delta
+        erfs = erf((wavelengths - HC_EV_NM / (photon_energy + 3 * stark_split)) * temp)
+        test_spectrum['pi'] += 0.5 * intensity_pi * intensity_pi3 * (erfs[1:] - erfs[:-1]) / delta
+        erfs = erf((wavelengths - HC_EV_NM / (photon_energy - 3 * stark_split)) * temp)
+        test_spectrum['pi'] += 0.5 * intensity_pi * intensity_pi3 * (erfs[1:] - erfs[:-1]) / delta
+        erfs = erf((wavelengths - HC_EV_NM / (photon_energy + 4 * stark_split)) * temp)
+        test_spectrum['pi'] += 0.5 * intensity_pi * intensity_pi4 * (erfs[1:] - erfs[:-1]) / delta
+        erfs = erf((wavelengths - HC_EV_NM / (photon_energy - 4 * stark_split)) * temp)
+        test_spectrum['pi'] += 0.5 * intensity_pi * intensity_pi4 * (erfs[1:] - erfs[:-1]) / delta
 
-        for i in range(bins):
-            self.assertAlmostEqual(test_spectrum[i], spectrum.samples[i], delta=1e-10,
-                                   msg='BeamEmissionMultiplet.add_line() method gives a wrong value at {} nm.'.format(wavelengths[i]))
+        test_spectrum['no'] = test_spectrum['pi'] + test_spectrum['sigma']
+
+        for pol in ('no', 'pi', 'sigma'):
+            for i in range(bins):
+                self.assertAlmostEqual(test_spectrum[pol][i], spectrum[pol].samples[i], delta=1e-10,
+                                       msg='BeamEmissionMultiplet.add_line() method gives a wrong value at {} nm.'.format(wavelengths[i]))
 
 
 if __name__ == '__main__':

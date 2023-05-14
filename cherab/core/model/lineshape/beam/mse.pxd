@@ -26,5 +26,5 @@ cdef class BeamEmissionMultiplet(BeamLineShapeModel):
 
     cdef:
 
-        Function2D _sigma_to_pi
-        Function1D _sigma1_to_sigma0, _pi2_to_pi3, _pi4_to_pi3
+        Function2D _sigma_to_pi, _sigma1_to_sigma0, _pi2_to_pi3, _pi4_to_pi3
+        int _polarisation
