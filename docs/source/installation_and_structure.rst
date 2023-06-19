@@ -82,6 +82,12 @@ line to install the packages under your own user account. Alternatively, conside
 `virtual environment <https://docs.python.org/3/tutorial/venv.html>`_ to avoid the risk of
 conflicting versions of packages in your Python environment.
 
+By default, pip will install from wheel archives on PyPI. If a binary wheel is not available for
+your version of Python, or if you are installing from source in editable mode for development (see
+below), the package will be compiled locally on your machine. Compilation is done in parallel by
+default, using all available processors, but can be overridden by setting the environment variable
+``CHERAB_NCPU`` to the number of processors to use.
+
 
 Installing from source
 ^^^^^^^^^^^^^^^^^^^^^^
