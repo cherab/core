@@ -1,6 +1,6 @@
-# Copyright 2016-2022 Euratom
-# Copyright 2016-2022 United Kingdom Atomic Energy Authority
-# Copyright 2016-2022 Centro de Investigaciones Energéticas, Medioambientales y Tecnológicas
+# Copyright 2016-2023 Euratom
+# Copyright 2016-2023 United Kingdom Atomic Energy Authority
+# Copyright 2016-2023 Centro de Investigaciones Energéticas, Medioambientales y Tecnológicas
 #
 # Licensed under the EUPL, Version 1.1 or – as soon they will be approved by the
 # European Commission - subsequent versions of the EUPL (the "Licence");
@@ -16,16 +16,36 @@
 # See the Licence for the specific language governing permissions and limitations
 # under the Licence.
 
+import shutil
+import os
+
 from cherab.core.utility import RecursiveDict
 from cherab.core.atomic.elements import *
 from cherab.openadas.install import install_files
 from cherab.atomic import repository
+from .utility import DEFAULT_REPOSITORY_PATH
+
+
+def _copy_default_data(repository_path=None):
+    repository_path = repository_path or DEFAULT_REPOSITORY_PATH
+    default_data_path = os.path.join(os.path.dirname(__file__), "default_data/")
+
+    # Gaunt factor
+    # The Maxwellian-averaged free-free Gaunt factor interpolated over the data from Table A.1 in
+    # M.A. de Avillez and D. Breitschwerdt, "Temperature-averaged and total free-free Gaunt factors
+    # for κ and Maxwellian distributions of electrons", 2015, Astron. & Astrophys. 580,
+    # A124, https://www.aanda.org/articles/aa/full_html/2015/08/aa26104-15/aa26104-15.html>.
+    gaunt_dir = os.path.join(repository_path, 'gaunt')
+    if not os.path.isdir(gaunt_dir):
+        os.makedirs(gaunt_dir)
+    shutil.copy(os.path.join(default_data_path, 'maxwellian_free_free_gaunt_factor.json'),
+                os.path.join(gaunt_dir, 'free_free_gaunt_factor.json'))
 
 
 def populate(download=True, repository_path=None, adas_path=None):
     """
-    Populates the local atomic data repository with a typical set of rates and
-    wavelengths from OpenADAS.
+    Populates the local atomic data repository with the default atomic data and
+    a typical set of rates and wavelengths from OpenADAS.
 
     If an ADAS file is not note found an attempt will be made to download the
     file from the OpenADAS website. This behaviour can be disabled by setting
@@ -35,6 +55,9 @@ def populate(download=True, repository_path=None, adas_path=None):
     :param repository_path: Alternate path for the OpenADAS repository (default=None).
     :param adas_path: Alternate path in which to search for ADAS files (default=None) .
     """
+
+    # copy default data
+    _copy_default_data(repository_path)
 
     # install a common selection of open adas files
     rates = {

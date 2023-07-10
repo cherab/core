@@ -16,7 +16,4 @@
 # See the Licence for the specific language governing permissions and limitations
 # under the Licence.
 
-
-cdef class FreeFreeGauntFactor():
-
-    cpdef double evaluate(self, double z, double temperature, double wavelength) except? -1e999
+from cherab.atomic.gaunt.gaunt cimport *
