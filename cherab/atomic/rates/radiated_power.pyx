@@ -1,7 +1,7 @@
 
-# Copyright 2016-2021 Euratom
-# Copyright 2016-2021 United Kingdom Atomic Energy Authority
-# Copyright 2016-2021 Centro de Investigaciones Energéticas, Medioambientales y Tecnológicas
+# Copyright 2016-2023 Euratom
+# Copyright 2016-2023 United Kingdom Atomic Energy Authority
+# Copyright 2016-2023 Centro de Investigaciones Energéticas, Medioambientales y Tecnológicas
 #
 # Licensed under the EUPL, Version 1.1 or – as soon they will be approved by the
 # European Commission - subsequent versions of the EUPL (the "Licence");
@@ -21,12 +21,34 @@ import numpy as np
 from libc.math cimport INFINITY, log10
 
 from raysect.core.math.function.float cimport Interpolator2DArray
+from cherab.core.atomic cimport Element
+
+
+DEF ZERO_THRESHOLD = 1.e-300
 
 
 cdef class LineRadiationPower(CoreLineRadiationPower):
-    """Base class for radiated powers."""
+    """
+    Line radiated power coefficient.
 
-    def __init__(self, species, ionisation, dict data, extrapolate=False):
+    The data is interpolated with cubic spline in log-log space.
+    Nearest neighbour extrapolation is used when permit_extrapolation is True.
+
+    :param Element species: Element object defining the ion type.
+    :param int ionisation: Charge state of the ion.
+    :param dict data: Line radiated power rate dictionary containing the following fields:
+
+    |      'ne': 1D array of size (N) with electron density in m^-3,
+    |      'te': 1D array of size (M) with electron temperature in eV,
+    |      'rate': 2D array of size (N, M) with radiated power rate in W.m^3.
+    :param bint extrapolate: Enable extrapolation (default=False).
+
+    :ivar tuple density_range: Electron density interpolation range.
+    :ivar tuple temperature_range: Electron temperature interpolation range.
+    :ivar dict raw_data: Dictionary containing the raw data.
+    """
+
+    def __init__(self, Element species, int ionisation, dict data, bint extrapolate=False):
 
         super().__init__(species, ionisation)
 
@@ -49,11 +71,11 @@ cdef class LineRadiationPower(CoreLineRadiationPower):
     cdef double evaluate(self, double electron_density, double electron_temperature) except? -1e999:
 
         # need to handle zeros, also density and temperature can become negative due to cubic interpolation
-        if electron_density < 1.e-300:
-            electron_density = 1.e-300
+        if electron_density < ZERO_THRESHOLD:
+            electron_density = ZERO_THRESHOLD
 
-        if electron_temperature < 1.e-300:
-            electron_temperature = 1.e-300
+        if electron_temperature < ZERO_THRESHOLD:
+            electron_temperature = ZERO_THRESHOLD
 
         # calculate rate and convert from log10 space to linear space
         return 10 ** self._rate.evaluate(log10(electron_density), log10(electron_temperature))
@@ -70,9 +92,27 @@ cdef class NullLineRadiationPower(CoreLineRadiationPower):
 
 
 cdef class ContinuumPower(CoreContinuumPower):
-    """Base class for radiated powers."""
+    """
+    Recombination continuum radiated power coefficient.
 
-    def __init__(self, species, ionisation, dict data, extrapolate=False):
+    The data is interpolated with cubic spline in log-log space.
+    Nearest neighbour extrapolation is used when permit_extrapolation is True.
+
+    :param Element species: Element object defining the ion type.
+    :param int ionisation: Charge state of the ion.
+    :param dict data: Recombination continuum radiated power rate dictionary containing the following fields:
+
+    |      'ne': 1D array of size (N) with electron density in m^-3,
+    |      'te': 1D array of size (M) with electron temperature in eV,
+    |      'rate': 2D array of size (N, M) with radiated power rate in W.m^3.
+    :param bint extrapolate: Enable extrapolation (default=False).
+
+    :ivar tuple density_range: Electron density interpolation range.
+    :ivar tuple temperature_range: Electron temperature interpolation range.
+    :ivar dict raw_data: Dictionary containing the raw data.
+    """
+
+    def __init__(self, Element species, int ionisation, dict data, bint extrapolate=False):
 
         super().__init__(species, ionisation)
 
@@ -95,11 +135,11 @@ cdef class ContinuumPower(CoreContinuumPower):
     cdef double evaluate(self, double electron_density, double electron_temperature) except? -1e999:
 
         # need to handle zeros, also density and temperature can become negative due to cubic interpolation
-        if electron_density < 1.e-300:
-            electron_density = 1.e-300
+        if electron_density < ZERO_THRESHOLD:
+            electron_density = ZERO_THRESHOLD
 
-        if electron_temperature < 1.e-300:
-            electron_temperature = 1.e-300
+        if electron_temperature < ZERO_THRESHOLD:
+            electron_temperature = ZERO_THRESHOLD
 
         # calculate rate and convert from log10 space to linear space
         return 10 ** self._rate.evaluate(log10(electron_density), log10(electron_temperature))
@@ -116,9 +156,27 @@ cdef class NullContinuumPower(CoreContinuumPower):
 
 
 cdef class CXRadiationPower(CoreCXRadiationPower):
-    """Base class for radiated powers."""
+    """
+    Charge exchange radiated power coefficient.
 
-    def __init__(self, species, ionisation, dict data, extrapolate=False):
+    The data is interpolated with cubic spline in log-log space.
+    Linear extrapolation is used when permit_extrapolation is True.
+
+    :param Element species: Element object defining the ion type.
+    :param int ionisation: Charge state of the ion.
+    :param dict data: CX radiated power rate dictionary containing the following fields:
+
+    |      'ne': 1D array of size (N) with electron density in m^-3,
+    |      'te': 1D array of size (M) with electron temperature in eV,
+    |      'rate': 2D array of size (N, M) with radiated power rate in W.m^3.
+    :param bint extrapolate: Enable extrapolation (default=False).
+
+    :ivar tuple density_range: Electron density interpolation range.
+    :ivar tuple temperature_range: Electron temperature interpolation range.
+    :ivar dict raw_data: Dictionary containing the raw data.
+    """
+
+    def __init__(self, Element species, int ionisation, dict data, bint extrapolate=False):
 
         super().__init__(species, ionisation)
 
@@ -140,11 +198,11 @@ cdef class CXRadiationPower(CoreCXRadiationPower):
     cdef double evaluate(self, double electron_density, double electron_temperature) except? -1e999:
 
         # need to handle zeros, also density and temperature can become negative due to cubic interpolation
-        if electron_density < 1.e-300:
-            electron_density = 1.e-300
+        if electron_density < ZERO_THRESHOLD:
+            electron_density = ZERO_THRESHOLD
 
-        if electron_temperature < 1.e-300:
-            electron_temperature = 1.e-300
+        if electron_temperature < ZERO_THRESHOLD:
+            electron_temperature = ZERO_THRESHOLD
 
         # calculate rate and convert from log10 space to linear space
         return 10 ** self._rate.evaluate(log10(electron_density), log10(electron_temperature))

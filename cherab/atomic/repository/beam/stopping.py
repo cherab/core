@@ -1,6 +1,6 @@
-# Copyright 2016-2022 Euratom
-# Copyright 2016-2022 United Kingdom Atomic Energy Authority
-# Copyright 2016-2022 Centro de Investigaciones Energéticas, Medioambientales y Tecnológicas
+# Copyright 2016-2023 Euratom
+# Copyright 2016-2023 United Kingdom Atomic Energy Authority
+# Copyright 2016-2023 Centro de Investigaciones Energéticas, Medioambientales y Tecnológicas
 #
 # Licensed under the EUPL, Version 1.1 or – as soon they will be approved by the
 # European Commission - subsequent versions of the EUPL (the "Licence");
@@ -45,6 +45,7 @@ def add_beam_stopping_rate(beam_species, target_ion, target_charge, rate, reposi
     |      'nref': reference target electron density in m^-3,
     |      'tref': reference target electron temperature in eV,
     |      'sref': reference beam stopping rate in m^3.s^-1.
+    |      'reference': Optional data reference string.
     |  The total beam stopping rate: s = sen * st / sref.
 
     :param repository_path: Path to the atomic data repository.
@@ -95,6 +96,8 @@ def add_beam_stopping_rate(beam_species, target_ion, target_charge, rate, reposi
     rate['nref'] = float(rate['nref'])
     rate['tref'] = float(rate['tref'])
     rate['sref'] = float(rate['sref'])
+    if 'reference' in rate:
+        rate['reference'] = str(rate['reference'])
 
     path = os.path.join(repository_path, 'beam/stopping/{}/{}/{}.json'.format(beam_species.symbol.lower(), target_ion.symbol.lower(), target_charge))
 
@@ -132,6 +135,7 @@ def update_beam_stopping_rates(rates, repository_path=None):
     |          'nref': reference target electron density in m^-3,
     |          'tref': reference target electron temperature in eV,
     |          'sref': reference beam stopping rate in m^3.s^-1.
+    |          'reference': Optional data reference string.
     |      The total beam stopping rate: s = sen * st / sref.
     """
 
@@ -152,15 +156,16 @@ def get_beam_stopping_rate(beam_species, target_ion, target_charge, repository_p
 
     :return rate: Beam stopping rate dictionary containing the following fields:
 
-    |      'e': ndarray of size (N) with interaction energy in eV/amu,
-    |      'n': ndarray of size (M) with target electron density in m^-3,
-    |      't': ndarray of size (K) with target electron temperature in eV,
-    |      'sen': ndarray of size (N, M) with beam stopping rate energy component in m^3.s^-1.
-    |      'st': ndarray of size (K) with beam stopping rate temperature component in m^3.s^-1.
+    |      'e': 1D array of size (N) with interaction energy in eV/amu,
+    |      'n': 1D array of size (M) with target electron density in m^-3,
+    |      't': 1D array of size (K) with target electron temperature in eV,
+    |      'sen': 2D array of size (N, M) with beam stopping rate energy component in m^3.s^-1.
+    |      'st': 1D array of size (K) with beam stopping rate temperature component in m^3.s^-1.
     |      'eref': reference interaction energy in eV/amu,
     |      'nref': reference target electron density in m^-3,
     |      'tref': reference target electron temperature in eV,
     |      'sref': reference beam stopping rate in m^3.s^-1.
+    |      'reference': Optional data reference string.
     |  The total beam stopping rate: s = sen * st / sref.
     """
 

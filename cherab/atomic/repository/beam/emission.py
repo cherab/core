@@ -1,6 +1,6 @@
-# Copyright 2016-2022 Euratom
-# Copyright 2016-2022 United Kingdom Atomic Energy Authority
-# Copyright 2016-2022 Centro de Investigaciones Energéticas, Medioambientales y Tecnológicas
+# Copyright 2016-2023 Euratom
+# Copyright 2016-2023 United Kingdom Atomic Energy Authority
+# Copyright 2016-2023 Centro de Investigaciones Energéticas, Medioambientales y Tecnológicas
 #
 # Licensed under the EUPL, Version 1.1 or – as soon they will be approved by the
 # European Commission - subsequent versions of the EUPL (the "Licence");
@@ -51,6 +51,7 @@ def add_beam_emission_rate(beam_species, target_ion, target_charge, transition, 
     |      'nref': reference target electron density in m^-3,
     |      'tref': reference target electron temperature in eV,
     |      'sref': reference beam emission rate in photon.m^3.s^-1.
+    |      'reference': Optional data reference string.
     |  The total beam emission rate: s = sen * st / sref.
 
     :param repository_path: Path to the atomic data repository.
@@ -92,6 +93,7 @@ def update_beam_emission_rates(rates, repository_path=None):
     |          'nref': reference target electron density in m^-3,
     |          'tref': reference target electron temperature in eV,
     |          'sref': reference beam emission rate in photon.m^3.s^-1.
+    |          'reference': Optional data reference string.
     |      The total beam emission rate: s = sen * st / sref.
 
     :param repository_path: Path to the atomic data repository.
@@ -161,6 +163,8 @@ def update_beam_emission_rates(rates, repository_path=None):
                         'tref': float(rate['tref']),
                         'sref': float(rate['sref'])
                     }
+                    if 'reference' in rate:
+                        content[key]['reference'] = str(rate['reference'])
 
                 # create directory structure if missing
                 directory = os.path.dirname(path)
@@ -182,15 +186,16 @@ def get_beam_emission_rate(beam_species, target_ion, target_charge, transition, 
     :param transition: Tuple containing (initial level, final level).
     :param rate: Beam emission rate dictionary containing the following fields:
 
-    |      'e': ndarray of size (N) with interaction energy in eV/amu,
-    |      'n' ndarray of size (M) with target electron density in m^-3,
-    |      't' ndarray of size (K) with target electron temperature in eV,
-    |      'sen' ndarray of size (N, M) with beam emission rate energy component in photon.m^3.s^-1.
-    |      'st' ndarray of size (K) with beam emission rate temperature component in photon.m^3.s^-1.
+    |      'e': 1D array of size (N) with interaction energy in eV/amu,
+    |      'n' 1D array of size (M) with target electron density in m^-3,
+    |      't' 1D array of size (K) with target electron temperature in eV,
+    |      'sen' 2D array of size (N, M) with beam emission rate energy component in photon.m^3.s^-1.
+    |      'st' 1D array of size (K) with beam emission rate temperature component in photon.m^3.s^-1.
     |      'eref': reference interaction energy in eV/amu,
     |      'nref': reference target electron density in m^-3,
     |      'tref': reference target electron temperature in eV,
     |      'sref': reference beam emission rate in photon.m^3.s^-1.
+    |      'reference': Optional data reference string.
     |  The total beam emission rate: s = sen * st / sref.
 
     :param repository_path: Path to the atomic data repository.

@@ -1,6 +1,6 @@
-# Copyright 2016-2022 Euratom
-# Copyright 2016-2022 United Kingdom Atomic Energy Authority
-# Copyright 2016-2022 Centro de Investigaciones Energéticas, Medioambientales y Tecnológicas
+# Copyright 2016-2023 Euratom
+# Copyright 2016-2023 United Kingdom Atomic Energy Authority
+# Copyright 2016-2023 Centro de Investigaciones Energéticas, Medioambientales y Tecnológicas
 #
 # Licensed under the EUPL, Version 1.1 or – as soon they will be approved by the
 # European Commission - subsequent versions of the EUPL (the "Licence");
@@ -41,6 +41,7 @@ def add_ionisation_rate(species, charge, rate, repository_path=None):
     |      'ne': array-like of size (N) with electron density in m^-3,
     |      'te': array-like of size (M) with electron temperature in eV,
     |      'rate': array-like of size (N, M) with ionisation rate in m^3.s^-1.
+    |      'reference': Optional data reference string.
 
     :param repository_path: Path to the atomic data repository.
     """
@@ -67,6 +68,7 @@ def update_ionisation_rates(rates, repository_path=None):
     |          'ne': array-like of size (N) with electron density in m^-3,
     |          'te': array-like of size (M) with electron temperature in eV,
     |          'rate': array-like of size (N, M) with ionisation rate in m^3.s^-1.
+    |          'reference': Optional data reference string.
 
     :param repository_path: Path to the atomic data repository.
     """
@@ -99,6 +101,7 @@ def add_recombination_rate(species, charge, rate, repository_path=None):
     |      'ne': array-like of size (N) with electron density in m^-3,
     |      'te': array-like of size (M) with electron temperature in eV,
     |      'rate': array-like of size (N, M) with recombination rate in m^3.s^-1.
+    |      'reference': Optional data reference string.
 
     :param repository_path: Path to the atomic data repository.
     """
@@ -125,6 +128,7 @@ def update_recombination_rates(rates, repository_path=None):
     |          'ne': array-like of size (N) with electron density in m^-3,
     |          'te': array-like of size (M) with electron temperature in eV,
     |          'rate': array-like of size (N, M) with recombination rate in m^3.s^-1.
+    |          'reference': Optional data reference string.
 
     :param repository_path: Path to the atomic data repository.
     """
@@ -159,6 +163,7 @@ def add_thermal_cx_rate(donor_element, donor_charge, receiver_element, receiver_
     |      'ne': array-like of size (N) with electron density in m^-3,
     |      'te': array-like of size (M) with electron temperature in eV,
     |      'rate': array-like of size (N, M) with thermal CX rate in m^3.s^-1.
+    |      'reference': Optional data reference string.
 
     :param repository_path: Path to the atomic data repository.
     """
@@ -188,6 +193,7 @@ def update_thermal_cx_rates(rates, repository_path=None):
     |          'ne': array-like of size (N) with electron density in m^-3,
     |          'te': array-like of size (M) with electron temperature in eV,
     |          'rate': array-like of size (N, M) with thermal CX rate in m^3.s^-1.
+    |          'reference': Optional data reference string.
 
     :param repository_path: Path to the atomic data repository.
     """
@@ -226,7 +232,7 @@ def _update_and_write_bivariate_rate(species, rate_data, path):
         # sanitise and validate rate data
         te = np.array(rates['te'], np.float64)
         ne = np.array(rates['ne'], np.float64)
-        rate_table = np.array(rates['rates'], np.float64)
+        rate_table = np.array(rates['rate'], np.float64)
 
         if ne.ndim != 1:
             raise ValueError('Density array must be a 1D array.')
@@ -243,6 +249,8 @@ def _update_and_write_bivariate_rate(species, rate_data, path):
             'ne': ne.tolist(),
             'rate': rate_table.tolist(),
         }
+        if 'reference' in rates:
+            content[str(charge)]['reference'] = str(rates['reference'])
 
         # create directory structure if missing
         directory = os.path.dirname(path)
@@ -265,9 +273,10 @@ def get_ionisation_rate(element, charge, repository_path=None):
 
     :return rate: Ionisation rate dictionary containing the following fields:
 
-    |      'ne': ndarray of size (N) with electron density in m^-3,
-    |      'te': ndarray of size (M) with electron temperature in eV,
-    |      'rate': ndarray of size (N, M) with ionisation rate in m^3.s^-1.
+    |      'ne': 1D array of size (N) with electron density in m^-3,
+    |      'te': 1D array of size (M) with electron temperature in eV,
+    |      'rate': 2D array of size (N, M) with ionisation rate in m^3.s^-1.
+    |      'reference': Optional data reference string.
 
     """
 
@@ -301,9 +310,10 @@ def get_recombination_rate(element, charge, repository_path=None):
 
     :return rate: Recombination rate dictionary containing the following fields:
 
-    |      'ne': ndarray of size (N) with electron density in m^-3,
-    |      'te': ndarray of size (M) with electron temperature in eV,
-    |      'rate': ndarray of size (N, M) with recombination rate in m^3.s^-1.
+    |      'ne': 1D array of size (N) with electron density in m^-3,
+    |      'te': 1D array of size (M) with electron temperature in eV,
+    |      'rate': 2D array of size (N, M) with recombination rate in m^3.s^-1.
+    |      'reference': Optional data reference string.
     """
 
     repository_path = repository_path or DEFAULT_REPOSITORY_PATH
@@ -338,9 +348,10 @@ def get_thermal_cx_rate(donor_element, donor_charge, receiver_element, receiver_
 
     :return rate: Thermal CX rate dictionary containing the following fields:
 
-    |      'ne': ndarray of size (N) with electron density in m^-3,
-    |      'te': ndarray of size (M) with electron temperature in eV,
-    |      'rate': ndarray of size (N, M) with thermal CX rate in m^3.s^-1.
+    |      'ne': 1D array of size (N) with electron density in m^-3,
+    |      'te': 1D array of size (M) with electron temperature in eV,
+    |      'rate': 2D array of size (N, M) with thermal CX rate in m^3.s^-1.
+    |      'reference': Optional data reference string.
     """
 
     repository_path = repository_path or DEFAULT_REPOSITORY_PATH

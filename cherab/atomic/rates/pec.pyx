@@ -1,6 +1,6 @@
-# Copyright 2016-2021 Euratom
-# Copyright 2016-2021 United Kingdom Atomic Energy Authority
-# Copyright 2016-2021 Centro de Investigaciones Energéticas, Medioambientales y Tecnológicas
+# Copyright 2016-2023 Euratom
+# Copyright 2016-2023 United Kingdom Atomic Energy Authority
+# Copyright 2016-2023 Centro de Investigaciones Energéticas, Medioambientales y Tecnológicas
 #
 # Licensed under the EUPL, Version 1.1 or – as soon they will be approved by the
 # European Commission - subsequent versions of the EUPL (the "Licence");
@@ -24,14 +24,30 @@ from raysect.core.math.function.float cimport Interpolator2DArray
 from cherab.core.utility.conversion import PhotonToJ
 
 
-cdef class ImpactExcitationPEC(CoreImpactExcitationPEC):
+DEF ZERO_THRESHOLD = 1.e-300
 
-    def __init__(self, double wavelength, dict data, extrapolate=False):
-        """
-        :param wavelength: Resting wavelength of corresponding emission line in nm.
-        :param data: Dictionary containing rate data.
-        :param extrapolate: Enable extrapolation (default=False).
-        """
+
+cdef class ImpactExcitationPEC(CoreImpactExcitationPEC):
+    """
+    Electron impact excitation photon emission coefficient.
+
+    The data is interpolated with cubic spline in log-log space.
+    Nearest neighbour extrapolation is used when permit_extrapolation is True.
+
+    :param double wavelength: Resting wavelength of corresponding emission line in nm.
+    :param dict data: Excitation PEC dictionary containing the following fields:
+
+    |      'ne': 1D array of size (N) with electron density in m^-3,
+    |      'te': 1D array of size (M) with electron temperature in eV,
+    |      'rate': 2D array of size (N, M) with excitation PEC in photon.m^3.s^-1.
+    :param bint extrapolate: Enable extrapolation (default=False).
+
+    :ivar tuple density_range: Electron density interpolation range.
+    :ivar tuple temperature_range: Electron temperature interpolation range.
+    :ivar dict raw_data: Dictionary containing the raw data.
+    """
+
+    def __init__(self, double wavelength, dict data, bint extrapolate=False):
 
         self.wavelength = wavelength
         self.raw_data = data
@@ -56,11 +72,11 @@ cdef class ImpactExcitationPEC(CoreImpactExcitationPEC):
     cpdef double evaluate(self, double density, double temperature) except? -1e999:
 
         # need to handle zeros, also density and temperature can become negative due to cubic interpolation
-        if density < 1.e-300:
-            density = 1.e-300
+        if density < ZERO_THRESHOLD:
+            density = ZERO_THRESHOLD
 
-        if temperature < 1.e-300:
-            temperature = 1.e-300
+        if temperature < ZERO_THRESHOLD:
+            temperature = ZERO_THRESHOLD
 
         # calculate rate and convert from log10 space to linear space
         return 10 ** self._rate.evaluate(log10(density), log10(temperature))
@@ -77,13 +93,26 @@ cdef class NullImpactExcitationPEC(CoreImpactExcitationPEC):
 
 
 cdef class RecombinationPEC(CoreRecombinationPEC):
+    """
+    Recombination photon emission coefficient.
 
-    def __init__(self, double wavelength, dict data, extrapolate=False):
-        """
-        :param wavelength: Resting wavelength of corresponding emission line in nm.
-        :param data: Dictionary containing rate data.
-        :param extrapolate: Enable extrapolation (default=False).
-        """
+    The data is interpolated with cubic spline in log-log space.
+    Nearest neighbour extrapolation is used when permit_extrapolation is True.
+
+    :param double wavelength: Resting wavelength of corresponding emission line in nm.
+    :param dict data: Rcombination PEC dictionary containing the following fields:
+
+    |      'ne': 1D array of size (N) with electron density in m^-3,
+    |      'te': 1D array of size (M) with electron temperature in eV,
+    |      'rate': 2D array of size (N, M) with recombination PEC in photon.m^3.s^-1.
+    :param bint extrapolate: Enable extrapolation (default=False).
+
+    :ivar tuple density_range: Electron density interpolation range.
+    :ivar tuple temperature_range: Electron temperature interpolation range.
+    :ivar dict raw_data: Dictionary containing the raw data.
+    """
+
+    def __init__(self, double wavelength, dict data, bint extrapolate=False):
 
         self.wavelength = wavelength
         self.raw_data = data
@@ -108,11 +137,11 @@ cdef class RecombinationPEC(CoreRecombinationPEC):
     cpdef double evaluate(self, double density, double temperature) except? -1e999:
 
         # need to handle zeros, also density and temperature can become negative due to cubic interpolation
-        if density < 1.e-300:
-            density = 1.e-300
+        if density < ZERO_THRESHOLD:
+            density = ZERO_THRESHOLD
 
-        if temperature < 1.e-300:
-            temperature = 1.e-300
+        if temperature < ZERO_THRESHOLD:
+            temperature = ZERO_THRESHOLD
 
         # calculate rate and convert from log10 space to linear space
         return 10 ** self._rate.evaluate(log10(density), log10(temperature))

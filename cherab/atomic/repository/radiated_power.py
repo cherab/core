@@ -42,6 +42,7 @@ def add_line_power_rate(species, charge, rate, repository_path=None):
     |      'ne': array-like of size (N) with electron density in m^-3,
     |      'te': array-like of size (M) with electron temperature in eV,
     |      'rate': array-like of size (N, M) with line radiated power rate in W.m^3.
+    |      'reference': Optional data reference string.
 
     :param repository_path: Path to the atomic data repository.
     """
@@ -69,6 +70,7 @@ def update_line_power_rates(rates, repository_path=None):
     |          'ne': array-like of size (N) with electron density in m^-3,
     |          'te': array-like of size (M) with electron temperature in eV,
     |          'rate': array-like of size (N, M) with line radiated power rate in W.m^3.
+    |          'reference': Optional data reference string.
 
     :param repository_path: Path to the atomic data repository.
     """
@@ -101,6 +103,7 @@ def add_continuum_power_rate(species, charge, rate, repository_path=None):
     |      'ne': array-like of size (N) with electron density in m^-3,
     |      'te': array-like of size (M) with electron temperature in eV,
     |      'rate': array-like of size (N, M) with continuum power rate in W.m^3.
+    |      'reference': Optional data reference string.
 
     :param repository_path: Path to the atomic data repository.
     """
@@ -128,8 +131,9 @@ def update_continuum_power_rates(rates, repository_path=None):
     |          'ne': array-like of size (N) with electron density in m^-3,
     |          'te': array-like of size (M) with electron temperature in eV,
     |          'rate': array-like of size (N, M) with continuum power rate in W.m^3.
+    |          'reference': Optional data reference string.
 
-    :param repository_path: Path to the atomic data repository.    
+    :param repository_path: Path to the atomic data repository.
     """
 
     repository_path = repository_path or DEFAULT_REPOSITORY_PATH
@@ -161,6 +165,7 @@ def add_cx_power_rate(species, charge, rate, repository_path=None):
     |      'ne': array-like of size (N) with electron density in m^-3,
     |      'te': array-like of size (M) with electron temperature in eV,
     |      'rate': array-like of size (N, M) with CX power rate in W.m^3.
+    |      'reference': Optional data reference string.
 
     :param repository_path: Path to the atomic data repository.
     """
@@ -189,6 +194,7 @@ def update_cx_power_rates(rates, repository_path=None):
     |          'ne': array-like of size (N) with electron density in m^-3,
     |          'te': array-like of size (M) with electron temperature in eV,
     |          'rate': array-like of size (N, M) with thermal CX power rate in W.m^3.
+    |          'reference': Optional data reference string.
 
     :param repository_path: Path to the atomic data repository.    
     """
@@ -223,7 +229,7 @@ def _update_and_write_bivariate_rate(species, rate_data, path):
         # sanitise and validate rate data
         te = np.array(rates['te'], np.float64)
         ne = np.array(rates['ne'], np.float64)
-        rate_table = np.array(rates['rates'], np.float64)
+        rate_table = np.array(rates['rate'], np.float64)
 
         if ne.ndim != 1:
             raise ValueError('Density array must be a 1D array.')
@@ -240,6 +246,8 @@ def _update_and_write_bivariate_rate(species, rate_data, path):
             'ne': ne.tolist(),
             'rate': rate_table.tolist(),
         }
+        if 'reference' in rates:
+            content[str(charge)]['reference'] = str(rates['reference'])
 
         # create directory structure if missing
         directory = os.path.dirname(path)
@@ -262,9 +270,10 @@ def get_line_radiated_power_rate(element, charge, repository_path=None):
 
     :return rate: Line radiated power rate dictionary containing the following fields:
 
-    |      'ne': ndarray of size (N) with electron density in m^-3,
-    |      'te': ndarray of size (M) with electron temperature in eV,
-    |      'rate': ndarray of size (N, M) with line radiated power rate in W.m^3.
+    |      'ne': 1D array of size (N) with electron density in m^-3,
+    |      'te': 1D array of size (M) with electron temperature in eV,
+    |      'rate': 2D array of size (N, M) with line radiated power rate in W.m^3.
+    |      'reference': Optional data reference string.
     """
 
     return _get_radiated_power_rate('line', element, charge, repository_path)
@@ -281,9 +290,10 @@ def get_continuum_radiated_power_rate(element, charge, repository_path=None):
 
     :return rate: Continuum power rate dictionary containing the following fields:
 
-    |      'ne': ndarray of size (N) with electron density in m^-3,
-    |      'te': ndarray of size (M) with electron temperature in eV,
-    |      'rate': ndarray of size (N, M) with continuum power rate in W.m^3.
+    |      'ne': 1D array of size (N) with electron density in m^-3,
+    |      'te': 1D array of size (M) with electron temperature in eV,
+    |      'rate': 2D array of size (N, M) with continuum power rate in W.m^3.
+    |      'reference': Optional data reference string.
     """
 
     return _get_radiated_power_rate('continuum', element, charge, repository_path)
@@ -300,9 +310,10 @@ def get_cx_radiated_power_rate(element, charge, repository_path=None):
 
     :return rate: CX radiation power rate dictionary containing the following fields:
 
-    |      'ne': ndarray of size (N) with electron density in m^-3,
-    |      'te': ndarray of size (M) with electron temperature in eV,
-    |      'rate': ndarray of size (N, M) with CX radiation power rate in W.m^3.
+    |      'ne': 1D array of size (N) with electron density in m^-3,
+    |      'te': 1D array of size (M) with electron temperature in eV,
+    |      'rate': 2D array of size (N, M) with CX radiation power rate in W.m^3.
+    |      'reference': Optional data reference string.
     """
 
     return _get_radiated_power_rate('cx', element, charge, repository_path)

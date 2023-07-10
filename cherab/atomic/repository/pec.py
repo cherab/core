@@ -44,6 +44,7 @@ def add_pec_excitation_rate(element, charge, transition, rate, repository_path=N
     |      'ne': array-like of size (N) with electron density in m^-3,
     |      'te': array-like of size (M) with electron temperature in eV,
     |      'rate': array-like of size (N, M) with excitation PEC in photon.m^3.s^-1.
+    |      'reference': Optional data reference string.
 
     :param repository_path: Path to the atomic data repository.
     """
@@ -75,6 +76,7 @@ def add_pec_recombination_rate(element, charge, transition, rate, repository_pat
     |      'ne': array-like of size (N) with electron density in m^-3,
     |      'te': array-like of size (M) with electron temperature in eV,
     |      'rate': array-like of size (N, M) with recombination PEC in photon.m^3.s^-1.
+    |      'reference': Optional data reference string.
 
     :param repository_path: Path to the atomic data repository.
     """
@@ -106,6 +108,7 @@ def add_pec_thermalcx_rate(element, charge, transition, rate, repository_path=No
     |      'ne': array-like of size (N) with electron density in m^-3,
     |      'te': array-like of size (M) with electron temperature in eV,
     |      'rate': array-like of size (N, M) with thermal CX PEC in photon.m^3.s^-1.
+    |      'reference': Optional data reference string.
 
     :param repository_path: Path to the atomic data repository.
     """
@@ -139,6 +142,7 @@ def update_pec_rates(rates, repository_path=None):
     |          'ne': array-like of size (N) with electron density in m^-3,
     |          'te': array-like of size (M) with electron temperature in eV,
     |          'rate': array-like of size (N, M) with PEC in photon.m^3.s^-1.
+    |          'reference': Optional data reference string.
 
     :param repository_path: Path to the atomic data repository.
     """
@@ -199,6 +203,8 @@ def update_pec_rates(rates, repository_path=None):
                         'te': data['te'].tolist(),
                         'rate': data['rate'].tolist()
                     }
+                    if 'reference' in data:
+                        content[key]['reference'] = str(data['reference'])
 
                 # create directory structure if missing
                 directory = os.path.dirname(path)
@@ -222,9 +228,10 @@ def get_pec_excitation_rate(element, charge, transition, repository_path=None):
 
     :return rate: Excitation PEC dictionary containing the following fields:
 
-    |      'ne': ndarray of size (N) with electron density in m^-3,
-    |      'te': ndarray of size (M) with electron temperature in eV,
-    |      'rate': ndarray of size (N, M) with excitation PEC in photon.m^3.s^-1.
+    |      'ne': 1D array of size (N) with electron density in m^-3,
+    |      'te': 1D array of size (M) with electron temperature in eV,
+    |      'rate': 2D array of size (N, M) with excitation PEC in photon.m^3.s^-1.
+    |      'reference': Optional data reference string.
     """
 
     return _get_pec_rate('excitation', element, charge, transition, repository_path)
@@ -242,9 +249,10 @@ def get_pec_recombination_rate(element, charge, transition, repository_path=None
 
     :return rate: Recombination PEC dictionary containing the following fields:
 
-    |      'ne': ndarray of size (N) with electron density in m^-3,
-    |      'te': ndarray of size (M) with electron temperature in eV,
-    |      'rate': ndarray of size (N, M) with excitation PEC in photon.m^3.s^-1.
+    |      'ne': 1D array of size (N) with electron density in m^-3,
+    |      'te': 1D array of size (M) with electron temperature in eV,
+    |      'rate': 2D array of size (N, M) with excitation PEC in photon.m^3.s^-1.
+    |      'reference': Optional data reference string.
     """
 
     return _get_pec_rate('recombination', element, charge, transition, repository_path)
@@ -262,9 +270,10 @@ def get_pec_thermalcx_rate(element, charge, transition, repository_path=None):
 
     :return rate: Thermal CX PEC dictionary containing the following fields:
 
-    |      'ne': ndarray of size (N) with electron density in m^-3,
-    |      'te': ndarray of size (M) with electron temperature in eV,
-    |      'rate': ndarray of size (N, M) with excitation PEC in photon.m^3.s^-1.
+    |      'ne': 1D array of size (N) with electron density in m^-3,
+    |      'te': 1D array of size (M) with electron temperature in eV,
+    |      'rate': 2D array of size (N, M) with excitation PEC in photon.m^3.s^-1.
+    |      'reference': Optional data reference string.
     """
 
     return _get_pec_rate('thermalcx', element, charge, transition, repository_path)

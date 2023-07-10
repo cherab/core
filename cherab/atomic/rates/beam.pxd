@@ -1,6 +1,6 @@
-# Copyright 2016-2021 Euratom
-# Copyright 2016-2021 United Kingdom Atomic Energy Authority
-# Copyright 2016-2021 Centro de Investigaciones Energéticas, Medioambientales y Tecnológicas
+# Copyright 2016-2023 Euratom
+# Copyright 2016-2023 United Kingdom Atomic Energy Authority
+# Copyright 2016-2023 Centro de Investigaciones Energéticas, Medioambientales y Tecnológicas
 #
 # Licensed under the EUPL, Version 1.1 or – as soon they will be approved by the
 # European Commission - subsequent versions of the EUPL (the "Licence");
@@ -24,13 +24,13 @@ from cherab.core.math cimport Function1D, Function2D
 
 cdef class BeamStoppingRate(CoreBeamStoppingRate):
 
-    cdef readonly:
-        dict raw_data
+    cdef:
+        readonly dict raw_data
+        readonly tuple beam_energy_range
+        readonly tuple density_range
+        readonly tuple temperature_range
         Function2D _npl_eb
         Function1D _tp
-        tuple beam_energy_range
-        tuple density_range
-        tuple temperature_range
 
 
 cdef class NullBeamStoppingRate(CoreBeamStoppingRate):
@@ -39,13 +39,13 @@ cdef class NullBeamStoppingRate(CoreBeamStoppingRate):
 
 cdef class BeamPopulationRate(CoreBeamPopulationRate):
 
-    cdef readonly:
-        dict raw_data
+    cdef:
+        readonly dict raw_data
+        readonly tuple beam_energy_range
+        readonly tuple density_range
+        readonly tuple temperature_range
         Function2D _npl_eb
         Function1D _tp
-        tuple beam_energy_range
-        tuple density_range
-        tuple temperature_range
 
 
 cdef class NullBeamPopulationRate(CoreBeamPopulationRate):
@@ -54,14 +54,14 @@ cdef class NullBeamPopulationRate(CoreBeamPopulationRate):
 
 cdef class BeamEmissionPEC(CoreBeamEmissionPEC):
 
-    cdef readonly:
-        double wavelength
-        dict raw_data
+    cdef:
+        readonly double wavelength
+        readonly dict raw_data
+        readonly tuple beam_energy_range
+        readonly tuple density_range
+        readonly tuple temperature_range
         Function2D _npl_eb
         Function1D _tp
-        tuple beam_energy_range
-        tuple density_range
-        tuple temperature_range
 
 
 cdef class NullBeamEmissionPEC(CoreBeamEmissionPEC):

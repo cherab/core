@@ -1,6 +1,6 @@
-# Copyright 2016-2022 Euratom
-# Copyright 2016-2022 United Kingdom Atomic Energy Authority
-# Copyright 2016-2022 Centro de Investigaciones Energéticas, Medioambientales y Tecnológicas
+# Copyright 2016-2023 Euratom
+# Copyright 2016-2023 United Kingdom Atomic Energy Authority
+# Copyright 2016-2023 Centro de Investigaciones Energéticas, Medioambientales y Tecnológicas
 #
 # Licensed under the EUPL, Version 1.1 or – as soon they will be approved by the
 # European Commission - subsequent versions of the EUPL (the "Licence");
@@ -46,6 +46,7 @@ def add_beam_population_rate(beam_species, beam_metastable, target_ion, target_c
     |      'nref': reference target electron density in m^-3,
     |      'tref': reference target electron temperature in eV,
     |      'sref': reference dimensionless beam population rate.
+    |      'reference': Optional data reference string.
     |  The total beam population rate: s = sen * st / sref.
 
     :param repository_path: Path to the atomic data repository.
@@ -99,6 +100,8 @@ def add_beam_population_rate(beam_species, beam_metastable, target_ion, target_c
     rate['nref'] = float(rate['nref'])
     rate['tref'] = float(rate['tref'])
     rate['sref'] = float(rate['sref'])
+    if 'reference' in rate:
+        rate['reference'] = str(rate['reference'])
 
     path = os.path.join(repository_path, 'beam/population/{}/{}/{}/{}.json'.format(beam_species.symbol.lower(), beam_metastable, target_ion.symbol.lower(), target_charge))
 
@@ -137,6 +140,7 @@ def update_beam_population_rates(rates, repository_path=None):
     |          'nref': reference target electron density in m^-3,
     |          'tref': reference target electron temperature in eV,
     |          'sref': reference dimensionless beam population rate.
+    |          'reference': Optional data reference string.
     |      The total beam population rate: s = sen * st / sref.
 
     :param repository_path: Path to the atomic data repository.
@@ -161,15 +165,16 @@ def get_beam_population_rate(beam_species, beam_metastable, target_ion, target_c
 
     :return rate: Beam population rate dictionary containing the following fields:
 
-    |      'e': ndarray of size (N) with interaction energy in eV/amu,
-    |      'n': ndarray of size (M) with target electron density in m^-3,
-    |      't': ndarray of size (K) with target electron temperature in eV,
-    |      'sen': ndarray of size (N, M) with dimensionless beam population rate energy component.
-    |      'st': ndarray of size (K) with dimensionless beam population rate temperature component.
+    |      'e': 1D array of size (N) with interaction energy in eV/amu,
+    |      'n': 1D array of size (M) with target electron density in m^-3,
+    |      't': 1D array of size (K) with target electron temperature in eV,
+    |      'sen': 2D array of size (N, M) with dimensionless beam population rate energy component.
+    |      'st': 1D array of size (K) with dimensionless beam population rate temperature component.
     |      'eref': reference interaction energy in eV/amu,
     |      'nref': reference target electron density in m^-3,
     |      'tref': reference target electron temperature in eV,
     |      'sref': reference dimensionless beam population rate.
+    |      'reference': Optional data reference string.
     |  The total beam population rate: s = sen * st / sref.
     """
 

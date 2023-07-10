@@ -1,6 +1,6 @@
-# Copyright 2016-2022 Euratom
-# Copyright 2016-2022 United Kingdom Atomic Energy Authority
-# Copyright 2016-2022 Centro de Investigaciones Energéticas, Medioambientales y Tecnológicas
+# Copyright 2016-2023 Euratom
+# Copyright 2016-2023 United Kingdom Atomic Energy Authority
+# Copyright 2016-2023 Centro de Investigaciones Energéticas, Medioambientales y Tecnológicas
 #
 # Licensed under the EUPL, Version 1.1 or – as soon they will be approved by the
 # European Commission - subsequent versions of the EUPL (the "Licence");
@@ -53,6 +53,7 @@ def add_beam_cx_rate(donor_ion, donor_metastable, receiver_ion, receiver_charge,
     |      'qz': array-like of size (L) with CX PEC Zeff component in photon.m^3.s-1,
     |      'qb': array-like of size (J) with CX PEC B-field component in photon.m^3.s-1,
     |      'qref': reference CX PEC in photon.m^3.s-1.
+    |      'reference': Optional data reference string.
     |  The total beam CX PEC: q = qeb * qti * qni * qz * qb / qref^4.
 
     :param repository_path: Path to the atomic data repository.
@@ -99,6 +100,7 @@ def update_beam_cx_rates(rates, repository_path=None):
     |          'qz': array-like of size (L) with CX PEC Zeff component in photon.m^3.s-1,
     |          'qb': array-like of size (J) with CX PEC B-field component in photon.m^3.s-1,
     |          'qref': reference CX PEC in photon.m^3.s-1.
+    |          'reference': Optional data reference string.
     |      The total beam CX PEC: q = qeb * qti * qni * qz * qb / qref^4.
     """
 
@@ -194,6 +196,8 @@ def update_beam_cx_rates(rates, repository_path=None):
                             'qz': data['qz'].tolist(),
                             'qb': data['qb'].tolist(),
                         }
+                        if 'reference' in data:
+                            content[transition_key][metastable]['reference'] = str(data['reference'])
 
                 # create directory structure if missing
                 directory = os.path.dirname(path)
@@ -218,17 +222,18 @@ def get_beam_cx_rates(donor_ion, receiver_ion, receiver_charge, transition, repo
 
     :return rate: Beam CX PEC dictionary containing the following fields:
 
-    |      'eb': array-like of size (N) with beam energy in eV/amu,
-    |      'ti': array-like of size (M) with receiver ion temperature in eV,
-    |      'ni': array-like of size (K) with receiver ion density in m^-3,
-    |      'z': array-like of size (L) with receiver Z-effective,
-    |      'b': array-like of size (J) with magnetic field strength in Tesla,
-    |      'qeb': array-like of size (N) with CX PEC energy component in photon.m^3.s-1,
-    |      'qti': array-like of size (M) with CX PEC temperature component in photon.m^3.s-1,
-    |      'qni': array-like of size (K) with CX PEC density component in photon.m^3.s-1,
-    |      'qz': array-like of size (L) with CX PEC Zeff component in photon.m^3.s-1,
-    |      'qb': array-like of size (J) with CX PEC B-field component in photon.m^3.s-1,
+    |      'eb': 1D array of size (N) with beam energy in eV/amu,
+    |      'ti': 1D array of size (M) with receiver ion temperature in eV,
+    |      'ni': 1D array of size (K) with receiver ion density in m^-3,
+    |      'z': 1D array of size (L) with receiver Z-effective,
+    |      'b': 1D array of size (J) with magnetic field strength in Tesla,
+    |      'qeb': 1D array of size (N) with CX PEC energy component in photon.m^3.s-1,
+    |      'qti': 1D array of size (M) with CX PEC temperature component in photon.m^3.s-1,
+    |      'qni': 1D array of size (K) with CX PEC density component in photon.m^3.s-1,
+    |      'qz': 1D array of size (L) with CX PEC Zeff component in photon.m^3.s-1,
+    |      'qb': 1D array of size (J) with CX PEC B-field component in photon.m^3.s-1,
     |      'qref': reference CX PEC in photon.m^3.s-1.
+    |      'reference': Optional data reference string.
     |  The total beam CX PEC: q = qeb * qti * qni * qz * qb / qref^4.
     """
 
