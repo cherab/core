@@ -16,7 +16,4 @@
 # See the Licence for the specific language governing permissions and limitations
 # under the Licence.
 
-
-cdef class ZeemanStructure:
-
-    cdef double[:, :] evaluate(self, double b, int polarisation)
+from cherab.atomic.zeeman.zeeman cimport *

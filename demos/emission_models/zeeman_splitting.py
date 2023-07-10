@@ -1,6 +1,6 @@
-# Copyright 2016-2022 Euratom
-# Copyright 2016-2022 United Kingdom Atomic Energy Authority
-# Copyright 2016-2022 Centro de Investigaciones Energéticas, Medioambientales y Tecnológicas
+# Copyright 2016-2023 Euratom
+# Copyright 2016-2023 United Kingdom Atomic Energy Authority
+# Copyright 2016-2023 Centro de Investigaciones Energéticas, Medioambientales y Tecnológicas
 #
 # Licensed under the EUPL, Version 1.1 or – as soon they will be approved by the
 # European Commission - subsequent versions of the EUPL (the "Licence");
@@ -18,17 +18,16 @@
 
 
 # External imports
-from numpy import cos, sin, deg2rad
+import numpy as np
 import matplotlib.pyplot as plt
 from scipy.constants import electron_mass, atomic_mass
-from raysect.core.math.function.float import Arg1D, Constant1D
 from raysect.optical import World, Vector3D, Point3D, Ray
 from raysect.primitive import Sphere
 from raysect.optical.material.emitter.inhomogeneous import NumericalIntegrator
 
 # Cherab imports
 from cherab.core import Species, Maxwellian, Plasma, Line
-from cherab.core.atomic import ZeemanStructure
+from cherab.atomic.zeeman import ZeemanStructure
 from cherab.core.atomic.elements import deuterium
 from cherab.core.model import ExcitationLine, RecombinationLine, ZeemanTriplet, ParametrisedZeemanTriplet, ZeemanMultiplet
 from cherab.atomic import AtomicData
@@ -88,8 +87,8 @@ angles = (0., 45., 90.)
 # Ray-trace the spectrum for different angles between the ray and the magnetic field
 triplet = []
 for angle in angles:
-    angle_rad = deg2rad(angle)
-    r = Ray(origin=Point3D(0, -5 * sin(angle_rad), -5 * cos(angle_rad)), direction=Vector3D(0, sin(angle_rad), cos(angle_rad)),
+    angle_rad = np.deg2rad(angle)
+    r = Ray(origin=Point3D(0, -5 * np.sin(angle_rad), -5 * np.cos(angle_rad)), direction=Vector3D(0, np.sin(angle_rad), np.cos(angle_rad)),
             min_wavelength=655.4, max_wavelength=656.8, bins=500)
     triplet.append(r.trace(world))
 
@@ -104,8 +103,8 @@ plasma.models = [
 # Ray-trace the spectrum again
 parametrised_triplet = []
 for angle in angles:
-    angle_rad = deg2rad(angle)
-    r = Ray(origin=Point3D(0, -5 * sin(angle_rad), -5 * cos(angle_rad)), direction=Vector3D(0, sin(angle_rad), cos(angle_rad)),
+    angle_rad = np.deg2rad(angle)
+    r = Ray(origin=Point3D(0, -5 * np.sin(angle_rad), -5 * np.cos(angle_rad)), direction=Vector3D(0, np.sin(angle_rad), np.cos(angle_rad)),
             min_wavelength=655.4, max_wavelength=656.8, bins=500)
     parametrised_triplet.append(r.trace(world))
 
@@ -117,11 +116,17 @@ HC_EV_NM = 1239.8419738620933  # (Planck constant in eV s) x (speed of light in 
 wavelength = plasma.atomic_data.wavelength(deuterium, 0, (3, 2))
 photon_energy = HC_EV_NM / wavelength
 
-pi_components = [(Constant1D(wavelength), Constant1D(1.0))]
-sigma_minus_components = [(HC_EV_NM / (photon_energy - BOHR_MAGNETON * Arg1D()), Constant1D(0.5))]
-sigma_plus_components = [(HC_EV_NM / (photon_energy + BOHR_MAGNETON * Arg1D()), Constant1D(0.5))]
+zeeman_data = {}
+zeeman_data['b'] = np.linspace(0, 10, 100)
+zeeman_data['polarisation'] = np.array([0, 1, -1], dtype=np.int32)
+zeeman_data['wavelength'] = np.array([np.ones_like(zeeman_data['b']) * wavelength,
+                                      HC_EV_NM / (photon_energy - BOHR_MAGNETON * zeeman_data['b']),
+                                      HC_EV_NM / (photon_energy + BOHR_MAGNETON * zeeman_data['b'])])
+zeeman_data['ratio'] = np.array([np.ones_like(zeeman_data['b']),
+                                 0.5 * np.ones_like(zeeman_data['b']),
+                                 0.5 * np.ones_like(zeeman_data['b'])])
 
-zeeman_structure = ZeemanStructure(pi_components, sigma_plus_components, sigma_minus_components)
+zeeman_structure = ZeemanStructure(zeeman_data)
 
 plasma.models = [
     ExcitationLine(deuterium_I_656, lineshape=ZeemanMultiplet, lineshape_args=[zeeman_structure]),
@@ -131,8 +136,8 @@ plasma.models = [
 # Ray-trace the spectrum again
 multiplet = []
 for angle in angles:
-    angle_rad = deg2rad(angle)
-    r = Ray(origin=Point3D(0, -5 * sin(angle_rad), -5 * cos(angle_rad)), direction=Vector3D(0, sin(angle_rad), cos(angle_rad)),
+    angle_rad = np.deg2rad(angle)
+    r = Ray(origin=Point3D(0, -5 * np.sin(angle_rad), -5 * np.cos(angle_rad)), direction=Vector3D(0, np.sin(angle_rad), np.cos(angle_rad)),
             min_wavelength=655.4, max_wavelength=656.8, bins=500)
     multiplet.append(r.trace(world))
 

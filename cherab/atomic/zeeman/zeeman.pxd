@@ -15,8 +15,12 @@
 #
 # See the Licence for the specific language governing permissions and limitations
 # under the Licence.
+from cherab.core.atomic.zeeman cimport ZeemanStructure as CoreZeemanStructure
 
 
-cdef class ZeemanStructure:
+cdef class ZeemanStructure(CoreZeemanStructure):
 
-    cdef double[:, :] evaluate(self, double b, int polarisation)
+    cdef:
+        readonly tuple b_range
+        readonly dict raw_data
+        list _pi_components, _sigma_plus_components, _sigma_minus_components

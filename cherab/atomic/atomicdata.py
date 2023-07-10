@@ -21,6 +21,8 @@ from cherab.core.atomic.elements import Isotope
 from cherab.atomic.repository import DEFAULT_REPOSITORY_PATH
 
 from .rates import *
+from .gaunt import FreeFreeGauntFactor
+from .zeeman import ZeemanStructure
 from cherab.atomic import repository
 
 
@@ -647,3 +649,47 @@ class AtomicData(_BaseAtomicData):
                 raise
 
         return CXRadiationPower(ion, charge, data, extrapolate=self._permit_extrapolation)
+
+    def zeeman_structure(self, ion, charge, transition):
+        r"""
+        Wavelengths and ratios of
+        :math:`\pi`-/:math:`\sigma`-polarised Zeeman components for any given value of
+        magnetic field strength.
+
+        :param ion: Element object defining the ion type.
+        :param charge: Charge state of the ion after recombination.
+        :param transition: Tuple containing (initial level, final level).
+        :return: ZeemanStructure object.
+        """
+
+        try:
+            # read Zeeman structure from json file in the repository
+            data = repository.get_zeeman_structure(ion, charge, transition, repository_path=self._data_path)
+        except RuntimeError:
+            if isinstance(ion, Isotope) and self._rate_element_fallback:
+                data = repository.get_zeeman_structure(ion.element, charge, transition, repository_path=self._data_path)
+            else:
+                raise
+
+        return ZeemanStructure(data, extrapolate=self._permit_extrapolation)
+
+    def free_free_gaunt_factor(self):
+        r"""
+        Free-free Gaunt factor used in the bremsstrahlung emission model.
+
+        The Gaunt factor is defined in the space of parameters:
+        :math:`u = h{\nu}/kT` and :math:`{\gamma}^{2} = Z^{2}Ry/kT`.
+        See T.R. Carson, 1988, Astron. & Astrophys., 189,
+        `319 <https://ui.adsabs.harvard.edu/#abs/1988A&A...189..319C/abstract>`_ for details.
+
+        The cubic interpolation in a semi-log space is used.
+
+        The Born approximation and classical limits are used outside the interpolation range.
+
+        :return: Free-free Gaunt factor as a function of species charge, electron temperature
+                 and wavelength.
+        """
+
+        data = repository.get_free_free_gaunt_factor(repository_path=self._data_path)
+
+        return FreeFreeGauntFactor(data)
