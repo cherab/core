@@ -31,7 +31,7 @@ from cherab.core import Species, Maxwellian, Plasma, Line
 from cherab.core.math import sample3d, AxisymmetricMapper
 from cherab.core.atomic import deuterium
 from cherab.core.model import ExcitationLine
-from cherab.openadas import OpenADAS
+from cherab.atomic import AtomicData
 
 
 def NeutralFunction(peak_value, sigma, magnetic_axis, lcfs_radius=1):
@@ -73,7 +73,7 @@ world = World()
 # plasma creation #
 
 plasma = Plasma(parent=world)
-plasma.atomic_data = OpenADAS(permit_extrapolation=True)
+plasma.atomic_data = AtomicData(permit_extrapolation=True)
 plasma.geometry = Cylinder(3.5, 2.2, transform=translate(0, 0, -1.1))
 plasma.geometry_transform = translate(0, 0, -1.1)
 

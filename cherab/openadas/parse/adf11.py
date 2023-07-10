@@ -1,6 +1,6 @@
-# Copyright 2016-2018 Euratom
-# Copyright 2016-2018 United Kingdom Atomic Energy Authority
-# Copyright 2016-2018 Centro de Investigaciones Energéticas, Medioambientales y Tecnológicas
+# Copyright 2016-2023 Euratom
+# Copyright 2016-2023 United Kingdom Atomic Energy Authority
+# Copyright 2016-2023 Centro de Investigaciones Energéticas, Medioambientales y Tecnológicas
 #
 # Licensed under the EUPL, Version 1.1 or – as soon they will be approved by the
 # European Commission - subsequent versions of the EUPL (the "Licence");
@@ -92,7 +92,7 @@ def parse_adf11(element, adf_file_path):
 
                     rates[element][ion_charge]['ne'] = densities
                     rates[element][ion_charge]['te'] = temperatures
-                    rates[element][ion_charge]['rates'] = np.swapaxes(rates_table, 0, 1)
+                    rates[element][ion_charge]['rate'] = np.swapaxes(rates_table, 0, 1)
 
                     # if end of data block beak the loop or reassign start of data block for next stage
                     if re.match("^\s*C{1}-{2,}", lines[i]) or re.match("^\s*C{0,1}-{2,}", lines[i]) and \
