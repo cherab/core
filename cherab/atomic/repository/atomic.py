@@ -252,14 +252,14 @@ def _update_and_write_bivariate_rate(species, rate_data, path):
         if 'reference' in rates:
             content[str(charge)]['reference'] = str(rates['reference'])
 
-        # create directory structure if missing
-        directory = os.path.dirname(path)
-        if not os.path.isdir(directory):
-            os.makedirs(directory)
+    # create directory structure if missing
+    directory = os.path.dirname(path)
+    if not os.path.isdir(directory):
+        os.makedirs(directory)
 
-        # write new data
-        with open(path, 'w') as f:
-            json.dump(content, f, indent=2, sort_keys=True)
+    # write new data
+    with open(path, 'w') as f:
+        json.dump(content, f, indent=2, sort_keys=True)
 
 
 def get_ionisation_rate(element, charge, repository_path=None):
