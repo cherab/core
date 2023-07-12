@@ -53,6 +53,7 @@ cdef class BeamCXPEC(CoreBeamCXPEC):
     |      'qb': 1D array of size (J) with CX PEC B-field component in photon.m^3.s-1,
     |      'qref': reference CX PEC in photon.m^3.s-1.
     |  The total beam CX PEC: q = qeb * qti * qni * qz * qb / qref^4.
+
     :param bint extrapolate: Set to True to enable extrapolation, False to disable (default).
 
     :ivar tuple beam_energy_range: Interaction energy interpolation range.

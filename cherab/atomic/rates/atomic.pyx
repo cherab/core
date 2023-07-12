@@ -38,6 +38,7 @@ cdef class IonisationRate(CoreIonisationRate):
     |   'ne': 1D array of size (N) with electron density in m^-3,
     |   'te': 1D array of size (M) with electron temperature in eV,
     |   'rate': 2D array of size (N, M) with ionisation rate in m^3.s^-1.
+
     :param bint extrapolate: Enable extrapolation (default=False).
 
     :ivar tuple density_range: Electron density interpolation range.
@@ -98,6 +99,7 @@ cdef class RecombinationRate(CoreRecombinationRate):
     |       'ne': 1D array of size (N) with electron density in m^-3,
     |       'te': 1D array of size (M) with electron temperature in eV,
     |       'rate': 2D array of size (N, M) with recombination rate in m^3.s^-1.
+
     :param bint extrapolate: Enable extrapolation (default=False).
 
     :ivar tuple density_range: Electron density interpolation range.
@@ -158,6 +160,7 @@ cdef class ThermalCXRate(CoreThermalCXRate):
     |       'ne': 1D array of size (N) with electron density in m^-3,
     |       'te': 1D array of size (M) with electron temperature in eV,
     |       'rate': 2D array of size (N, M) with thermal CX rate in m^3.s^-1.
+
     :param bint extrapolate: Enable extrapolation (default=False).
 
     :ivar tuple density_range: Electron density interpolation range.

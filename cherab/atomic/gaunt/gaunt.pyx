@@ -41,6 +41,7 @@ cdef class FreeFreeGauntFactor(CoreFreeFreeGauntFactor):
     The Born approximation and classical limits are used outside the interpolation range.
 
     :param dict data: Dictionary containing the Gaunt factor data with the following keys:
+
     |      'u': A 1D array of real values.
     |      'gamma2': A 1D array of real values.
     |      'gaunt_factor': 2D array of real values storing the Gaunt factor values at u, gamma2.

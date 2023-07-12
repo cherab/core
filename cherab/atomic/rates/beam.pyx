@@ -34,6 +34,7 @@ cdef class BeamStoppingRate(CoreBeamStoppingRate):
     The beam stopping coefficient interpolation class.
 
     :param dict data: A beam stopping rate dictionary containing the following fields:
+
     |      'e': 1D array of size (N) with interaction energy in eV/amu,
     |      'n': 1D array of size (M) with target electron density in m^-3,
     |      't': 1D array of size (K) with target electron temperature in eV,
@@ -41,6 +42,7 @@ cdef class BeamStoppingRate(CoreBeamStoppingRate):
     |      'st': 1D array of size (K) with beam stopping rate temperature component in m^3.s^-1.
     |      'sref': reference beam stopping rate in m^3.s^-1.
     |  The total beam stopping rate: s = sen * st / sref.
+
     :param bint extrapolate: Set to True to enable extrapolation, False to disable (default).
 
     :ivar tuple beam_energy_range: Interaction energy interpolation range.
@@ -126,6 +128,7 @@ cdef class BeamPopulationRate(CoreBeamPopulationRate):
     |      'st': 1D array of size (K) with dimensionless beam population rate temperature component.
     |      'sref': reference dimensionless beam population rate.
     |  The total beam population rate: s = sen * st / sref.
+
     :param bint extrapolate: Set to True to enable extrapolation, False to disable (default).
 
     :ivar tuple beam_energy_range: Interaction energy interpolation range.
@@ -203,12 +206,14 @@ cdef class BeamEmissionPEC(CoreBeamEmissionPEC):
     The beam emission coefficient interpolation class.
 
     :param dict data: Beam emission rate dictionary containing the following fields:
+
     |      'e': 1D array of size (N) with interaction energy in eV/amu,
     |      'n' 1D array of size (M) with target electron density in m^-3,
     |      't' 1D array of size (K) with target electron temperature in eV,
     |      'sen' 2D array of size (N, M) with beam emission rate energy component in photon.m^3.s^-1.
     |      'st' 1D array of size (K) with beam emission rate temperature component in photon.m^3.s^-1.
     |      'sref': reference beam emission rate in photon.m^3.s^-1.
+
     :param double wavelength: The natural wavelength of the emission line associated with the rate data in nm.
     :param bint extrapolate: Set to True to enable extrapolation, False to disable (default).
 

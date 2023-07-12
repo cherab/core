@@ -40,6 +40,7 @@ cdef class ZeemanStructure(CoreZeemanStructure):
 
     :param dict data: Dictionary containing the central wavelengths and relative
            intensities of Zeeman components with the following keys:
+
     |      'b': A 1D array of shape (N,) with magnetic field strength.
     |      'polarisation': A 1D array of shape (M,) with component polarisation
     |                      0 for :math:`\pi`-polarisation,
@@ -49,6 +50,7 @@ cdef class ZeemanStructure(CoreZeemanStructure):
     |                    magnetic field strength.
     |      'ratio': A 2D array of shape (M, N) with component relative intensities
     |               as functions of magnetic field strength.
+
     :param bint extrapolate: Enable extrapolation (default=False).
 
     :ivar tuple b_range: The interpolation range of magnetic field strength.

@@ -40,6 +40,7 @@ cdef class ImpactExcitationPEC(CoreImpactExcitationPEC):
     |      'ne': 1D array of size (N) with electron density in m^-3,
     |      'te': 1D array of size (M) with electron temperature in eV,
     |      'rate': 2D array of size (N, M) with excitation PEC in photon.m^3.s^-1.
+
     :param bint extrapolate: Enable extrapolation (default=False).
 
     :ivar tuple density_range: Electron density interpolation range.
@@ -105,6 +106,7 @@ cdef class RecombinationPEC(CoreRecombinationPEC):
     |      'ne': 1D array of size (N) with electron density in m^-3,
     |      'te': 1D array of size (M) with electron temperature in eV,
     |      'rate': 2D array of size (N, M) with recombination PEC in photon.m^3.s^-1.
+
     :param bint extrapolate: Enable extrapolation (default=False).
 
     :ivar tuple density_range: Electron density interpolation range.
