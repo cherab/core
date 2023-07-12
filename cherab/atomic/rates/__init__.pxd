@@ -21,3 +21,4 @@ from cherab.atomic.rates.cx cimport *
 from cherab.atomic.rates.pec cimport *
 from cherab.atomic.rates.atomic cimport *
 from cherab.atomic.rates.radiated_power cimport *
+from cherab.atomic.rates.fractional_abundance cimport *

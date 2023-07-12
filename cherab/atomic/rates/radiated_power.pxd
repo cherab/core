@@ -22,6 +22,7 @@ from cherab.core.math cimport Function2D
 from cherab.core.atomic.rates cimport LineRadiationPower as CoreLineRadiationPower
 from cherab.core.atomic.rates cimport ContinuumPower as CoreContinuumPower
 from cherab.core.atomic.rates cimport CXRadiationPower as CoreCXRadiationPower
+from cherab.core.atomic.rates cimport TotalRadiatedPower as CoreTotalRadiatedPower
 
 
 cdef class LineRadiationPower(CoreLineRadiationPower):
@@ -57,4 +58,16 @@ cdef class CXRadiationPower(CoreCXRadiationPower):
 
 
 cdef class NullCXRadiationPower(CoreCXRadiationPower):
+    pass
+
+
+cdef class TotalRadiatedPower(CoreTotalRadiatedPower):
+
+    cdef:
+        readonly dict raw_data
+        readonly tuple density_range, temperature_range
+        Function2D _rate
+
+
+cdef class NullTotalRadiatedPower(CoreTotalRadiatedPower):
     pass

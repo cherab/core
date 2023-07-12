@@ -41,6 +41,7 @@ cdef class LineRadiationPower(CoreLineRadiationPower):
     |      'ne': 1D array of size (N) with electron density in m^-3,
     |      'te': 1D array of size (M) with electron temperature in eV,
     |      'rate': 2D array of size (N, M) with radiated power rate in W.m^3.
+
     :param bint extrapolate: Enable extrapolation (default=False).
 
     :ivar tuple density_range: Electron density interpolation range.
@@ -105,6 +106,7 @@ cdef class ContinuumPower(CoreContinuumPower):
     |      'ne': 1D array of size (N) with electron density in m^-3,
     |      'te': 1D array of size (M) with electron temperature in eV,
     |      'rate': 2D array of size (N, M) with radiated power rate in W.m^3.
+
     :param bint extrapolate: Enable extrapolation (default=False).
 
     :ivar tuple density_range: Electron density interpolation range.
@@ -169,6 +171,7 @@ cdef class CXRadiationPower(CoreCXRadiationPower):
     |      'ne': 1D array of size (N) with electron density in m^-3,
     |      'te': 1D array of size (M) with electron temperature in eV,
     |      'rate': 2D array of size (N, M) with radiated power rate in W.m^3.
+
     :param bint extrapolate: Enable extrapolation (default=False).
 
     :ivar tuple density_range: Electron density interpolation range.
@@ -211,6 +214,71 @@ cdef class CXRadiationPower(CoreCXRadiationPower):
 cdef class NullCXRadiationPower(CoreCXRadiationPower):
     """
     A CX radiation power rate that always returns zero.
+    Needed for use cases where the required atomic data is missing.
+    """
+
+    cdef double evaluate(self, double electron_density, double electron_temperature) except? -1e999:
+        return 0.0
+
+
+cdef class TotalRadiatedPower(CoreTotalRadiatedPower):
+    """
+    The total radiated power rate in equilibrium conditions.
+
+    The data is interpolated with cubic spline in log-log space.
+    Nearest neighbour extrapolation is used when permit_extrapolation is True.
+
+    :param Element species: Element object defining the ion type.
+    :param int ionisation: Charge state of the ion.
+    :param dict data: Total radiated power rate dictionary containing the following fields:
+
+    |      'ne': 1D array of size (N) with electron density in m^-3,
+    |      'te': 1D array of size (M) with electron temperature in eV,
+    |      'rate': 2D array of size (N, M) with radiated power rate in W.m^3.
+
+    :param bint extrapolate: Enable extrapolation (default=False).
+
+    :ivar tuple density_range: Electron density interpolation range.
+    :ivar tuple temperature_range: Electron temperature interpolation range.
+    :ivar dict raw_data: Dictionary containing the raw data.
+    """
+
+    def __init__(self, Element species, dict data, bint extrapolate=False):
+
+        super().__init__(species)
+
+        self.raw_data = data
+
+        # unpack
+        ne = data['ne']
+        te = data['te']
+        rate = np.log10(data['rate'])
+
+        # store limits of data
+        self.density_range = ne.min(), ne.max()
+        self.temperature_range = te.min(), te.max()
+
+        # interpolate rate
+        # using nearest extrapolation to avoid infinite values at 0 for some rates
+        extrapolation_type = 'nearest' if extrapolate else 'none'
+        self._rate = Interpolator2DArray(np.log10(ne), np.log10(te), np.log10(rate), 'cubic', extrapolation_type, INFINITY, INFINITY)
+
+    cdef double evaluate(self, double electron_density, double electron_temperature) except? -1e999:
+
+        # need to handle zeros, also density and temperature can become negative due to cubic interpolation
+        if electron_density < ZERO_THRESHOLD:
+            electron_density = ZERO_THRESHOLD
+
+        if electron_temperature < ZERO_THRESHOLD:
+            electron_temperature = ZERO_THRESHOLD
+
+        # calculate rate and convert from log10 space to linear space
+        return 10 ** self._rate.evaluate(log10(electron_density), log10(electron_temperature))
+
+
+cdef class NullTotalRadiatedPower(CoreTotalRadiatedPower):
+    """
+    A total radiated power rate that always returns zero.
     Needed for use cases where the required atomic data is missing.
     """
 

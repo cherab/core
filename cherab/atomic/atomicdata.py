@@ -650,6 +650,62 @@ class AtomicData(_BaseAtomicData):
 
         return CXRadiationPower(ion, charge, data, extrapolate=self._permit_extrapolation)
 
+    def total_radiated_power_rate(self, ion):
+        """
+        Total radiated power coefficient in equilibrium conditions for a given species.
+
+        The data is interpolated with cubic spline in log-log space.
+        Nearest neighbour extrapolation is used when permit_extrapolation is True.
+
+        :param ion: Element object defining the ion type.
+        :return: Total radiated power coefficient in W.m^3 as a function
+                 of electron density and temperature.
+        """
+
+        # try to read the rate for the isotope, fallback to the element if fails
+        try:
+            # read total radiated power rate from json file in the repository
+            data = repository.get_total_radiated_power_rate(ion, repository_path=self._data_path)
+        except RuntimeError:
+            if isinstance(ion, Isotope) and self._rate_element_fallback:
+                try:
+                    data = repository.get_total_radiated_power_rate(ion.element, repository_path=self._data_path)
+                except RuntimeError:
+                    if self._missing_rates_return_null:
+                        return NullTotalRadiatedPower(ion, charge)
+                    raise
+            elif self._missing_rates_return_null:
+                return NullTotalRadiatedPower(ion, charge)
+            else:
+                raise
+
+        return TotalRadiatedPower(ion, data, extrapolate=self._permit_extrapolation)
+
+    def fractional_abundance(self, ion, charge):
+        """
+        Fractional abundance of a given species in thermodynamic equilibrium.
+
+        The data is interpolated with cubic spline.
+        Linear extrapolation is used when permit_extrapolation is True.
+
+        :param ion: Element object defining the ion type.
+        :param charge: Charge state of the ion.
+        :return: Fractional abundance as a function
+                 of electron density and temperature.
+        """
+
+        # try to read the rate for the isotope, fallback to the element if fails
+        try:
+            # read total radiated power rate from json file in the repository
+            data = repository.get_fractional_abundance(ion, charge, repository_path=self._data_path)
+        except RuntimeError:
+            if isinstance(ion, Isotope) and self._rate_element_fallback:
+                data = repository.get_fractional_abundance(ion.element, charge, repository_path=self._data_path)
+            else:
+                raise
+
+        return FractionalAbundance(ion, charge, data, extrapolate=self._permit_extrapolation)
+
     def zeeman_structure(self, ion, charge, transition):
         r"""
         Wavelengths and ratios of

@@ -62,6 +62,12 @@ Radiated Power
 .. automodule:: cherab.atomic.repository.radiated_power
     :members:
 
+Fractional Abundance
+^^^^^^^^^^^^^^^^^^^^
+
+.. automodule:: cherab.atomic.repository.fractional_abundance
+    :members:
+
 Beam
 ^^^^
 

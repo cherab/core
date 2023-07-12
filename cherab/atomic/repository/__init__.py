@@ -21,6 +21,7 @@ from .pec import *
 from .atomic import *
 from .wavelength import *
 from .radiated_power import *
+from .fractional_abundance import *
 from .gaunt import *
 from .zeeman import *
 from .utility import DEFAULT_REPOSITORY_PATH

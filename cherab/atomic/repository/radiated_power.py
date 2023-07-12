@@ -1,7 +1,7 @@
 
-# Copyright 2016-2022 Euratom
-# Copyright 2016-2022 United Kingdom Atomic Energy Authority
-# Copyright 2016-2022 Centro de Investigaciones Energéticas, Medioambientales y Tecnológicas
+# Copyright 2016-2023 Euratom
+# Copyright 2016-2023 United Kingdom Atomic Energy Authority
+# Copyright 2016-2023 Centro de Investigaciones Energéticas, Medioambientales y Tecnológicas
 #
 # Licensed under the EUPL, Version 1.1 or – as soon they will be approved by the
 # European Commission - subsequent versions of the EUPL (the "Licence");
@@ -249,14 +249,88 @@ def _update_and_write_bivariate_rate(species, rate_data, path):
         if 'reference' in rates:
             content[str(charge)]['reference'] = str(rates['reference'])
 
-        # create directory structure if missing
-        directory = os.path.dirname(path)
-        if not os.path.isdir(directory):
-            os.makedirs(directory)
+    # create directory structure if missing
+    directory = os.path.dirname(path)
+    if not os.path.isdir(directory):
+        os.makedirs(directory)
 
-        # write new data
-        with open(path, 'w') as f:
-            json.dump(content, f, indent=2, sort_keys=True)
+    # write new data
+    with open(path, 'w') as f:
+        json.dump(content, f, indent=2, sort_keys=True)
+
+
+def add_total_power_rate(species, rate, repository_path=None):
+    """
+    Adds a single total radiated power rate in equilibrium conditions to the repository.
+
+    :param species: Plasma species (Element/Isotope).
+    :param rate: Total radiated power rate dictionary containing the following fields:
+
+    |      'ne': array-like of size (N) with electron density in m^-3,
+    |      'te': array-like of size (M) with electron temperature in eV,
+    |      'rate': array-like of size (N, M) with total radiated power rate in W.m^3.
+    |      'reference': Optional data reference string.
+
+    :param repository_path: Path to the atomic data repository.
+    """
+
+    if not isinstance(species, Element):
+        raise TypeError('The species must be an Element object.')
+
+    path = os.path.join(repository_path, 'radiated_power/total/{}.json'.format(species.symbol.lower()))
+
+    # sanitise and validate rate data
+    te = np.array(rate['te'], np.float64)
+    ne = np.array(rate['ne'], np.float64)
+    rate_table = np.array(rate['rate'], np.float64)
+
+    if ne.ndim != 1:
+        raise ValueError('Density array must be a 1D array.')
+
+    if te.ndim != 1:
+        raise ValueError('Temperature array must be a 1D array.')
+
+    if (ne.shape[0], te.shape[0]) != rate_table.shape:
+        raise ValueError('Electron temperature, density and rate data arrays have inconsistent sizes.')
+
+    # update file content with new rate
+    content = {
+        'te': te.tolist(),
+        'ne': ne.tolist(),
+        'rate': rate_table.tolist(),
+    }
+    if 'reference' in rate:
+        content['reference'] = str(rate['reference'])
+
+    # create directory structure if missing
+    directory = os.path.dirname(path)
+    if not os.path.isdir(directory):
+        os.makedirs(directory)
+
+    # write new data
+    with open(path, 'w') as f:
+        json.dump(content, f, indent=2, sort_keys=True)
+
+
+def update_total_power_rates(rates, repository_path=None):
+    """
+    Update the files for the total radiated power rates in equilibrium conditions:
+    /radiated_power/total/<species>.json
+    in the atomic data repository.
+
+    :param rates: Dictionary in the form {<species>: <rate>}, where
+
+    |      <species> is the plasma species (Element/Isotope),
+    |      <rate> is the total radiated power rate dictionary containing the following fields:
+    |          'ne': array-like of size (N) with electron density in m^-3,
+    |          'te': array-like of size (M) with electron temperature in eV,
+    |          'rate': array-like of size (N, M) with total radiated power rate in W.m^3.
+    |          'reference': Optional data reference string.
+
+    :param repository_path: Path to the atomic data repository.
+    """
+    for species, rate in rates:
+        add_total_power_rate(species, rate, repository_path=repository_path)
 
 
 def get_line_radiated_power_rate(element, charge, repository_path=None):
@@ -331,6 +405,39 @@ def _get_radiated_power_rate(cls, element, charge, repository_path=None):
     except (FileNotFoundError, KeyError):
         raise RuntimeError('Requested {} radiated power rate (element={}, charge={})'
                            ' is not available.'.format(cls, element.symbol, charge))
+
+    # convert to numpy arrays
+    d['ne'] = np.array(d['ne'], np.float64)
+    d['te'] = np.array(d['te'], np.float64)
+    d['rate'] = np.array(d['rate'], np.float64)
+
+    return d
+
+
+def get_total_radiated_power_rate(element, repository_path=None):
+    """
+    Reads the total radiated power rate in equilibrium conditions for the given species
+    from the atomic data repository.
+
+    :param element: Plasma species (Element/Isotope).
+    :param repository_path: Path to the atomic data repository.
+
+    :return rate: Total radiated power rate dictionary containing the following fields:
+
+    |      'ne': 1D array of size (N) with electron density in m^-3,
+    |      'te': 1D array of size (M) with electron temperature in eV,
+    |      'rate': 2D array of size (N, M) with the total radiated power rate in W.m^3.
+    |      'reference': Optional data reference string.
+    """
+
+    repository_path = repository_path or DEFAULT_REPOSITORY_PATH
+
+    path = os.path.join(repository_path, 'radiated_power/total/{}.json'.format(element.symbol.lower()))
+    try:
+        with open(path, 'r') as f:
+            d = json.load(f)
+    except (FileNotFoundError, KeyError):
+        raise RuntimeError('Requested total radiated power rate (element={}) is not available.'.format(element.symbol))
 
     # convert to numpy arrays
     d['ne'] = np.array(d['ne'], np.float64)

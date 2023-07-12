@@ -69,6 +69,12 @@ Beam-Plasma Interaction Rates
 .. autoclass:: cherab.atomic.rates.beam.NullBeamEmissionPEC
    :members:
 
+Abundances
+^^^^^^^^^^
+
+.. autoclass:: cherab.atomic.rates.fractional_abundance.FractionalAbundance
+   :members:
+
 Radiated Power
 ^^^^^^^^^^^^^^
 
@@ -88,6 +94,12 @@ Radiated Power
    :members:
 
 .. autoclass:: cherab.atomic.rates.radiated_power.NullCXRadiationPower
+   :members:
+
+.. autoclass:: cherab.atomic.rates.radiated_power.TotalRadiatedPower
+   :members:
+
+.. autoclass:: cherab.atomic.rates.radiated_power.NullTotalRadiatedPower
    :members:
 
 Gaunt Factors

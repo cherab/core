@@ -310,12 +310,10 @@ cdef class FractionalAbundance:
 
     :param Element element: the radiating element
     :param int charge: the integer charge state for this ionisation stage
-    :param str name: optional label identifying this rate
     """
 
-    def __init__(self, element, charge, name=''):
+    def __init__(self, element, charge):
 
-        self.name = name
         self.element = element
 
         if charge < 0:
