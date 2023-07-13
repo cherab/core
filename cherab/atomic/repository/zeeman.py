@@ -30,7 +30,7 @@ Utilities for managing the local atomic repository - Zeeman splitting section.
 
 def add_zeeman_structure(element, charge, transition, data, repository_path=None):
     r"""
-    Adds a single Zeeman structure to the repository.
+    Adds a single Zeeman multiplet structure to the repository.
 
     If adding multiple structures, consider using the update_zeeman_structures() function
     instead. The update function avoid repeatedly opening and closing the Zeeman structure
@@ -67,7 +67,7 @@ def add_zeeman_structure(element, charge, transition, data, repository_path=None
 
 def update_zeeman_structures(zeeman_structures, repository_path=None):
     r"""
-    Updates the Zeeman structure files /zeeman/<element>/<charge>.json
+    Updates the Zeeman multiplet structure files /zeeman/multiplet/<element>/<charge>.json
     in the atomic data repository.
 
     File contains multiple Zeeman structures, indexed by the transition.
@@ -107,7 +107,7 @@ def update_zeeman_structures(zeeman_structures, repository_path=None):
             if not valid_charge(element, charge):
                 raise ValueError('Charge state is larger than the number of protons in the element.')
 
-            path = os.path.join(repository_path, 'zeeman/{}/{}.json'.format(element.symbol.lower(), charge))
+            path = os.path.join(repository_path, 'zeeman/multiplet/{}/{}.json'.format(element.symbol.lower(), charge))
 
             # read in any existing zeeman structures
             try:
@@ -159,7 +159,7 @@ def update_zeeman_structures(zeeman_structures, repository_path=None):
 
 def get_zeeman_structure(element, charge, transition, repository_path=None):
     r"""
-    Reads the Zeeman structure from the repository for the given
+    Reads the Zeeman multiplet structure from the repository for the given
     element, charge and transition.
 
     :param element: Plasma species (Element/Isotope).
@@ -183,7 +183,7 @@ def get_zeeman_structure(element, charge, transition, repository_path=None):
     """
 
     repository_path = repository_path or DEFAULT_REPOSITORY_PATH
-    path = os.path.join(repository_path, 'zeeman/{}/{}.json'.format(element.symbol.lower(), charge))
+    path = os.path.join(repository_path, 'zeeman/multiplet/{}/{}.json'.format(element.symbol.lower(), charge))
     try:
         with open(path, 'r') as f:
             content = json.load(f)
