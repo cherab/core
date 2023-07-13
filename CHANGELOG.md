@@ -11,6 +11,7 @@ New:
 * Add CylindricalTransform and VectorCylindricalTransform to transform functions from cylindrical to Cartesian coordinates. (#387)
 * Add numerical integration of Bremsstrahlung spectrum over a spectral bin. (#395)
 * Replace the coarse numerical constant in the Bremsstrahlung model with an exact expression. (#409)
+* Add the kind attribute to RayTransferPipelineXD that determines whether the ray transfer matrix is multiplied by sensitivity ('power') or not ('radiance'). (#412)
 
 
 Release 1.4.0 (3 Feb 2023)
