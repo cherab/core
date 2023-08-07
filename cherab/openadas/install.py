@@ -397,6 +397,6 @@ def _notation_adf11_adas2cherab(rate_adas, filetype):
             rate_cherab[i][j + charge_correction]["ne"] = PerCm3ToPerM3.to(10**rate_adas[i][j]["ne"])
             # convert from adas log10 to cherab electron temperature notation
             rate_cherab[i][j + charge_correction]["te"] = 10**rate_adas[i][j]["te"]
-            rate_cherab[i][j + charge_correction]["rates"] = Cm3ToM3.to(10**rate_adas[i][j]["rates"])
+            rate_cherab[i][j + charge_correction]["rate"] = Cm3ToM3.to(10**rate_adas[i][j]["rate"])
 
     return rate_cherab
