@@ -274,6 +274,8 @@ def add_total_power_rate(species, rate, repository_path=None):
     :param repository_path: Path to the atomic data repository.
     """
 
+    repository_path = repository_path or DEFAULT_REPOSITORY_PATH
+
     if not isinstance(species, Element):
         raise TypeError('The species must be an Element object.')
 
