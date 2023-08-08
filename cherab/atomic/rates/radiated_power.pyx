@@ -261,7 +261,7 @@ cdef class TotalRadiatedPower(CoreTotalRadiatedPower):
         # interpolate rate
         # using nearest extrapolation to avoid infinite values at 0 for some rates
         extrapolation_type = 'nearest' if extrapolate else 'none'
-        self._rate = Interpolator2DArray(np.log10(ne), np.log10(te), np.log10(rate), 'cubic', extrapolation_type, INFINITY, INFINITY)
+        self._rate = Interpolator2DArray(np.log10(ne), np.log10(te), rate, 'cubic', extrapolation_type, INFINITY, INFINITY)
 
     cdef double evaluate(self, double electron_density, double electron_temperature) except? -1e999:
 
