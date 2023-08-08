@@ -650,7 +650,7 @@ class AtomicData(_BaseAtomicData):
 
         return CXRadiationPower(ion, charge, data, extrapolate=self._permit_extrapolation)
 
-    def total_radiated_power_rate(self, ion):
+    def total_radiated_power(self, ion):
         """
         Total radiated power coefficient in equilibrium conditions for a given species.
 
