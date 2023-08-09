@@ -22,7 +22,11 @@ import os
 Utilities for managing the local rate repository.
 """
 
-DEFAULT_REPOSITORY_PATH = os.path.expanduser('~/.cherab/atomicdata/default_repository')
+
+try:
+    DEFAULT_REPOSITORY_PATH = os.environ["CHERAB_ATOMIC_DATA"]
+except KeyError:
+    DEFAULT_REPOSITORY_PATH = os.path.expanduser('~/.cherab/atomicdata/default_repository')
 
 
 def encode_transition(transition):
