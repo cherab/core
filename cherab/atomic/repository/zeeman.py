@@ -67,7 +67,7 @@ def add_zeeman_structure(element, charge, transition, data, repository_path=None
 
 def update_zeeman_structures(zeeman_structures, repository_path=None):
     r"""
-    Updates the Zeeman multiplet structure files /zeeman/multiplet/<element>/<charge>.json
+    Updates the Zeeman multiplet structure files lineshape/zeeman/multiplet/<element>/<charge>.json
     in the atomic data repository.
 
     File contains multiple Zeeman structures, indexed by the transition.
@@ -107,7 +107,7 @@ def update_zeeman_structures(zeeman_structures, repository_path=None):
             if not valid_charge(element, charge):
                 raise ValueError('Charge state is larger than the number of protons in the element.')
 
-            path = os.path.join(repository_path, 'zeeman/multiplet/{}/{}.json'.format(element.symbol.lower(), charge))
+            path = os.path.join(repository_path, 'lineshape/zeeman/multiplet/{}/{}.json'.format(element.symbol.lower(), charge))
 
             # read in any existing zeeman structures
             try:
@@ -183,7 +183,7 @@ def get_zeeman_structure(element, charge, transition, repository_path=None):
     """
 
     repository_path = repository_path or DEFAULT_REPOSITORY_PATH
-    path = os.path.join(repository_path, 'zeeman/multiplet/{}/{}.json'.format(element.symbol.lower(), charge))
+    path = os.path.join(repository_path, 'lineshape/zeeman/multiplet/{}/{}.json'.format(element.symbol.lower(), charge))
     try:
         with open(path, 'r') as f:
             content = json.load(f)
