@@ -30,7 +30,9 @@ class AtomicData(_BaseAtomicData):
     """
     Atomic data source.
 
-    :param str data_path: Path to local atomic data repository.
+    :param str data_path: Path to local atomic data repository. The path is determined from the
+                          `CHERAB_ATOMIC_DATA` environment variable and defaults to
+                          `~/.cherab/atomicdata/default_repository` if the variable is not defined.
     :param bool permit_extrapolation: If true, informs interpolation objects to allow extrapolation
                                       beyond the limits of the tabulated data. Default is False.
     :param bool missing_rates_return_null: If true, allows Null rate objects to be returned when

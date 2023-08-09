@@ -4,7 +4,8 @@ Atomic data repository
 
 The following functions allow to manipulate the local atomic data repository.
 
-The default atomic data repository is created at `~/.cherab/atomicdata/default_repository`.
+The path to the default atomic data repository is determined by the `CHERAB_ATOMIC_DATA` environment variable.
+If this variable is not set, the default repository is created at `~/.cherab/atomicdata/default_repository`.
 
 To create the new atomic data repository at the default location and populate it with a typical
 set of rates and wavelengths from Open-ADAS, do:
