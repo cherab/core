@@ -11,6 +11,8 @@ New:
 * Add CylindricalTransform and VectorCylindricalTransform to transform functions from cylindrical to Cartesian coordinates. (#387)
 * Add the kind attribute to RayTransferPipelineXD that determines whether the ray transfer matrix is multiplied by sensitivity ('power') or not ('radiance'). (#412)
 
+Bug fixes:
+* Fix deprecated cached transforms in LaserMaterial after laser.transform update
 
 Release 1.4.0 (3 Feb 2023)
 -------------------
