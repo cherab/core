@@ -255,7 +255,7 @@ cdef class Laser(Node):
 
     def _plasma_changed(self):
         """React to change of plasma and propagate the information."""
-        self._configure_materials()
+        self.configure_geometry()
 
     def _modified(self):
-        self._configure_materials()
+        self.configure_geometry()
