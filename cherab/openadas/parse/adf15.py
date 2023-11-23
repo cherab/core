@@ -67,10 +67,17 @@ def parse_adf15(element, charge, adf_file_path, header_format=None):
         # use simple electron configuration structure for hydrogen-like ions
         if header_format == 'hydrogen' or element == hydrogen:
             config = _scrape_metadata_hydrogen(file, element, charge)
-        elif header_format == 'hydrogen-like' or element.atomic_number - charge == 1:
+        elif header_format == 'hydrogen-like':
             config = _scrape_metadata_hydrogen_like(file, element, charge)
+        elif element.atomic_number - charge == 1:
+            config = _scrape_metadata_hydrogen_like(file, element, charge)
+            if not config:  # try hydrogen header (works for 'bnd' files)
+                config = _scrape_metadata_hydrogen(file, element, charge)
         else:
             config = _scrape_metadata_full(file, element, charge)
+
+        if not config:
+            raise RuntimeError("Unable to parse ADF15 metadata.")
 
         # process rate data
         rates = RecursiveDict()
