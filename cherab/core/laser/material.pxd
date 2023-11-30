@@ -17,7 +17,7 @@
 # under the Licence.
 
 
-from raysect.core.scenegraph._nodebase cimport _NodeBase
+from raysect.core cimport Primitive
 from raysect.core.math cimport AffineMatrix3D
 from raysect.optical.material.emitter cimport InhomogeneousVolumeEmitter
 
@@ -28,4 +28,8 @@ cdef class LaserMaterial(InhomogeneousVolumeEmitter):
 
     cdef:
         AffineMatrix3D _laser_to_plasma, _laser_segment_to_laser_node
+        Primitive _primitive
+        Laser _laser
         list _models
+
+    cdef void _cache_transforms(self)
