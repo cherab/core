@@ -1,6 +1,6 @@
-# Copyright 2016-2018 Euratom
-# Copyright 2016-2018 United Kingdom Atomic Energy Authority
-# Copyright 2016-2018 Centro de Investigaciones Energéticas, Medioambientales y Tecnológicas
+# Copyright 2016-2022 Euratom
+# Copyright 2016-2022 United Kingdom Atomic Energy Authority
+# Copyright 2016-2022 Centro de Investigaciones Energéticas, Medioambientales y Tecnológicas
 #
 # Licensed under the EUPL, Version 1.1 or – as soon they will be approved by the
 # European Commission - subsequent versions of the EUPL (the "Licence");
@@ -18,16 +18,28 @@
 
 # cython: language_level=3
 
-from cherab.core.atomic cimport Line
+from numpy cimport ndarray
+from cherab.core.math cimport Function1D
+from cherab.core.math.integrators cimport Integrator1D
+from cherab.core.atomic cimport FreeFreeGauntFactor
 from cherab.core.plasma cimport PlasmaModel
-from cherab.core.species cimport Species
+
+
+cdef class BremsFunction(Function1D):
+
+    cdef:
+        double ne, te
+        FreeFreeGauntFactor gaunt_factor
+        ndarray species_density, species_charge
+        double[::1] species_density_mv
+        double[::1] species_charge_mv
 
 
 cdef class Bremsstrahlung(PlasmaModel):
 
     cdef:
-        Line _line
-        double _wavelength
-        Species _target_species
+        BremsFunction _brems_func
+        bint _user_provided_gaunt_factor
+        Integrator1D _integrator
 
-    cdef double _bremsstrahlung(self, double wvl, double te, double ne, double zeff)
+    cdef int _populate_cache(self) except -1

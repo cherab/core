@@ -1,25 +1,49 @@
 Project Changelog
 =================
 
-Release 1.4.0 (TBD)
+Release 1.5.0 (TBD)
+-------------------
+
+New:
+* Support Raysect 0.8
+* Add custom line shape support to BeamCXLine model. (#394)
+* Add PeriodicTransformXD and VectorPeriodicTransformXD functions to support the data simulated with periodic boundary conditions. (#387)
+* Add CylindricalTransform and VectorCylindricalTransform to transform functions from cylindrical to Cartesian coordinates. (#387)
+* Add numerical integration of Bremsstrahlung spectrum over a spectral bin. (#395)
+* Replace the coarse numerical constant in the Bremsstrahlung model with an exact expression. (#409)
+* Add the kind attribute to RayTransferPipelineXD that determines whether the ray transfer matrix is multiplied by sensitivity ('power') or not ('radiance'). (#412)
+* Improved parsing of metadata from the ADAS ADF15 'bnd' files for H-like ions. Raises a runtime error if the metadata cannot be parsed. (#424)
+
+Bug fixes:
+* Fix deprecated transforms being cached in LaserMaterial after laser.transform update (#420)
+
+Release 1.4.0 (3 Feb 2023)
 -------------------
 
 API changes:
-* Spectroscopic observers and their groups are deprecated and replaced by groups based on Raysect's 0D observers. (#332) 
+* Spectroscopic observers and their groups are deprecated and replaced by groups based on Raysect's 0D observers. (#332)
+* Support for Python 3.6 is dropped. It may still work, but is no longer actively tested.
+
+Bug fixes:
+* Fix and improve OpenCL utility functions. (#358)
+* Fixed Bremsstrahlung trapezium evaluation (#384).
 
 New:
 * Make f_profile (current flux) a read-only attribute of EFITEquilibrium. (#355)
 * Add group observer class for each of Raysect's 0D observers. (#332)
 * Add a demo for observer group handling and plotting.
 * Add verbose parameter to SartOpencl solver (default is False). (#358)
+* Add Thomson Scattering model. (#97)
 * Add Generomak core plasma profiles. (#360)
 * Add toroidal_mesh_from_polygon for making mesh for not fully-360 degrees axisymmetric elements. (#365)
-
-Bug Fixes:
-----------
-* Fixed Bremsstrahlung trapezium evaluation (#384).
-* Fixed generomak plasma edge data paths.
-* Fix and improve OpenCL utility functions. (#358)
+* Add common spectroscopic instruments: Polychromator, SurveySpectrometer, CzernyTurnerSpectrometer. (#299)
+* Add new classes for free-free Gaunt factors and improve accuracy of the Gaunt factor used in Bremsstrahlung emission model. (#352)
+* Add GaussianQuadrature integration method for Function1D. (#366)
+* Add integrator attribute to LineShapeModel to use with lineshapes that cannot be analytically integrated over a spectral bin. (#366)
+* Add a numerical integration of StarkBroadenedLine over the spectral bin. (#366)
+* Add Generomak full plasma profiles obtained by blending the core and edge profiles. (#372)
+* Clean up build/install dependencies. (#353)
+* Test against Python 3.10 and latest released Numpy. Drop Python 3.6 and older Numpy from tests. (#391)
 
 
 Release 1.3.0 (8 Dec 2021)

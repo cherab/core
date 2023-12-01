@@ -22,9 +22,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from cherab.core.math.samplers import sample1d_points
-from cherab.generomak.plasma.plasma import get_core_profiles_description
+from cherab.generomak.plasma.plasma import get_core_interpolators
 
-profiles = get_core_profiles_description()
+profiles = get_core_interpolators()
 
 # setup temperature plot
 _, ax_t = plt.subplots()
@@ -35,11 +35,12 @@ ax_t.set_ylabel("eV")
 # setup density plot
 _, ax_n = plt.subplots()
 ax_n.set_yscale("log")
+ax_n.set_ylim(1.e-1, 1.e21)
 ax_n.set_title("Species Core Density Profiles")
 ax_n.set_xlabel("psin")
 ax_n.set_ylabel("m^-3")
 
-psin = np.linspace(0, 1, 30)
+psin = np.append(1. - np.geomspace(1.e-4, 1, 127)[::-1], [1.])
 # add hydrogen curves
 for chrg, desc in profiles["composition"]["hydrogen"].items():
     vals = sample1d_points(desc["f1d_temperature"], psin)

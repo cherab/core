@@ -1,8 +1,8 @@
 # cython: language_level=3
 
-# Copyright 2016-2018 Euratom
-# Copyright 2016-2018 United Kingdom Atomic Energy Authority
-# Copyright 2016-2018 Centro de Investigaciones Energéticas, Medioambientales y Tecnológicas
+# Copyright 2016-2023 Euratom
+# Copyright 2016-2023 United Kingdom Atomic Energy Authority
+# Copyright 2016-2023 Centro de Investigaciones Energéticas, Medioambientales y Tecnológicas
 #
 # Licensed under the EUPL, Version 1.1 or – as soon they will be approved by the
 # European Commission - subsequent versions of the EUPL (the "Licence");
@@ -28,7 +28,7 @@ cimport cython
 from raysect.optical.material.emitter.inhomogeneous import NumericalIntegrator
 
 from cherab.core cimport Species, Plasma, Beam, Element, BeamPopulationRate
-from cherab.core.model.lineshape cimport doppler_shift, thermal_broadening, add_gaussian_line
+from cherab.core.model.lineshape cimport GaussianLine
 from cherab.core.utility.constants cimport RECIP_4_PI, ELEMENTARY_CHARGE, ATOMIC_MASS
 
 cdef double RECIP_ELEMENTARY_CHARGE = 1 / ELEMENTARY_CHARGE
@@ -44,24 +44,58 @@ cdef double ms_to_evamu(double x):
 
 
 cdef class BeamCXLine(BeamModel):
-    """Calculates CX emission for a beam.
+    """
+    Calculates emission produced by charge-exchange of plasma ions
+    with beam species.
 
-    :param line:
-    :param step: integration step in meters
-    :return:
+    :param Line line: The emission line object.
+    :param Beam beam: The beam object.
+    :param Plasma plasma: The emitting plasma object.
+    :param AtomicData atomic_data: The atomic data provider.
+    :param object lineshape: The spectral line shape class. Must be a subclass of `LineShapeModel`.
+                             Defaults to `GaussianLine`.
+    :param object lineshape_args: The arguments of spectral line shape class. Defaults is None.
+    :param object lineshape_kwargs: The keyword arguments of spectral line shape class.
+                                    Defaults is None.
+
+    :ivar Line line: The emission line object.
+
+    .. code-block:: pycon
+        >>> from cherab.core.model import BeamCXLine
+        >>> from cherab.core.atomic import carbon
+        >>> from cherab.core.model import ParametrisedZeemanTriplet
+        >>>
+        >>> cVI_8_7 = Line(carbon, 5, (8, 7))  # emission line
+        >>> # define plasma, beam and atomic data, plasma mast contain C6+ ions.
+        >>> ...
+        >>> # here we override default line shape class, GaussianLine,
+        >>> # with ParametrisedZeemanTriplet to take into account Zeeman splitting.
+        >>> beam_cx_line = BeamCXLine(cVI_8_7, lineshape=ParametrisedZeemanTriplet)
+        >>> beam.models = [beam_cx_line]
     """
 
-    def __init__(self, Line line not None, Beam beam=None, Plasma plasma=None, AtomicData atomic_data=None):
+    def __init__(self, Line line not None, Beam beam=None, Plasma plasma=None, AtomicData atomic_data=None,
+                 object lineshape=None, object lineshape_args=None, object lineshape_kwargs=None):
 
         super().__init__(beam, plasma, atomic_data)
 
         self._line = line
 
-        # initialise cache to empty
-        self._target_species = None
-        self._wavelength = 0.0
-        self._ground_beam_rate = None
-        self._excited_beam_data = None
+        self._lineshape_class = lineshape or GaussianLine
+        if not issubclass(self._lineshape_class, LineShapeModel):
+            raise TypeError("The attribute lineshape must be a subclass of LineShapeModel.")
+
+        if lineshape_args:
+            self._lineshape_args = lineshape_args
+        else:
+            self._lineshape_args = []
+        if lineshape_kwargs:
+            self._lineshape_kwargs = lineshape_kwargs
+        else:
+            self._lineshape_kwargs = {}
+
+        # ensure that cache is initialised
+        self._change()
 
     @property
     def line(self):
@@ -85,9 +119,9 @@ cdef class BeamCXLine(BeamModel):
         cdef:
             double x, y, z
             double donor_density
-            double receiver_temperature, receiver_density, receiver_ion_mass, interaction_speed, interaction_energy, emission_rate
+            double receiver_temperature, receiver_density, interaction_speed, interaction_energy, emission_rate
             Vector3D receiver_velocity, donor_velocity, interaction_velocity
-            double natural_wavelength, central_wavelength, radiance, sigma
+            double radiance
 
         # cache data on first run
         if self._target_species is None:
@@ -116,7 +150,6 @@ cdef class BeamCXLine(BeamModel):
             return spectrum
 
         receiver_velocity = self._target_species.distribution.bulk_velocity(x, y, z)
-        receiver_ion_mass = self._target_species.element.atomic_weight
 
         donor_velocity = beam_direction.normalise().mul(evamu_to_ms(self._beam.get_energy()))
 
@@ -127,20 +160,16 @@ cdef class BeamCXLine(BeamModel):
         # calculate the composite charge-exchange emission coefficient
         emission_rate = self._composite_cx_rate(x, y, z, interaction_energy, donor_velocity, receiver_temperature, receiver_density)
 
-        # calculate emission line central wavelength, doppler shifted along observation direction
-        natural_wavelength = self._wavelength
-        central_wavelength = doppler_shift(natural_wavelength, observation_direction, receiver_velocity)
-
         # spectral line emission in W/m^3/str
         radiance = RECIP_4_PI * donor_density * receiver_density * emission_rate
-        sigma = thermal_broadening(natural_wavelength, receiver_temperature, receiver_ion_mass)
-        return add_gaussian_line(radiance, central_wavelength, sigma, spectrum)
+
+        return self._lineshape.add_line(radiance, plasma_point, observation_direction, spectrum)
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
     @cython.cdivision(True)
     cdef double _composite_cx_rate(self, double x, double y, double z, double interaction_energy,
-                                          Vector3D donor_velocity, double receiver_temperature, double receiver_density) except? -1e999:
+                                   Vector3D donor_velocity, double receiver_temperature, double receiver_density) except? -1e999:
         """
         Performs a beam population weighted average of the effective cx rates.
 
@@ -328,6 +357,10 @@ cdef class BeamCXLine(BeamModel):
                 # link each rate with its population data
                 self._excited_beam_data.append((rate, population_data))
 
+        # instance line shape renderer
+        self._lineshape = self._lineshape_class(self._line, self._wavelength, self._target_species, self._plasma,
+                                                *self._lineshape_args, **self._lineshape_kwargs)
+
     def _change(self):
 
         # clear cache to force regeneration on first use
@@ -335,4 +368,3 @@ cdef class BeamCXLine(BeamModel):
         self._wavelength = 0.0
         self._ground_beam_rate = None
         self._excited_beam_data = None
-

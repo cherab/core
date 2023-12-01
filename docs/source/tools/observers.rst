@@ -146,3 +146,4 @@ Spectroscopic prefix in class name.
 
 .. autoclass:: cherab.tools.observers.SpectroscopicFibreOptic
    :members
+

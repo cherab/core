@@ -1,9 +1,11 @@
-from setuptools import setup, find_packages, Extension
+from collections import defaultdict
 import sys
-import numpy
 import os
 import os.path as path
+from pathlib import Path
 import multiprocessing
+import numpy
+from setuptools import setup, find_packages, Extension
 from Cython.Build import cythonize
 
 multiprocessing.set_start_method('fork')
@@ -31,9 +33,12 @@ if "--install-rates" in sys.argv:
 
 source_paths = ["cherab", "demos"]
 compilation_includes = [".", numpy.get_include()]
-compilation_args = []
+compilation_args = ["-O3"]
 cython_directives = {"language_level": 3}
 setup_path = path.dirname(path.abspath(__file__))
+num_processes = int(os.getenv("CHERAB_NCPU", "-1"))
+if num_processes == -1:
+    num_processes = multiprocessing.cpu_count()
 
 if line_profile:
     compilation_args.append("-DCYTHON_TRACE=1")
@@ -67,6 +72,16 @@ extensions = cythonize(
     force=force,
     compiler_directives=cython_directives,
 )
+
+# Include demos in a separate directory in the distribution as data_files.
+demo_parent_path = Path("share/cherab/demos/core")
+data_files = defaultdict(list)
+demos_source = Path("demos")
+for item in demos_source.rglob("*"):
+    if item.is_file():
+        install_dir = demo_parent_path / item.parent.relative_to(demos_source)
+        data_files[str(install_dir)].append(str(item))
+data_files = list(data_files.items())
 
 # parse the package version number
 with open(path.join(path.dirname(__file__), "cherab/core/VERSION")) as version_file:
@@ -103,12 +118,25 @@ setup(
         "numpy>=1.14",
         "scipy",
         "matplotlib",
-        "raysect==0.7.1",
+        "raysect==0.8.1",
     ],
-    packages=find_packages(),
-    include_package_data=True,
+    extras_require={
+        # Running ./dev/build_docs.sh runs setup.py, which requires cython.
+        "docs": ["cython", "sphinx", "sphinx-rtd-theme", "sphinx-tabs"],
+    },
+    packages=find_packages(include=["cherab*"]),
+    package_data={"": [
+        "**/*.pyx", "**/*.pxd",  # Needed to build Cython extensions.
+        "**/*.json", "**/*.cl", "**/*.npy", "**/*.obj",  # Supplementary data
+    ],
+                  "cherab.core": ["VERSION"],  # Used to determine version at run time
+    },
+    data_files=data_files,
     zip_safe=False,
     ext_modules=extensions,
+    options=dict(
+        build_ext={"parallel": num_processes},
+    ),
 )
 
 # setup a rate repository with common rates
