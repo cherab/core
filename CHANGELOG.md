@@ -10,7 +10,7 @@ New:
 * Add PeriodicTransformXD and VectorPeriodicTransformXD functions to support the data simulated with periodic boundary conditions. (#387)
 * Add CylindricalTransform and VectorCylindricalTransform to transform functions from cylindrical to Cartesian coordinates. (#387)
 * Add the kind attribute to RayTransferPipelineXD that determines whether the ray transfer matrix is multiplied by sensitivity ('power') or not ('radiance'). (#412)
-* Improved parsing of the ADAS ADF15 metadata for H-like ions. Raises a runtime error if the metadata cannot be parsed. (#424)
+* Improved parsing of metadata from the ADAS ADF15 'bnd' files for H-like ions. Raises a runtime error if the metadata cannot be parsed. (#424)
 
 
 Release 1.4.0 (3 Feb 2023)

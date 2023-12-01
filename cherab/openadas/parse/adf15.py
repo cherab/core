@@ -71,7 +71,8 @@ def parse_adf15(element, charge, adf_file_path, header_format=None):
             config = _scrape_metadata_hydrogen_like(file, element, charge)
         elif element.atomic_number - charge == 1:
             config = _scrape_metadata_hydrogen_like(file, element, charge)
-            if not config:  # try hydrogen header (works for 'bnd' files)
+            if not config and 'bnd#' in adf_file_path:
+                # ADF15 files with the "bnd" suffix may have metadata in the "hydrogen" format
                 config = _scrape_metadata_hydrogen(file, element, charge)
         else:
             config = _scrape_metadata_full(file, element, charge)
