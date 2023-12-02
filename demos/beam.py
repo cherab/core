@@ -1,6 +1,6 @@
-# Copyright 2016-2018 Euratom
-# Copyright 2016-2018 United Kingdom Atomic Energy Authority
-# Copyright 2016-2018 Centro de Investigaciones Energéticas, Medioambientales y Tecnológicas
+# Copyright 2016-2022 Euratom
+# Copyright 2016-2022 United Kingdom Atomic Energy Authority
+# Copyright 2016-2022 Centro de Investigaciones Energéticas, Medioambientales y Tecnológicas
 #
 # Licensed under the EUPL, Version 1.1 or – as soon they will be approved by the
 # European Commission - subsequent versions of the EUPL (the "Licence");
@@ -16,9 +16,6 @@
 # See the Licence for the specific language governing permissions and limitations
 # under the Licence.
 
-import sys
-
-import numpy as np
 from scipy.constants import electron_mass, atomic_mass
 from matplotlib.pyplot import ion, ioff, plot, show
 
@@ -30,7 +27,7 @@ from raysect.optical.material.emitter import Checkerboard
 
 from cherab.core import Plasma, Beam, Species, Maxwellian
 from cherab.core.atomic import elements, Line
-from cherab.openadas import OpenADAS
+from cherab.atomic import AtomicData
 from cherab.core.model import SingleRayAttenuator, BeamCXLine
 from cherab.tools.plasmas import GaussianVolume
 
@@ -40,7 +37,7 @@ integration_step = 0.02
 world = World()
 
 # create atomic data source
-adas = OpenADAS(permit_extrapolation=True)
+atomic_data = AtomicData(permit_extrapolation=True)
 
 # PLASMA ----------------------------------------------------------------------
 plasma = Plasma(parent=world)
@@ -76,7 +73,7 @@ plasma.composition = [d_species, he2_species, c6_species, ne10_species]
 # BEAM ------------------------------------------------------------------------
 beam = Beam(parent=world, transform=translate(1.0, 0.0, 0) * rotate(90, 0, 0))
 beam.plasma = plasma
-beam.atomic_data = adas
+beam.atomic_data = atomic_data
 beam.energy = 60000
 beam.power = 3e6
 beam.element = elements.deuterium
@@ -99,7 +96,7 @@ beam.integrator.min_samples = 10
 
 beam = Beam(parent=world, transform=translate(1.0, 0.0, 0) * rotate(90, 0, 0))
 beam.plasma = plasma
-beam.atomic_data = adas
+beam.atomic_data = atomic_data
 beam.energy = 60000 / 2
 beam.power = 3e6
 beam.element = elements.deuterium
@@ -122,7 +119,7 @@ beam.integrator.min_samples = 10
 
 beam = Beam(parent=world, transform=translate(1.0, 0.0, 0) * rotate(90, 0, 0))
 beam.plasma = plasma
-beam.atomic_data = adas
+beam.atomic_data = atomic_data
 beam.energy = 60000 / 3
 beam.power = 3e6
 beam.element = elements.deuterium

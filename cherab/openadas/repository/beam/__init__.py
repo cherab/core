@@ -16,7 +16,8 @@
 # See the Licence for the specific language governing permissions and limitations
 # under the Licence.
 
-from .cx import *
-from .stopping import *
-from .population import *
-from .emission import *
+# for backward compatibility
+from cherab.atomic.repository.beam.cx import *
+from cherab.atomic.repository.beam.stopping import *
+from cherab.atomic.repository.beam.population import *
+from cherab.atomic.repository.beam.emission import *

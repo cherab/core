@@ -16,9 +16,6 @@
 # See the Licence for the specific language governing permissions and limitations
 # under the Licence.
 
-import sys
-
-import numpy as np
 from scipy.constants import electron_mass, atomic_mass
 from matplotlib.pyplot import ion, ioff, plot, show
 
@@ -30,7 +27,7 @@ from raysect.optical.material.emitter import Checkerboard
 
 from cherab.core import Plasma, Beam, Species, Maxwellian
 from cherab.core.atomic import elements, Line
-from cherab.openadas import OpenADAS
+from cherab.atomic import AtomicData
 from cherab.core.model import SingleRayAttenuator, BeamCXLine
 from cherab.tools.plasmas import GaussianVolume
 
@@ -40,7 +37,7 @@ integration_step = 0.1
 world = World()
 
 # create atomic data source
-adas = OpenADAS(permit_extrapolation=True)
+atomic_data = AtomicData(permit_extrapolation=True)
 
 # PLASMA ----------------------------------------------------------------------
 plasma = Plasma(parent=world)
@@ -83,7 +80,7 @@ plasma.geometry = Sphere(sigma * 5.0)
 plasma.geometry_transform = None
 plasma.integrator.step = integration_step
 plasma.integrator.min_samples = 5
-plasma.atomic_data = adas
+plasma.atomic_data = atomic_data
 
 # Setup elements.deuterium lines
 d_alpha = Line(elements.deuterium, 0, (3, 2))
@@ -105,7 +102,7 @@ plasma.models = [
 # BEAM ------------------------------------------------------------------------
 beam = Beam(parent=world, transform=translate(1.0, 0.0, 0) * rotate(90, 0, 0))
 beam.plasma = plasma
-beam.atomic_data = adas
+beam.atomic_data = atomic_data
 beam.energy = 60000
 beam.power = 1e4
 beam.element = elements.deuterium
@@ -128,7 +125,7 @@ beam.integrator.min_samples = 5
 
 beam = Beam(parent=world, transform=translate(1.0, 0.0, 0) * rotate(90, 0, 0))
 beam.plasma = plasma
-beam.atomic_data = adas
+beam.atomic_data = atomic_data
 beam.energy = 60000 / 2
 beam.power = 1e4
 beam.element = elements.deuterium
@@ -151,7 +148,7 @@ beam.integrator.min_samples = 5
 
 beam = Beam(parent=world, transform=translate(1.0, 0.0, 0) * rotate(90, 0, 0))
 beam.plasma = plasma
-beam.atomic_data = adas
+beam.atomic_data = atomic_data
 beam.energy = 60000 / 3
 beam.power = 1e4
 beam.element = elements.deuterium

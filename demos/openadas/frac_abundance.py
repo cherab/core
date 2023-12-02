@@ -1,33 +1,52 @@
+
+# Copyright 2016-2022 Euratom
+# Copyright 2016-2022 United Kingdom Atomic Energy Authority
+# Copyright 2016-2022 Centro de Investigaciones Energéticas, Medioambientales y Tecnológicas
+#
+# Licensed under the EUPL, Version 1.1 or – as soon they will be approved by the
+# European Commission - subsequent versions of the EUPL (the "Licence");
+# You may not use this work except in compliance with the Licence.
+# You may obtain a copy of the Licence at:
+#
+# https://joinup.ec.europa.eu/software/page/eupl5
+#
+# Unless required by applicable law or agreed to in writing, software distributed
+# under the Licence is distributed on an "AS IS" basis, WITHOUT WARRANTIES OR
+# CONDITIONS OF ANY KIND, either express or implied.
+#
+# See the Licence for the specific language governing permissions and limitations
+# under the Licence.
+
 import numpy as np
 import matplotlib.pyplot as plt
 from cherab.core.atomic import neon, hydrogen
-from cherab.openadas import OpenADAS
+from cherab.atomic import AtomicData
 from scipy.optimize import lsq_linear
 
 
-def get_rates_recombination(element):
+def get_rates_recombination(atomic_data, element):
     """
     load recombinatio rates for all ionic stages
     """
     coef_recom = {}
     for i in np.arange(1, elem.atomic_number + 1):
-        coef_recom[i] = adas.recombination_rate(element, int(i))
+        coef_recom[i] = atomic_data.recombination_rate(element, int(i))
 
     return coef_recom
 
 
-def get_rates_tcx(donor, donor_charge, receiver):
+def get_rates_tcx(atomic_data, donor, donor_charge, receiver):
     """
     load thermal charge-exchange recombination rates for all ionic stages
     """
     coef_tcx = {}
     for i in np.arange(1, elem.atomic_number + 1):
-        coef_tcx[i] = adas.thermal_cx_rate(donor, donor_charge, receiver, int(i))
+        coef_tcx[i] = atomic_data.thermal_cx_rate(donor, donor_charge, receiver, int(i))
 
     return coef_tcx
 
 
-def get_rates_ionisation(element):
+def get_rates_ionisation(atomic_data, element):
     """
     load ionisation rates for all ionic stages
     :param element:
@@ -35,7 +54,7 @@ def get_rates_ionisation(element):
     """
     coef_ionis = {}
     for i in np.arange(0, elem.atomic_number):
-        coef_ionis[i] = adas.ionisation_rate(element, int(i))
+        coef_ionis[i] = atomic_data.ionisation_rate(element, int(i))
 
     return coef_ionis
 
@@ -83,7 +102,7 @@ def solve_ion_balance(element, n_e, t_e, coef_ion, coef_recom, nh0=None, coef_tc
 
 
 # initialise the atomic data provider
-adas = OpenADAS(permit_extrapolation=True)
+atomic_data = AtomicData(permit_extrapolation=True)
 
 elem = neon
 temperature_steps = 100
@@ -92,9 +111,9 @@ nh0 = 1e15
 numstates = elem.atomic_number + 1
 
 # Collect rate coefficients
-rates_ion = get_rates_ionisation(elem)
-rates_recom = get_rates_recombination(elem)
-rates_tcx = get_rates_tcx(hydrogen, 0, elem)
+rates_ion = get_rates_ionisation(atomic_data, elem)
+rates_recom = get_rates_recombination(atomic_data, elem)
+rates_tcx = get_rates_tcx(atomic_data, hydrogen, 0, elem)
 
 electron_temperatures = [10 ** x for x in np.linspace(np.log10(rates_recom[1].raw_data["te"].min()),
                                                       np.log10(rates_recom[1].raw_data["te"].max()),

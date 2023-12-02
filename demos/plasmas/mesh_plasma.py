@@ -1,7 +1,7 @@
 
-# Copyright 2016-2018 Euratom
-# Copyright 2016-2018 United Kingdom Atomic Energy Authority
-# Copyright 2016-2018 Centro de Investigaciones Energéticas, Medioambientales y Tecnológicas
+# Copyright 2016-2022 Euratom
+# Copyright 2016-2022 United Kingdom Atomic Energy Authority
+# Copyright 2016-2022 Centro de Investigaciones Energéticas, Medioambientales y Tecnológicas
 #
 # Licensed under the EUPL, Version 1.1 or – as soon they will be approved by the
 # European Commission - subsequent versions of the EUPL (the "Licence");
@@ -32,7 +32,7 @@ from cherab.core import Species, Maxwellian, Plasma, Line
 from cherab.core.math import sample3d, AxisymmetricMapper
 from cherab.core.atomic import deuterium
 from cherab.core.model import ExcitationLine, RecombinationLine
-from cherab.openadas import OpenADAS
+from cherab.atomic import AtomicData
 
 
 # tunable parameters
@@ -94,7 +94,7 @@ d1_vertex_temperatures = np.array([ion_distribution(r, peak_temperature, 0) for 
 world = World()  # setup scenegraph
 
 plasma = Plasma(parent=world)
-plasma.atomic_data = OpenADAS(permit_extrapolation=True)
+plasma.atomic_data = AtomicData(permit_extrapolation=True)
 plasma.geometry = Cylinder(1.5, 4, transform=translate(0, 0, -2))
 plasma.geometry_transform = translate(0, 0, -2)
 

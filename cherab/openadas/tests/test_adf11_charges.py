@@ -1,11 +1,11 @@
 from cherab.openadas.parse.adf11 import parse_adf11
-from cherab.openadas import repository
+from cherab.atomic import repository
 from cherab.core.atomic import neon, hydrogen
-from cherab.openadas import OpenADAS
+from cherab.atomic import AtomicData
 from cherab.openadas.parse import parse_adf11
 from cherab.core.utility import RecursiveDict, Cm3ToM3, PerCm3ToPerM3
 import unittest
-from cherab.openadas.rates.atomic import IonisationRate, RecombinationRate, ThermalCXRate
+from cherab.atomic.rates.atomic import IonisationRate, RecombinationRate, ThermalCXRate
 
 
 # Todo: this uses rate data, it must be stand alone. Fix it.

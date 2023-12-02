@@ -119,34 +119,19 @@ cdef class Bremsstrahlung(PlasmaModel):
 
     :ivar Plasma plasma: The plasma to which this emission model is attached. Default is None.
     :ivar AtomicData atomic_data: The atomic data provider for this model. Default is None.
-    :ivar FreeFreeGauntFactor gaunt_factor: Free-free Gaunt factor as a function of Z, Te and
-                                            wavelength. If not provided,
-                                            the `atomic_data` is used.
     :ivar Integrator1D integrator: Integrator1D instance to integrate Bremsstrahlung radiation
                                    over the spectral bin. Default is `GaussianQuadrature`.
     """
 
-    def __init__(self, Plasma plasma=None, AtomicData atomic_data=None, FreeFreeGauntFactor gaunt_factor=None, Integrator1D integrator=None):
+    def __init__(self, Plasma plasma=None, AtomicData atomic_data=None, Integrator1D integrator=None):
 
         super().__init__(plasma, atomic_data)
 
         self._brems_func = BremsFunction.__new__(BremsFunction)
-        self.gaunt_factor = gaunt_factor
         self.integrator = integrator or GaussianQuadrature()
 
         # ensure that cache is initialised
         self._change()
-
-    @property
-    def gaunt_factor(self):
-
-        return self._brems_func.gaunt_factor
-
-    @gaunt_factor.setter
-    def gaunt_factor(self, value):
-
-        self._brems_func.gaunt_factor = value
-        self._user_provided_gaunt_factor = True if value else False
 
     @property
     def integrator(self):
@@ -215,12 +200,11 @@ cdef class Bremsstrahlung(PlasmaModel):
         if self._plasma is None:
             raise RuntimeError("The emission model is not connected to a plasma object.")
 
-        if self._brems_func.gaunt_factor is None:
-            if self._atomic_data is None:
-                raise RuntimeError("The emission model is not connected to an atomic data source.")
+        if self._atomic_data is None:
+            raise RuntimeError("The emission model is not connected to an atomic data source.")
 
-            # initialise Gaunt factor on first run using the atomic data
-            self._brems_func.gaunt_factor = self._atomic_data.free_free_gaunt_factor()
+        # initialise Gaunt factor on first run using the atomic data
+        self._brems_func.gaunt_factor = self._atomic_data.free_free_gaunt_factor()
 
         species_charge = []
         for species in self._plasma.get_composition():
@@ -237,8 +221,7 @@ cdef class Bremsstrahlung(PlasmaModel):
     def _change(self):
 
         # clear cache to force regeneration on first use
-        if not self._user_provided_gaunt_factor:
-            self._brems_func.gaunt_factor = None
+        self._brems_func.gaunt_factor = None
         self._brems_func.species_charge = None
         self._brems_func.species_charge_mv = None
         self._brems_func.species_density = None

@@ -104,6 +104,5 @@ cdef class FractionalAbundance:
     cdef:
         readonly Element element
         readonly int charge
-        public str name
 
     cdef double evaluate(self, double electron_density, double electron_temperature) except? -1e999

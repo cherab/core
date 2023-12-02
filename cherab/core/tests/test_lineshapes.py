@@ -1,6 +1,6 @@
-# Copyright 2016-2018 Euratom
-# Copyright 2016-2018 United Kingdom Atomic Energy Authority
-# Copyright 2016-2018 Centro de Investigaciones Energéticas, Medioambientales y Tecnológicas
+# Copyright 2016-2023 Euratom
+# Copyright 2016-2023 United Kingdom Atomic Energy Authority
+# Copyright 2016-2023 Centro de Investigaciones Energéticas, Medioambientales y Tecnológicas
 #
 # Licensed under the EUPL, Version 1.1 or – as soon they will be approved by the
 # European Commission - subsequent versions of the EUPL (the "Licence");
@@ -23,12 +23,12 @@ from scipy.special import erf, hyp2f1
 from scipy.integrate import quadrature
 
 from raysect.core import Point3D, Vector3D
-from raysect.core.math.function.float import Arg1D, Constant1D
 from raysect.optical import Spectrum
 
 from cherab.core import Line
 from cherab.core.math.integrators import GaussianQuadrature
-from cherab.core.atomic import deuterium, nitrogen, ZeemanStructure
+from cherab.core.atomic import deuterium, nitrogen
+from cherab.atomic.zeeman import ZeemanStructure
 from cherab.tools.plasmas.slab import build_constant_slab_plasma
 from cherab.core.model import GaussianLine, MultipletLineShape, StarkBroadenedLine, ZeemanTriplet, ParametrisedZeemanTriplet, ZeemanMultiplet
 
@@ -228,11 +228,17 @@ class TestLineShapes(unittest.TestCase):
         wavelength = 656.104
         photon_energy = HC_EV_NM / wavelength
 
-        pi_components = [(Constant1D(wavelength), Constant1D(1.0))]
-        sigma_plus_components = [(HC_EV_NM / (photon_energy - BOHR_MAGNETON * Arg1D()), Constant1D(0.5))]
-        sigma_minus_components = [(HC_EV_NM / (photon_energy + BOHR_MAGNETON * Arg1D()), Constant1D(0.5))]
+        zeeman_data = {}
+        zeeman_data['b'] = np.linspace(0, 10, 100)
+        zeeman_data['polarisation'] = np.array([0, 1, -1], dtype=np.int32)
+        zeeman_data['wavelength'] = np.array([np.ones_like(zeeman_data['b']) * wavelength,
+                                              HC_EV_NM / (photon_energy - BOHR_MAGNETON * zeeman_data['b']),
+                                              HC_EV_NM / (photon_energy + BOHR_MAGNETON * zeeman_data['b'])])
+        zeeman_data['ratio'] = np.array([np.ones_like(zeeman_data['b']),
+                                         0.5 * np.ones_like(zeeman_data['b']),
+                                         0.5 * np.ones_like(zeeman_data['b'])])
 
-        zeeman_structure = ZeemanStructure(pi_components, sigma_plus_components, sigma_minus_components)
+        zeeman_structure = ZeemanStructure(zeeman_data)
         multiplet = ZeemanMultiplet(line, wavelength, target_species, self.plasma, zeeman_structure)
 
         # spectrum parameters

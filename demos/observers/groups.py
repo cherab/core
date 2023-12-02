@@ -1,4 +1,7 @@
-# Copyright 2014-2021 United Kingdom Atomic Energy Authority
+
+# Copyright 2016-2022 Euratom
+# Copyright 2016-2022 United Kingdom Atomic Energy Authority
+# Copyright 2016-2022 Centro de Investigaciones Energéticas, Medioambientales y Tecnológicas
 #
 # Licensed under the EUPL, Version 1.1 or – as soon they will be approved by the
 # European Commission - subsequent versions of the EUPL (the "Licence");
@@ -27,7 +30,7 @@ from raysect.optical.observer import SpectralRadiancePipeline0D, FibreOptic
 
 from cherab.core.model import ExcitationLine, RecombinationLine
 from cherab.core.atomic import Line, hydrogen
-from cherab.openadas import OpenADAS
+from cherab.atomic import AtomicData
 from cherab.generomak.machine import load_first_wall
 from cherab.tools.observers import FibreOpticGroup
 from cherab.tools.observers.group.plotting import plot_group_spectra, plot_group_total
@@ -39,7 +42,7 @@ from cherab.generomak.plasma import get_edge_plasma
 plasma = get_edge_plasma()
 
 # Adding H-alpha excitation and recombination models
-plasma.atomic_data = OpenADAS(permit_extrapolation=True)
+plasma.atomic_data = AtomicData(permit_extrapolation=True)
 h_alpha = Line(hydrogen, 0, (3, 2))
 plasma.models = [ExcitationLine(h_alpha), RecombinationLine(h_alpha)]
 
