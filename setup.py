@@ -1,9 +1,11 @@
-from setuptools import setup, find_packages, Extension
+from collections import defaultdict
 import sys
-import numpy
 import os
 import os.path as path
+from pathlib import Path
 import multiprocessing
+import numpy
+from setuptools import setup, find_packages, Extension
 from Cython.Build import cythonize
 
 multiprocessing.set_start_method('fork')
@@ -71,6 +73,16 @@ extensions = cythonize(
     compiler_directives=cython_directives,
 )
 
+# Include demos in a separate directory in the distribution as data_files.
+demo_parent_path = Path("share/cherab/demos/core")
+data_files = defaultdict(list)
+demos_source = Path("demos")
+for item in demos_source.rglob("*"):
+    if item.is_file():
+        install_dir = demo_parent_path / item.parent.relative_to(demos_source)
+        data_files[str(install_dir)].append(str(item))
+data_files = list(data_files.items())
+
 # parse the package version number
 with open(path.join(path.dirname(__file__), "cherab/core/VERSION")) as version_file:
     version = version_file.read().strip()
@@ -112,8 +124,14 @@ setup(
         # Running ./dev/build_docs.sh runs setup.py, which requires cython.
         "docs": ["cython", "sphinx", "sphinx-rtd-theme", "sphinx-tabs"],
     },
-    packages=find_packages(),
-    include_package_data=True,
+    packages=find_packages(include=["cherab*"]),
+    package_data={"": [
+        "**/*.pyx", "**/*.pxd",  # Needed to build Cython extensions.
+        "**/*.json", "**/*.cl", "**/*.npy", "**/*.obj",  # Supplementary data
+    ],
+                  "cherab.core": ["VERSION"],  # Used to determine version at run time
+    },
+    data_files=data_files,
     zip_safe=False,
     ext_modules=extensions,
     options=dict(

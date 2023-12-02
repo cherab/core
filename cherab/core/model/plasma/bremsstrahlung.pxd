@@ -19,17 +19,26 @@
 # cython: language_level=3
 
 from numpy cimport ndarray
+from cherab.core.math cimport Function1D
+from cherab.core.math.integrators cimport Integrator1D
 from cherab.core.atomic cimport FreeFreeGauntFactor
 from cherab.core.plasma cimport PlasmaModel
+
+
+cdef class BremsFunction(Function1D):
+
+    cdef:
+        double ne, te
+        FreeFreeGauntFactor gaunt_factor
+        ndarray species_density, species_charge
+        double[::1] species_density_mv
+        double[::1] species_charge_mv
 
 
 cdef class Bremsstrahlung(PlasmaModel):
 
     cdef:
-        FreeFreeGauntFactor _gaunt_factor
-        ndarray _species_charge, _species_density
-        double[::1] _species_density_mv, _species_charge_mv
-
-    cdef double _bremsstrahlung(self, double wvl, double te, double ne)
+        BremsFunction _brems_func
+        Integrator1D _integrator
 
     cdef int _populate_cache(self) except -1

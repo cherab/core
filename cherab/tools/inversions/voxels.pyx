@@ -682,7 +682,7 @@ class ToroidalVoxelGrid(VoxelCollection):
 
         patches = []
         for voxel in self:
-            polygon = Polygon([(v.x, v.y) for v in voxel.vertices], True)
+            polygon = Polygon([(v.x, v.y) for v in voxel.vertices], closed=True)
             patches.append(polygon)
 
         p = PatchCollection(patches, cmap=cmap)

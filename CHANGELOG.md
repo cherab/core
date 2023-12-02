@@ -12,7 +12,6 @@ API changes:
 * InterpolatedFreeFreeGauntFactor and MaxwellianFreeFreeGauntFactor are replaced with a general interpolator FreeFreeGauntFactor from cherab.atomic.gaunt. (#364)
 * ZeemanStructure class is splitted to base (abstract) and interpolator classes. The latter is moved to cherab.atomic.zeeman and its initialiser interface is chaged to match the other atomic data interpolators. (#364)
 
-
 New:
 * Support Raysect 0.8
 * Add custom line shape support to BeamCXLine model. (#394)
@@ -20,8 +19,14 @@ New:
 * Add functions to read/write Zeeman structure in the atomic repository. (#364)
 * Add PeriodicTransformXD and VectorPeriodicTransformXD functions to support the data simulated with periodic boundary conditions. (#387)
 * Add CylindricalTransform and VectorCylindricalTransform to transform functions from cylindrical to Cartesian coordinates. (#387)
+* Add numerical integration of Bremsstrahlung spectrum over a spectral bin. (#395)
+* Replace the coarse numerical constant in the Bremsstrahlung model with an exact expression. (#409)
 * Add the kind attribute to RayTransferPipelineXD that determines whether the ray transfer matrix is multiplied by sensitivity ('power') or not ('radiance'). (#412)
+* Improved parsing of metadata from the ADAS ADF15 'bnd' files for H-like ions. Raises a runtime error if the metadata cannot be parsed. (#424)
 * Get the path to the default atomic data repository from the CHERAB_ATOMIC_DATA environment variable. (#416)
+
+Bug fixes:
+* Fix deprecated transforms being cached in LaserMaterial after laser.transform update (#420)
 
 
 Release 1.4.0 (3 Feb 2023)
