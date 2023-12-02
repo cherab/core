@@ -19,17 +19,38 @@
 import unittest
 
 import numpy as np
+import os
+import json
 
 from raysect.core import Point3D, Vector3D
 from raysect.optical import World, Ray
 
-from cherab.core.atomic import AtomicData, MaxwellianFreeFreeGauntFactor
+from cherab.core.atomic import AtomicData
+from cherab.atomic.gaunt import FreeFreeGauntFactor
 from cherab.core.math.integrators import GaussianQuadrature
 from cherab.core.atomic import deuterium, nitrogen
 from cherab.tools.plasmas.slab import build_constant_slab_plasma
 from cherab.core.model import Bremsstrahlung
 
 import scipy.constants as const
+
+
+class TestAtomicData(AtomicData):
+    """Atomic data for test purpose."""
+
+    def free_free_gaunt_factor(self):
+
+        test_directory = os.path.dirname(__file__)
+        path = os.path.join(test_directory, '../../atomic/repository/default_data/maxwellian_free_free_gaunt_factor.json')
+        with open(path, 'r') as f:
+            data = json.load(f)
+
+        # convert to numpy arrays
+        data['u'] = np.array(data['u'], np.float64)
+        data['gamma2'] = np.array(data['gamma2'], np.float64)
+        data['gaunt_factor'] = np.array(data['gaunt_factor'], np.float64)
+
+        return FreeFreeGauntFactor(data)
 
 
 class TestBremsstrahlung(unittest.TestCase):
@@ -40,12 +61,11 @@ class TestBremsstrahlung(unittest.TestCase):
     plasma = build_constant_slab_plasma(length=1, width=1, height=1, electron_density=1e19, electron_temperature=2000.,
                                         plasma_species=plasma_species)
     plasma.parent = world
-    plasma.atomic_data = AtomicData()
+    plasma.atomic_data = TestAtomicData()
 
     def test_bremsstrahlung_model(self):
         # setting up the model
-        gaunt_factor = MaxwellianFreeFreeGauntFactor()
-        bremsstrahlung = Bremsstrahlung(gaunt_factor=gaunt_factor)
+        bremsstrahlung = Bremsstrahlung()
         self.plasma.models = [bremsstrahlung]
 
         # observing
@@ -64,6 +84,8 @@ class TestBremsstrahlung(unittest.TestCase):
 
         ne = self.plasma.electron_distribution.density(0.5, 0, 0)
         te = self.plasma.electron_distribution.effective_temperature(0.5, 0, 0)
+
+        gaunt_factor = self.plasma.atomic_data.free_free_gaunt_factor()
 
         def brems_func(wvl):
             ni_gff_z2 = 0
@@ -87,7 +109,7 @@ class TestBremsstrahlung(unittest.TestCase):
 
         for i in range(brems_spectrum.bins):
             self.assertAlmostEqual(brems_spectrum.samples[i], test_samples[i], delta=1e-10,
-                                   msg='BeamCXLine model gives a wrong value at {} nm.'.format(brems_spectrum.wavelengths[i]))
+                                   msg='Bremsstrahlung model gives a wrong value at {} nm.'.format(brems_spectrum.wavelengths[i]))
 
 
 if __name__ == '__main__':
