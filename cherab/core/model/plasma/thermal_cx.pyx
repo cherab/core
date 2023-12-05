@@ -137,7 +137,7 @@ cdef class ThermalCXLine(PlasmaModel):
         # obtain rate functions
         self._rates = []
         for species in self._plasma.composition:
-            if species.charge < species.element.atomic_number:
+            if species != self._target_species and species.charge < species.element.atomic_number:
                 rate = self._atomic_data.thermal_cx_pec(species.element, species.charge,  # donor
                                                         self._line.element, receiver_charge,  # receiver
                                                         self._line.transition)
