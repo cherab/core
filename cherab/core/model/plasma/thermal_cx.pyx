@@ -18,22 +18,26 @@
 
 from raysect.optical cimport Spectrum, Point3D, Vector3D
 from cherab.core cimport Plasma, AtomicData
+from cherab.core.atomic cimport ThermalCXPEC
 from cherab.core.model.lineshape cimport GaussianLine, LineShapeModel
 from cherab.core.utility.constants cimport RECIP_4_PI
 
 
-cdef class ExcitationLine(PlasmaModel):
+cdef class ThermalCXLine(PlasmaModel):
     """
     Emitter that calculates spectral line emission from a plasma object
-    as a result of excitation of the target species by electron impact.
+    as a result of thermal charge exchange of the target species with the donor species.
 
     .. math::
-        \\epsilon_{\\mathrm{excit}}(\\lambda) = \\frac{1}{4 \\pi} n_{Z_\\mathrm{i}} n_\\mathrm{e}
-        \\mathrm{PEC}_{\\mathrm{excit}}(n_\\mathrm{e}, T_\\mathrm{e}) f(\\lambda),
+        \\epsilon_{\\mathrm{recomb}}(\\lambda) = \\frac{1}{4 \\pi} n_{Z_\\mathrm{i} + 1}
+        \\sum_j{n_{Z_\\mathrm{j}} \\mathrm{PEC}_{\\mathrm{cx}}(n_\\mathrm{e}, T_\\mathrm{e}, T_{Z_\\mathrm{j}})}
+        f(\\lambda),
 
-    where :math:`n_{Z_\\mathrm{i}}` is the target species density,
-    :math:`\\mathrm{PEC}_{\\mathrm{excit}}` is the electron impact excitation photon emission coefficient
+    where :math:`n_{Z_\\mathrm{i} + 1}` is the receiver species density,
+    :math:`n_{Z_\\mathrm{j}}` is the donor species density,
+    :math:`\\mathrm{PEC}_{\\mathrm{cx}}` is the thermal CX photon emission coefficient
     for the specified spectral line of the :math:`Z_\\mathrm{i}` ion,
+    :math:`T_{Z_\\mathrm{j}}` is the donor species temperature,
     :math:`f(\\lambda)` is the normalised spectral line shape,
 
     :param Line line: Spectroscopic emission line object.
@@ -71,11 +75,14 @@ cdef class ExcitationLine(PlasmaModel):
         self._change()
 
     def __repr__(self):
-        return '<ExcitationLine: element={}, charge={}, transition={}>'.format(self._line.element.name, self._line.charge, self._line.transition)
+        return '<ThermalCXLine: element={}, charge={}, transition={}>'.format(self._line.element.name, self._line.charge, self._line.transition)
 
     cpdef Spectrum emission(self, Point3D point, Vector3D direction, Spectrum spectrum):
 
-        cdef double ne, ni, te, radiance
+        cdef:
+            double ne, te, receiver_density, donor_density, donor_temperature, weighted_rate, radiance
+            Species species
+            ThermalCXPEC rate
 
         # cache data on first run
         if self._target_species is None:
@@ -89,15 +96,26 @@ cdef class ExcitationLine(PlasmaModel):
         if te <= 0.0:
             return spectrum
 
-        ni = self._target_species.distribution.density(point.x, point.y, point.z)
-        if ni <= 0.0:
+        receiver_density = self._target_species.distribution.density(point.x, point.y, point.z)
+        if receiver_density <= 0.0:
             return spectrum
 
+        weighted_rate = 0
+        for species, rate in self._rates:
+            donor_density = species.distribution.density(point.x, point.y, point.z)
+            donor_temperature = species.distribution.effective_temperature(point.x, point.y, point.z)
+            weighted_rate += donor_density * rate.evaluate(ne, te, donor_temperature)
+
         # add emission line to spectrum
-        radiance = RECIP_4_PI * self._rates.evaluate(ne, te) * ne * ni
+        radiance = RECIP_4_PI * weighted_rate * receiver_density
         return self._lineshape.add_line(radiance, point, direction, spectrum)
 
     cdef int _populate_cache(self) except -1:
+
+        cdef:
+            int receiver_charge
+            Species species
+            ThermalCXPEC rate
 
         # sanity checks
         if self._plasma is None:
@@ -109,14 +127,21 @@ cdef class ExcitationLine(PlasmaModel):
             raise RuntimeError("The emission line has not been set.")
 
         # locate target species
+        receiver_charge = self._line.charge + 1
         try:
-            self._target_species = self._plasma.composition.get(self._line.element, self._line.charge)
+            self._target_species = self._plasma.composition.get(self._line.element, receiver_charge)
         except ValueError:
-            raise RuntimeError("The plasma object does not contain the ion species for the specified line "
-                               "(element={}, ionisation={}).".format(self._line.element.symbol, self._line.charge))
+            raise RuntimeError("The plasma object does not contain the ion species for the specified CX line "
+                               "(element={}, ionisation={}).".format(self._line.element.symbol, receiver_charge))
 
-        # obtain rate function
-        self._rates = self._atomic_data.impact_excitation_pec(self._line.element, self._line.charge, self._line.transition)
+        # obtain rate functions
+        self._rates = []
+        for species in self._plasma.composition:
+            if species != self._target_species and species.charge < species.element.atomic_number:
+                rate = self._atomic_data.thermal_cx_pec(species.element, species.charge,  # donor
+                                                        self._line.element, receiver_charge,  # receiver
+                                                        self._line.transition)
+                self._rates.append((species, rate))
 
         # identify wavelength
         self._wavelength = self._atomic_data.wavelength(self._line.element, self._line.charge, self._line.transition)

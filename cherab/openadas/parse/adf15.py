@@ -1,6 +1,6 @@
-# Copyright 2016-2018 Euratom
-# Copyright 2016-2018 United Kingdom Atomic Energy Authority
-# Copyright 2016-2018 Centro de Investigaciones Energéticas, Medioambientales y Tecnológicas
+# Copyright 2016-2023 Euratom
+# Copyright 2016-2023 United Kingdom Atomic Energy Authority
+# Copyright 2016-2023 Centro de Investigaciones Energéticas, Medioambientales y Tecnológicas
 #
 # Licensed under the EUPL, Version 1.1 or – as soon they will be approved by the
 # European Commission - subsequent versions of the EUPL (the "Licence");
@@ -126,7 +126,7 @@ def _scrape_metadata_hydrogen(file, element, charge):
         elif rate_type_adas == 'RECOM':
             rate_type = 'recombination'
         elif rate_type_adas == 'CHEXC':
-            rate_type = 'cx_thermal'
+            rate_type = 'thermalcx'
         else:
             raise ValueError("Unrecognised rate type - {}".format(rate_type_adas))
 
@@ -169,7 +169,7 @@ def _scrape_metadata_hydrogen_like(file, element, charge):
         elif rate_type_adas == 'RECOM':
             rate_type = 'recombination'
         elif rate_type_adas == 'CHEXC':
-            rate_type = 'cx_thermal'
+            rate_type = 'thermalcx'
         else:
             raise ValueError("Unrecognised rate type - {}".format(rate_type_adas))
 
@@ -237,7 +237,7 @@ def _scrape_metadata_full(file, element, charge):
         elif rate_type_adas == 'RECOM':
             rate_type = 'recombination'
         elif rate_type_adas == 'CHEXC':
-            rate_type = 'cx_thermal'
+            rate_type = 'thermalcx'
         else:
             raise ValueError("Unrecognised rate type - {}".format(rate_type_adas))
 

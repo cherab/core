@@ -61,6 +61,7 @@ cdef class BeamCXLine(BeamModel):
     :ivar Line line: The emission line object.
 
     .. code-block:: pycon
+
         >>> from cherab.core.model import BeamCXLine
         >>> from cherab.core.atomic import carbon
         >>> from cherab.core.model import ParametrisedZeemanTriplet

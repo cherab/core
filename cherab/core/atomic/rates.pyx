@@ -101,8 +101,8 @@ cdef class _PECRate:
     cpdef double evaluate(self, double density, double temperature) except? -1e999:
         """Returns a photon emissivity coefficient at given conditions.
 
-        :param temperature: Receiver ion temperature in eV.
-        :param density: Receiver ion density in m^-3
+        :param density: Electron density in m^-3.
+        :param temperature: Electron temperature in eV.
         :return: The effective PEC rate in W/m^3.
         """
         raise NotImplementedError("The evaluate() virtual method must be implemented.")
@@ -130,11 +130,27 @@ cdef class RecombinationPEC(_PECRate):
     pass
 
 
-cdef class ThermalCXPEC(_PECRate):
+cdef class ThermalCXPEC:
     """
     Thermal charge exchange rate coefficient.
     """
-    pass
+
+    def __call__(self, double electron_density, double electron_temperature, donor_temperature):
+        """Returns a CX photon emissivity coefficient at the specified plasma conditions.
+
+        This function just wraps the cython evaluate() method.
+        """
+        return self.evaluate(electron_density, electron_temperature, donor_temperature)
+
+    cpdef double evaluate(self, double electron_density, double electron_temperature, double donor_temperature) except? -1e999:
+        """Returns a CX photon emissivity coefficient at given conditions.
+
+        :param electron_density: Electron density in m^-3.
+        :param electron_temperature: Electron temperature in eV.
+        :param donor_temperature: Donor temperature in eV.
+        :return: The effective CX PEC rate in W/m^3.
+        """
+        raise NotImplementedError("The evaluate() virtual method must be implemented.")
 
 
 cdef class BeamCXPEC:

@@ -386,6 +386,48 @@ class OpenADAS(AtomicData):
 
         return RecombinationPEC(wavelength, data, extrapolate=self._permit_extrapolation)
 
+    def thermal_cx_pec(self, donor_element, donor_charge, receiver_element, receiver_charge, transition):
+        """
+        Thermal CX photon emission coefficient for a given species.
+
+        Open-ADAS data is interpolated with cubic spline in log-log space.
+        Nearest neighbour extrapolation is used when permit_extrapolation is True.
+
+        :param donor_element: Element object defining the donor ion type.
+        :param donor_charge: Charge state of the donor ion.
+        :param receiver_element: Element object defining the receiver ion type.
+        :param receiver_charge: Charge state of the receiver ion.
+        :param transition: Tuple containing (initial level, final level) of the receiver
+                           in charge state receiver_charge - 1.
+        :return: Thermal charge exchange photon emission coefficient in W.m^3
+                 as a function of electron density, electron temperature and donor temperature.
+        """
+
+        # extract elements from isotopes because there are no isotope rates in ADAS
+        if isinstance(donor_element, Isotope):
+            donor_element = donor_element.element
+
+        if isinstance(receiver_element, Isotope):
+            receiver_element = receiver_element.element
+
+        try:
+            # read thermal CX rate from json file in the repository
+            data = repository.get_pec_thermal_cx_rate(donor_element, donor_charge,
+                                                      receiver_element, receiver_charge,
+                                                      transition,
+                                                      repository_path=self._data_path)
+
+        except RuntimeError:
+            if self._missing_rates_return_null:
+                return NullThermalCXPEC()
+            raise
+
+        # obtain isotope's rest wavelength for a given transition
+        # the wavelength is used ot convert the PEC from photons/s/m3 to W/m3
+        wavelength = self.wavelength(receiver_element, receiver_charge - 1, transition)
+
+        return ThermalCXPEC(wavelength, data, extrapolate=self._permit_extrapolation)
+
     def line_radiated_power_rate(self, ion, charge):
         """
         Line radiated power coefficient for a given species.
