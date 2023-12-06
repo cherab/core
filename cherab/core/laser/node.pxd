@@ -53,3 +53,5 @@ cdef class Laser(Node):
         VolumeIntegrator _integrator
         
     cdef object __weakref__
+
+    cdef Plasma get_plasma(self)
