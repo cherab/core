@@ -308,9 +308,9 @@ cdef class ZeemanMultiplet(ZeemanLineShapeModel):
     cpdef Spectrum add_line(self, double radiance, Point3D point, Vector3D direction, Spectrum spectrum):
 
         cdef int i
-        cdef double ts, sigma, shifted_wavelength, component_radiance
-        cdef Vector3D ion_velocity
-        cdef double[:, :] multiplet_pi_mv, multiplet_sigma_mv
+        cdef double ts, sigma, shifted_wavelength, component_radiance, b_magn, cos_sqr, sin_sqr
+        cdef Vector3D ion_velocity, b_field
+        cdef double[:, :] multiplet_mv
 
         ts = self.target_species.distribution.effective_temperature(point.x, point.y, point.z)
         if ts <= 0.0:
