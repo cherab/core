@@ -19,6 +19,7 @@
 from cherab.core.atomic.elements cimport Element
 from cherab.core.atomic.line cimport Line
 from cherab.core.atomic.zeeman cimport ZeemanStructure
+from cherab.core.atomic.stark cimport StarkStructure
 from cherab.core.atomic.gaunt cimport FreeFreeGauntFactor
 from cherab.core.atomic.rates cimport *
 
@@ -58,6 +59,8 @@ cdef class AtomicData:
     cpdef ZeemanStructure zeeman_structure(self, Line line, object b_field=*)
 
     cpdef tuple zeeman_triplet_parameters(self, Line line)
+
+    cpdef StarkStructure stark_structure(self, Line line)
 
     cpdef tuple stark_model_coefficients(self, Line line)
 

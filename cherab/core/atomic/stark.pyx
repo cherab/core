@@ -1,6 +1,6 @@
-# Copyright 2016-2018 Euratom
-# Copyright 2016-2018 United Kingdom Atomic Energy Authority
-# Copyright 2016-2018 Centro de Investigaciones Energéticas, Medioambientales y Tecnológicas
+# Copyright 2016-2023 Euratom
+# Copyright 2016-2023 United Kingdom Atomic Energy Authority
+# Copyright 2016-2023 Centro de Investigaciones Energéticas, Medioambientales y Tecnológicas
 #
 # Licensed under the EUPL, Version 1.1 or – as soon they will be approved by the
 # European Commission - subsequent versions of the EUPL (the "Licence");
@@ -36,7 +36,7 @@ cdef class StarkStructure():
 
     :ivar ndarray index: Stark component indices: :math:`\\Delta E = \\frac{3}{2} e a_0 (\\pm i) E`.
         Contains only non-negative values. It is assumed that components with negative and positive
-        indices have the same intensity.
+        indices have the same intensity (electric field vector is perpendicular to collisional axis).
     :ivar ndarray polarisation: Polarisation of the Stark components.
         0 stands for :math:`\\pi` polarisation and 1 stands for :math:`\\sigma` polarisation.
     """
@@ -88,7 +88,7 @@ cdef class InterpolatedStarkStructure(StarkStructure):
     :ivar dict raw_data: Dictionary containing the raw data.
     :ivar ndarray index: Stark component indices: :math:`\\Delta E = \\frac{3}{2} e a_0 (\\pm i) E`.
         Contains only non-negative values. It is assumed that components with negative and positive
-        indices have the same intensity.
+        indices have the same intensity (electric field vector is perpendicular to collisional axis).
     :ivar ndarray polarisation: Polarisation of the Stark components.
         0 stands for :math:`\\pi` polarisation and 1 stands for :math:`\\sigma` polarisation.
     """
