@@ -1,0 +1,15 @@
+{
+    "0": {
+        "3 -> 2": [
+            0.0402267,
+            0.3415,
+            -0.5247
+        ],
+        "4 -> 2": [
+            0.0220724,
+            0.2837,
+            -0.5346
+        ]
+    },
+    "reference": "A. Blom and C. Jupén. Parametrisation of the Zeeman effect for hydrogen-like spectra in high-temperature plasmas. Plasma Phys. Control. Fusion 44 (2002) <a href=\"https://doi.org/10.1088/0741-3335/44/7/312\">1229-1241</a>"
+}

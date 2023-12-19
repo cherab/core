@@ -1,6 +1,6 @@
-# Copyright 2016-2018 Euratom
-# Copyright 2016-2018 United Kingdom Atomic Energy Authority
-# Copyright 2016-2018 Centro de Investigaciones Energéticas, Medioambientales y Tecnológicas
+# Copyright 2016-2022 Euratom
+# Copyright 2016-2022 United Kingdom Atomic Energy Authority
+# Copyright 2016-2022 Centro de Investigaciones Energéticas, Medioambientales y Tecnológicas
 #
 # Licensed under the EUPL, Version 1.1 or – as soon they will be approved by the
 # European Commission - subsequent versions of the EUPL (the "Licence");
@@ -34,7 +34,7 @@ from cherab.tools.plasmas import GaussianVolume
 
 
 # tunables
-ion_density = 1e20
+ion_density = 2e20
 sigma = 0.25
 
 # setup scenegraph
@@ -99,4 +99,5 @@ plt.plot(s.wavelengths, s.samples)
 plt.xlabel('Wavelength (nm)')
 plt.ylabel('Radiance (W/m^2/str/nm)')
 plt.title('Observed Spectrum')
+plt.yscale('log')
 plt.show()
