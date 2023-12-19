@@ -18,19 +18,12 @@
 # See the Licence for the specific language governing permissions and limitations
 # under the Licence.
 
-from numpy import array, empty, int8, float64, concatenate, linspace
-from numpy.linalg import solve
+import numpy as np
 
 cimport cython
-from libc.math cimport isnan
-from numpy cimport ndarray, PyArray_ZEROS, NPY_FLOAT64, npy_intp, import_array
+from raysect.core.math.cython.interpolation.cubic cimport calc_coefficients_1d, evaluate_cubic_1d
 from cherab.core.math.function cimport autowrap_function1d
-from cherab.core.math.interpolators.utility cimport find_index, derivatives_array, factorial
 
-# required by numpy c-api
-import_array()
-
-EPSILON = 1.e-7
 
 cdef class Caching1D(Function1D):
     """
@@ -78,181 +71,96 @@ cdef class Caching1D(Function1D):
        1.5968720
     """
 
-    def __init__(self, object function1d, tuple space_area, double resolution, no_boundary_error=False, function_boundaries=None):
+    # The implementation works as follows:
+    # - Store a list of which points have already been evaluated, and their values.
+    # - For each new value x to evaluate, check if the sample points either side
+    #   have already been evaluated.
+    #   - If not, evaluate and store them; update the list of already-evaluated points.
+    # - Calculate the derivative of the function at these points using the 2nd order
+    #   approximation. This requires additionally evaluating the points either side
+    #   of the nearest 2 points to x.
+    # - Use raysect.core.math.cython.interpolation.cubic's utilities to calculate
+    #   the polynomial coefficients for the 1D cubic and then evaluate the cubic
+    #   interpolation of the function at the position x.
+    # - Note that the sampled points have uniform spacing: this enables a few
+    #   optimisations such as analytic calculations of the array index and x
+    #   values for the nearest samples to the requested x.
 
-        cdef:
-            double minx, maxx, deltax
+    def __init__(self, function1d, space_area, resolution, no_boundary_error=False, function_boundaries=None):
+        self._function = autowrap_function1d(function1d)
+        if len(space_area) != 2:
+            raise ValueError("Space area should be a tuple (xmin, xmax).")
+        self._xmin, self._xmax = space_area
+        if resolution <= 0:
+            raise ValueError("Resolution must be greater than zero.")
+        self._resolution = resolution
+        self._nsamples = int((self._xmax - self._xmin) / resolution + 1)
+        self._fsamples = np.empty(self._nsamples)
+        self._sampled = np.full(self._nsamples, False, dtype='uint8')
+        self._no_boundary_error = no_boundary_error
+        # TODO: normalise using function_boundaries to avoid numerical issues.
 
-        self.function = autowrap_function1d(function1d)
-        self.no_boundary_error = no_boundary_error
-
-        minx, maxx = space_area
-        deltax = resolution
-
-        if minx >= maxx:
-            raise ValueError('Coordinate range is not consistent, minimum must be less than maximum ({} >= {})!'.format(minx, maxx))
-        if deltax <= EPSILON:
-            raise ValueError('Resolution must be bigger ({} <= {})!'.format(deltax, EPSILON))
-
-        self.x_np = concatenate((array([minx - deltax]), linspace(minx - EPSILON, maxx + EPSILON, max(int((maxx - minx) / deltax) + 1, 2)), array([maxx + deltax])))
-
-        self.x_domain_view = self.x_np
-
-        self.top_index_x = len(self.x_np) - 1
-
-        # Initialise the caching array
-        self.coeffs_view = empty((self.top_index_x - 2, 4), dtype=float64)
-        self.coeffs_view[:,::1] = float('NaN')
-        self.calculated_view = empty((self.top_index_x - 2,), dtype=int8)
-        self.calculated_view[:] = False
-
-        # Normalise coordinates and data
-        self.x_delta_inv = 1 / (self.x_np.max() - self.x_np.min())
-        self.x_min = self.x_np.min()
-        self.x_np = (self.x_np - self.x_min) * self.x_delta_inv
-        if function_boundaries is not None:
-            self.data_min, self.data_max = function_boundaries
-            self.data_delta = self.data_max - self.data_min
-            # If data contains only one value (not filtered before) cancel the
-            # normalisation scaling by setting data_delta to 1:
-            if self.data_delta == 0:
-                self.data_delta = 1
-        else:
-            # no normalisation of data values
-            self.data_delta = 1
-            self.data_min = 0
-            self.data_max = float('NaN')
-        self.data_delta_inv = 1 / self.data_delta
-
-        self.data_view = empty((self.top_index_x+1,), dtype=float64)
-        self.data_view[::1] = float('NaN')
-
-        # obtain coordinates memory views
-        self.x_view = self.x_np
-        self.x2_view = self.x_np*self.x_np
-        self.x3_view = self.x_np*self.x_np*self.x_np
-
+    @cython.initializedcheck(False)
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    cdef double evaluate(self, double px) except? -1e999:
-        """
-        Evaluate the cached 1D function.
+    cdef double _get_and_cache(self, int index) except? -1e999:
+        cdef double x, fsamp
 
-        The function is cached in the vicinity of px if not already done.
-
-        :param double px: coordinate
-        :return: The evaluated value
-        """
-
-        cdef int i_x
-
-        i_x = find_index(self.x_domain_view, px)
-
-        if 1 <= i_x <= self.top_index_x - 2:
-            return self._evaluate(px, i_x)
-
-        # value is outside of permitted limits
-        if self.no_boundary_error:
-            return self.function.evaluate(px)
+        if not self._sampled[index]:
+            x = self._xmin + index * self._resolution
+            fsamp = self._function.evaluate(x)
+            self._sampled[index] = True
+            self._fsamples[index] = fsamp
         else:
-            min_range_x = self.x_domain_view[1]
-            max_range_x = self.x_domain_view[self.top_index_x - 1]
+            fsamp = self._fsamples[index]
+        return fsamp
 
-            raise ValueError("The specified value (x={}) is outside the range of the supplied data: "
-                             "x bounds=({}, {})".format(px, min_range_x, max_range_x))
-
+    # TODO: investigate whether to cache the cubic spline coefficients instead
+    # of re-calculating them every time. Performance/memory trade-off.
+    # Raysect caches the coefficients.
+    @cython.initializedcheck(False)
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
     @cython.cdivision(True)
-    @cython.boundscheck(False)
-    @cython.wraparound(False)
-    cdef double _evaluate(self, double px, int i_x):
-        """
-        Calculate if not already done then evaluate the polynomial valid in the
-        area given by i_x at position px.
-        Calculation of the polynomial includes sampling the function where not
-        already done and interpolating.
-
-        :param double px: coordinate
-        :param int i_x: index of the area of interest
-        :return: The evaluated value
-        """
-
+    cdef double evaluate(self, double x) except? -1e999:
         cdef:
-            int u, l, i, i_x_p
-            double value
-            double delta_x
-            npy_intp cv_size
-            npy_intp cm_size[2]
-            double[::1] cv_view, coeffs_view
-            double[:, ::1] cm_view
+            int lower_index
+            double fprev, fnext, feval, xnorm
+            double a[4]  # Cubic coefficients
+            double f[2]  # Function evaluations
+            double dfdx[2]  # Function derivative evaluations
 
-        # If the concerned polynomial has not yet been calculated:
-        i_x_p = i_x - 1  # polynomial index
-        if not self.calculated_view[i_x_p]:
+        if self._xmin <= x < self._xmax:
+            # Sampling is uniform, so lower_index is determined analytically.
+            lower_index = int((x - self._xmin) // self._resolution)
+            f[0] = self._get_and_cache(lower_index)
+            f[1] = self._get_and_cache(lower_index + 1)
+            # Calculate derivatives. calc_coefficiets_1d requires derivatives
+            # normalised to the unit interval, i.e. for dx = 1.
+            if lower_index == 0:
+                dfdx[0] = (f[1] - f[0])
+            else:
+                fprev = self._get_and_cache(lower_index - 1)
+                dfdx[0] = (f[1] - fprev) / 2
+            if lower_index == self._nsamples - 2:
+                dfdx[1] = (f[1] - f[0])
+            else:
+                fnext = self._get_and_cache(lower_index + 2)
+                dfdx[1] = (fnext - f[0]) / 2
+            calc_coefficients_1d(f, dfdx, a)
+            # lower_x = xmin + resolution * index
+            # xnorm = (x - lower_x) / res = (x - xmin) / resolution - index
+            xnorm = (x - self._xmin) / self._resolution - lower_index
+            feval = evaluate_cubic_1d(a, xnorm)
+            return feval
 
-            # sample the data needed
-            for u in range(i_x-1, i_x+3):
-                if isnan(self.data_view[u]):
-                    value = self.function.evaluate(self.x_domain_view[u])
-                    if not isnan(value):
-                        # data values are normalised here
-                        self.data_view[u] = (value - self.data_min) * self.data_delta_inv
+        # Special case if x is exactly at the maximum allowed value.
+        if x == self._xmax:
+            return self._get_and_cache(self._nsamples - 1)
 
-            # Create constraint matrix (un-optimised)
-            # cv_view = zeros((4,), dtype=float64)  # constraints vector
-            # cm_view = zeros((4, 4), dtype=float64)  # constraints matrix
+        if self._no_boundary_error:
+            return self._function.evaluate(x)
 
-            # Create constraint matrix (optimised using numpy c-api)
-            cv_size = 4
-            cv_view = PyArray_ZEROS(1, &cv_size, NPY_FLOAT64, 0)
-            cm_size[:] = [4, 4]
-            cm_view = PyArray_ZEROS(2, cm_size, NPY_FLOAT64, 0)
-
-            # Fill the constraints matrix
-            l = 0
-            for u in range(i_x, i_x+2):
-
-                # knot values
-                cm_view[l, 0] = 1.
-                cm_view[l, 1] = self.x_view[u]
-                cm_view[l, 2] = self.x2_view[u]
-                cm_view[l, 3] = self.x3_view[u]
-                cv_view[l] = self.data_view[u]
-                l += 1
-
-                # derivative
-                cm_view[l, 1] = 1.
-                cm_view[l, 2] = 2.*self.x_view[u]
-                cm_view[l, 3] = 3.*self.x2_view[u]
-                delta_x = self.x_view[u+1] - self.x_view[u-1]
-                cv_view[l] = (self.data_view[u+1] - self.data_view[u-1])/delta_x
-                l += 1
-
-            # Solve the linear system and fill the caching coefficients array
-            coeffs_view = solve(cm_view, cv_view)
-            self.coeffs_view[i_x_p, :] = coeffs_view
-
-            # Denormalisation
-            for i in range(4):
-                coeffs_view[i] = self.data_delta * (self.x_delta_inv ** i / factorial(i) * self._evaluate_polynomial_derivative(i_x_p, -self.x_delta_inv * self.x_min, i))
-            coeffs_view[0] = coeffs_view[0] + self.data_min
-            self.coeffs_view[i_x_p, :] = coeffs_view
-
-            self.calculated_view[i_x_p] = True
-
-        return self.coeffs_view[i_x_p, 0] + self.coeffs_view[i_x_p,  1] * px + self.coeffs_view[i_x_p,  2] * px * px + self.coeffs_view[i_x_p, 3] * px * px * px
-
-    @cython.boundscheck(False)
-    @cython.wraparound(False)
-    cdef double _evaluate_polynomial_derivative(self, int i_x, double px, int der_x):
-        """
-        Evaluate the derivatives of the polynomial valid in the area given by
-        'i_x' at position 'px'. The order of derivative along each axis is
-        given by 'der_x'.
-        """
-
-        cdef double[::1] x_values
-
-        x_values = derivatives_array(px, der_x)
-
-        return x_values[0]*self.coeffs_view[i_x, 0] + x_values[1]*self.coeffs_view[i_x, 1] + x_values[2]*self.coeffs_view[i_x, 2] + x_values[3]*self.coeffs_view[i_x, 3]
-
+        raise ValueError(
+            "x is outside the permitted range ({}, {})".format(self._xmin, self._xmax)
+        )
