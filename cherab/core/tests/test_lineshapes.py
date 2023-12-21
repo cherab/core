@@ -386,12 +386,7 @@ class TestLineShapes(unittest.TestCase):
         # setting up a line shape model
         line = Line(deuterium, 0, (3, 2))  # D-alpha line
         wavelength = 656.104
-        sigma_to_pi = 0.56
-        sigma1_to_sigma0 = 0.706
-        pi2_to_pi3 = 0.314
-        pi4_to_pi3 = 0.728
-        mse_line = BeamEmissionMultiplet(line, wavelength, self.beam, self.atomic_data,
-                                         sigma_to_pi, sigma1_to_sigma0, pi2_to_pi3, pi4_to_pi3)
+        mse_line = BeamEmissionMultiplet(line, wavelength, self.beam, self.atomic_data)
 
         # spectrum parameters
         min_wavelength = wavelength - 3
@@ -419,6 +414,15 @@ class TestLineShapes(unittest.TestCase):
         STARK_ENERGY_SPLITTING_FACTOR = 3 * VACUUM_PERMITTIVITY * PLANCK_CONSTANT**2 / (2 * np.pi * ELECTRON_REST_MASS * ELEMENTARY_CHARGE**2)
         stark_split = STARK_ENERGY_SPLITTING_FACTOR * e_field_magn
 
+        # obtain Stark relative ratios
+        ne = self.plasma.electron_distribution.density(point.x, point.y, point.z)
+        stark_structure = self.atomic_data.stark_structure(line)
+        ratios = stark_structure(self.beam.energy, ne, b_field.length)
+        indx_sigma, = np.where(stark_structure.polarisation == 1)
+        weight = np.ones(indx_sigma.size)
+        weight[stark_structure.index[indx_sigma] > 0] = 2.
+        sigma_to_total = (ratios[indx_sigma] * weight).sum()
+
         # calculate emission line central wavelength, doppler shifted along observation direction
         shifted_wavelength = wavelength * (1 + beam_velocity.dot(direction.normalise()) / SPEED_OF_LIGHT)
         photon_energy = HC_EV_NM / shifted_wavelength
@@ -434,40 +438,27 @@ class TestLineShapes(unittest.TestCase):
         sin_sqr = 1. - cos_sqr
 
         # calculate relative intensities of sigma and pi lines
-        pi_to_total = 1 / (1 + sigma_to_pi)
-        intensity_sig = (sin_sqr * sigma_to_pi * pi_to_total + cos_sqr) * radiance
-        intensity_pi = sin_sqr * pi_to_total * radiance
+        intensity_sig = (sin_sqr + cos_sqr / sigma_to_total) * radiance
+        intensity_pi = sin_sqr * radiance
 
         wavelengths, delta = np.linspace(min_wavelength, max_wavelength, bins + 1, retstep=True)
-        test_spectrum = {}
+        test_spectrum = {'sigma': 0, 'pi': 0}
 
-        # add Sigma lines to output
-        intensity_s0 = 1 / (sigma1_to_sigma0 + 1)
-        intensity_s1 = 0.5 * sigma1_to_sigma0 * intensity_s0
-        erfs = erf((wavelengths - shifted_wavelength) * temp)
-        test_spectrum['sigma'] = 0.5 * intensity_sig * intensity_s0 * (erfs[1:] - erfs[:-1]) / delta
-        erfs = erf((wavelengths - HC_EV_NM / (photon_energy + stark_split)) * temp)
-        test_spectrum['sigma'] += 0.5 * intensity_sig * intensity_s1 * (erfs[1:] - erfs[:-1]) / delta
-        erfs = erf((wavelengths - HC_EV_NM / (photon_energy - stark_split)) * temp)
-        test_spectrum['sigma'] += 0.5 * intensity_sig * intensity_s1 * (erfs[1:] - erfs[:-1]) / delta
-
-        # add Pi lines to output
-        intensity_pi3 = 0.5 / (1 + pi2_to_pi3 + pi4_to_pi3)
-        intensity_pi2 = pi2_to_pi3 * intensity_pi3
-        intensity_pi4 = pi4_to_pi3 * intensity_pi3
-
-        erfs = erf((wavelengths - HC_EV_NM / (photon_energy + 2 * stark_split)) * temp)
-        test_spectrum['pi'] = 0.5 * intensity_pi * intensity_pi2 * (erfs[1:] - erfs[:-1]) / delta
-        erfs = erf((wavelengths - HC_EV_NM / (photon_energy - 2 * stark_split)) * temp)
-        test_spectrum['pi'] += 0.5 * intensity_pi * intensity_pi2 * (erfs[1:] - erfs[:-1]) / delta
-        erfs = erf((wavelengths - HC_EV_NM / (photon_energy + 3 * stark_split)) * temp)
-        test_spectrum['pi'] += 0.5 * intensity_pi * intensity_pi3 * (erfs[1:] - erfs[:-1]) / delta
-        erfs = erf((wavelengths - HC_EV_NM / (photon_energy - 3 * stark_split)) * temp)
-        test_spectrum['pi'] += 0.5 * intensity_pi * intensity_pi3 * (erfs[1:] - erfs[:-1]) / delta
-        erfs = erf((wavelengths - HC_EV_NM / (photon_energy + 4 * stark_split)) * temp)
-        test_spectrum['pi'] += 0.5 * intensity_pi * intensity_pi4 * (erfs[1:] - erfs[:-1]) / delta
-        erfs = erf((wavelengths - HC_EV_NM / (photon_energy - 4 * stark_split)) * temp)
-        test_spectrum['pi'] += 0.5 * intensity_pi * intensity_pi4 * (erfs[1:] - erfs[:-1]) / delta
+        for indx, pol, ratio in zip(stark_structure.index, stark_structure.polarisation, ratios):
+            if pol == 1:  # sigma
+                if indx == 0:
+                    erfs = erf((wavelengths - shifted_wavelength) * temp)
+                    test_spectrum['sigma'] += 0.5 * intensity_sig * ratio * (erfs[1:] - erfs[:-1]) / delta
+                else:
+                    erfs = erf((wavelengths - HC_EV_NM / (photon_energy + indx * stark_split)) * temp)
+                    test_spectrum['sigma'] += 0.5 * intensity_sig * ratio * (erfs[1:] - erfs[:-1]) / delta
+                    erfs = erf((wavelengths - HC_EV_NM / (photon_energy - indx * stark_split)) * temp)
+                    test_spectrum['sigma'] += 0.5 * intensity_sig * ratio * (erfs[1:] - erfs[:-1]) / delta
+            else:  # pi
+                erfs = erf((wavelengths - HC_EV_NM / (photon_energy + indx * stark_split)) * temp)
+                test_spectrum['pi'] += 0.5 * intensity_pi * ratio * (erfs[1:] - erfs[:-1]) / delta
+                erfs = erf((wavelengths - HC_EV_NM / (photon_energy - indx * stark_split)) * temp)
+                test_spectrum['pi'] += 0.5 * intensity_pi * ratio * (erfs[1:] - erfs[:-1]) / delta
 
         test_spectrum['no'] = test_spectrum['pi'] + test_spectrum['sigma']
 
