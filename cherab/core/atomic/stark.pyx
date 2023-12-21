@@ -138,11 +138,11 @@ cdef class InterpolatedStarkStructure(StarkStructure):
             ratio_functions.append(ratio_func)
         self._ratio_functions = ratio_functions
 
-        ratios = np.zeros(self.index.size, dtype=np.float64)
+        self._ratios = np.zeros(index.size, dtype=np.float64)
+        self._ratios_mv = self._ratios
 
-        self._ratios_mv = ratios
-        self.index_mv = index
-        self.polarisation_mv = polarisation
+        self.index_mv = self.index
+        self.polarisation_mv = self.polarisation
 
         self._cached_energy = 0
         self._cached_density = 0

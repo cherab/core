@@ -40,4 +40,5 @@ cdef class InterpolatedStarkStructure(StarkStructure):
         readonly tuple b_field_range
         list _ratio_functions
         double _cached_energy, _cached_density, _cached_b_field
+        ndarray _ratios
         double[::1] _ratios_mv
