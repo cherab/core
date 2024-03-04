@@ -16,6 +16,7 @@ New:
 
 Bug fixes:
 * Fix deprecated transforms being cached in LaserMaterial after laser.transform update (#420)
+* Fix IRVB calculate sensitivity method.
 
 Release 1.4.0 (3 Feb 2023)
 -------------------

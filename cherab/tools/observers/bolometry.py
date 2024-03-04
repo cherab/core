@@ -943,7 +943,7 @@ class BolometerIRVB(TargettedCCDArray):
             raise TypeError("voxel_collection must be of type VoxelCollection")
 
         pipeline_class = self._SPECTRAL_PIPELINES[self._units]
-        pipeline = pipeline_class(display_progress=False)
+        pipeline = pipeline_class()
 
         voxel_collection.set_active("all")
 
