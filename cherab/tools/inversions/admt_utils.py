@@ -36,15 +36,15 @@ def generate_derivative_operators(voxel_vertices, grid_index_1d_to_2d_map,
     Generate the first and second derivative operators for a regular grid.
 
     :param ndarray voxel_vertices: an Nx4x2 array of coordinates of the
-    vertices of each voxel, (R, Z)
+        vertices of each voxel, (R, Z)
     :param dict grid_1d_to_2d_map: a mapping from the 1D array of
-    voxels in the grid to a 2D array of voxels if they were arranged
-    spatially.
+        voxels in the grid to a 2D array of voxels if they were arranged
+        spatially.
     :param dict grid_2d_to_1d_map: the inverse mapping from a 2D
-    spatially-arranged array of voxels to the 1D array.
+        spatially-arranged array of voxels to the 1D array.
 
-    :return dict operators: a dictionary containing the derivative
-    operators: Dij for i, y ∊ (x, y) and Di for i ∊ (x, y).
+    :return: a dictionary containing the derivative operators: Dij for
+        i, j ∊ (x, y) and Di for i ∊ (x, y), Dsp and Dsm.
 
     This function assumes that all voxels are rectilinear, with their
     axes aligned to the coordinate axes. Additionally, all voxels are
@@ -62,13 +62,18 @@ def generate_derivative_operators(voxel_vertices, grid_index_1d_to_2d_map,
         D_{xx} \equiv \frac{\partial^2}{\partial x^2}\\
         D_{xy} \equiv \frac{\partial^2}{\partial x \partial y}
 
-    etc.
+    etc. It also produces two additional operators, Dsp and Dsm, for
+    second derivatives on the dy/dx = 1 and dy/dx = -1 diagonals
+    respectively.
 
     Note that the standard 2D laplacian (for isotropic regularisation)
-    can be trivially calculated as L = Dxx * dx + Dyy * dy, where dx and
-    dy are the voxel width and height respectively. This expression does
-    not however produce the 2D laplacian derived from the N-dimensional
-    case.
+    can be trivially calculated as follows:
+
+    .. math::
+        L = (1 - \alpha) (D_{xx} + D_{yy}) + (\alpha / 2) (D_{sp} + D_{sm})
+
+    α = 2/3 produces the operator used in Carr et. al. RSI 89, 083506 (2018).
+    α = 1/3 produces the operator with optimal isotropy.
     """
     # Input argument validation: assume rectilinear voxels
     voxel_vertices = np.asarray(voxel_vertices)
@@ -87,6 +92,8 @@ def generate_derivative_operators(voxel_vertices, grid_index_1d_to_2d_map,
     Dxx = np.zeros((num_cells, num_cells))
     Dxy = np.zeros((num_cells, num_cells))
     Dyy = np.zeros((num_cells, num_cells))
+    Dsp = np.zeros((num_cells, num_cells))
+    Dsm = np.zeros((num_cells, num_cells))
     # TODO: for now, we assume all voxels have rectangular cross sections
     # which are approximately identical. As per Ingesson's notation, we
     # assume voxels are ordered from top left to bottom right, in column-major
@@ -99,6 +106,9 @@ def generate_derivative_operators(voxel_vertices, grid_index_1d_to_2d_map,
     dx = np.min(abs(dx[dx != 0])).item()
     dy = np.min(abs(dy[dy != 0])).item()
 
+    # Work out how the voxels are ordered: increasing/decreasing in x/y.
+    xinc, yinc = np.sign(cell_centres[-1] - cell_centres[0])
+
     # Note that iy increases as y decreases (cells go from top to bottom),
     # which is the same as Ingesson's notation in equations 37-41
     # Use the second version of the second derivative boundary formulae, so
@@ -110,8 +120,13 @@ def generate_derivative_operators(voxel_vertices, grid_index_1d_to_2d_map,
         # get the 2D mesh coordinates of this cell
         ix, iy = grid_index_1d_to_2d_map[ith_cell]
 
+        iright = ix + xinc
+        ileft = ix - xinc
+        iabove = iy + yinc
+        ibelow = iy - yinc
+
         try:
-            n_left = grid_index_2d_to_1d_map[ix - 1, iy]  # left of n0
+            n_left = grid_index_2d_to_1d_map[ileft, iy]  # left of n0
         except KeyError:
             at_left = True
         else:
@@ -119,7 +134,7 @@ def generate_derivative_operators(voxel_vertices, grid_index_1d_to_2d_map,
             Dxx[ith_cell, n_left] = 1
 
         try:
-            n_below_left = grid_index_2d_to_1d_map[ix - 1, iy + 1]  # below left of n0
+            n_below_left = grid_index_2d_to_1d_map[ileft, ibelow]  # below left of n0
         except KeyError:
             # KeyError does not necessarily mean bottom AND left
             pass
@@ -127,7 +142,7 @@ def generate_derivative_operators(voxel_vertices, grid_index_1d_to_2d_map,
             Dxy[ith_cell, n_below_left] = 1 / 4
 
         try:
-            n_below = grid_index_2d_to_1d_map[ix, iy + 1]
+            n_below = grid_index_2d_to_1d_map[ix, ibelow]
         except KeyError:
             at_bottom = True
         else:
@@ -135,14 +150,14 @@ def generate_derivative_operators(voxel_vertices, grid_index_1d_to_2d_map,
             Dyy[ith_cell, n_below] = 1
 
         try:
-            n_below_right = grid_index_2d_to_1d_map[ix + 1, iy + 1]
+            n_below_right = grid_index_2d_to_1d_map[iright, ibelow]
         except KeyError:
             pass
         else:
             Dxy[ith_cell, n_below_right] = -1 / 4
 
         try:
-            n_right = grid_index_2d_to_1d_map[ix + 1, iy]
+            n_right = grid_index_2d_to_1d_map[iright, iy]
         except KeyError:
             at_right = True
         else:
@@ -150,14 +165,14 @@ def generate_derivative_operators(voxel_vertices, grid_index_1d_to_2d_map,
             Dxx[ith_cell, n_right] = 1
 
         try:
-            n_above_right = grid_index_2d_to_1d_map[ix + 1, iy - 1]
+            n_above_right = grid_index_2d_to_1d_map[iright, iabove]
         except KeyError:
             pass
         else:
             Dxy[ith_cell, n_above_right] = 1 / 4
 
         try:
-            n_above = grid_index_2d_to_1d_map[ix, iy - 1]
+            n_above = grid_index_2d_to_1d_map[ix, iabove]
         except KeyError:
             at_top = True
         else:
@@ -165,7 +180,7 @@ def generate_derivative_operators(voxel_vertices, grid_index_1d_to_2d_map,
             Dyy[ith_cell, n_above] = 1
 
         try:
-            n_above_left = grid_index_2d_to_1d_map[ix - 1, iy - 1]
+            n_above_left = grid_index_2d_to_1d_map[ileft, iabove]
         except KeyError:
             pass
         else:
@@ -247,14 +262,42 @@ def generate_derivative_operators(voxel_vertices, grid_index_1d_to_2d_map,
             Dxy[ith_cell, ith_cell] = -1
             Dxy[ith_cell, n_above_left] = -1
 
+        if np.isnan(n_above_left) and not np.isnan(n_below_right):
+            Dsm[ith_cell, ith_cell] = -1
+            Dsm[ith_cell, n_below_right] = 1
+        elif np.isnan(n_below_right) and not np.isnan(n_above_left):
+            Dsm[ith_cell, ith_cell] = -1
+            Dsm[ith_cell, n_above_left] = 1
+        elif np.isnan(n_above_left) and np.isnan(n_below_right):
+            Dsm[ith_cell, ith_cell] = 0
+        else:
+            Dsm[ith_cell, ith_cell] = -2
+            Dsm[ith_cell, n_above_left] = 1
+            Dsm[ith_cell, n_below_right] = 1
+
+        if np.isnan(n_above_right) and not np.isnan(n_below_left):
+            Dsp[ith_cell, ith_cell] = -1
+            Dsp[ith_cell, n_below_left] = 1
+        elif np.isnan(n_below_left) and not np.isnan(n_above_right):
+            Dsp[ith_cell, ith_cell] = -1
+            Dsp[ith_cell, n_above_right] = 1
+        elif np.isnan(n_below_left) and np.isnan(n_above_right):
+            Dsp[ith_cell, ith_cell] = 0
+        else:
+            Dsp[ith_cell, ith_cell] = -2
+            Dsp[ith_cell, n_above_right] = 1
+            Dsp[ith_cell, n_below_left] = 1
+
     Dx = Dx / dx
     Dy = Dy / dy
     Dxx = Dxx / dx**2
     Dyy = Dyy / dy**2
     Dxy = Dxy / (dx * dy)
+    Dsp = Dsp / (dx**2 + dy**2)
+    Dsm = Dsm / (dx**2 + dy**2)
 
     # Package all operators up into a dictionary
-    operators = dict(Dx=Dx, Dy=Dy, Dxx=Dxx, Dyy=Dyy, Dxy=Dxy)
+    operators = dict(Dx=Dx, Dy=Dy, Dxx=Dxx, Dyy=Dyy, Dxy=Dxy, Dsp=Dsp, Dsm=Dsm)
     return operators
 
 
@@ -263,22 +306,21 @@ def calculate_admt(voxel_radii, derivative_operators, psi_at_voxels, dx, dy, ani
     Calculate the ADMT regularisation operator.
 
     :param ndarray voxel_radii: a 1D array of the radius at the centre
-    of each voxel in the grid
+        of each voxel in the grid
     :param tuple derivative_operators: a named tuple with the derivative
-    operators for the grid, as returned by :func:generate_derivative_operators
+        operators for the grid, as returned by :func:generate_derivative_operators
     :param ndarray psi_at_voxels: the magnetic flux at the centre of
-    each voxel in the grid
+        each voxel in the grid
     :param float dx: the width of each voxel.
     :param float dy: the height of each voxel
     :param float anisotropy: the ratio of the smoothing in the parallel
-    and perpendicular directions.
-
-    :return ndarray admt: the ADMT regularisation operator.
+        and perpendicular directions.
+    :return: the ADMT regularisation operator.
 
     The degree of anisotropy dictates the relative suppression of
     gradients in the directions parallel and perpendicular to the
-    magnetic field. For example, `anisotropy=10` implies parallel
-    gradients in solution are 10 times smaller than perpendicular
+    magnetic field. For example, ``anisotropy=10`` implies parallel
+    gradients in the solution are 10 times smaller than perpendicular
     gradients.
 
     This function assumes that all voxels are rectilinear, with their
