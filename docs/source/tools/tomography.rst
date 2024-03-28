@@ -119,3 +119,36 @@ Use spectral pipelines from Raysect if you need these features.
 .. autoclass:: cherab.tools.raytransfer.pipelines.RayTransferPipeline1D
 
 .. autoclass:: cherab.tools.raytransfer.pipelines.RayTransferPipeline2D
+
+
+Regularisation
+--------------
+
+Some of the inversion methods take a regularisation operator, which provides
+additional constraints to help achieved unique solutions to ill-posed
+tomography problems. Many regularisation schemes impose constraints on the smoothness
+of the resulting solution, with this smoothness quantified by the second derivative
+of the solution. Two such regularisation schemes are common in fusion applications:
+
+#. Isotropic smoothing, where the solution has the same smoothness in all directions.
+#. Anisotropic smoothing, so-called "anisotropic diffusion model tomography" (ADMT),
+   where the solution is smoother parallel to the magnetic field and less smooth
+   perpendicular to the magnetic field.
+
+Cherab provides some utility functions to assist in calculating appropriate
+operators using these (and other) derivative-based regularisation schemes. These can be used
+on inversion grids defined using both the Voxel and Ray Transfer frameworks, and passed
+directly to the inversion methods in Cherab which take regularisation operators, such as
+cherab.tools.inversions.invert_constrained_sart and cherab.tools.inversions.invert_regularised_nnls.
+
+The routines to calculate derivative operators for inversion grids, and further to calculate
+the ADMT operator for a given set of derivative operators and magnetic field, are taken from
+work published by L. C. Ingesson in `JET-R(99)08`_.
+
+
+.. autofunction:: cherab.tools.inversions.admt_utils.generate_derivative_operators
+
+.. autofunction:: cherab.tools.inversions.admt_utils.calculate_admt
+
+
+.. _JET-R(99)08: http://www.euro-fusionscipub.org/wp-content/uploads/2014/11/JETR99008.pdf
