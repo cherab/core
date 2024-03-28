@@ -1,6 +1,6 @@
-# Copyright 2016-2022 Euratom
-# Copyright 2016-2022 United Kingdom Atomic Energy Authority
-# Copyright 2016-2022 Centro de Investigaciones Energéticas, Medioambientales y Tecnológicas
+# Copyright 2016-2023 Euratom
+# Copyright 2016-2023 United Kingdom Atomic Energy Authority
+# Copyright 2016-2023 Centro de Investigaciones Energéticas, Medioambientales y Tecnológicas
 #
 # Licensed under the EUPL, Version 1.1 or – as soon they will be approved by the
 # European Commission - subsequent versions of the EUPL (the "Licence");
@@ -17,6 +17,10 @@
 # under the Licence.
 
 from .gaunt import MaxwellianFreeFreeGauntFactor
+from .stark import InterpolatedStarkStructure
+from .elements import Isotope
+import json
+from os import path
 
 
 cdef class AtomicData:
@@ -94,6 +98,78 @@ cdef class AtomicData:
 
     cpdef ZeemanStructure zeeman_structure(self, Line line, object b_field=None):
         raise NotImplementedError("The zeeman_structure() virtual method is not implemented for this atomic data source.")
+
+    cpdef tuple zeeman_triplet_parameters(self, Line line):
+        """
+        Returns Zeeman truplet parameters. See Table 1 in A. Blom and C. Jupén.
+        "Parametrisation of the Zeeman effect for hydrogen-like spectra in
+        high-temperature plasmas", Plasma Phys. Control. Fusion 44 (2002) `1229-1241
+        <https://doi.org/10.1088/0741-3335/44/7/312>`_.
+        """
+
+        symbol = line.element.symbol.lower()
+        upper, lower = line.transition
+        encoded_transition = '{} -> {}'.format(str(upper).lower(), str(lower).lower())
+
+        try:
+            with open(path.join(path.dirname(__file__), "data/lineshape/zeeman/parametrised/{}.json".format(symbol))) as f:
+                data = json.load(f)
+            coefficients = data[str(line.charge)][encoded_transition]
+        except (FileNotFoundError, KeyError):
+            raise RuntimeError('Requested Zeeman triplet parameters (element={}, charge={}, transition={})'
+                               ' are not available.'.format(line.element.symbol, line.charge, line.transition))
+
+        return tuple(coefficients)
+
+    cpdef tuple stark_model_coefficients(self, Line line):
+        """
+        Returns Stark model coefficients. See Table 1 in B. Lomanowski, et al.
+        "Inferring divertor plasma properties from hydrogen Balmer
+        and Paschen series spectroscopy in JET-ILW." Nuclear Fusion 55.12 (2015)
+        `123028 <https://doi.org/10.1088/0029-5515/55/12/123028>`_.
+        """
+
+        symbol = line.element.symbol.lower()
+        upper, lower = line.transition
+        encoded_transition = '{} -> {}'.format(str(upper).lower(), str(lower).lower())
+
+        try:
+            with open(path.join(path.dirname(__file__), "data/lineshape/stark/{}.json".format(symbol))) as f:
+                data = json.load(f)
+            coefficients = data[str(line.charge)][encoded_transition]
+        except (FileNotFoundError, KeyError):
+            raise RuntimeError('Requested Stark model coefficients (element={}, charge={}, transition={})'
+                               ' are not available.'.format(line.element.symbol, line.charge, line.transition))
+
+        return tuple(coefficients)
+
+    cpdef StarkStructure stark_structure(self, Line line):
+        """
+        Returns interpolated ratios of linear Stark components of the MSE spectrum when
+        the observation direction is perependicular to the electric field.
+
+        Use data from A.V. Demura, D.S. Leontiev, V.S. Lisitsa. Polarization characteristics
+        of electrodynamic Stark effect. Accepted to J. Exp. Theor. Phys. (2024)
+        provided by Dmitry Leontiev.
+        """
+
+        element = line.element
+        if isinstance(element, Isotope):
+            element = element.element
+
+        symbol = element.symbol.lower()
+        upper, lower = line.transition
+        encoded_transition = '{} -> {}'.format(str(upper).lower(), str(lower).lower())
+
+        try:
+            with open(path.join(path.dirname(__file__), "data/lineshape/mse/{}/{}.json".format(symbol, line.charge))) as f:
+                data = json.load(f)
+            data = data[encoded_transition]
+        except (FileNotFoundError, KeyError):
+            raise RuntimeError('Requested MSE Stark component ratios (element={}, charge={}, transition={})'
+                               ' are not available.'.format(symbol, line.charge, line.transition))
+
+        return InterpolatedStarkStructure(data, extrapolate=True)
 
     cpdef FreeFreeGauntFactor free_free_gaunt_factor(self):
         """

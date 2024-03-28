@@ -4,6 +4,13 @@ Project Changelog
 Release 1.5.0 (TBD)
 -------------------
 
+API changes:
+* The line shape models are moved to a dedicated submodule. The user code should not be affected though. (#396)
+* The line shape models now have AtomicData as a required parameter.
+* The method show_supported_transitions() of StarkBroadenedLine and ParametrisedZeemanTriplet is removed.
+* The argument stark_model_coefficients of StarkBroadenedLine is now a tuple instead of a dict.
+* The argument line_parameters of ParametrisedZeemanTriplet is now a tuple instead of a dict.
+
 New:
 * Support Raysect 0.8
 * Add custom line shape support to BeamCXLine model. (#394)
@@ -13,6 +20,7 @@ New:
 * Replace the coarse numerical constant in the Bremsstrahlung model with an exact expression. (#409)
 * Add the kind attribute to RayTransferPipelineXD that determines whether the ray transfer matrix is multiplied by sensitivity ('power') or not ('radiance'). (#412)
 * Improved parsing of metadata from the ADAS ADF15 'bnd' files for H-like ions. Raises a runtime error if the metadata cannot be parsed. (#424)
+* StarkBroadenedLine now supports Doppler broadening and Zeeman splitting. (#393)
 
 Bug fixes:
 * Fix deprecated transforms being cached in LaserMaterial after laser.transform update (#420)

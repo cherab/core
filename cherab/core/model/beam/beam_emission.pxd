@@ -1,6 +1,6 @@
-# Copyright 2016-2018 Euratom
-# Copyright 2016-2018 United Kingdom Atomic Energy Authority
-# Copyright 2016-2018 Centro de Investigaciones Energéticas, Medioambientales y Tecnológicas
+# Copyright 2016-2023 Euratom
+# Copyright 2016-2023 United Kingdom Atomic Energy Authority
+# Copyright 2016-2023 Centro de Investigaciones Energéticas, Medioambientales y Tecnológicas
 #
 # Licensed under the EUPL, Version 1.1 or – as soon they will be approved by the
 # European Commission - subsequent versions of the EUPL (the "Licence");
@@ -19,7 +19,6 @@
 
 from raysect.core.math cimport Vector3D
 from cherab.core cimport Line
-from cherab.core.math cimport Function1D, Function2D
 from cherab.core.beam cimport BeamModel
 from cherab.core.model.lineshape cimport BeamLineShapeModel
 
@@ -31,9 +30,8 @@ cdef class BeamEmissionLine(BeamModel):
         double _wavelength
         list _rates_list
         BeamLineShapeModel _lineshape
-        Function2D _sigma_to_pi
-        Function1D _sigma1_to_sigma0, _pi2_to_pi3, _pi4_to_pi3
-    
+        object _lineshape_class, _lineshape_args, _lineshape_kwargs
+
     cdef double _beam_emission_rate(self, double x, double y, double z, Vector3D beam_velocity) except? -1e999
 
     cdef int _populate_cache(self) except -1
