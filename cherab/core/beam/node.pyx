@@ -30,7 +30,7 @@ from cherab.core.beam.material cimport BeamMaterial
 from cherab.core.beam.model cimport BeamModel
 from cherab.core.atomic cimport AtomicData, Element
 from cherab.core.utility import Notifier
-from libc.math cimport tan, M_PI
+from libc.math cimport tan, M_PI, sqrt
 
 
 cdef double DEGREES_TO_RADIANS = M_PI / 180
@@ -188,6 +188,8 @@ cdef class Beam(Node):
         self._element = element = None             # beam species, an Element object
         self._divergence_x = 0.0                   # beam divergence x (degrees)
         self._divergence_y = 0.0                   # beam divergence y (degrees)
+        self._tanxdiv = 0.0                        # tan(DEGREES_TO_RADIANS * divergence_x)
+        self._tanydiv = 0.0                        # tan(DEGREES_TO_RADIANS * divergence_y)
         self._length = 1.0                         # m
         self._sigma = 0.1                          # m (gaussian beam width at origin)
 
@@ -248,9 +250,15 @@ cdef class Beam(Node):
             return self.BEAM_AXIS
 
         # calculate direction from divergence
-        cdef double dx = tan(DEGREES_TO_RADIANS * self._divergence_x)
-        cdef double dy = tan(DEGREES_TO_RADIANS * self._divergence_y)
-        return new_vector3d(dx, dy, 1.0).normalise()
+        cdef double z_tanx_sqr = z * z * self._tanxdiv * self._tanxdiv
+        cdef double z_tany_sqr = z * z * self._tanydiv * self._tanydiv
+        cdef double sigma_sqr = self._sigma * self._sigma
+        cdef double sigma_x_sqr = sigma_sqr + z_tanx_sqr
+        cdef double sigma_y_sqr = sigma_sqr + z_tany_sqr
+        cdef double ex = x * z_tanx_sqr / sigma_x_sqr
+        cdef double ey = y * z_tany_sqr / sigma_y_sqr
+
+        return new_vector3d(ex, ey, z).normalise()
 
     @property
     def energy(self):
@@ -315,6 +323,7 @@ cdef class Beam(Node):
         if value < 0:
             raise ValueError('Beam x divergence cannot be less than zero.')
         self._divergence_x = value
+        self._tanxdiv = tan(DEGREES_TO_RADIANS * value)
         self.notifier.notify()
 
     cdef double get_divergence_x(self):
@@ -329,6 +338,7 @@ cdef class Beam(Node):
         if value < 0:
             raise ValueError('Beam y divergence cannot be less than zero.')
         self._divergence_y = value
+        self._tanydiv = tan(DEGREES_TO_RADIANS * value)
         self.notifier.notify()
 
     cdef double get_divergence_y(self):
@@ -501,10 +511,10 @@ cdef class Beam(Node):
 
         # radii of bounds at the beam origin (z=0) and the beam end (z=length)
         radius_start = num_sigma * self.sigma
-        radius_end = radius_start + self.length * num_sigma * drdz
+        radius_end = num_sigma * sqrt(self.sigma**2 + self.length**2 * drdz**2)
 
         # distance of the cone apex to the beam origin
-        distance_apex = radius_start / (num_sigma * drdz)
+        distance_apex = radius_start * self.length / (radius_end - radius_start)
         cone_height = self.length + distance_apex
 
         # calculate volumes
