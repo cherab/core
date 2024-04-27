@@ -1,6 +1,6 @@
-# Copyright 2016-2018 Euratom
-# Copyright 2016-2018 United Kingdom Atomic Energy Authority
-# Copyright 2016-2018 Centro de Investigaciones Energéticas, Medioambientales y Tecnológicas
+# Copyright 2016-2022 Euratom
+# Copyright 2016-2022 United Kingdom Atomic Energy Authority
+# Copyright 2016-2022 Centro de Investigaciones Energéticas, Medioambientales y Tecnológicas
 #
 # Licensed under the EUPL, Version 1.1 or – as soon they will be approved by the
 # European Commission - subsequent versions of the EUPL (the "Licence");
@@ -16,10 +16,11 @@
 # See the Licence for the specific language governing permissions and limitations
 # under the Licence.
 
-from .beam import *
-from .pec import *
-from .atomic import *
-from .wavelength import *
-from .radiated_power import *
-from .utility import DEFAULT_REPOSITORY_PATH
-from .create import populate
+# for backward compatibility
+from cherab.atomic.repository.beam import *
+from cherab.atomic.repository.pec import *
+from cherab.atomic.repository.atomic import *
+from cherab.atomic.repository.wavelength import *
+from cherab.atomic.repository.radiated_power import *
+from cherab.atomic.repository.utility import DEFAULT_REPOSITORY_PATH
+from cherab.atomic.repository.create import populate

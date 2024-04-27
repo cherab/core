@@ -1,4 +1,22 @@
 
+# Copyright 2016-2022 Euratom
+# Copyright 2016-2022 United Kingdom Atomic Energy Authority
+# Copyright 2016-2022 Centro de Investigaciones Energéticas, Medioambientales y Tecnológicas
+#
+# Licensed under the EUPL, Version 1.1 or – as soon they will be approved by the
+# European Commission - subsequent versions of the EUPL (the "Licence");
+# You may not use this work except in compliance with the Licence.
+# You may obtain a copy of the Licence at:
+#
+# https://joinup.ec.europa.eu/software/page/eupl5
+#
+# Unless required by applicable law or agreed to in writing, software distributed
+# under the Licence is distributed on an "AS IS" basis, WITHOUT WARRANTIES OR
+# CONDITIONS OF ANY KIND, either express or implied.
+#
+# See the Licence for the specific language governing permissions and limitations
+# under the Licence.
+
 from collections.abc import Iterable
 import matplotlib._color_data as mcd
 import matplotlib.pyplot as plt
@@ -6,7 +24,7 @@ import numpy as np
 from raysect.core.math.function.float import Interpolator1DArray
 
 from cherab.core.atomic import neon, hydrogen, helium
-from cherab.openadas import OpenADAS
+from cherab.atomic import AtomicData
 from cherab.tools.plasmas.ionisation_balance import (fractional_abundance,
                                                      interpolators1d_fractional, from_elementdensity,
                                                      match_plasma_neutrality, interpolators1d_from_elementdensity,
@@ -75,8 +93,8 @@ n_element = Interpolator1DArray(psin_1d, n_element_profile, 'cubic', 'none', 0)
 n_element2 = Interpolator1DArray(psin_1d, n_element2_profile, 'cubic', 'none', 0)
 n_tcx_donor = Interpolator1DArray(psin_1d, n_tcx_donor_profile, 'cubic', 'none', 0)
 
-# load adas atomic database and define elements
-adas = OpenADAS(permit_extrapolation=True)
+# load atomic database and define elements
+atomic_data = AtomicData(permit_extrapolation=True)
 
 element = neon
 element2 = helium
@@ -84,8 +102,8 @@ element_bulk = hydrogen
 donor_element = hydrogen
 
 # calculate profiles of fractional abundance for the element
-abundance_fractional_profile = fractional_abundance(adas, element, n_e_profile, t_e_profile)
-abundance_fractional_profile_tcx = fractional_abundance(adas, element, n_e_profile, t_e_profile,
+abundance_fractional_profile = fractional_abundance(atomic_data, element, n_e_profile, t_e_profile)
+abundance_fractional_profile_tcx = fractional_abundance(atomic_data, element, n_e_profile, t_e_profile,
                                                         tcx_donor=donor_element, tcx_donor_n=n_tcx_donor,
                                                         tcx_donor_charge=0, free_variable=psin_1d)
 
@@ -102,9 +120,9 @@ ax.set_ylabel("fractional abundance [a.u.]")
 plt.title('Fractional Abundance VS $\Psi_n$')
 
 # calculate charge state density profiles by specifying element density
-density_element_profiles = from_elementdensity(adas, element, n_element, n_e_profile,
+density_element_profiles = from_elementdensity(atomic_data, element, n_element, n_e_profile,
                                                t_e, free_variable=psin_1d)
-density_element_profiles_tcx = from_elementdensity(adas, element, n_element, n_e_profile,
+density_element_profiles_tcx = from_elementdensity(atomic_data, element, n_element, n_e_profile,
                                                    t_e, tcx_donor=donor_element, tcx_donor_n=n_tcx_donor_profile,
                                                    tcx_donor_charge=0, free_variable=psin_1d)
 
@@ -123,12 +141,12 @@ ax.set_ylabel("ion density [m$^{-3}]$")
 # calculate fill the plasma with bulk element to match plasma neutrality condition
 
 # calculate ion densities for a 2nd element
-density_element2_profiles_tcx = from_elementdensity(adas, element2, n_element2, n_e_profile,
+density_element2_profiles_tcx = from_elementdensity(atomic_data, element2, n_element2, n_e_profile,
                                                     t_e, tcx_donor=donor_element, tcx_donor_n=n_tcx_donor_profile,
                                                     tcx_donor_charge=0, free_variable=psin_1d)
 
 # fill plasma with 3rd element to match plasma neutrality
-density_element3_profiles_tcx = match_plasma_neutrality(adas, element_bulk,
+density_element3_profiles_tcx = match_plasma_neutrality(atomic_data, element_bulk,
                                                         [density_element_profiles_tcx, density_element2_profiles_tcx],
                                                         n_e, t_e, tcx_donor=donor_element,
                                                         tcx_donor_n=n_tcx_donor_profile,
@@ -160,18 +178,18 @@ ax.set_xlabel("$\Psi_n$")
 ax.set_ylabel("ion density [m$^{-3}]$")
 
 # create ion density 1d interpolators
-interpolators_element_1d_fractional = interpolators1d_fractional(adas, element, psin_1d, n_e, t_e,
+interpolators_element_1d_fractional = interpolators1d_fractional(atomic_data, element, psin_1d, n_e, t_e,
                                                                  tcx_donor=donor_element,
                                                                  tcx_donor_n=n_tcx_donor, tcx_donor_charge=0)
-interpolators_element_1d_density = interpolators1d_from_elementdensity(adas, element, psin_1d, n_element, n_e, t_e,
+interpolators_element_1d_density = interpolators1d_from_elementdensity(atomic_data, element, psin_1d, n_element, n_e, t_e,
                                                                        tcx_donor=donor_element,
                                                                        tcx_donor_n=n_tcx_donor, tcx_donor_charge=0)
-interpolators_element2_1d_density = interpolators1d_from_elementdensity(adas, element2, psin_1d, n_element2, n_e, t_e,
+interpolators_element2_1d_density = interpolators1d_from_elementdensity(atomic_data, element2, psin_1d, n_element2, n_e, t_e,
                                                                         tcx_donor=donor_element,
                                                                         tcx_donor_n=n_tcx_donor, tcx_donor_charge=0)
 
 # also it is possible to combine different kinds of parameter types (profiles. numbers and interpolators)
-interpolators_element3_1d_density = interpolators1d_match_plasma_neutrality(adas, element_bulk, psin_1d,
+interpolators_element3_1d_density = interpolators1d_match_plasma_neutrality(atomic_data, element_bulk, psin_1d,
                                                                             [interpolators_element_1d_density,
                                                                              density_element2_profiles_tcx],
                                                                             n_e, t_e, tcx_donor=donor_element,

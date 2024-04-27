@@ -1,6 +1,6 @@
-# Copyright 2016-2018 Euratom
-# Copyright 2016-2018 United Kingdom Atomic Energy Authority
-# Copyright 2016-2018 Centro de Investigaciones Energéticas, Medioambientales y Tecnológicas
+# Copyright 2016-2022 Euratom
+# Copyright 2016-2022 United Kingdom Atomic Energy Authority
+# Copyright 2016-2022 Centro de Investigaciones Energéticas, Medioambientales y Tecnológicas
 #
 # Licensed under the EUPL, Version 1.1 or – as soon they will be approved by the
 # European Commission - subsequent versions of the EUPL (the "Licence");
@@ -18,20 +18,18 @@
 
 
 # External imports
-import os
 from scipy.constants import electron_mass, atomic_mass
 
 import matplotlib.pyplot as plt
-import numpy as np
 from cherab.core.model import ExcitationLine, RecombinationLine, Bremsstrahlung
 
 # Cherab and raysect imports
 from cherab.core import Species, Maxwellian, Plasma, Line, elements
-from cherab.openadas import OpenADAS
+from cherab.atomic import AtomicData
 from cherab.tools.plasmas import GaussianVolume
 
 # Core and external imports
-from raysect.optical import World, translate, rotate, Vector3D, Point3D, Ray
+from raysect.optical import World, translate, Vector3D, Point3D, Ray
 from raysect.primitive import Sphere
 from raysect.optical.observer import PinholeCamera
 from raysect.optical.material.emitter.inhomogeneous import NumericalIntegrator
@@ -44,11 +42,11 @@ sigma = 0.25
 world = World()
 
 # create atomic data source
-adas = OpenADAS(permit_extrapolation=True)
+atomic_data = AtomicData(permit_extrapolation=True)
 
 # PLASMA ----------------------------------------------------------------------
 plasma = Plasma(parent=world)
-plasma.atomic_data = adas
+plasma.atomic_data = atomic_data
 plasma.geometry = Sphere(sigma * 5.0)
 plasma.geometry_transform = None
 plasma.integrator = NumericalIntegrator(step=sigma / 5.0)

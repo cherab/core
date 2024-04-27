@@ -39,7 +39,6 @@ cdef class Bremsstrahlung(PlasmaModel):
 
     cdef:
         BremsFunction _brems_func
-        bint _user_provided_gaunt_factor
         Integrator1D _integrator
 
     cdef int _populate_cache(self) except -1

@@ -142,7 +142,7 @@ setup(
 # setup a rate repository with common rates
 if install_rates:
     try:
-        from cherab.openadas import repository
+        from cherab.atomic import repository
 
         repository.populate()
     except ImportError:
