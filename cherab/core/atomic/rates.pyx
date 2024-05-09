@@ -227,20 +227,20 @@ cdef class TotalRadiatedPower():
 
         self.element = element
 
-    def __call__(self, double density, double temperature):
+    def __call__(self, double electron_density, double electron_temperature):
         """
         Evaluate the total radiated power rate at the given plasma conditions.
 
         This function just wraps the cython evaluate() method.
         """
-        return self.evaluate(density, temperature)
+        return self.evaluate(electron_density, electron_temperature)
 
-    cdef double evaluate(self, double density, double temperature) except? -1e999:
+    cdef double evaluate(self, double electron_density, double electron_temperature) except? -1e999:
         """
         Evaluate the total radiated power rate at the given plasma conditions.
 
-        :param float density: Electron density in m^-3.
-        :param float temperature: Electron temperature in eV.
+        :param float electron_density: Electron density in m^-3.
+        :param float electron_temperature: Electron temperature in eV.
 
         :return: The total radiated power rate in W.m^3.
         """
@@ -255,15 +255,15 @@ cdef class _RadiatedPower:
         self.element = element
         self.charge = charge
 
-    def __call__(self, double density, double temperature):
+    def __call__(self, double electron_density, double electron_temperature):
         """
         Evaluate the radiated power rate at the given plasma conditions.
 
         This function just wraps the cython evaluate() method.
         """
-        return self.evaluate(density, temperature)
+        return self.evaluate(electron_density, electron_temperature)
 
-    cdef double evaluate(self, double density, double temperature) except? -1e999:
+    cdef double evaluate(self, double electron_density, double electron_temperature) except? -1e999:
         """
         Evaluate the radiated power at the given plasma conditions.
 
@@ -320,24 +320,24 @@ cdef class FractionalAbundance:
             raise ValueError("Charge state must be neutral or positive.")
         self.charge = charge
 
-    cdef double evaluate(self, double density, double temperature) except? -1e999:
+    cdef double evaluate(self, double electron_density, double electron_temperature) except? -1e999:
         """
         Evaluate the fractional abundance of this ionisation stage at the given plasma conditions.
 
-        :param float density: Electron density in m^-3.
-        :param float temperature: Electron temperature in eV.
+        :param float electron_density: Electron density in m^-3.
+        :param float electron_temperature: Electron temperature in eV.
 
         :return: Fractional abundance.
         """
         raise NotImplementedError("The evaluate() virtual method must be implemented.")
 
-    def __call__(self, double density, double temperature):
+    def __call__(self, double electron_density, double electron_temperature):
         """
         Evaluate the fractional abundance of this ionisation stage at the given plasma conditions.
 
         This function just wraps the cython evaluate() method.
         """
-        return self.evaluate(density, temperature)
+        return self.evaluate(electron_density, electron_temperature)
 
     def plot_temperature(self, temp_low=1, temp_high=1000, num_points=100, dens=1E19):
 

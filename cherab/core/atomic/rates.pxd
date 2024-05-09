@@ -75,7 +75,7 @@ cdef class TotalRadiatedPower:
     cdef:
         readonly Element element
 
-    cdef double evaluate(self, double density, double temperature) except? -1e999
+    cdef double evaluate(self, double electron_density, double electron_temperature) except? -1e999
 
 
 cdef class _RadiatedPower:
@@ -84,7 +84,7 @@ cdef class _RadiatedPower:
         readonly Element element
         readonly int charge
 
-    cdef double evaluate(self, double density, double temperature) except? -1e999
+    cdef double evaluate(self, double electron_density, double electron_temperature) except? -1e999
 
 
 cdef class LineRadiationPower(_RadiatedPower):
@@ -106,4 +106,4 @@ cdef class FractionalAbundance:
         readonly int charge
         public str name
 
-    cdef double evaluate(self, double density, double temperature) except? -1e999
+    cdef double evaluate(self, double electron_density, double electron_temperature) except? -1e999
