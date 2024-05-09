@@ -1,3 +1,5 @@
+:orphan:
+
 .. _bolometer_etendue:
 
 

@@ -1,3 +1,5 @@
+:orphan:
+
 
 .. _balmer_series_spectra:
 

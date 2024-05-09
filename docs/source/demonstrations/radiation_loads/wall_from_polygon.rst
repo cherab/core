@@ -1,3 +1,5 @@
+:orphan:
+
 
 .. _wall_from_polygon:
 
