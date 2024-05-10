@@ -2,7 +2,7 @@
 Mono-energetic Particle Beams
 =============================
 
-..  autoclass:: cherab.core.Beam
+..  autoclass:: cherab.core.beam.node.Beam
    :members:
 
 

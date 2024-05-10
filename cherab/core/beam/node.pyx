@@ -144,6 +144,7 @@ cdef class Beam(Node):
     :ivar float sigma: The Gaussian beam width at the origin in m.
     :ivar float temperature: The broadening of the beam (eV).
 
+
     .. code-block:: pycon
 
        >>> # This example shows how to initialise and populate a basic beam
@@ -234,7 +235,21 @@ cdef class Beam(Node):
 
     cpdef Vector3D direction(self, double x, double y, double z):
         """
-        Calculates the beam direction vector at a point in space.
+        Calculates the beam direction vector at a point in beam coordinate space.
+
+        The beam direction (non-normalised) is calculated as follows (z > 0):
+
+        :math:`e_x = x\\frac{(ztg(\\alpha_x))^2}{\\sigma^2 + (ztg(\\alpha_x))^2}`,
+        :math:`e_y = y\\frac{(ztg(\\alpha_y))^2}{\\sigma^2 + (ztg(\\alpha_y))^2}`,
+        :math:`e_z = z`,
+
+        where :math:`\\sigma` is the Gaussian beam deviation at origin,
+        :math:`\\alpha_x` and :math:`\\alpha_y` are the beam divergence angles
+        in the x and y dimensions respectively.
+
+        For z <= 0 the beam direction is (0, 0, 1).
+
+        The function returns normalised beam direction.
         
         Note the values of the beam outside of the beam envelope should be
         treated with caution.
