@@ -35,9 +35,9 @@ cdef class IonisationRate:
     cpdef double evaluate(self, double density, double temperature) except? -1e999:
         """Returns an effective ionisation rate coefficient at the specified plasma conditions.
 
+        :param density: Electron density in m^-3.
         :param temperature: Electron temperature in eV.
-        :param density: Electron density in m^-3
-        :return: The effective ionisation rate in m^-3.
+        :return: The effective ionisation rate in m^3.s^-1.
         """
         raise NotImplementedError("The evaluate() virtual method must be implemented.")
 
@@ -57,9 +57,9 @@ cdef class RecombinationRate:
     cpdef double evaluate(self, double density, double temperature) except? -1e999:
         """Returns an effective recombination rate coefficient at the specified plasma conditions.
 
+        :param density: Electron density in m^-3.
         :param temperature: Electron temperature in eV.
-        :param density: Electron density in m^-3
-        :return: The effective ionisation rate in m^-3.
+        :return: The effective ionisation rate in m^3.s^-1.
         """
         raise NotImplementedError("The evaluate() virtual method must be implemented.")
 
@@ -79,9 +79,9 @@ cdef class ThermalCXRate:
     cpdef double evaluate(self, double density, double temperature) except? -1e999:
         """Returns an effective charge exchange rate coefficient at the specified plasma conditions.
 
+        :param density: Electron density in m^-3.
         :param temperature: Electron temperature in eV.
-        :param density: Electron density in m^-3
-        :return: The effective charge exchange rate in m^-3.
+        :return: The effective charge exchange rate in m^3.s^-1.
         """
         raise NotImplementedError("The evaluate() virtual method must be implemented.")
 
@@ -101,9 +101,9 @@ cdef class _PECRate:
     cpdef double evaluate(self, double density, double temperature) except? -1e999:
         """Returns a photon emissivity coefficient at given conditions.
 
-        :param temperature: Receiver ion temperature in eV.
-        :param density: Receiver ion density in m^-3
-        :return: The effective PEC rate in W/m^3.
+        :param density: Electron density in m^-3.
+        :param temperature: Electron temperature in eV.
+        :return: The effective PEC rate in W.m^3.
         """
         raise NotImplementedError("The evaluate() virtual method must be implemented.")
 
@@ -221,7 +221,7 @@ cdef class BeamEmissionPEC(_BeamRate):
 
 
 cdef class TotalRadiatedPower():
-    """The total radiated power in equilibrium conditions."""
+    """The total radiated power rate in equilibrium conditions."""
 
     def __init__(self, Element element):
 
@@ -229,21 +229,20 @@ cdef class TotalRadiatedPower():
 
     def __call__(self, double electron_density, double electron_temperature):
         """
-        Evaluate the radiated power rate at the given plasma conditions.
+        Evaluate the total radiated power rate at the given plasma conditions.
 
-        Calls the cython evaluate() method under the hood.
-
-        :param float electron_density: electron density in m^-3
-        :param float electron_temperature: electron temperature in eV
+        This function just wraps the cython evaluate() method.
         """
         return self.evaluate(electron_density, electron_temperature)
 
     cdef double evaluate(self, double electron_density, double electron_temperature) except? -1e999:
         """
-        Evaluate the radiated power at the given plasma conditions.
+        Evaluate the total radiated power rate at the given plasma conditions.
 
-        :param float electron_density: electron density in m^-3
-        :param float electron_temperature: electron temperature in eV
+        :param float electron_density: Electron density in m^-3.
+        :param float electron_temperature: Electron temperature in eV.
+
+        :return: The total radiated power rate in W.m^3.
         """
         raise NotImplementedError("The evaluate() virtual method must be implemented.")
 
@@ -260,10 +259,7 @@ cdef class _RadiatedPower:
         """
         Evaluate the radiated power rate at the given plasma conditions.
 
-        Calls the cython evaluate() method under the hood.
-
-        :param float electron_density: electron density in m^-3
-        :param float electron_temperature: electron temperature in eV
+        This function just wraps the cython evaluate() method.
         """
         return self.evaluate(electron_density, electron_temperature)
 
@@ -271,8 +267,10 @@ cdef class _RadiatedPower:
         """
         Evaluate the radiated power at the given plasma conditions.
 
-        :param float electron_density: electron density in m^-3
-        :param float electron_temperature: electron temperature in eV
+        :param float density: Electron density in m^-3.
+        :param float temperature: Electron temperature in eV.
+
+        :return: The radiated power rate in W.m^3.
         """
         raise NotImplementedError("The evaluate() virtual method must be implemented.")
 
@@ -308,9 +306,9 @@ cdef class FractionalAbundance:
     """
     Rate provider for fractional abundances in thermodynamic equilibrium.
 
-    :param Element element: the radiating element
-    :param int charge: the integer charge state for this ionisation stage
-    :param str name: optional label identifying this rate
+    :param Element element: the radiating element.
+    :param int charge: the integer charge state for this ionisation stage.
+    :param str name: optional label identifying this rate.
     """
 
     def __init__(self, element, charge, name=''):
@@ -326,8 +324,10 @@ cdef class FractionalAbundance:
         """
         Evaluate the fractional abundance of this ionisation stage at the given plasma conditions.
 
-        :param float electron_density: electron density in m^-3
-        :param float electron_temperature: electron temperature in eV
+        :param float electron_density: Electron density in m^-3.
+        :param float electron_temperature: Electron temperature in eV.
+
+        :return: Fractional abundance.
         """
         raise NotImplementedError("The evaluate() virtual method must be implemented.")
 
@@ -335,8 +335,7 @@ cdef class FractionalAbundance:
         """
         Evaluate the fractional abundance of this ionisation stage at the given plasma conditions.
 
-        :param float electron_density: electron density in m^-3
-        :param float electron_temperature: electron temperature in eV
+        This function just wraps the cython evaluate() method.
         """
         return self.evaluate(electron_density, electron_temperature)
 
