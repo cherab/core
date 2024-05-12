@@ -102,7 +102,7 @@ def add_pec_thermal_cx_rate(donor_element, donor_charge, receiver_element, recei
     rates2update = RecursiveDict()
     rates2update[donor_element][donor_charge][receiver_element][receiver_charge][transition] = rate
 
-    update_pec_thermal_cx_rates(rates2update, repository_path)
+    update_pec_thermal_cx_rates(rates2update.freeze(), repository_path)
 
 
 def update_pec_rates(rates, repository_path=None):
@@ -248,11 +248,11 @@ def update_pec_thermal_cx_rates(rates, repository_path=None):
                     # create directory structure if missing
                     directory = os.path.dirname(path)
                     if not os.path.isdir(directory):
-                        os.makedirs(directory)
+                        os.makedirs(directory, exist_ok=True)
 
                     # write new data
                     with open(path, 'w') as f:
-                        json.dump(content, f, indent=2, sort_keys=True)
+                        json.dump(content.freeze(), f, indent=2, sort_keys=True)
 
 
 def get_pec_excitation_rate(element, charge, transition, repository_path=None):
