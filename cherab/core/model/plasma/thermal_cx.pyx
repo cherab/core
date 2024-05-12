@@ -29,7 +29,7 @@ cdef class ThermalCXLine(PlasmaModel):
     as a result of thermal charge exchange of the target species with the donor species.
 
     .. math::
-        \\epsilon_{\\mathrm{recomb}}(\\lambda) = \\frac{1}{4 \\pi} n_{Z_\\mathrm{i} + 1}
+        \\epsilon_{\\mathrm{CX}}(\\lambda) = \\frac{1}{4 \\pi} n_{Z_\\mathrm{i} + 1}
         \\sum_j{n_{Z_\\mathrm{j}} \\mathrm{PEC}_{\\mathrm{cx}}(n_\\mathrm{e}, T_\\mathrm{e}, T_{Z_\\mathrm{j}})}
         f(\\lambda),
 
@@ -100,6 +100,7 @@ cdef class ThermalCXLine(PlasmaModel):
         if receiver_density <= 0.0:
             return spectrum
 
+        # obtain composite CX PEC by iterating over all possible CX donors
         weighted_rate = 0
         for species, rate in self._rates:
             donor_density = species.distribution.density(point.x, point.y, point.z)
@@ -136,7 +137,10 @@ cdef class ThermalCXLine(PlasmaModel):
 
         # obtain rate functions
         self._rates = []
+        # iterate over all posible electron donors in plasma composition
+        # and for each donor, cache the PEC rate function for the CX reaction with this receiver
         for species in self._plasma.composition:
+            # exclude the receiver species from the list of donors and omit fully ionised species
             if species != self._target_species and species.charge < species.element.atomic_number:
                 rate = self._atomic_data.thermal_cx_pec(species.element, species.charge,  # donor
                                                         self._line.element, receiver_charge,  # receiver
