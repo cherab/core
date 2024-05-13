@@ -18,7 +18,11 @@
 # See the Licence for the specific language governing permissions and limitations
 # under the Licence.
 
-from scipy.integrate import cumulative_trapezoid
+try:
+    from scipy.integrate import cumulative_trapezoid
+except ImportError:
+    from scipy.integrate import cumtrapz as cumulative_trapezoid
+
 import numpy as np
 cimport numpy as np
 
