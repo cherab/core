@@ -101,23 +101,26 @@ cdef class SingleRayAttenuator(BeamAttenuator):
 
     @cython.cdivision(True)
     cpdef double density(self, double x, double y, double z) except? -1e999:
-        r"""
+        """
         Returns the beam density at the specified point in beam coordinate space.
         The beam density is calculated as follows:
-    
-        :math:`n(x, y, z) = \frac{R}{2\pi v_0 \sigma_x\sigma_y} exp\left(-\frac{1}{2}\left(\frac{x^2}{\sigma_x^2}+\frac{y^2}{\sigma_y^2}\right)\right)exp\left(-\int_{0}^{z}\frac{S(z')}{v_0}dz'\right)`,
-    
-        :math:`\sigma_x = \sqrt{\sigma^2 + (ztg(\alpha_x))^2}\hspace{0.5cm}\sigma_y = \sqrt{\sigma^2 + (ztg(\alpha_y))^2}`,
 
-        where :math:`R=\frac{P}{E}` is the particle rate of the beam defined as the power
-        of the beam divided by the kinetic energy of the single particle, :math:`v_0=\sqrt{2E/m}`
-        is the particle speed, :math:`\sigma` is the Gaussian beam deviation at origin,
-        :math:`\alpha_x` and :math:`\alpha_y` are the beam divergence angles in the x and y
+        .. math::
+            n(x, y, z) = \\frac{R}{2\\pi v_0 \\sigma_x\\sigma_y} exp\\left(-\\frac{1}{2}\\left(\\frac{x^2}{\\sigma_x^2}+\\frac{y^2}{\\sigma_y^2}\\right)\\right)exp\\left(-\\int_{0}^{z}\\frac{S(z')}{v_0}dz'\\right),
+
+            \\sigma_x = \\sqrt{\\sigma^2 + (ztg(\\alpha_x))^2}\\hspace{0.5cm}\\sigma_y = \\sqrt{\\sigma^2 + (ztg(\\alpha_y))^2},
+
+        where :math:`R=\\frac{P}{E}` is the particle rate of the beam defined as the power
+        of the beam divided by the kinetic energy of the single particle, :math:`v_0=\\sqrt{2E/m}`
+        is the particle speed, :math:`\\sigma` is the Gaussian beam deviation at origin,
+        :math:`\\alpha_x` and :math:`\\alpha_y` are the beam divergence angles in the x and y
         dimensions respectively, :math:`S(z)` is the composite beam attenuation coefficient due to
         collisional-radiative interaction with the plasma species:
 
-        :math:`S(z) = \sum_{i=1}^{N}Z_i n_i S_i(E_{int}, n_{i,e}^{(eq)}, T_i)`,
-        :math:`n_{i,e}^{(eq)} = \frac{1}{Z_i}\sum_{j=1}^{N}Z_j^2 n_j`.
+        .. math::
+            S(z) = \\sum_{i=1}^{N}Z_i n_i S_i(E_{int}, n_{i,e}^{(eq)}, T_i),
+
+            n_{i,e}^{(eq)} = \\frac{1}{Z_i}\\sum_{j=1}^{N}Z_j^2 n_j.
 
         Here :math:`Z_i` is the charge of the i-th type of plasma ions,
         :math:`n_i` is density of the i-th type of plasma ions, :math:`N` is the number of type of plasma
