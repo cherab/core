@@ -58,7 +58,7 @@ class ConstantBeamStoppingRate(BeamStoppingRate):
         return self.value
 
 
-class TestAtomicData(AtomicData):
+class MockAtomicData(AtomicData):
     """Fake atomic data for test purpose."""
 
     def beam_cx_pec(self, donor_ion, receiver_ion, receiver_charge, transition):
@@ -78,7 +78,7 @@ class TestBeamCXLine(unittest.TestCase):
 
     world = World()
 
-    atomic_data = TestAtomicData()
+    atomic_data = MockAtomicData()
 
     plasma_species = [(deuterium, 1, 1.e19, 200., Vector3D(0, 0, 0))]
     plasma = build_constant_slab_plasma(length=1, width=1, height=1, electron_density=1e19, electron_temperature=200.,

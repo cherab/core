@@ -45,7 +45,7 @@ class ConstantBeamStoppingRate(BeamStoppingRate):
         return self.value
 
 
-class TestAtomicData(AtomicData):
+class MockAtomicData(AtomicData):
     """Fake atomic data for test purpose."""
 
     def beam_stopping_rate(self, beam_ion, plasma_ion, charge):
@@ -55,7 +55,7 @@ class TestAtomicData(AtomicData):
 
 class TestBeam(unittest.TestCase):
 
-    atomic_data = TestAtomicData()
+    atomic_data = MockAtomicData()
 
     world = World()
 
