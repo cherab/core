@@ -23,18 +23,18 @@ from cherab.core.utility.constants cimport RECIP_4_PI
 
 
 cdef class ExcitationLine(PlasmaModel):
-    """
+    r"""
     Emitter that calculates spectral line emission from a plasma object
     as a result of excitation of the target species by electron impact.
 
     .. math::
-        \\epsilon_{\\mathrm{excit}}(\\lambda) = \\frac{1}{4 \\pi} n_{Z_\\mathrm{i}} n_\\mathrm{e}
-        \\mathrm{PEC}_{\\mathrm{excit}}(n_\\mathrm{e}, T_\\mathrm{e}) f(\\lambda),
+        \epsilon_{\mathrm{excit}}(\lambda) = \frac{1}{4 \pi} n_{Z_\mathrm{i}} n_\mathrm{e}
+        \mathrm{PEC}_{\mathrm{excit}}(n_\mathrm{e}, T_\mathrm{e}) f(\lambda),
 
-    where :math:`n_{Z_\\mathrm{i}}` is the target species density,
-    :math:`\\mathrm{PEC}_{\\mathrm{excit}}` is the electron impact excitation photon emission coefficient
-    for the specified spectral line of the :math:`Z_\\mathrm{i}` ion,
-    :math:`f(\\lambda)` is the normalised spectral line shape,
+    where :math:`n_{Z_\mathrm{i}}` is the target species density,
+    :math:`\mathrm{PEC}_{\mathrm{excit}}` is the electron impact excitation photon emission coefficient
+    for the specified spectral line of the :math:`Z_\mathrm{i}` ion,
+    :math:`f(\lambda)` is the normalised spectral line shape,
 
     :param Line line: Spectroscopic emission line object.
     :param Plasma plasma: The plasma to which this emission model is attached. Default is None.
