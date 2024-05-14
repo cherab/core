@@ -234,20 +234,20 @@ cdef class Beam(Node):
         return self._attenuator.density(x, y, z)
 
     cpdef Vector3D direction(self, double x, double y, double z):
-        """
+        r"""
         Calculates the beam direction vector at a point in beam coordinate space.
 
         The beam direction (non-normalised) is calculated as follows (z > 0):
 
         .. math::
-            e_x = x\\frac{(ztg(\\alpha_x))^2}{\\sigma^2 + (ztg(\\alpha_x))^2},
+            e_x = x\frac{(ztg(\alpha_x))^2}{\sigma^2 + (ztg(\alpha_x))^2},
 
-            e_y = y\\frac{(ztg(\\alpha_y))^2}{\\sigma^2 + (ztg(\\alpha_y))^2},
+            e_y = y\frac{(ztg(\alpha_y))^2}{\sigma^2 + (ztg(\alpha_y))^2},
 
             e_z = z,
 
-        where :math:`\\sigma` is the Gaussian beam deviation at origin,
-        :math:`\\alpha_x` and :math:`\\alpha_y` are the beam divergence angles
+        where :math:`\sigma` is the Gaussian beam deviation at origin,
+        :math:`\alpha_x` and :math:`\alpha_y` are the beam divergence angles
         in the x and y dimensions respectively.
 
         For z <= 0 the beam direction is (0, 0, 1).
