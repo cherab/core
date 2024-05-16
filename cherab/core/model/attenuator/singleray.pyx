@@ -18,7 +18,11 @@
 # See the Licence for the specific language governing permissions and limitations
 # under the Licence.
 
-from scipy.integrate import cumtrapz
+try:
+    from scipy.integrate import cumulative_trapezoid
+except ImportError:
+    from scipy.integrate import cumtrapz as cumulative_trapezoid
+
 import numpy as np
 cimport numpy as np
 
@@ -257,7 +261,7 @@ cdef class SingleRayAttenuator(BeamAttenuator):
         for i in range(naxis):
             stopping_coeff[i] = self._beam_stopping(x[i], y[i], z[i], beam_velocity)
 
-        return beam_density * np.exp(-cumtrapz(stopping_coeff, axis, initial=0.0) / speed)
+        return beam_density * np.exp(-cumulative_trapezoid(stopping_coeff, axis, initial=0) / speed)
 
     @cython.cdivision(True)
     cdef double _beam_stopping(self, double x, double y, double z, Vector3D beam_velocity):
