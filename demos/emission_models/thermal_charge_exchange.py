@@ -1,5 +1,4 @@
 
-import numpy as np
 import matplotlib.pyplot as plt
 from scipy.constants import electron_mass, atomic_mass
 
@@ -15,9 +14,6 @@ from cherab.tools.plasmas.slab import NeutralFunction, IonFunction
 from cherab.openadas import OpenADAS
 from cherab.openadas.install import install_adf15
 
-
-# Install PECs for CVI spectral lines
-install_adf15(carbon, 5, 'adf15/pec96#c/pec96#c_pju#c5.dat', download=True)
 
 ###############
 # Make Plasma #
