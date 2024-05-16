@@ -24,9 +24,6 @@ from raysect.core.math.function.float cimport Interpolator2DArray, Interpolator3
 from cherab.core.utility.conversion import PhotonToJ
 
 
-DEF ZERO_THRESHOLD = 1.e-300
-
-
 cdef class ImpactExcitationPEC(CoreImpactExcitationPEC):
 
     def __init__(self, double wavelength, dict data, extrapolate=False):
@@ -165,13 +162,7 @@ cdef class ThermalCXPEC(CoreThermalCXPEC):
     cpdef double evaluate(self, double electron_density, double electron_temperature, double donor_temperature) except? -1e999:
 
         # need to handle zeros, also density and temperature can become negative due to cubic interpolation
-        if electron_density < ZERO_THRESHOLD:
-            return 0
-
-        if electron_temperature < ZERO_THRESHOLD:
-            return 0
-
-        if donor_temperature < ZERO_THRESHOLD:
+        if electron_density <= 0 or electron_temperature <= 0 or donor_temperature <= 0:
             return 0
 
         # calculate rate and convert from log10 space to linear space
