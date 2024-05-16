@@ -68,7 +68,7 @@ class ConstantThermalCXPEC(ThermalCXPEC):
         return self.value
 
 
-class TestAtomicData(AtomicData):
+class MockAtomicData(AtomicData):
     """Fake atomic data for test purpose."""
 
     def impact_excitation_pec(self, ion, charge, transition):
@@ -90,16 +90,19 @@ class TestAtomicData(AtomicData):
 
 class TestExcitationLine(unittest.TestCase):
 
-    world = World()
+    def setUp(self):
 
-    atomic_data = TestAtomicData()
+        self.world = World()
 
-    plasma_species = [(carbon, 5, 2.e18, 800., Vector3D(0, 0, 0))]
-    slab_length = 1.2
-    plasma = build_constant_slab_plasma(length=slab_length, width=1, height=1, electron_density=1e19, electron_temperature=1000.,
-                                        plasma_species=plasma_species, b_field=Vector3D(0, 10., 0))
-    plasma.atomic_data = atomic_data
-    plasma.parent = world
+        self.atomic_data = MockAtomicData()
+
+        plasma_species = [(carbon, 5, 2.e18, 800., Vector3D(0, 0, 0))]
+        self.slab_length = 1.2
+        self.plasma = build_constant_slab_plasma(length=self.slab_length, width=1, height=1,
+                                                 electron_density=1e19, electron_temperature=1000.,
+                                                 plasma_species=plasma_species, b_field=Vector3D(0, 10., 0))
+        self.plasma.atomic_data = self.atomic_data
+        self.plasma.parent = self.world
 
     def test_default_lineshape(self):
         # setting up the model
@@ -162,16 +165,19 @@ class TestExcitationLine(unittest.TestCase):
 
 class TestRecombinationLine(unittest.TestCase):
 
-    world = World()
+    def setUp(self):
 
-    atomic_data = TestAtomicData()
+        self.world = World()
 
-    plasma_species = [(carbon, 6, 1.67e18, 800., Vector3D(0, 0, 0))]
-    slab_length = 1.2
-    plasma = build_constant_slab_plasma(length=slab_length, width=1, height=1, electron_density=1e19, electron_temperature=1000.,
-                                        plasma_species=plasma_species, b_field=Vector3D(0, 10., 0))
-    plasma.atomic_data = atomic_data
-    plasma.parent = world
+        self.atomic_data = MockAtomicData()
+
+        plasma_species = [(carbon, 6, 1.67e18, 800., Vector3D(0, 0, 0))]
+        self.slab_length = 1.2
+        self.plasma = build_constant_slab_plasma(length=self.slab_length, width=1, height=1,
+                                                 electron_density=1e19, electron_temperature=1000.,
+                                                 plasma_species=plasma_species, b_field=Vector3D(0, 10., 0))
+        self.plasma.atomic_data = self.atomic_data
+        self.plasma.parent = self.world
 
     def test_default_lineshape(self):
         # setting up the model
@@ -234,17 +240,20 @@ class TestRecombinationLine(unittest.TestCase):
 
 class TestThermalCXLine(unittest.TestCase):
 
-    world = World()
+    def setUp(self):
 
-    atomic_data = TestAtomicData()
+        self.world = World()
 
-    plasma_species = [(carbon, 6, 1.67e18, 800., Vector3D(0, 0, 0)),
-                      (deuterium, 0, 1.e19, 100., Vector3D(0, 0, 0))]
-    slab_length = 1.2
-    plasma = build_constant_slab_plasma(length=slab_length, width=1, height=1, electron_density=1e19, electron_temperature=1000.,
-                                        plasma_species=plasma_species, b_field=Vector3D(0, 10., 0))
-    plasma.atomic_data = atomic_data
-    plasma.parent = world
+        self.atomic_data = MockAtomicData()
+
+        plasma_species = [(carbon, 6, 1.67e18, 800., Vector3D(0, 0, 0)),
+                          (deuterium, 0, 1.e19, 100., Vector3D(0, 0, 0))]
+        self.slab_length = 1.2
+        self.plasma = build_constant_slab_plasma(length=self.slab_length, width=1, height=1,
+                                                 electron_density=1e19, electron_temperature=1000.,
+                                                 plasma_species=plasma_species, b_field=Vector3D(0, 10., 0))
+        self.plasma.atomic_data = self.atomic_data
+        self.plasma.parent = self.world
 
     def test_default_lineshape(self):
         # setting up the model
