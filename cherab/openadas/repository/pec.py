@@ -247,8 +247,7 @@ def update_pec_thermal_cx_rates(rates, repository_path=None):
 
                     # create directory structure if missing
                     directory = os.path.dirname(path)
-                    if not os.path.isdir(directory):
-                        os.makedirs(directory, exist_ok=True)
+                    os.makedirs(directory, exist_ok=True)
 
                     # write new data
                     with open(path, 'w') as f:
