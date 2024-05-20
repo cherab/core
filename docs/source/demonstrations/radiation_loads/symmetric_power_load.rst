@@ -1,3 +1,5 @@
+:orphan:
+
 
 .. _symmetric_power_load:
 
