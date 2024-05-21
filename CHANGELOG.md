@@ -16,6 +16,7 @@ New:
 * **Beam dispersion calculation has changed from sigma(z) = sigma + z * tan(alpha) to sigma(z) = sqrt(sigma^2 + (z * tan(alpha))^2) for consistancy with the Gaussian beam model. Attention!!! The results of BES and CX spectroscopy are affected by this change. (#414)**
 * Improved beam direction calculation to allow for natural broadening of the BES line shape due to beam divergence. (#414)
 * Add thermal charge-exchange emission model. (#57)
+* PECs for C VI spectral lines for n <= 5 are now included in populate(). Rerun populate() after upgrading to 1.5 to update the atomic data repository.
 
 Bug fixes:
 * Fix deprecated transforms being cached in LaserMaterial after laser.transform update (#420)
