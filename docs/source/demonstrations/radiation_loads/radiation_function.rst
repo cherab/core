@@ -1,3 +1,5 @@
+:orphan:
+
 
 .. _radiation_function:
 
