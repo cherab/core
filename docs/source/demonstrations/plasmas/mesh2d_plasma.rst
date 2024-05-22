@@ -1,3 +1,5 @@
+:orphan:
+
 
 .. _mesh2d_plasma:
 
