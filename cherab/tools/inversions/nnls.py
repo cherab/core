@@ -69,4 +69,4 @@ def invert_regularised_nnls(w_matrix, b_vector, alpha=0.01, tikhonov_matrix=None
 
     x_vector, rnorm = scipy.optimize.nnls(c_matrix / vmax, d_vector / vmax, **kwargs)
 
-    return x_vector, rnorm
+    return x_vector, rnorm * vmax
