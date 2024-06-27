@@ -37,7 +37,7 @@ cdef class BeamCXPEC(CoreBeamCXPEC):
     @cython.cdivision(True)
     def __init__(self, int donor_metastable, double wavelength, dict data, bint extrapolate=False):
 
-        self.donor_metastable = donor_metastable
+        super().__init__(donor_metastable)
         self.wavelength = wavelength
         self.raw_data = data
 
@@ -79,7 +79,7 @@ cdef class BeamCXPEC(CoreBeamCXPEC):
 
         :param energy: Interaction energy in eV/amu.
         :param temperature: Receiver ion temperature in eV.
-        :param density: Receiver ion density in m^-3
+        :param density: Plasma total ion density in m^-3
         :param z_effective: Plasma Z-effective.
         :param b_field: Magnetic field magnitude in Tesla.
         :return: The effective cx rate in W.m^3

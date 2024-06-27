@@ -25,7 +25,6 @@ cdef class BeamCXPEC(CoreBeamCXPEC):
     cdef readonly:
         dict raw_data
         double wavelength
-        int donor_metastable
         Function1D _eb, _ti, _ni, _zeff, _b
         readonly tuple beam_energy_range
         readonly tuple density_range

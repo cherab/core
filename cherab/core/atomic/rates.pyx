@@ -144,7 +144,12 @@ cdef class BeamCXPEC:
     transition :math:`n\rightarrow n'` of ion :math:`Z^{(\alpha+1)+}` with electron donor
     :math:`H^0` in metastable state :math:`m_{i}`. Equivalent to
     :math:`q^{eff}_{n\rightarrow n'}` in `adf12 <http://open.adas.ac.uk/adf12>_`.
+
+    :param donor_metastable: The metastable state of the donor species for which the rate data applies.
     """
+
+    def __init__(self, int donor_metastable):
+        self.donor_metastable = donor_metastable
 
     def __call__(self, double energy, double temperature, double density, double z_effective, double b_field):
         """Evaluates the Beam CX rate at the given plasma conditions.
@@ -158,7 +163,7 @@ cdef class BeamCXPEC:
 
         :param float energy: Interaction energy in eV/amu.
         :param float temperature: Receiver ion temperature in eV.
-        :param float density: Receiver ion density in m^-3
+        :param float density: Plasma total ion density in m^-3
         :param float z_effective: Plasma Z-effective.
         :param float b_field: Magnetic field magnitude in Tesla.
         :return: The effective rate

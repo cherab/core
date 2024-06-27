@@ -158,7 +158,7 @@ cdef class BeamCXLine(BeamModel):
         interaction_energy = ms_to_evamu(interaction_speed)
 
         # calculate the composite charge-exchange emission coefficient
-        emission_rate = self._composite_cx_rate(x, y, z, interaction_energy, donor_velocity, receiver_temperature, receiver_density)
+        emission_rate = self._composite_cx_rate(x, y, z, interaction_energy, donor_velocity, receiver_temperature)
 
         # spectral line emission in W/m^3/str
         radiance = RECIP_4_PI * donor_density * receiver_density * emission_rate
@@ -169,7 +169,7 @@ cdef class BeamCXLine(BeamModel):
     @cython.wraparound(False)
     @cython.cdivision(True)
     cdef double _composite_cx_rate(self, double x, double y, double z, double interaction_energy,
-                                   Vector3D donor_velocity, double receiver_temperature, double receiver_density) except? -1e999:
+                                   Vector3D donor_velocity, double receiver_temperature) except? -1e999:
         """
         Performs a beam population weighted average of the effective cx rates.
 
@@ -188,23 +188,23 @@ cdef class BeamCXLine(BeamModel):
         :param interaction_energy: The donor-receiver interaction energy in eV/amu.
         :param donor_velocity: A Vector defining the donor particle velocity in m/s.
         :param receiver_temperature: The receiver species temperature in eV.
-        :param receiver_density: The receiver species density in m^-3
         :return: The composite charge exchange rate in W.m^3.
         """
 
         cdef:
-            double z_effective, b_field, rate, total_population, population, effective_rate
+            double z_effective, b_field, rate, total_population, population, effective_rate, ion_density
             BeamCXPEC cx_rate
             list population_data
 
-        # calculate z_effective and the B-field magnitude
+        # calculate ion density, z_effective and the B-field magnitude
+        ion_density = self._plasma.ion_density(x, y, z)
         z_effective = self._plasma.z_effective(x, y, z)
         b_field = self._plasma.get_b_field().evaluate(x, y, z).get_length()
 
         # rate for the ground state (metastable = 1)
         rate = self._ground_beam_rate.evaluate(interaction_energy,
                                                receiver_temperature,
-                                               receiver_density,
+                                               ion_density,
                                                z_effective,
                                                b_field)
 
@@ -219,7 +219,7 @@ cdef class BeamCXLine(BeamModel):
 
             effective_rate = cx_rate.evaluate(interaction_energy,
                                               receiver_temperature,
-                                              receiver_density,
+                                              ion_density,
                                               z_effective,
                                               b_field)
 
