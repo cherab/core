@@ -115,7 +115,7 @@ setup(
     long_description=long_description,
     long_description_content_type="text/markdown",
     install_requires=[
-        "numpy>=1.14",
+        "numpy>=1.14,<2.0",
         "scipy",
         "matplotlib",
         "raysect==0.8.1",
