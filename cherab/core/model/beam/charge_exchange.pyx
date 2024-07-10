@@ -192,7 +192,10 @@ cdef class BeamCXLine(BeamModel):
         """
 
         cdef:
-            double z_effective, b_field, rate, total_population, population, effective_rate, ion_density
+            double ion_density, z_effective
+            double b_field
+            double rate, effective_rate
+            double population, total_population
             BeamCXPEC cx_rate
             list population_data
 
