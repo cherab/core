@@ -2,4 +2,6 @@
 Basic Line Emission
 ===================
 
-Documentation for this model will go here soon...
+.. autoclass:: cherab.core.model.plasma.impact_excitation.ExcitationLine
+
+.. autoclass:: cherab.core.model.plasma.recombination.RecombinationLine

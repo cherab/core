@@ -1,3 +1,5 @@
+:orphan:
+
 
 .. _beam_plasma_interaction_rates:
 
