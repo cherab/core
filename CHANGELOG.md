@@ -6,6 +6,7 @@ Release 1.5.0 (TBD)
 
 New:
 * Support Raysect 0.8
+* Cython version 3 is now required to build the package.
 * Add custom line shape support to BeamCXLine model. (#394)
 * Add PeriodicTransformXD and VectorPeriodicTransformXD functions to support the data simulated with periodic boundary conditions. (#387)
 * Add CylindricalTransform and VectorCylindricalTransform to transform functions from cylindrical to Cartesian coordinates. (#387)
