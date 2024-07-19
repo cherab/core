@@ -34,13 +34,18 @@ import scipy.constants as const
 
 class TestBremsstrahlung(unittest.TestCase):
 
-    world = World()
+    def setUp(self):
 
-    plasma_species = [(deuterium, 1, 1.e19, 2000., Vector3D(0, 0, 0)), (nitrogen, 7, 1.e18, 2000., Vector3D(0, 0, 0))]
-    plasma = build_constant_slab_plasma(length=1, width=1, height=1, electron_density=1e19, electron_temperature=2000.,
-                                        plasma_species=plasma_species)
-    plasma.parent = world
-    plasma.atomic_data = AtomicData()
+        self.world = World()
+
+        plasma_species = [(deuterium, 1, 1.e19, 2000., Vector3D(0, 0, 0)),
+                          (nitrogen, 7, 1.e18, 2000., Vector3D(0, 0, 0))]
+        self.plasma = build_constant_slab_plasma(length=1, width=1, height=1,
+                                                 electron_density=1e19,
+                                                 electron_temperature=2000.,
+                                                 plasma_species=plasma_species)
+        self.plasma.parent = self.world
+        self.plasma.atomic_data = AtomicData()
 
     def test_bremsstrahlung_model(self):
         # setting up the model
