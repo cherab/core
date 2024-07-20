@@ -49,11 +49,8 @@ cdef class LineRadiationPower(CoreLineRadiationPower):
     cdef double evaluate(self, double electron_density, double electron_temperature) except? -1e999:
 
         # need to handle zeros, also density and temperature can become negative due to cubic interpolation
-        if electron_density < 1.e-300:
-            electron_density = 1.e-300
-
-        if electron_temperature < 1.e-300:
-            electron_temperature = 1.e-300
+        if electron_density <= 0 or electron_temperature <= 0:
+            return 0
 
         # calculate rate and convert from log10 space to linear space
         return 10 ** self._rate.evaluate(log10(electron_density), log10(electron_temperature))
@@ -95,11 +92,8 @@ cdef class ContinuumPower(CoreContinuumPower):
     cdef double evaluate(self, double electron_density, double electron_temperature) except? -1e999:
 
         # need to handle zeros, also density and temperature can become negative due to cubic interpolation
-        if electron_density < 1.e-300:
-            electron_density = 1.e-300
-
-        if electron_temperature < 1.e-300:
-            electron_temperature = 1.e-300
+        if electron_density <= 0 or electron_temperature <= 0:
+            return 0
 
         # calculate rate and convert from log10 space to linear space
         return 10 ** self._rate.evaluate(log10(electron_density), log10(electron_temperature))
@@ -140,11 +134,8 @@ cdef class CXRadiationPower(CoreCXRadiationPower):
     cdef double evaluate(self, double electron_density, double electron_temperature) except? -1e999:
 
         # need to handle zeros, also density and temperature can become negative due to cubic interpolation
-        if electron_density < 1.e-300:
-            electron_density = 1.e-300
-
-        if electron_temperature < 1.e-300:
-            electron_temperature = 1.e-300
+        if electron_density <= 0 or electron_temperature <= 0:
+            return 0
 
         # calculate rate and convert from log10 space to linear space
         return 10 ** self._rate.evaluate(log10(electron_density), log10(electron_temperature))

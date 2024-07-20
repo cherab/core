@@ -78,14 +78,8 @@ cdef class BeamStoppingRate(CoreBeamStoppingRate):
         """
 
         # need to handle zeros, also density and temperature can become negative due to cubic interpolation
-        if energy < 1.e-300:
-            energy = 1.e-300
-
-        if density < 1.e-300:
-            density = 1.e-300
-
-        if temperature < 1.e-300:
-            temperature = 1.e-300
+        if energy <= 0 or density <= 0 or temperature <= 0:
+            return 0
 
         # calculate rate and convert from log10 space to linear space
         return 10 ** (self._npl_eb.evaluate(log10(energy), log10(density)) + self._tp.evaluate(log10(temperature)))
@@ -152,14 +146,8 @@ cdef class BeamPopulationRate(CoreBeamPopulationRate):
         """
 
         # need to handle zeros, also density and temperature can become negative due to cubic interpolation
-        if energy < 1.e-300:
-            energy = 1.e-300
-
-        if density < 1.e-300:
-            density = 1.e-300
-
-        if temperature < 1.e-300:
-            temperature = 1.e-300
+        if energy <= 0 or density <= 0 or temperature <= 0:
+            return 0
 
         # calculate rate and convert from log10 space to linear space
         return 10 ** (self._npl_eb.evaluate(log10(energy), log10(density)) + self._tp.evaluate(log10(temperature)))
@@ -228,14 +216,8 @@ cdef class BeamEmissionPEC(CoreBeamEmissionPEC):
         """
 
         # need to handle zeros, also density and temperature can become negative due to cubic interpolation
-        if energy < 1.e-300:
-            energy = 1.e-300
-
-        if density < 1.e-300:
-            density = 1.e-300
-
-        if temperature < 1.e-300:
-            temperature = 1.e-300
+        if energy <= 0 or density <= 0 or temperature <= 0:
+            return 0
 
         # calculate rate and convert from log10 space to linear space
         return 10 ** (self._npl_eb.evaluate(log10(energy), log10(density)) + self._tp.evaluate(log10(temperature)))
