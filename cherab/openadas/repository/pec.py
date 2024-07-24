@@ -1,6 +1,6 @@
-# Copyright 2016-2018 Euratom
-# Copyright 2016-2018 United Kingdom Atomic Energy Authority
-# Copyright 2016-2018 Centro de Investigaciones Energéticas, Medioambientales y Tecnológicas
+# Copyright 2016-2024 Euratom
+# Copyright 2016-2024 United Kingdom Atomic Energy Authority
+# Copyright 2016-2024 Centro de Investigaciones Energéticas, Medioambientales y Tecnológicas
 #
 # Licensed under the EUPL, Version 1.1 or – as soon they will be approved by the
 # European Commission - subsequent versions of the EUPL (the "Licence");
@@ -36,12 +36,16 @@ def add_pec_excitation_rate(element, charge, transition, rate, repository_path=N
     instead. The update function avoid repeatedly opening and closing the rate
     files.
 
-    :param element:
-    :param charge:
-    :param transition:
-    :param rate:
-    :param repository_path:
-    :return:
+    :param element: Plasma species (Element/Isotope).
+    :param charge: Charge of the plasma species.
+    :param transition: Tuple containing (initial level, final level).
+    :param rate: Excitation PEC dictionary containing the following entries:
+
+    |      'ne': array-like of size (N) with electron density in m^-3,
+    |      'te': array-like of size (M) with electron temperature in eV,
+    |      'rate': array-like of size (N, M) with excitation PEC in photon.m^3.s^-1.
+
+    :param repository_path: Path to the atomic data repository.
     """
 
     update_pec_rates({
@@ -63,12 +67,16 @@ def add_pec_recombination_rate(element, charge, transition, rate, repository_pat
     instead. The update function avoid repeatedly opening and closing the rate
     files.
 
-    :param element:
-    :param charge:
-    :param transition:
-    :param rate:
-    :param repository_path:
-    :return:
+    :param element: Plasma species (Element/Isotope).
+    :param charge: Charge of the plasma species.
+    :param transition: Tuple containing (initial level, final level).
+    :param rate: Recombination PEC dictionary containing the following entries:
+
+    |      'ne': array-like of size (N) with electron density in m^-3,
+    |      'te': array-like of size (M) with electron temperature in eV,
+    |      'rate': array-like of size (N, M) with recombination PEC in photon.m^3.s^-1.
+
+    :param repository_path: Path to the atomic data repository.
     """
 
     update_pec_rates({
@@ -84,18 +92,22 @@ def add_pec_recombination_rate(element, charge, transition, rate, repository_pat
 
 def add_pec_thermalcx_rate(element, charge, transition, rate, repository_path=None):
     """
-    Adds a single PEC thermalcx rate to the repository.
+    Adds a single PEC thermal charge exchange rate to the repository.
 
     If adding multiple rate, consider using the update_pec_rates() function
     instead. The update function avoid repeatedly opening and closing the rate
     files.
 
-    :param element:
-    :param charge:
-    :param transition:
-    :param rate:
-    :param repository_path:
-    :return:
+    :param element: Plasma species (Element/Isotope).
+    :param charge: Charge of the plasma species.
+    :param transition: Tuple containing (initial level, final level).
+    :param rate: Thermal CX PEC dictionary containing the following entries:
+
+    |      'ne': array-like of size (N) with electron density in m^-3,
+    |      'te': array-like of size (M) with electron temperature in eV,
+    |      'rate': array-like of size (N, M) with thermal CX PEC in photon.m^3.s^-1.
+
+    :param repository_path: Path to the atomic data repository.
     """
 
     update_pec_rates({
@@ -111,9 +123,24 @@ def add_pec_thermalcx_rate(element, charge, transition, rate, repository_path=No
 
 def update_pec_rates(rates, repository_path=None):
     """
-    PEC rate file structure
+    Updates the PEC files /pec/<class>/<element>/<charge>.json.
+    in the atomic data repository.
 
-    /pec/<class>/<element>/<charge>.json
+    File contains multiple PECs, indexed by the transition.
+
+    :param rates: Dictionary in the form:
+
+    |  { <class>: { <element>: { <charge>: { <transition>: <pec> } } } }, where
+    |      <class> is the one of the following PEC types: 'excitation', 'recombination', 'thermalcx'.
+    |      <element> is the plasma species (Element/Isotope).
+    |      <charge> is the charge of the plasma species.
+    |      <transition> is the tuple containing (initial level, final level).
+    |      <pec> is the PEC dictionary containing the following entries:
+    |          'ne': array-like of size (N) with electron density in m^-3,
+    |          'te': array-like of size (M) with electron temperature in eV,
+    |          'rate': array-like of size (N, M) with PEC in photon.m^3.s^-1.
+
+    :param repository_path: Path to the atomic data repository.
     """
 
     valid_classes = [
@@ -184,14 +211,64 @@ def update_pec_rates(rates, repository_path=None):
 
 
 def get_pec_excitation_rate(element, charge, transition, repository_path=None):
+    """
+    Reads the excitation PEC from the repository for the given
+    element, charge and transition.
+
+    :param element: Plasma species (Element/Isotope).
+    :param charge: Charge of the plasma species.
+    :param transition: Tuple containing (initial level, final level).
+    :param repository_path: Path to the atomic data repository.
+
+    :return rate: Excitation PEC dictionary containing the following entries:
+
+    |      'ne': 1D array of size (N) with electron density in m^-3,
+    |      'te': 1D array of size (M) with electron temperature in eV,
+    |      'rate': 2D array of size (N, M) with excitation PEC in photon.m^3.s^-1.
+
+    """
+
     return _get_pec_rate('excitation', element, charge, transition, repository_path)
 
 
 def get_pec_recombination_rate(element, charge, transition, repository_path=None):
+    """
+    Reads the recombination PEC from the repository for the given
+    element, charge and transition.
+
+    :param element: Plasma species (Element/Isotope).
+    :param charge: Charge of the plasma species.
+    :param transition: Tuple containing (initial level, final level).
+    :param repository_path: Path to the atomic data repository.
+
+    :return rate: Recombination PEC dictionary containing the following entries:
+
+    |      'ne': 1D array of size (N) with electron density in m^-3,
+    |      'te': 1D array of size (M) with electron temperature in eV,
+    |      'rate': 2D array of size (N, M) with recombination PEC in photon.m^3.s^-1.
+
+    """
+
     return _get_pec_rate('recombination', element, charge, transition, repository_path)
 
 
 def get_pec_thermalcx_rate(element, charge, transition, repository_path=None):
+    """
+    Reads the thermal charge exchange PEC from the repository for the given
+    element, charge and transition.
+
+    :param element: Plasma species (Element/Isotope).
+    :param charge: Charge of the plasma species.
+    :param transition: Tuple containing (initial level, final level).
+    :param repository_path: Path to the atomic data repository.
+
+    :return rate: Thermal CX PEC dictionary containing the following entries:
+
+    |      'ne': 1D array of size (N) with electron density in m^-3,
+    |      'te': 1D array of size (M) with electron temperature in eV,
+    |      'rate': 2D array of size (N, M) with thermal CX PEC in photon.m^3.s^-1.
+
+    """
     return _get_pec_rate('thermalcx', element, charge, transition, repository_path)
 
 
