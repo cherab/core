@@ -1,7 +1,7 @@
 
-# Copyright 2016-2021 Euratom
-# Copyright 2016-2021 United Kingdom Atomic Energy Authority
-# Copyright 2016-2021 Centro de Investigaciones Energéticas, Medioambientales y Tecnológicas
+# Copyright 2016-2024 Euratom
+# Copyright 2016-2024 United Kingdom Atomic Energy Authority
+# Copyright 2016-2024 Centro de Investigaciones Energéticas, Medioambientales y Tecnológicas
 #
 # Licensed under the EUPL, Version 1.1 or – as soon they will be approved by the
 # European Commission - subsequent versions of the EUPL (the "Licence");
@@ -24,12 +24,26 @@ from raysect.core.math.function.float cimport Interpolator2DArray
 
 
 cdef class IonisationRate(CoreIonisationRate):
+    """
+    Ionisation rate.
+
+    Data is interpolated with cubic spline in log-log space.
+    Nearest neighbour extrapolation is used if extrapolate is True.
+
+    :param dict data: Ionisation rate dictionary containing the following entries:
+
+    |   'ne': 1D array of size (N) with electron density in m^-3,
+    |   'te': 1D array of size (M) with electron temperature in eV,
+    |   'rate': 2D array of size (N, M) with ionisation rate in m^3.s^-1.
+
+    :param bint extrapolate: Enable extrapolation (default=False).
+
+    :ivar tuple density_range: Electron density interpolation range.
+    :ivar tuple temperature_range: Electron temperature interpolation range.
+    :ivar dict raw_data: Dictionary containing the raw data.
+    """
 
     def __init__(self, dict data, extrapolate=False):
-        """
-        :param data: Dictionary containing rate data.
-        :param extrapolate: Enable extrapolation (default=False).
-        """
 
         self.raw_data = data
 
@@ -62,7 +76,7 @@ cdef class IonisationRate(CoreIonisationRate):
 
 cdef class NullIonisationRate(CoreIonisationRate):
     """
-    A PEC rate that always returns zero.
+    An ionisation rate that always returns zero.
     Needed for use cases where the required atomic data is missing.
     """
 
@@ -71,12 +85,26 @@ cdef class NullIonisationRate(CoreIonisationRate):
 
 
 cdef class RecombinationRate(CoreRecombinationRate):
+    """
+    Recombination rate.
+
+    Data is interpolated with cubic spline in log-log space.
+    Nearest neighbour extrapolation is used if extrapolate is True.
+
+    :param dict data: Recombination rate dictionary containing the following entries:
+
+    |       'ne': 1D array of size (N) with electron density in m^-3,
+    |       'te': 1D array of size (M) with electron temperature in eV,
+    |       'rate': 2D array of size (N, M) with recombination rate in m^3.s^-1.
+
+    :param bint extrapolate: Enable extrapolation (default=False).
+
+    :ivar tuple density_range: Electron density interpolation range.
+    :ivar tuple temperature_range: Electron temperature interpolation range.
+    :ivar dict raw_data: Dictionary containing the raw data.
+    """
 
     def __init__(self, dict data, extrapolate=False):
-        """
-        :param data: Dictionary containing rate data.
-        :param extrapolate: Enable extrapolation (default=False).
-        """
 
         self.raw_data = data
 
@@ -109,7 +137,7 @@ cdef class RecombinationRate(CoreRecombinationRate):
 
 cdef class NullRecombinationRate(CoreRecombinationRate):
     """
-    A PEC rate that always returns zero.
+    A recombination rate that always returns zero.
     Needed for use cases where the required atomic data is missing.
     """
 
@@ -118,12 +146,26 @@ cdef class NullRecombinationRate(CoreRecombinationRate):
 
 
 cdef class ThermalCXRate(CoreThermalCXRate):
+    """
+    Thermal charge exchange rate.
+
+    Data is interpolated with cubic spline in log-log space.
+    Linear extrapolation is used if extrapolate is True.
+
+    :param dict data: CX rate dictionary containing the following entries:
+
+    |       'ne': 1D array of size (N) with electron density in m^-3,
+    |       'te': 1D array of size (M) with electron temperature in eV,
+    |       'rate': 2D array of size (N, M) with thermal CX rate in m^3.s^-1.
+
+    :param bint extrapolate: Enable extrapolation (default=False).
+
+    :ivar tuple density_range: Electron density interpolation range.
+    :ivar tuple temperature_range: Electron temperature interpolation range.
+    :ivar dict raw_data: Dictionary containing the raw data.
+    """
 
     def __init__(self, dict data, extrapolate=False):
-        """
-        :param data: Dictionary containing rate data.
-        :param extrapolate: Enable extrapolation (default=False).
-        """
 
         self.raw_data = data
 
@@ -155,7 +197,7 @@ cdef class ThermalCXRate(CoreThermalCXRate):
 
 cdef class NullThermalCXRate(CoreThermalCXRate):
     """
-    A PEC rate that always returns zero.
+    A thermal CX rate that always returns zero.
     Needed for use cases where the required atomic data is missing.
     """
 
