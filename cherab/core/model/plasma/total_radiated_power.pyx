@@ -20,9 +20,40 @@
 from raysect.optical cimport Spectrum, Point3D, Vector3D
 from cherab.core cimport Plasma, AtomicData
 from cherab.core.utility.constants cimport RECIP_4_PI
+from cherab.core.atomic.elements import hydrogen, deuterium, tritium
 
 
 cdef class TotalRadiatedPower(PlasmaModel):
+    r"""
+    Emitter that calculates total power radiated by a given ion, which includes:
+
+    - line power due to electron impact excitation,
+    - continuum and line power due to recombination and Bremsstrahlung,
+    - line power due to charge exchange with thermal neutral hydrogen and its isotopes.
+
+    The emission calculated by this model is spectrally unresolved,
+    which means that the total radiated power will be spread of the entire
+    observable spectral range.
+
+    .. math::
+        \epsilon_{\mathrm{total}} = \frac{1}{4 \pi \Delta\lambda} \left(
+        n_{Z_\mathrm{i}} n_\mathrm{e} C_{\mathrm{excit}}(n_\mathrm{e}, T_\mathrm{e}) + 
+        n_{Z_\mathrm{i} + 1} n_\mathrm{e} C_{\mathrm{recomb}}(n_\mathrm{e}, T_\mathrm{e}) +
+        n_{Z_\mathrm{i} + 1} n_\mathrm{hyd} C_{\mathrm{cx}}(n_\mathrm{e}, T_\mathrm{e}) \right)
+
+    where :math:`n_{Z_\mathrm{i}}` is the target species density;
+    :math:`n_{Z_\mathrm{i} + 1}` is the recombining species density;
+    :math:`n_{\mathrm{hyd}}` is the total density of all hydrogen isotopes;
+    :math:`C_{\mathrm{excit}}, C_{\mathrm{recomb}}, C_{\mathrm{cx}}` are the radiated power
+    coefficients in :math:`W m^3` due to electron impact excitation, recombination
+    + Bremsstrahlung and charge exchange with thermal neutral hydrogen, respectively;
+    :math:`\Delta\lambda` is the observable spectral range.
+
+    :param Element element: The atomic element/isotope.
+    :param int charge: The charge state of the element/isotope.
+    :param Plasma plasma: The plasma to which this emission model is attached. Default is None.
+    :param AtomicData atomic_data: The atomic data provider for this model. Default is None.
+    """
 
     def __init__(self, Element element, int charge, Plasma plasma=None, AtomicData atomic_data=None):
 
@@ -42,7 +73,9 @@ cdef class TotalRadiatedPower(PlasmaModel):
 
         cdef:
             int i
-            double ne, ni, ni_upper, te, plt_radiance, prb_radiance
+            double ne, ni, ni_upper, nhyd, te
+            double plt_radiance, prb_radiance, prc_radiance
+            Species hyd_species
 
         # cache data on first run
         if not self._cache_loaded:
@@ -60,21 +93,36 @@ cdef class TotalRadiatedPower(PlasmaModel):
 
         ni_upper = self._recom_species.distribution.density(point.x, point.y, point.z)
 
+        nhyd = 0
+        for hyd_species in self._hydrogen_species:
+            nhyd += hyd_species.distribution.density(point.x, point.y, point.z)
+
         # add emission to spectrum
         if self._plt_rate and ni > 0:
             plt_radiance = RECIP_4_PI * self._plt_rate.evaluate(ne, te) * ne * ni / (spectrum.max_wavelength - spectrum.min_wavelength)
         else:
             plt_radiance = 0
+
         if self._prb_rate and ni_upper > 0:
             prb_radiance = RECIP_4_PI * self._prb_rate.evaluate(ne, te) * ne * ni_upper / (spectrum.max_wavelength - spectrum.min_wavelength)
         else:
             prb_radiance = 0
+
+        if self._prc_rate and ni_upper > 0 and nhyd > 0:
+            prc_radiance = RECIP_4_PI * self._prc_rate.evaluate(ne, te) * nhyd * ni_upper / (spectrum.max_wavelength - spectrum.min_wavelength)
+        else:
+            prc_radiance = 0
+
         for i in range(spectrum.bins):
-            spectrum.samples_mv[i] += plt_radiance + prb_radiance
+            spectrum.samples_mv[i] += plt_radiance + prb_radiance + prc_radiance
 
         return spectrum
 
     cdef int _populate_cache(self) except -1:
+
+        cdef:
+            Species hyd_species
+            Element hyd_isotope
 
         # sanity checks
         if self._plasma is None:
@@ -100,6 +148,18 @@ cdef class TotalRadiatedPower(PlasmaModel):
                                "recombination/continuum emission, (element={}, ionisation={})."
                                "".format(self._element.symbol, self._charge+1))
 
+        # cache hydrogen species and CX radiation rate
+        self._prc_rate = self._atomic_data.cx_radiated_power_rate(self._element, self._charge+1)
+
+        self._hydrogen_species = []
+        for hyd_isotope in (hydrogen, deuterium, tritium):
+            try:
+                hyd_species = self._plasma.composition.get(hyd_isotope, 0)
+            except ValueError:
+                pass
+            else:
+                self._hydrogen_species.append(hyd_species)
+
         self._cache_loaded = True
 
     def _change(self):
@@ -108,5 +168,7 @@ cdef class TotalRadiatedPower(PlasmaModel):
         self._cache_loaded = False
         self._line_rad_species = None
         self._recom_species = None
+        self._hydrogen_species = None
         self._plt_rate = None
         self._prb_rate = None
+        self._prc_rate = None

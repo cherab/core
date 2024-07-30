@@ -84,7 +84,7 @@ cdef class _RadiatedPower:
         readonly Element element
         readonly int charge
 
-    cdef double evaluate(self, double electron_density, double electron_temperature) except? -1e999
+    cpdef double evaluate(self, double electron_density, double electron_temperature) except? -1e999
 
 
 cdef class LineRadiationPower(_RadiatedPower):

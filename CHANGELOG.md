@@ -16,6 +16,7 @@ New:
 * **Beam dispersion calculation has changed from sigma(z) = sigma + z * tan(alpha) to sigma(z) = sqrt(sigma^2 + (z * tan(alpha))^2) for consistancy with the Gaussian beam model. Attention!!! The results of BES and CX spectroscopy are affected by this change. (#414)**
 * Improved beam direction calculation to allow for natural broadening of the BES line shape due to beam divergence. (#414)
 * Add kwargs to invert_regularised_nnls to pass them to scipy.optimize.nnls. (#438)
+* Add the power radiated in spectral lines due to charge exchange with thermal neutral hydrogen to the TotalRadiatedPower model. (#370)
 
 Bug fixes:
 * Fix deprecated transforms being cached in LaserMaterial after laser.transform update (#420)

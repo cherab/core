@@ -46,7 +46,7 @@ cdef class LineRadiationPower(CoreLineRadiationPower):
         extrapolation_type = 'nearest' if extrapolate else 'none'
         self._rate = Interpolator2DArray(np.log10(ne), np.log10(te), rate, 'cubic', extrapolation_type, INFINITY, INFINITY)
 
-    cdef double evaluate(self, double electron_density, double electron_temperature) except? -1e999:
+    cpdef double evaluate(self, double electron_density, double electron_temperature) except? -1e999:
 
         # need to handle zeros, also density and temperature can become negative due to cubic interpolation
         if electron_density < 1.e-300:
@@ -65,7 +65,7 @@ cdef class NullLineRadiationPower(CoreLineRadiationPower):
     Needed for use cases where the required atomic data is missing.
     """
 
-    cdef double evaluate(self, double electron_density, double electron_temperature) except? -1e999:
+    cpdef double evaluate(self, double electron_density, double electron_temperature) except? -1e999:
         return 0.0
 
 
@@ -92,7 +92,7 @@ cdef class ContinuumPower(CoreContinuumPower):
         extrapolation_type = 'nearest' if extrapolate else 'none'
         self._rate = Interpolator2DArray(np.log10(ne), np.log10(te), rate, 'cubic', extrapolation_type, INFINITY, INFINITY)
 
-    cdef double evaluate(self, double electron_density, double electron_temperature) except? -1e999:
+    cpdef double evaluate(self, double electron_density, double electron_temperature) except? -1e999:
 
         # need to handle zeros, also density and temperature can become negative due to cubic interpolation
         if electron_density < 1.e-300:
@@ -111,7 +111,7 @@ cdef class NullContinuumPower(CoreContinuumPower):
     Needed for use cases where the required atomic data is missing.
     """
 
-    cdef double evaluate(self, double electron_density, double electron_temperature) except? -1e999:
+    cpdef double evaluate(self, double electron_density, double electron_temperature) except? -1e999:
         return 0.0
 
 
@@ -137,7 +137,7 @@ cdef class CXRadiationPower(CoreCXRadiationPower):
         extrapolation_type = 'linear' if extrapolate else 'none'
         self._rate = Interpolator2DArray(np.log10(ne), np.log10(te), rate, 'cubic', extrapolation_type, INFINITY, INFINITY)
 
-    cdef double evaluate(self, double electron_density, double electron_temperature) except? -1e999:
+    cpdef double evaluate(self, double electron_density, double electron_temperature) except? -1e999:
 
         # need to handle zeros, also density and temperature can become negative due to cubic interpolation
         if electron_density < 1.e-300:
@@ -156,5 +156,5 @@ cdef class NullCXRadiationPower(CoreCXRadiationPower):
     Needed for use cases where the required atomic data is missing.
     """
 
-    cdef double evaluate(self, double electron_density, double electron_temperature) except? -1e999:
+    cpdef double evaluate(self, double electron_density, double electron_temperature) except? -1e999:
         return 0.0
