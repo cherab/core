@@ -74,7 +74,7 @@ cdef class TotalRadiatedPower(PlasmaModel):
         cdef:
             int i
             double ne, ni, ni_upper, nhyd, te
-            double plt_power_density, prb_power_density, prc_power_density, radiance
+            double power_density, radiance
             Species hyd_species
 
         # cache data on first run
@@ -98,22 +98,18 @@ cdef class TotalRadiatedPower(PlasmaModel):
             nhyd += hyd_species.distribution.density(point.x, point.y, point.z)
 
         # add emission to spectrum
-        if self._plt_rate and ni > 0:
-            plt_power_density = self._plt_rate.evaluate(ne, te) * ne * ni
-        else:
-            plt_power_density = 0
+        power_density = 0
 
-        if self._prb_rate and ni_upper > 0:
-            prb_power_density = self._prb_rate.evaluate(ne, te) * ne * ni_upper
-        else:
-            prb_power_density = 0
+        if self._plt_rate and ni > 0:  # excitation
+            power_density += self._plt_rate.evaluate(ne, te) * ne * ni
 
-        if self._prc_rate and ni_upper > 0 and nhyd > 0:
-            prc_power_density = self._prc_rate.evaluate(ne, te) * nhyd * ni_upper
-        else:
-            prc_power_density = 0
+        if self._prb_rate and ni_upper > 0:  # recombination + bremsstrahlung
+            power_density += self._prb_rate.evaluate(ne, te) * ne * ni_upper
 
-        radiance = RECIP_4_PI * (plt_power_density + prb_power_density + prc_power_density) / (spectrum.max_wavelength - spectrum.min_wavelength)
+        if self._prc_rate and ni_upper > 0 and nhyd > 0:  # charge exchange
+            power_density += self._prc_rate.evaluate(ne, te) * nhyd * ni_upper
+
+        radiance = RECIP_4_PI * power_density / (spectrum.max_wavelength - spectrum.min_wavelength)
 
         for i in range(spectrum.bins):
             spectrum.samples_mv[i] += radiance
