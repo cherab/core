@@ -1,7 +1,7 @@
 
-# Copyright 2016-2018 Euratom
-# Copyright 2016-2018 United Kingdom Atomic Energy Authority
-# Copyright 2016-2018 Centro de Investigaciones Energéticas, Medioambientales y Tecnológicas
+# Copyright 2016-2023 Euratom
+# Copyright 2016-2023 United Kingdom Atomic Energy Authority
+# Copyright 2016-2023 Centro de Investigaciones Energéticas, Medioambientales y Tecnológicas
 #
 # Licensed under the EUPL, Version 1.1 or – as soon they will be approved by the
 # European Commission - subsequent versions of the EUPL (the "Licence");
@@ -21,9 +21,11 @@
 import os
 import urllib.parse
 import urllib.request
+import numpy as np
 
 from cherab.openadas import repository
 from cherab.openadas.parse import *
+from cherab.core.atomic import hydrogen
 from cherab.core.utility import RecursiveDict, PerCm3ToPerM3, Cm3ToM3
 
 
@@ -264,6 +266,13 @@ def install_adf15(element, ionisation, file_path, download=False, repository_pat
 
     # decode file and write out rates
     rates, wavelengths = parse_adf15(element, ionisation, path, header_format=header_format)
+
+    if 'thermalcx' in rates:
+        cx_rates = rates.pop('thermalcx')
+        # CX rates for Tdon = Trec (2D function of Ne, Te)
+        # converting to 3D function of Ne, Te, Tdon
+        repository.update_pec_thermal_cx_rates(_thermalcx_adf15_2dto3d_converter(cx_rates))
+
     repository.update_pec_rates(rates, repository_path)
     repository.update_wavelengths(wavelengths, repository_path)
 
@@ -402,3 +411,23 @@ def _notation_adf11_adas2cherab(rate_adas, filetype):
     return rate_cherab
 
 
+def _thermalcx_adf15_2dto3d_converter(rates):
+    """
+    Converts thermal CX PEC rates parsed from a standard ADF 15 file
+    to the format supported by the repository.
+
+    In the standard ADF 15 file, it is assumed that the donor is H0 and Tdon = Trec.
+    """
+    new_rates = RecursiveDict()
+    for element, charge_states in rates.items():
+        for charge, transitions in charge_states.items():
+            for transition, rate in transitions.items():
+                data = np.empty((len(rate['ne']), len(rate['te']), 2))
+                data[:, :, :] = rate['rate'][:, :, None]
+                new_rate = {'ne': rate['ne'],
+                            'te': rate['te'],
+                            'td': np.array([0.01, 10000]),
+                            'rate': data}
+                new_rates[hydrogen][0][element][charge + 1][transition] = new_rate
+
+    return new_rates

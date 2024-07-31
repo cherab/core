@@ -98,6 +98,9 @@ cdef class AtomicData:
 
         raise NotImplementedError("The recombination() virtual method is not implemented for this atomic data source.")
 
+    cpdef ThermalCXPEC thermal_cx_pec(self, Element donor_ion, int donor_charge, Element receiver_ion, int receiver_charge, tuple transition):
+        raise NotImplementedError("The thermal_cx_pec() virtual method is not implemented for this atomic data source.")
+
     cpdef TotalRadiatedPower total_radiated_power(self, Element element):
         """
         The total (summed over all charge states) radiated power
