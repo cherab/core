@@ -1,6 +1,6 @@
-# Copyright 2016-2021 Euratom
-# Copyright 2016-2021 United Kingdom Atomic Energy Authority
-# Copyright 2016-2021 Centro de Investigaciones Energéticas, Medioambientales y Tecnológicas
+# Copyright 2016-2024 Euratom
+# Copyright 2016-2024 United Kingdom Atomic Energy Authority
+# Copyright 2016-2024 Centro de Investigaciones Energéticas, Medioambientales y Tecnológicas
 #
 # Licensed under the EUPL, Version 1.1 or – as soon they will be approved by the
 # European Commission - subsequent versions of the EUPL (the "Licence");
@@ -25,13 +25,27 @@ from cherab.core.utility.conversion import PhotonToJ
 
 
 cdef class ImpactExcitationPEC(CoreImpactExcitationPEC):
+    """
+    Electron impact excitation photon emission coefficient.
+
+    The data is interpolated with cubic spline in log-log space.
+    Nearest neighbour extrapolation is used if extrapolate is True.
+
+    :param double wavelength: Resting wavelength of corresponding emission line in nm.
+    :param dict data: Excitation PEC dictionary containing the following entries:
+
+    |      'ne': 1D array of size (N) with electron density in m^-3,
+    |      'te': 1D array of size (M) with electron temperature in eV,
+    |      'rate': 2D array of size (N, M) with excitation PEC in photon.m^3.s^-1.
+
+    :param bint extrapolate: Enable extrapolation (default=False).
+
+    :ivar tuple density_range: Electron density interpolation range.
+    :ivar tuple temperature_range: Electron temperature interpolation range.
+    :ivar dict raw_data: Dictionary containing the raw data.
+    """
 
     def __init__(self, double wavelength, dict data, extrapolate=False):
-        """
-        :param wavelength: Resting wavelength of corresponding emission line in nm.
-        :param data: Dictionary containing rate data.
-        :param extrapolate: Enable extrapolation (default=False).
-        """
 
         self.wavelength = wavelength
         self.raw_data = data
@@ -68,7 +82,7 @@ cdef class ImpactExcitationPEC(CoreImpactExcitationPEC):
 
 cdef class NullImpactExcitationPEC(CoreImpactExcitationPEC):
     """
-    A PEC rate that always returns zero.
+    A electron impact excitation PEC rate that always returns zero.
     Needed for use cases where the required atomic data is missing.
     """
 
@@ -77,13 +91,27 @@ cdef class NullImpactExcitationPEC(CoreImpactExcitationPEC):
 
 
 cdef class RecombinationPEC(CoreRecombinationPEC):
+    """
+    Recombination photon emission coefficient.
+
+    The data is interpolated with cubic spline in log-log space.
+    Nearest neighbour extrapolation is used if extrapolate is True.
+
+    :param double wavelength: Resting wavelength of corresponding emission line in nm.
+    :param dict data: Rcombination PEC dictionary containing the following entries:
+
+    |      'ne': 1D array of size (N) with electron density in m^-3,
+    |      'te': 1D array of size (M) with electron temperature in eV,
+    |      'rate': 2D array of size (N, M) with recombination PEC in photon.m^3.s^-1.
+
+    :param bint extrapolate: Enable extrapolation (default=False).
+
+    :ivar tuple density_range: Electron density interpolation range.
+    :ivar tuple temperature_range: Electron temperature interpolation range.
+    :ivar dict raw_data: Dictionary containing the raw data.
+    """
 
     def __init__(self, double wavelength, dict data, extrapolate=False):
-        """
-        :param wavelength: Resting wavelength of corresponding emission line in nm.
-        :param data: Dictionary containing rate data.
-        :param extrapolate: Enable extrapolation (default=False).
-        """
 
         self.wavelength = wavelength
         self.raw_data = data
@@ -120,7 +148,7 @@ cdef class RecombinationPEC(CoreRecombinationPEC):
 
 cdef class NullRecombinationPEC(CoreRecombinationPEC):
     """
-    A PEC rate that always returns zero.
+    A recombination PEC rate that always returns zero.
     Needed for use cases where the required atomic data is missing.
     """
 

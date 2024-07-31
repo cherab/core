@@ -7,5 +7,6 @@ Atomic Data
    emission_lines
    rate_coefficients
    gaunt_factors
+   data_interpolators
    repository
    openadas
