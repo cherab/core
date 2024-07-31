@@ -67,7 +67,7 @@ cdef class BeamCXPEC(CoreBeamCXPEC):
     @cython.cdivision(True)
     def __init__(self, int donor_metastable, double wavelength, dict data, bint extrapolate=False):
 
-        self.donor_metastable = donor_metastable
+        super().__init__(donor_metastable)
         self.wavelength = wavelength
         self.raw_data = data
 

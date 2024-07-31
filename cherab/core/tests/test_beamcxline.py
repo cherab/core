@@ -36,7 +36,7 @@ class ConstantBeamCXPEC(BeamCXPEC):
     """
 
     def __init__(self, donor_metastable, value):
-        self.donor_metastable = donor_metastable
+        super().__init__(donor_metastable)
         self.value = value
 
     def evaluate(self, energy, temperature, density, z_effective, b_field):
