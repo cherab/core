@@ -9,3 +9,5 @@ Atomic Data
    gaunt_factors
    atomic_data_interface
    data_interpolators
+   repository
+   openadas
