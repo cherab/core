@@ -46,11 +46,13 @@ cdef class RecombinationPEC(_PECRate):
     pass
 
 
-cdef class ThermalCXPEC(_PECRate):
-    pass
+cdef class ThermalCXPEC:
+    cpdef double evaluate(self, double electron_density, double electron_temperature, double donor_temperature) except? -1e999
 
 
 cdef class BeamCXPEC:
+    cdef readonly int donor_metastable
+
     cpdef double evaluate(self, double energy, double temperature, double density, double z_effective, double b_field) except? -1e999
 
 
