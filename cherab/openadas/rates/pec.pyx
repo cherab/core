@@ -70,11 +70,8 @@ cdef class ImpactExcitationPEC(CoreImpactExcitationPEC):
     cpdef double evaluate(self, double density, double temperature) except? -1e999:
 
         # need to handle zeros, also density and temperature can become negative due to cubic interpolation
-        if density < 1.e-300:
-            density = 1.e-300
-
-        if temperature < 1.e-300:
-            temperature = 1.e-300
+        if density <= 0 or temperature <= 0:
+            return 0
 
         # calculate rate and convert from log10 space to linear space
         return 10 ** self._rate.evaluate(log10(density), log10(temperature))
@@ -136,11 +133,8 @@ cdef class RecombinationPEC(CoreRecombinationPEC):
     cpdef double evaluate(self, double density, double temperature) except? -1e999:
 
         # need to handle zeros, also density and temperature can become negative due to cubic interpolation
-        if density < 1.e-300:
-            density = 1.e-300
-
-        if temperature < 1.e-300:
-            temperature = 1.e-300
+        if density <= 0 or temperature <= 0:
+            return 0
 
         # calculate rate and convert from log10 space to linear space
         return 10 ** self._rate.evaluate(log10(density), log10(temperature))

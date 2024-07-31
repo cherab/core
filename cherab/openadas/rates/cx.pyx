@@ -118,8 +118,8 @@ cdef class BeamCXPEC(CoreBeamCXPEC):
         cdef double rate
 
         # need to handle zeros for log-log interpolation
-        if energy < 1.e-300:
-            energy = 1.e-300
+        if energy <= 0:
+            return 0
 
         rate = 10 ** self._eb.evaluate(log10(energy))
 
