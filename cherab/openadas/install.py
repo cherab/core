@@ -278,14 +278,17 @@ def install_adf15(element, ionisation, file_path, download=False, repository_pat
 
 
 def install_adf21(beam_species, target_ion, target_charge, file_path, download=False, repository_path=None, adas_path=None):
-    # """
-    # Adds the rate defined in an ADF21 file to the repository.
-    #
-    # :param file_path: Path relative to ADAS root.
-    # :param download: Attempt to download file if not present (Default=True).
-    # :param repository_path: Path to the repository in which to install the rates (optional).
-    # :param adas_path: Path to ADAS files repository (optional).
-    # """
+    """
+    Adds the beam stopping rate defined in an ADF21 file to the repository.
+
+    :param beam_species: Beam neutral atom (Element/Isotope).
+    :param target_ion: Target species (Element/Isotope).
+    :param target_charge: Charge of the target species.
+    :param file_path: Path relative to ADAS root.
+    :param download: Attempt to download file if not present (Default=True).
+    :param repository_path: Path to the repository in which to install the rates (optional).
+    :param adas_path: Path to ADAS files repository (optional).
+    """
 
     print('Installing {}...'.format(file_path))
     path = _locate_adas_file(file_path, download, adas_path, repository_path)
@@ -298,15 +301,18 @@ def install_adf21(beam_species, target_ion, target_charge, file_path, download=F
 
 
 def install_adf22bmp(beam_species, beam_metastable, target_ion, target_charge, file_path, download=False, repository_path=None, adas_path=None):
-    pass
-    # """
-    # Adds the rate defined in an ADF21 file to the repository.
-    #
-    # :param file_path: Path relative to ADAS root.
-    # :param download: Attempt to download file if not present (Default=True).
-    # :param repository_path: Path to the repository in which to install the rates (optional).
-    # :param adas_path: Path to ADAS files repository (optional).
-    # """
+    """
+    Adds the beam population rate defined in an ADF22 BMP file to the repository.
+
+    :param beam_species: Beam neutral atom (Element/Isotope).
+    :param beam_metastable: Metastable/excitation level of beam neutral atom.
+    :param target_ion: Target species (Element/Isotope).
+    :param target_charge: Charge of the target species.
+    :param file_path: Path relative to ADAS root.
+    :param download: Attempt to download file if not present (Default=True).
+    :param repository_path: Path to the repository in which to install the rates (optional).
+    :param adas_path: Path to ADAS files repository (optional).
+    """
 
     print('Installing {}...'.format(file_path))
     path = _locate_adas_file(file_path, download, adas_path, repository_path)
@@ -319,15 +325,18 @@ def install_adf22bmp(beam_species, beam_metastable, target_ion, target_charge, f
 
 
 def install_adf22bme(beam_species, target_ion, target_charge, transition, file_path, download=False, repository_path=None, adas_path=None):
-    pass
-    # """
-    # Adds the rate defined in an ADF21 file to the repository.
-    #
-    # :param file_path: Path relative to ADAS root.
-    # :param download: Attempt to download file if not present (Default=True).
-    # :param repository_path: Path to the repository in which to install the rates (optional).
-    # :param adas_path: Path to ADAS files repository (optional).
-    # """
+    """
+    Adds the beam emission rate defined in an ADF22 BME file to the repository.
+
+    :param beam_species: Beam neutral atom (Element/Isotope).
+    :param target_ion: Target species (Element/Isotope).
+    :param target_charge: Charge of the target species.
+    :param transition: Tuple containing (initial level, final level).
+    :param file_path: Path relative to ADAS root.
+    :param download: Attempt to download file if not present (Default=True).
+    :param repository_path: Path to the repository in which to install the rates (optional).
+    :param adas_path: Path to ADAS files repository (optional).
+    """
 
     print('Installing {}...'.format(file_path))
     path = _locate_adas_file(file_path, download, adas_path, repository_path)

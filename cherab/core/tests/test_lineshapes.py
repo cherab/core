@@ -42,10 +42,15 @@ HC_EV_NM = 1239.8419738620933  # (Planck constant in eV s) x (speed of light in 
 
 class TestLineShapes(unittest.TestCase):
 
-    plasma_species = [(deuterium, 0, 1.e18, 5., Vector3D(2.e4, 0, 0)),
-                      (nitrogen, 1, 1.e17, 10., Vector3D(1.e4, 5.e4, 0))]
-    plasma = build_constant_slab_plasma(length=1, width=1, height=1, electron_density=1e19, electron_temperature=20.,
-                                        plasma_species=plasma_species, b_field=Vector3D(0, 5., 0))
+    def setUp(self):
+
+        plasma_species = [(deuterium, 0, 1.e18, 5., Vector3D(2.e4, 0, 0)),
+                          (nitrogen, 1, 1.e17, 10., Vector3D(1.e4, 5.e4, 0))]
+        self.plasma = build_constant_slab_plasma(length=1, width=1, height=1,
+                                                 electron_density=1e19,
+                                                 electron_temperature=20.,
+                                                 plasma_species=plasma_species,
+                                                 b_field=Vector3D(0, 5., 0))
 
     def test_gaussian_line(self):
         # setting up a line shape model
