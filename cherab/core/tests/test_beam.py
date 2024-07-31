@@ -55,32 +55,38 @@ class MockAtomicData(AtomicData):
 
 class TestBeam(unittest.TestCase):
 
-    atomic_data = MockAtomicData()
+    def setUp(self):
 
-    world = World()
+        self.atomic_data = MockAtomicData()
 
-    plasma_density = 1.e19
-    plasma_temperature = 1.e3
-    plasma_species = [(deuterium, 1, plasma_density, plasma_temperature, Vector3D(0, 0, 0))]
-    plasma = build_constant_slab_plasma(length=1, width=1, height=1, electron_density=plasma_density,
-                                        electron_temperature=plasma_temperature,
-                                        plasma_species=plasma_species)
-    plasma.atomic_data = atomic_data
-    plasma.parent = world
+        self.world = World()
 
-    beam = Beam(transform=translate(0.5, 0, 0))
-    beam.atomic_data = atomic_data
-    beam.plasma = plasma
-    beam.attenuator = SingleRayAttenuator(clamp_to_zero=True)
-    beam.energy = 50000
-    beam.power = 1e6
-    beam.temperature = 10
-    beam.element = deuterium
-    beam.parent = world
-    beam.sigma = 0.2
-    beam.divergence_x = 1.
-    beam.divergence_y = 2.
-    beam.length = 10.
+        self.plasma_density = 1.e19
+        self.plasma_temperature = 1.e3
+        plasma_species = [(deuterium, 1, self.plasma_density, self.plasma_temperature, Vector3D(0, 0, 0))]
+        plasma = build_constant_slab_plasma(length=1, width=1, height=1,
+                                            electron_density=self.plasma_density,
+                                            electron_temperature=self.plasma_temperature,
+                                            plasma_species=plasma_species)
+        plasma.atomic_data = self.atomic_data
+        plasma.parent = self.world
+
+        beam = Beam(transform=translate(0.5, 0, 0))
+        beam.atomic_data = self.atomic_data
+        beam.plasma = plasma
+        beam.attenuator = SingleRayAttenuator(clamp_to_zero=True)
+        beam.energy = 50000
+        beam.power = 1e6
+        beam.temperature = 10
+        beam.element = deuterium
+        beam.parent = self.world
+        beam.sigma = 0.2
+        beam.divergence_x = 1.
+        beam.divergence_y = 2.
+        beam.length = 10.
+
+        self.plasma = plasma
+        self.beam = beam
 
     def test_beam_density(self):
 
