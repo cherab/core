@@ -8,3 +8,5 @@ Atomic Data
    rate_coefficients
    gaunt_factors
    data_interpolators
+   repository
+   openadas
