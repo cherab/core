@@ -1,7 +1,7 @@
 
-# Copyright 2016-2021 Euratom
-# Copyright 2016-2021 United Kingdom Atomic Energy Authority
-# Copyright 2016-2021 Centro de Investigaciones Energéticas, Medioambientales y Tecnológicas
+# Copyright 2016-2024 Euratom
+# Copyright 2016-2024 United Kingdom Atomic Energy Authority
+# Copyright 2016-2024 Centro de Investigaciones Energéticas, Medioambientales y Tecnológicas
 #
 # Licensed under the EUPL, Version 1.1 or – as soon they will be approved by the
 # European Commission - subsequent versions of the EUPL (the "Licence");
@@ -24,7 +24,26 @@ from raysect.core.math.function.float cimport Interpolator2DArray
 
 
 cdef class LineRadiationPower(CoreLineRadiationPower):
-    """Base class for radiated powers."""
+    """
+    Line radiated power coefficient.
+
+    The data is interpolated with cubic spline in log-log space.
+    Nearest neighbour extrapolation is used if extrapolate is True.
+
+    :param Element species: Element object defining the ion type.
+    :param int ionisation: Charge state of the ion.
+    :param dict data: Line radiated power rate dictionary containing the following entries:
+
+    |      'ne': 1D array of size (N) with electron density in m^-3,
+    |      'te': 1D array of size (M) with electron temperature in eV,
+    |      'rate': 2D array of size (N, M) with radiated power rate in W.m^3.
+
+    :param bint extrapolate: Enable extrapolation (default=False).
+
+    :ivar tuple density_range: Electron density interpolation range.
+    :ivar tuple temperature_range: Electron temperature interpolation range.
+    :ivar dict raw_data: Dictionary containing the raw data.
+    """
 
     def __init__(self, species, ionisation, dict data, extrapolate=False):
 
@@ -70,7 +89,26 @@ cdef class NullLineRadiationPower(CoreLineRadiationPower):
 
 
 cdef class ContinuumPower(CoreContinuumPower):
-    """Base class for radiated powers."""
+    """
+    Recombination continuum radiated power coefficient.
+
+    The data is interpolated with cubic spline in log-log space.
+    Nearest neighbour extrapolation is used if extrapolate is True.
+
+    :param Element species: Element object defining the ion type.
+    :param int ionisation: Charge state of the ion.
+    :param dict data: Recombination continuum radiated power rate dictionary containing the following entries:
+
+    |      'ne': 1D array of size (N) with electron density in m^-3,
+    |      'te': 1D array of size (M) with electron temperature in eV,
+    |      'rate': 2D array of size (N, M) with radiated power rate in W.m^3.
+
+    :param bint extrapolate: Enable extrapolation (default=False).
+
+    :ivar tuple density_range: Electron density interpolation range.
+    :ivar tuple temperature_range: Electron temperature interpolation range.
+    :ivar dict raw_data: Dictionary containing the raw data.
+    """
 
     def __init__(self, species, ionisation, dict data, extrapolate=False):
 
@@ -116,7 +154,26 @@ cdef class NullContinuumPower(CoreContinuumPower):
 
 
 cdef class CXRadiationPower(CoreCXRadiationPower):
-    """Base class for radiated powers."""
+    """
+    Charge exchange radiated power coefficient.
+
+    The data is interpolated with cubic spline in log-log space.
+    Linear extrapolation is used if extrapolate is True.
+
+    :param Element species: Element object defining the ion type.
+    :param int ionisation: Charge state of the ion.
+    :param dict data: CX radiated power rate dictionary containing the following entries:
+
+    |      'ne': 1D array of size (N) with electron density in m^-3,
+    |      'te': 1D array of size (M) with electron temperature in eV,
+    |      'rate': 2D array of size (N, M) with radiated power rate in W.m^3.
+
+    :param bint extrapolate: Enable extrapolation (default=False).
+
+    :ivar tuple density_range: Electron density interpolation range.
+    :ivar tuple temperature_range: Electron temperature interpolation range.
+    :ivar dict raw_data: Dictionary containing the raw data.
+    """
 
     def __init__(self, species, ionisation, dict data, extrapolate=False):
 
