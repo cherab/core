@@ -1,6 +1,6 @@
-# Copyright 2016-2021 Euratom
-# Copyright 2016-2021 United Kingdom Atomic Energy Authority
-# Copyright 2016-2021 Centro de Investigaciones Energéticas, Medioambientales y Tecnológicas
+# Copyright 2016-2024 Euratom
+# Copyright 2016-2024 United Kingdom Atomic Energy Authority
+# Copyright 2016-2024 Centro de Investigaciones Energéticas, Medioambientales y Tecnológicas
 #
 # Licensed under the EUPL, Version 1.1 or – as soon they will be approved by the
 # European Commission - subsequent versions of the EUPL (the "Licence");
@@ -31,8 +31,26 @@ cdef class BeamStoppingRate(CoreBeamStoppingRate):
     """
     The beam stopping coefficient interpolation class.
 
-    :param data: A dictionary holding the beam coefficient data.
-    :param extrapolate: Set to True to enable extrapolation, False to disable (default).
+    Data is interpolated with cubic spline in log-log space.
+    Linear and quadratic extrapolations are used for "sen" and "st" respectively
+    if extrapolate is True.
+
+    :param dict data: A beam stopping rate dictionary containing the following entries:
+
+    |      'e': 1D array of size (N) with interaction energy in eV/amu,
+    |      'n': 1D array of size (M) with target electron density in m^-3,
+    |      't': 1D array of size (K) with target electron temperature in eV,
+    |      'sen': 2D array of size (N, M) with beam stopping rate energy component in m^3.s^-1.
+    |      'st': 1D array of size (K) with beam stopping rate temperature component in m^3.s^-1.
+    |      'sref': reference beam stopping rate in m^3.s^-1.
+    |  The total beam stopping rate: s = sen * st / sref.
+
+    :param bint extrapolate: Set to True to enable extrapolation, False to disable (default).
+
+    :ivar tuple beam_energy_range: Interaction energy interpolation range.
+    :ivar tuple density_range: Target electron density interpolation range.
+    :ivar tuple temperature_range: Target electron temperature interpolation range.
+    :ivar dict raw_data: Dictionary containing the raw data.
     """
 
     @cython.cdivision(True)
@@ -93,7 +111,7 @@ cdef class BeamStoppingRate(CoreBeamStoppingRate):
 
 cdef class NullBeamStoppingRate(CoreBeamStoppingRate):
     """
-    A beam rate that always returns zero.
+    A beam stopping rate that always returns zero.
     Needed for use cases where the required atomic data is missing.
     """
 
@@ -105,8 +123,26 @@ cdef class BeamPopulationRate(CoreBeamPopulationRate):
     """
     The beam population coefficient interpolation class.
 
-    :param data: A dictionary holding the beam coefficient data.
-    :param extrapolate: Set to True to enable extrapolation, False to disable (default).
+    Data is interpolated with cubic spline in log-log space.
+    Linear and quadratic extrapolations are used for "sen" and "st" respectively
+    if extrapolate is True.
+
+    :param dict data: Beam population rate dictionary containing the following entries:
+
+    |      'e': 1D array of size (N) with interaction energy in eV/amu,
+    |      'n': 1D array of size (M) with target electron density in m^-3,
+    |      't': 1D array of size (K) with target electron temperature in eV,
+    |      'sen': 2D array of size (N, M) with dimensionless beam population rate energy component.
+    |      'st': 1D array of size (K) with dimensionless beam population rate temperature component.
+    |      'sref': reference dimensionless beam population rate.
+    |  The total beam population rate: s = sen * st / sref.
+
+    :param bint extrapolate: Set to True to enable extrapolation, False to disable (default).
+
+    :ivar tuple beam_energy_range: Interaction energy interpolation range.
+    :ivar tuple density_range: Target electron density interpolation range.
+    :ivar tuple temperature_range: Target electron temperature interpolation range.
+    :ivar dict raw_data: Dictionary containing the raw data.
     """
 
     @cython.cdivision(True)
@@ -167,7 +203,7 @@ cdef class BeamPopulationRate(CoreBeamPopulationRate):
 
 cdef class NullBeamPopulationRate(CoreBeamPopulationRate):
     """
-    A beam rate that always returns zero.
+    A beam population rate that always returns zero.
     Needed for use cases where the required atomic data is missing.
     """
 
@@ -179,9 +215,26 @@ cdef class BeamEmissionPEC(CoreBeamEmissionPEC):
     """
     The beam emission coefficient interpolation class.
 
-    :param data: A dictionary holding the beam coefficient data.
-    :param wavelength: The natural wavelength of the emission line associated with the rate data in nm.
-    :param extrapolate: Set to True to enable extrapolation, False to disable (default).
+    Data is interpolated with cubic spline in log-log space.
+    Linear and quadratic extrapolations are used for "sen" and "st" respectively
+    if extrapolate is True.
+
+    :param dict data: Beam emission rate dictionary containing the following entries:
+
+    |      'e': 1D array of size (N) with interaction energy in eV/amu,
+    |      'n' 1D array of size (M) with target electron density in m^-3,
+    |      't' 1D array of size (K) with target electron temperature in eV,
+    |      'sen' 2D array of size (N, M) with beam emission rate energy component in photon.m^3.s^-1.
+    |      'st' 1D array of size (K) with beam emission rate temperature component in photon.m^3.s^-1.
+    |      'sref': reference beam emission rate in photon.m^3.s^-1.
+
+    :param double wavelength: The natural wavelength of the emission line associated with the rate data in nm.
+    :param bint extrapolate: Set to True to enable extrapolation, False to disable (default).
+
+    :ivar tuple beam_energy_range: Interaction energy interpolation range.
+    :ivar tuple density_range: Target electron density interpolation range.
+    :ivar tuple temperature_range: Target electron temperature interpolation range.
+    :ivar dict raw_data: Dictionary containing the raw data.
     """
 
     @cython.cdivision(True)
@@ -194,7 +247,7 @@ cdef class BeamEmissionPEC(CoreBeamEmissionPEC):
         e = data["e"]                                   # eV/amu
         n = data["n"]                                   # m^-3
         t = data["t"]                                   # eV
-        sen = np.log10(PhotonToJ.to(data["sen"], wavelength))     # W.m^3/s
+        sen = np.log10(PhotonToJ.to(data["sen"], wavelength))     # W.m^3
         st = np.log10(data["st"] / data["sref"])                  # dimensionless
 
         # store limits of data
@@ -243,7 +296,7 @@ cdef class BeamEmissionPEC(CoreBeamEmissionPEC):
 
 cdef class NullBeamEmissionPEC(CoreBeamEmissionPEC):
     """
-    A beam rate that always returns zero.
+    A beam emission PEC that always returns zero.
     Needed for use cases where the required atomic data is missing.
     """
 
