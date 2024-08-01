@@ -131,7 +131,7 @@ cdef class TotalRadiatedPower(PlasmaModel):
         # cache line radiation species and rate
         self._plt_rate = self._atomic_data.line_radiated_power_rate(self._element, self._charge)
         try:
-            self._line_rad_species = self._plasma.composition.get(self._element, self._charge)
+            self._line_rad_species = self._plasma.get_composition().get(self._element, self._charge)
         except ValueError:
             raise RuntimeError("The plasma object does not contain the required ion species for calculating"
                                "total line radiaton, (element={}, ionisation={})."
@@ -140,7 +140,7 @@ cdef class TotalRadiatedPower(PlasmaModel):
         # cache recombination species and radiation rate
         self._prb_rate = self._atomic_data.continuum_radiated_power_rate(self._element, self._charge+1)
         try:
-            self._recom_species = self._plasma.composition.get(self._element, self._charge+1)
+            self._recom_species = self._plasma.get_composition().get(self._element, self._charge+1)
         except ValueError:
             raise RuntimeError("The plasma object does not contain the required ion species for calculating"
                                "recombination/continuum emission, (element={}, ionisation={})."
@@ -152,7 +152,7 @@ cdef class TotalRadiatedPower(PlasmaModel):
         self._hydrogen_species = []
         for hyd_isotope in (hydrogen, deuterium, tritium):
             try:
-                hyd_species = self._plasma.composition.get(hyd_isotope, 0)
+                hyd_species = self._plasma.get_composition().get(hyd_isotope, 0)
             except ValueError:
                 pass
             else:
