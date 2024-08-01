@@ -130,11 +130,27 @@ cdef class RecombinationPEC(_PECRate):
     pass
 
 
-cdef class ThermalCXPEC(_PECRate):
+cdef class ThermalCXPEC:
     """
     Thermal charge exchange rate coefficient.
     """
-    pass
+
+    def __call__(self, double electron_density, double electron_temperature, donor_temperature):
+        """Returns a CX photon emissivity coefficient at the specified plasma conditions.
+
+        This function just wraps the cython evaluate() method.
+        """
+        return self.evaluate(electron_density, electron_temperature, donor_temperature)
+
+    cpdef double evaluate(self, double electron_density, double electron_temperature, double donor_temperature) except? -1e999:
+        """Returns a CX photon emissivity coefficient at given conditions.
+
+        :param electron_density: Electron density in m^-3.
+        :param electron_temperature: Electron temperature in eV.
+        :param donor_temperature: Donor temperature in eV.
+        :return: The effective CX PEC rate in W/m^3.
+        """
+        raise NotImplementedError("The evaluate() virtual method must be implemented.")
 
 
 cdef class BeamCXPEC:
@@ -144,7 +160,12 @@ cdef class BeamCXPEC:
     transition :math:`n\rightarrow n'` of ion :math:`Z^{(\alpha+1)+}` with electron donor
     :math:`H^0` in metastable state :math:`m_{i}`. Equivalent to
     :math:`q^{eff}_{n\rightarrow n'}` in `adf12 <http://open.adas.ac.uk/adf12>_`.
+
+    :param donor_metastable: The metastable state of the donor species for which the rate data applies.
     """
+
+    def __init__(self, int donor_metastable):
+        self.donor_metastable = donor_metastable
 
     def __call__(self, double energy, double temperature, double density, double z_effective, double b_field):
         """Evaluates the Beam CX rate at the given plasma conditions.
@@ -158,7 +179,7 @@ cdef class BeamCXPEC:
 
         :param float energy: Interaction energy in eV/amu.
         :param float temperature: Receiver ion temperature in eV.
-        :param float density: Receiver ion density in m^-3
+        :param float density: Plasma total ion density in m^-3
         :param float z_effective: Plasma Z-effective.
         :param float b_field: Magnetic field magnitude in Tesla.
         :return: The effective rate

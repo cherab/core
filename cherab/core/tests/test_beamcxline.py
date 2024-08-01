@@ -36,7 +36,7 @@ class ConstantBeamCXPEC(BeamCXPEC):
     """
 
     def __init__(self, donor_metastable, value):
-        self.donor_metastable = donor_metastable
+        super().__init__(donor_metastable)
         self.value = value
 
     def evaluate(self, energy, temperature, density, z_effective, b_field):
@@ -76,25 +76,33 @@ class MockAtomicData(AtomicData):
 
 class TestBeamCXLine(unittest.TestCase):
 
-    world = World()
+    def setUp(self):
 
-    atomic_data = MockAtomicData()
+        self.world = World()
 
-    plasma_species = [(deuterium, 1, 1.e19, 200., Vector3D(0, 0, 0))]
-    plasma = build_constant_slab_plasma(length=1, width=1, height=1, electron_density=1e19, electron_temperature=200.,
-                                        plasma_species=plasma_species, b_field=Vector3D(0, 10., 0))
-    plasma.atomic_data = atomic_data
-    plasma.parent = world
+        self.atomic_data = MockAtomicData()
 
-    beam = Beam(transform=translate(0.5, 0, 0))
-    beam.atomic_data = atomic_data
-    beam.plasma = plasma
-    beam.attenuator = SingleRayAttenuator(clamp_to_zero=True)
-    beam.energy = 50000
-    beam.power = 1e6
-    beam.temperature = 10
-    beam.element = deuterium
-    beam.parent = world
+        plasma_species = [(deuterium, 1, 1.e19, 200., Vector3D(0, 0, 0))]
+        plasma = build_constant_slab_plasma(length=1, width=1, height=1,
+                                            electron_density=1e19,
+                                            electron_temperature=200.,
+                                            plasma_species=plasma_species,
+                                            b_field=Vector3D(0, 10., 0))
+        plasma.atomic_data = self.atomic_data
+        plasma.parent = self.world
+
+        beam = Beam(transform=translate(0.5, 0, 0))
+        beam.atomic_data = self.atomic_data
+        beam.plasma = plasma
+        beam.attenuator = SingleRayAttenuator(clamp_to_zero=True)
+        beam.energy = 50000
+        beam.power = 1e6
+        beam.temperature = 10
+        beam.element = deuterium
+        beam.parent = self.world
+
+        self.plasma = plasma
+        self.beam = beam
 
     def test_default_lineshape(self):
         # setting up the model
