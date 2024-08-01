@@ -284,7 +284,7 @@ cdef class _RadiatedPower:
         """
         return self.evaluate(electron_density, electron_temperature)
 
-    cdef double evaluate(self, double electron_density, double electron_temperature) except? -1e999:
+    cpdef double evaluate(self, double electron_density, double electron_temperature) except? -1e999:
         """
         Evaluate the radiated power at the given plasma conditions.
 
