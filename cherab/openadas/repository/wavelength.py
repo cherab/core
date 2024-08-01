@@ -1,6 +1,6 @@
-# Copyright 2016-2018 Euratom
-# Copyright 2016-2018 United Kingdom Atomic Energy Authority
-# Copyright 2016-2018 Centro de Investigaciones Energéticas, Medioambientales y Tecnológicas
+# Copyright 2016-2024 Euratom
+# Copyright 2016-2024 United Kingdom Atomic Energy Authority
+# Copyright 2016-2024 Centro de Investigaciones Energéticas, Medioambientales y Tecnológicas
 #
 # Licensed under the EUPL, Version 1.1 or – as soon they will be approved by the
 # European Commission - subsequent versions of the EUPL (the "Licence");
@@ -35,11 +35,11 @@ def add_wavelength(element, charge, transition, wavelength, repository_path=None
     function instead. The update function avoid repeatedly opening and closing
     the rate files.
 
-    :param element:
-    :param charge:
-    :param transition:
-    :param wavelength:
-    :param repository_path:
+    :param element: Plasma species (Element/Isotope).
+    :param charge: Charge of the plasma species.
+    :param transition: Tuple containing (initial level, final level).
+    :param wavelength: Transition's wavelength in nm.
+    :param repository_path: Path to the atomic data repository.
     """
 
     update_wavelengths({
@@ -52,6 +52,22 @@ def add_wavelength(element, charge, transition, wavelength, repository_path=None
 
 
 def update_wavelengths(wavelengths, repository_path=None):
+    """
+    Updates the wavelength files `/wavelength/<species>/<charge>.json`
+    in atomic data repository.
+
+    File contains multiple rates, indexed by the transitions.
+
+    :param wavelengths: Dictionary in the form:
+
+    |  { <species>: { <charge>: { <transition>: <wavelength> } } }, where
+    |      <species> is the plasma species (Element/Isotope),
+    |      <charge> is the charge of the plasma species,
+    |      <transition> is the tuple containing (initial level, final level),
+    |      <wavelength> is the transition's wavelength in nm.
+
+    :param repository_path: Path to the atomic data repository.
+    """
 
     repository_path = repository_path or DEFAULT_REPOSITORY_PATH
 
@@ -90,6 +106,16 @@ def update_wavelengths(wavelengths, repository_path=None):
 
 
 def get_wavelength(element, charge, transition, repository_path=None):
+    """
+    Reads the wavelength for the given species, charge and transition from the repository.
+
+    :param element: Plasma species (Element/Isotope).
+    :param charge: Charge of the plasma species.
+    :param transition: Tuple containing (initial level, final level).
+    :param repository_path: Path to the atomic data repository.
+
+    :return wavelength: Wavelength in nm.
+    """
 
     repository_path = repository_path or DEFAULT_REPOSITORY_PATH
     path = os.path.join(repository_path, 'wavelength/{}/{}.json'.format(element.symbol.lower(), charge))

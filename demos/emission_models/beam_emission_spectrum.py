@@ -67,9 +67,9 @@ beam_transform = translate(-0.5, 0.0, 0) * rotate_basis(Vector3D(1, 0, 0), Vecto
 beam_energy = 110000  # keV
 beam_current = 10  # A
 beam_sigma = 0.05
-beam_divergence = 0.5
+beam_divergence = 1.3  # degree
 beam_length = 3.0
-beam_temperature = 20
+beam_temperature = 1.0
 
 bes_full_model = BeamEmissionLine(Line(deuterium, 0, (3, 2)))
 

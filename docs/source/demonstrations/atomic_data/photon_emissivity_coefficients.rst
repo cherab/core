@@ -1,3 +1,5 @@
+:orphan:
+
 
 .. _photon_emissivity_coefficients:
 

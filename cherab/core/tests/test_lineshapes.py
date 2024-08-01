@@ -46,16 +46,21 @@ PLANCK_CONSTANT = 6.62607015e-34
 
 class TestLineShapes(unittest.TestCase):
 
-    plasma_species = [(deuterium, 0, 1.e18, 5., Vector3D(2.e4, 0, 0)),
-                      (nitrogen, 1, 1.e17, 10., Vector3D(1.e4, 5.e4, 0))]
-    plasma = build_constant_slab_plasma(length=1, width=1, height=1, electron_density=1e19, electron_temperature=20.,
-                                        plasma_species=plasma_species, b_field=Vector3D(0, 5., 0))
-    atomic_data = AtomicData()
-    beam = Beam()
-    beam.plasma = plasma
-    beam.energy = 60000
-    beam.temperature = 10
-    beam.element = deuterium
+    def setUp(self):
+
+        plasma_species = [(deuterium, 0, 1.e18, 5., Vector3D(2.e4, 0, 0)),
+                          (nitrogen, 1, 1.e17, 10., Vector3D(1.e4, 5.e4, 0))]
+        self.plasma = build_constant_slab_plasma(length=1, width=1, height=1,
+                                                 electron_density=1e19,
+                                                 electron_temperature=20.,
+                                                 plasma_species=plasma_species,
+                                                 b_field=Vector3D(0, 5., 0))
+        self.atomic_data = AtomicData()
+        self.beam = Beam()
+        self.beam.plasma = self.plasma
+        self.beam.energy = 60000
+        self.beam.temperature = 10
+        self.beam.element = deuterium
 
     def test_gaussian_line(self):
         # setting up a line shape model

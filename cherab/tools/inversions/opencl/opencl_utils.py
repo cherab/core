@@ -75,7 +75,7 @@ def get_flops(device, verbose=False):
     elif "amd" in vendor or "advanced" in vendor:
         try:
             ww = device.get_info(cl.device_info.WAVEFRONT_WIDTH_AMD)
-        except:
+        except AttributeError:
             ww = 64
         gflops = comp_units * ww * 2 * gpu_clock / 1000.
 
@@ -84,6 +84,10 @@ def get_flops(device, verbose=False):
 
     elif "arm" in vendor:
         gflops = comp_units * 2 * 16 * gpu_clock / 1000.
+
+    elif "apple" in vendor:
+        alu_lanes = 128
+        gflops = comp_units * 2 * alu_lanes * gpu_clock / 1000.
 
     else:
         warnings.warn('Unsupported device vendor: {}. Unable to estimate theoretical peak performance.'.format(vendor))

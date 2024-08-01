@@ -18,7 +18,7 @@
 
 
 from cherab.core.atomic.elements cimport Element
-from cherab.core.atomic.rates cimport LineRadiationPower, ContinuumPower
+from cherab.core.atomic.rates cimport LineRadiationPower, ContinuumPower, CXRadiationPower
 from cherab.core.plasma cimport PlasmaModel
 from cherab.core.species cimport Species
 
@@ -30,7 +30,9 @@ cdef class TotalRadiatedPower(PlasmaModel):
         Element _element
         int _charge
         Species _line_rad_species, _recom_species
+        list _hydrogen_species
         LineRadiationPower _plt_rate
         ContinuumPower _prb_rate
+        CXRadiationPower _prc_rate
 
     cdef int _populate_cache(self) except -1
