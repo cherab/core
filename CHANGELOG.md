@@ -24,6 +24,7 @@ New:
 * Improved beam direction calculation to allow for natural broadening of the BES line shape due to beam divergence. (#414)
 * Add kwargs to invert_regularised_nnls to pass them to scipy.optimize.nnls. (#438)
 * StarkBroadenedLine now supports Doppler broadening and Zeeman splitting. (#393)
+* Add the power radiated in spectral lines due to charge exchange with thermal neutral hydrogen to the TotalRadiatedPower model. (#370)
 * Add thermal charge-exchange emission model. (#57)
 * PECs for C VI spectral lines for n <= 5 are now included in populate(). Rerun populate() after upgrading to 1.5 to update the atomic data repository.
 * All interpolated atomic rates now return 0 if plasma parameters <= 0, which matches the behaviour of emission models. (#450)
