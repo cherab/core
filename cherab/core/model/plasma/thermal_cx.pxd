@@ -16,9 +16,20 @@
 # See the Licence for the specific language governing permissions and limitations
 # under the Licence.
 
+from cherab.core.atomic cimport Line
+from cherab.core.plasma cimport PlasmaModel
+from cherab.core.species cimport Species
+from cherab.core.model.lineshape cimport LineShapeModel
 
-from .bremsstrahlung import Bremsstrahlung
-from .impact_excitation import ExcitationLine
-from .recombination import RecombinationLine
-from .thermal_cx import ThermalCXLine
-from .total_radiated_power import TotalRadiatedPower
+
+cdef class ThermalCXLine(PlasmaModel):
+
+    cdef:
+        Line _line
+        double _wavelength
+        Species _target_species
+        list _rates
+        LineShapeModel _lineshape
+        object _lineshape_class, _lineshape_args, _lineshape_kwargs
+
+    cdef int _populate_cache(self) except -1

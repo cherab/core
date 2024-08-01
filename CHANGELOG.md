@@ -17,10 +17,15 @@ New:
 * Improved beam direction calculation to allow for natural broadening of the BES line shape due to beam divergence. (#414)
 * Add kwargs to invert_regularised_nnls to pass them to scipy.optimize.nnls. (#438)
 * Add the power radiated in spectral lines due to charge exchange with thermal neutral hydrogen to the TotalRadiatedPower model. (#370)
+* Add thermal charge-exchange emission model. (#57)
+* PECs for C VI spectral lines for n <= 5 are now included in populate(). Rerun populate() after upgrading to 1.5 to update the atomic data repository.
+* All interpolated atomic rates now return 0 if plasma parameters <= 0, which matches the behaviour of emission models. (#450)
 
 Bug fixes:
 * Fix deprecated transforms being cached in LaserMaterial after laser.transform update (#420)
 * Fix IRVB calculate sensitivity method.
+* Fix missing donor_metastable attribute in the core BeamCXPEC class (#411).
+* **Fix the receiver ion density being passed to the BeamCXPEC instead of the total ion density in the BeamCXLine. Also fix incorrect BeamCXPEC dosctrings. Attention!!! The results of CX spectroscopy are affected by this change. (#441)**
 
 Release 1.4.0 (3 Feb 2023)
 -------------------

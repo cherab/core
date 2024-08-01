@@ -15,6 +15,35 @@ provide theoretical equations. Cherab emission models only need to know how to c
 them after they have been instantiated.
 
 
+Atomic Processes
+^^^^^^^^^^^^^^^^
+
+.. autoclass:: cherab.core.atomic.rates.IonisationRate
+
+.. autoclass:: cherab.core.atomic.rates.RecombinationRate
+
+.. autoclass:: cherab.core.atomic.rates.ThermalCXRate
+
+The `IonisationRate`, `RecombinationRate` and `ThermalCXRate` classes all share
+the same call signatures.
+
+.. function:: __call__(density, temperature)
+
+   Returns an effective rate coefficient at the specified plasma conditions.
+
+   This function just wraps the cython evaluate() method.
+
+.. function:: evaluate(density, temperature)
+
+   an effective recombination rate coefficient at the specified plasma conditions.
+
+   This function needs to be implemented by the atomic data provider.
+
+   :param float density: Electron density in m^-3
+   :param float temperature: Electron temperature in eV.
+   :return: The effective ionisation rate in [m^3.s^-1].
+
+
 Photon Emissivity Coefficients
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -39,8 +68,8 @@ the same call signatures.
 
    This function needs to be implemented by the atomic data provider.
 
-   :param float temperature: Receiver ion temperature in eV.
    :param float density: Receiver ion density in m^-3
+   :param float temperature: Receiver ion temperature in eV.
    :return: The effective PEC rate [Wm^3].
 
 Some example code for requesting PEC objects and sampling them with the __call__()
