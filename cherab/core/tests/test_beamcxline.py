@@ -128,7 +128,7 @@ class TestBeamCXLine(unittest.TestCase):
 
         target_species = self.plasma.composition.get(line.element, line.charge + 1)
         wavelength = self.atomic_data.wavelength(line.element, line.charge, line.transition)
-        gaussian_line = GaussianLine(line, wavelength, target_species, self.plasma)
+        gaussian_line = GaussianLine(line, wavelength, target_species, self.plasma, self.atomic_data)
         spectrum = Spectrum(ray.min_wavelength, ray.max_wavelength, ray.bins)
         spectrum = gaussian_line.add_line(radiance, Point3D(0.5, 0, 0), direction, spectrum)
 
@@ -160,7 +160,7 @@ class TestBeamCXLine(unittest.TestCase):
 
         target_species = self.plasma.composition.get(line.element, line.charge + 1)
         wavelength = self.atomic_data.wavelength(line.element, line.charge, line.transition)
-        zeeman_line = ZeemanTriplet(line, wavelength, target_species, self.plasma)
+        zeeman_line = ZeemanTriplet(line, wavelength, target_species, self.plasma, self.atomic_data)
         spectrum = Spectrum(ray.min_wavelength, ray.max_wavelength, ray.bins)
         spectrum = zeeman_line.add_line(radiance, Point3D(0.5, 0, 0), direction, spectrum)
 

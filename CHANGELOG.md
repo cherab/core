@@ -4,6 +4,13 @@ Project Changelog
 Release 1.5.0 (TBD)
 -------------------
 
+API changes:
+* The line shape models are moved to a dedicated submodule. The user code should not be affected though. (#396)
+* The line shape models now have AtomicData as a required parameter.
+* The method show_supported_transitions() of StarkBroadenedLine and ParametrisedZeemanTriplet is removed.
+* The argument stark_model_coefficients of StarkBroadenedLine is now a tuple instead of a dict.
+* The argument line_parameters of ParametrisedZeemanTriplet is now a tuple instead of a dict.
+
 New:
 * Support Raysect 0.8
 * Add custom line shape support to BeamCXLine model. (#394)
@@ -16,6 +23,7 @@ New:
 * **Beam dispersion calculation has changed from sigma(z) = sigma + z * tan(alpha) to sigma(z) = sqrt(sigma^2 + (z * tan(alpha))^2) for consistancy with the Gaussian beam model. Attention!!! The results of BES and CX spectroscopy are affected by this change. (#414)**
 * Improved beam direction calculation to allow for natural broadening of the BES line shape due to beam divergence. (#414)
 * Add kwargs to invert_regularised_nnls to pass them to scipy.optimize.nnls. (#438)
+* StarkBroadenedLine now supports Doppler broadening and Zeeman splitting. (#393)
 * Add the power radiated in spectral lines due to charge exchange with thermal neutral hydrogen to the TotalRadiatedPower model. (#370)
 * Add thermal charge-exchange emission model. (#57)
 * PECs for C VI spectral lines for n <= 5 are now included in populate(). Rerun populate() after upgrading to 1.5 to update the atomic data repository.
