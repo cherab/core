@@ -33,8 +33,9 @@ if "--install-rates" in sys.argv:
 
 source_paths = ["cherab", "demos"]
 compilation_includes = [".", numpy.get_include()]
-compilation_args = ["-O3"]
+compilation_args = ["-O3", "-Wno-unreachable-code-fallthrough"]
 cython_directives = {"language_level": 3}
+macros = [("NPY_NO_DEPRECATED_API", "NPY_1_7_API_VERSION")]
 setup_path = path.dirname(path.abspath(__file__))
 num_processes = int(os.getenv("CHERAB_NCPU", "-1"))
 if num_processes == -1:
@@ -61,6 +62,7 @@ for package in source_paths:
                         [pyx_file],
                         include_dirs=compilation_includes,
                         extra_compile_args=compilation_args,
+                        define_macros=macros,
                     ),
                 )
 
@@ -122,7 +124,7 @@ setup(
     ],
     extras_require={
         # Running ./dev/build_docs.sh runs setup.py, which requires cython.
-        "docs": ["cython", "sphinx", "sphinx-rtd-theme", "sphinx-tabs"],
+        "docs": ["cython~=3.0", "sphinx", "sphinx-rtd-theme", "sphinx-tabs"],
     },
     packages=find_packages(include=["cherab*"]),
     package_data={"": [
