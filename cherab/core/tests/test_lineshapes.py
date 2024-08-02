@@ -296,7 +296,8 @@ class TestLineShapes(unittest.TestCase):
         line = Line(deuterium, 0, (6, 2))  # D-delta line
         target_species = self.plasma.composition.get(line.element, line.charge)
         wavelength = 656.104
-        integrator = GaussianQuadrature(relative_tolerance=1.e-8)
+        relative_tolerance = 1.e-8
+        integrator = GaussianQuadrature(relative_tolerance=relative_tolerance)
         stark_line = StarkBroadenedLine(line, wavelength, target_species, self.plasma, self.atomic_data, integrator=integrator)
 
         # spectrum parameters
@@ -373,12 +374,17 @@ class TestLineShapes(unittest.TestCase):
         lorentz_weight = np.exp(np.poly1d(weight_poly_coeff[::-1])(np.log(fwhm_lorentz / fwhm_full)))
 
         for i in range(bins):
-            lorentz_bin = 0.5 * sin_sqr * quad(stark_lineshape_pi, wavelengths[i], wavelengths[i + 1], epsrel=1.e-8)[0]
-            lorentz_bin += (0.25 * sin_sqr + 0.5 * cos_sqr) * quad(stark_lineshape_sigma_plus, wavelengths[i], wavelengths[i + 1], epsrel=1.e-8)[0]
-            lorentz_bin += (0.25 * sin_sqr + 0.5 * cos_sqr) * quad(stark_lineshape_sigma_minus, wavelengths[i], wavelengths[i + 1], epsrel=1.e-8)[0]
+            lorentz_bin = 0.5 * sin_sqr * quad(stark_lineshape_pi, wavelengths[i], wavelengths[i + 1], epsrel=relative_tolerance)[0]
+            lorentz_bin += (0.25 * sin_sqr + 0.5 * cos_sqr) * quad(stark_lineshape_sigma_plus, wavelengths[i], wavelengths[i + 1], epsrel=relative_tolerance)[0]
+            lorentz_bin += (0.25 * sin_sqr + 0.5 * cos_sqr) * quad(stark_lineshape_sigma_minus, wavelengths[i], wavelengths[i + 1], epsrel=relative_tolerance)[0]
             ref_value = lorentz_bin / delta * lorentz_weight + gaussian[i] * (1. - lorentz_weight)
-            self.assertAlmostEqual(ref_value, spectrum.samples[i], delta=1e-8,
-                                   msg='StarkBroadenedLine.add_line() method gives a wrong value at {} nm.'.format(wavelengths[i]))
+            if ref_value:
+                print(ref_value)
+                self.assertAlmostEqual(spectrum.samples[i] / ref_value, 1., delta=relative_tolerance,
+                                       msg='StarkBroadenedLine.add_line() method gives a wrong value at {} nm.'.format(wavelengths[i]))
+            else:
+                self.assertAlmostEqual(ref_value, spectrum.samples[i], delta=relative_tolerance,
+                                       msg='StarkBroadenedLine.add_line() method gives a wrong value at {} nm.'.format(wavelengths[i]))
 
     def test_beam_emission_multiplet(self):
         # Test MSE line shape
