@@ -374,12 +374,14 @@ class TestLineShapes(unittest.TestCase):
         lorentz_weight = np.exp(np.poly1d(weight_poly_coeff[::-1])(np.log(fwhm_lorentz / fwhm_full)))
 
         for i in range(bins):
-            lorentz_bin = 0.5 * sin_sqr * quad(stark_lineshape_pi, wavelengths[i], wavelengths[i + 1], epsrel=relative_tolerance)[0]
-            lorentz_bin += (0.25 * sin_sqr + 0.5 * cos_sqr) * quad(stark_lineshape_sigma_plus, wavelengths[i], wavelengths[i + 1], epsrel=relative_tolerance)[0]
-            lorentz_bin += (0.25 * sin_sqr + 0.5 * cos_sqr) * quad(stark_lineshape_sigma_minus, wavelengths[i], wavelengths[i + 1], epsrel=relative_tolerance)[0]
+            lorentz_bin = 0.5 * sin_sqr * quad(stark_lineshape_pi, wavelengths[i], wavelengths[i + 1],
+                                               epsrel=relative_tolerance)[0]
+            lorentz_bin += (0.25 * sin_sqr + 0.5 * cos_sqr) * quad(stark_lineshape_sigma_plus, wavelengths[i], wavelengths[i + 1],
+                                                                   epsrel=relative_tolerance)[0]
+            lorentz_bin += (0.25 * sin_sqr + 0.5 * cos_sqr) * quad(stark_lineshape_sigma_minus, wavelengths[i], wavelengths[i + 1],
+                                                                   epsrel=relative_tolerance)[0]
             ref_value = lorentz_bin / delta * lorentz_weight + gaussian[i] * (1. - lorentz_weight)
             if ref_value:
-                print(ref_value)
                 self.assertAlmostEqual(spectrum.samples[i] / ref_value, 1., delta=relative_tolerance,
                                        msg='StarkBroadenedLine.add_line() method gives a wrong value at {} nm.'.format(wavelengths[i]))
             else:
