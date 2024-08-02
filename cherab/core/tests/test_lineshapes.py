@@ -20,7 +20,6 @@ import unittest
 
 import numpy as np
 from scipy.special import erf, hyp2f1
-from scipy.integrate import quadrature
 
 from raysect.core import Point3D, Vector3D
 from raysect.core.math.function.float import Arg1D, Constant1D
@@ -372,13 +371,14 @@ class TestLineShapes(unittest.TestCase):
         weight_poly_coeff = [5.14820e-04, 1.38821e+00, -9.60424e-02, -3.83995e-02, -7.40042e-03, -5.47626e-04]
         lorentz_weight = np.exp(np.poly1d(weight_poly_coeff[::-1])(np.log(fwhm_lorentz / fwhm_full)))
 
+        integrator_pi = GaussianQuadrature(stark_lineshape_pi, relative_tolerance=integrator.relative_tolerance)
+        integrator_sigma_plus = GaussianQuadrature(stark_lineshape_sigma_plus, relative_tolerance=integrator.relative_tolerance)
+        integrator_sigma_minus = GaussianQuadrature(stark_lineshape_sigma_minus, relative_tolerance=integrator.relative_tolerance)
+
         for i in range(bins):
-            lorentz_bin = 0.5 * sin_sqr * quadrature(stark_lineshape_pi, wavelengths[i], wavelengths[i + 1],
-                                                     rtol=integrator.relative_tolerance)[0] / delta
-            lorentz_bin += (0.25 * sin_sqr + 0.5 * cos_sqr) * quadrature(stark_lineshape_sigma_plus, wavelengths[i], wavelengths[i + 1],
-                                                                         rtol=integrator.relative_tolerance)[0] / delta
-            lorentz_bin += (0.25 * sin_sqr + 0.5 * cos_sqr) * quadrature(stark_lineshape_sigma_minus, wavelengths[i], wavelengths[i + 1],
-                                                                         rtol=integrator.relative_tolerance)[0] / delta
+            lorentz_bin = 0.5 * sin_sqr * integrator_pi(wavelengths[i], wavelengths[i + 1]) / delta
+            lorentz_bin += (0.25 * sin_sqr + 0.5 * cos_sqr) * integrator_sigma_plus(wavelengths[i], wavelengths[i + 1]) / delta
+            lorentz_bin += (0.25 * sin_sqr + 0.5 * cos_sqr) * integrator_sigma_minus(wavelengths[i], wavelengths[i + 1]) / delta
             ref_value = lorentz_bin * lorentz_weight + gaussian[i] * (1. - lorentz_weight)
             self.assertAlmostEqual(ref_value, spectrum.samples[i], delta=1e-9,
                                    msg='StarkBroadenedLine.add_line() method gives a wrong value at {} nm.'.format(wavelengths[i]))
