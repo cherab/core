@@ -25,7 +25,7 @@ cimport cython
 @cython.boundscheck(False)
 cpdef invert_sart(geometry_matrix, measurement_vector, object initial_guess=None, int max_iterations=250,
                   double relaxation=1.0, double conv_tol=1.0E-4):
-    """
+    r"""
     Performs a SART inversion on the specified measurement vector.
     
     This function implements the Simultaneous Algebraic Reconstruction Technique (SART), as published in
@@ -161,7 +161,7 @@ cpdef invert_sart(geometry_matrix, measurement_vector, object initial_guess=None
 cpdef invert_constrained_sart(geometry_matrix, laplacian_matrix, measurement_vector,
                               object initial_guess=None, int max_iterations=250, double relaxation=1.0,
                               double beta_laplace=0.01, double conv_tol=1.0E-4):
-    """
+    r"""
 
     Performs a constrained SART inversion on the specified measurement vector.
     

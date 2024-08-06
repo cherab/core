@@ -38,7 +38,7 @@ cdef class SeldenMatobaThomsonSpectrum(LaserModel):
     of the scattered laser light c is calculated as a sum of contributions of all laser wavelengths
 
     .. math::
-         c(\lambda) =  c r_e^2 n_e cos^2\\theta \\sum_{\\lambda_L} \\frac{E_L(\\lambda_l) S(\\frac{\\lambda}{\\lambda_L} - 1, \\varphi, T_e)}{\\lambda_L},
+         c(\\lambda) =  c r_e^2 n_e cos^2\\theta \\sum_{\\lambda_L} \\frac{E_L(\\lambda_l) S(\\frac{\\lambda}{\\lambda_L} - 1, \\varphi, T_e)}{\\lambda_L},
     
 
     where :math:`\\lambda` is the spectrum's wavelength, :math:`r_e` is the classical electron radius, :math:`n_e` is the electron delsity,
