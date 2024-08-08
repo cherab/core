@@ -60,7 +60,7 @@ def parse_adf15(element, charge, adf_file_path, header_format=None):
 
         # for check header line
         header = file.readline()
-        if not re.match('^\s*(\d*) {4}/(.*)/?\s*$', header):
+        if not re.match(r'^\s*(\d*) {4}/(.*)/?\s*$', header):
             raise ValueError('The specified path does not point to a valid ADF15 file.')
 
         # scrape transition information and wavelength
@@ -104,14 +104,14 @@ def _scrape_metadata_hydrogen(file, element, charge):
     file.seek(0)
     lines = file.readlines()
 
-    pec_index_header_match = '^C\s*ISEL\s*WAVELENGTH\s*TRANSITION\s*TYPE'
+    pec_index_header_match = r'^C\s*ISEL\s*WAVELENGTH\s*TRANSITION\s*TYPE'
     while not re.match(pec_index_header_match, lines[0], re.IGNORECASE):
         lines.pop(0)
     index_lines = lines
 
     for i in range(len(index_lines)):
 
-        pec_hydrogen_transition_match = '^C\s*([0-9]*)\.\s*([0-9]*\.[0-9]*)\s*N=\s*([0-9]*) - N=\s*([0-9]*)\s*([A-Z]*)'
+        pec_hydrogen_transition_match = r'^C\s*([0-9]*)\.\s*([0-9]*\.[0-9]*)\s*N=\s*([0-9]*) - N=\s*([0-9]*)\s*([A-Z]*)'
         match = re.match(pec_hydrogen_transition_match, index_lines[i], re.IGNORECASE)
         if not match:
             continue
@@ -147,14 +147,14 @@ def _scrape_metadata_hydrogen_like(file, element, charge):
     file.seek(0)
     lines = file.readlines()
 
-    pec_index_header_match = '^C\s*ISEL\s*WAVELENGTH\s*TRANSITION\s*TYPE'
+    pec_index_header_match = r'^C\s*ISEL\s*WAVELENGTH\s*TRANSITION\s*TYPE'
     while not re.match(pec_index_header_match, lines[0], re.IGNORECASE):
         lines.pop(0)
     index_lines = lines
 
     for i in range(len(index_lines)):
 
-        pec_full_transition_match = '^C\s*([0-9]*)\.\s*([0-9]*\.[0-9]*)\s*([0-9]*)[\(\)\.0-9\s]*-\s*([0-9]*)[\(\)\.0-9\s]*([A-Z]*)'
+        pec_full_transition_match = r'^C\s*([0-9]*)\.\s*([0-9]*\.[0-9]*)\s*([0-9]*)[\(\)\.0-9\s]*-\s*([0-9]*)[\(\)\.0-9\s]*([A-Z]*)'
         match = re.match(pec_full_transition_match, index_lines[i], re.IGNORECASE)
         if not match:
             continue
@@ -193,10 +193,10 @@ def _scrape_metadata_full(file, element, charge):
     configuration_lines = []
     configuration_dict = {}
 
-    configuration_header_match = '^C\s*Configuration\s*\(2S\+1\)L\(w-1/2\)\s*Energy \(cm\*\*-1\)$'
+    configuration_header_match = r'^C\s*Configuration\s*\(2S\+1\)L\(w-1/2\)\s*Energy \(cm\*\*-1\)$'
     while not re.match(configuration_header_match, lines[0], re.IGNORECASE):
         lines.pop(0)
-    pec_index_header_match = '^C\s*ISEL\s*WAVELENGTH\s*TRANSITION\s*TYPE'
+    pec_index_header_match = r'^C\s*ISEL\s*WAVELENGTH\s*TRANSITION\s*TYPE'
     while not re.match(pec_index_header_match, lines[0], re.IGNORECASE):
         configuration_lines.append(lines[0])
         lines.pop(0)
@@ -204,7 +204,7 @@ def _scrape_metadata_full(file, element, charge):
 
     for i in range(len(configuration_lines)):
 
-        configuration_string_match = "^C\s*([0-9]*)\s*((?:[0-9][SPDFG][0-9]\s)*)\s*\(([0-9]*\.?[0-9]*)\)([0-9]*)\(\s*([0-9]*\.?[0-9]*)\)"
+        configuration_string_match = r"^C\s*([0-9]*)\s*((?:[0-9][SPDFG][0-9]\s)*)\s*\(([0-9]*\.?[0-9]*)\)([0-9]*)\(\s*([0-9]*\.?[0-9]*)\)"
         match = re.match(configuration_string_match, configuration_lines[i], re.IGNORECASE)
         if not match:
             continue
@@ -220,7 +220,7 @@ def _scrape_metadata_full(file, element, charge):
 
     for i in range(len(index_lines)):
 
-        pec_full_transition_match = '^C\s*([0-9]*)\.?\s*([0-9]*\.[0-9]*)\s*([0-9]*)[\(\)\.0-9\s]*-\s*([0-9]*)[\(\)\.0-9\s]*([A-Z]*)'
+        pec_full_transition_match = r'^C\s*([0-9]*)\.?\s*([0-9]*\.[0-9]*)\s*([0-9]*)[\(\)\.0-9\s]*-\s*([0-9]*)[\(\)\.0-9\s]*([A-Z]*)'
         match = re.match(pec_full_transition_match, index_lines[i], re.IGNORECASE)
         if not match:
             continue
@@ -255,8 +255,8 @@ def _extract_rate(file, block_num):
     # search from start of file
     file.seek(0)
 
-    wavelength_match = "^\s*[0-9]*\.[0-9]* ?a? +.*$"
-    block_id_match = "^\s*[0-9]*\.[0-9]* ?a?\s*([0-9]*)\s*([0-9]*).*/type *= *([a-zA-Z]*).*/isel *= * ([0-9]*)$"
+    wavelength_match = r"^\s*[0-9]*\.[0-9]* ?a? +.*$"
+    block_id_match = r"^\s*[0-9]*\.[0-9]* ?a?\s*([0-9]*)\s*([0-9]*).*/type *= *([a-zA-Z]*).*/isel *= * ([0-9]*)$"
 
     for block in _group_by_block(file, wavelength_match):
         match = re.match(block_id_match, block[0], re.IGNORECASE)
