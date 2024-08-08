@@ -120,7 +120,7 @@ setup(
         "numpy>=1.14,<2.0",
         "scipy",
         "matplotlib",
-        "raysect==0.8.1",
+        "raysect==0.8.1.*",
     ],
     extras_require={
         # Running ./dev/build_docs.sh runs setup.py, which requires cython.
