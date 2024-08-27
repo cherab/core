@@ -1,6 +1,6 @@
-# Copyright 2016-2018 Euratom
-# Copyright 2016-2018 United Kingdom Atomic Energy Authority
-# Copyright 2016-2018 Centro de Investigaciones Energéticas, Medioambientales y Tecnológicas
+# Copyright 2016-2022 Euratom
+# Copyright 2016-2022 United Kingdom Atomic Energy Authority
+# Copyright 2016-2022 Centro de Investigaciones Energéticas, Medioambientales y Tecnológicas
 #
 # Licensed under the EUPL, Version 1.1 or – as soon they will be approved by the
 # European Commission - subsequent versions of the EUPL (the "Licence");
@@ -16,6 +16,7 @@
 # See the Licence for the specific language governing permissions and limitations
 # under the Licence.
 
+from raysect.core.math import Vector3D
 from cherab.core.math import mappers
 import numpy as np
 import unittest
@@ -34,6 +35,9 @@ class TestMappers(unittest.TestCase):
         self.function2d = f2d
         def f3d(x, y, z): return x*x*np.exp(y)-2*z*y
         self.function3d = f3d
+
+        def vecf2d(r, z): return Vector3D(0, r, z)
+        self.vectorfunction2d = vecf2d
 
 
     def test_iso_mapper_2d(self):
@@ -141,6 +145,18 @@ class TestMappers(unittest.TestCase):
     def test_axisymmetric_mapper_invalid_arg(self):
         """An error must be raised if the given argument is not callable."""
         self.assertRaises(TypeError, mappers.AxisymmetricMapper, "blah")
+
+    def test_vector_axisymmetric_mapper(self):
+        """Vector axisymmetric mapper."""
+        symm_func = mappers.VectorAxisymmetricMapper(self.vectorfunction2d)
+        vec1 = symm_func(1., 1., 1.)
+        vec2 = Vector3D(-1., 1., 1.)
+        np.testing.assert_almost_equal([vec1.x, vec1.y, vec1.z], [vec2.x, vec2.y, vec2.z], decimal=10)
+
+    def test_vector_axisymmetric_mapper_invalid_arg(self):
+        """An error must be raised if the given argument is not callable."""
+        self.assertRaises(TypeError, mappers.VectorAxisymmetricMapper, "blah")
+
 
 if __name__ == '__main__':
     unittest.main()

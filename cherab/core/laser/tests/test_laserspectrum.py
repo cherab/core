@@ -1,8 +1,10 @@
 import unittest
 import numpy as np
 
-from cherab.core.laser.laserspectrum import LaserSpectrum
+# The evaluate() method is not implemented in the base LaserSpectrum, so importing the simplest subclass.
+from cherab.core.model.laser.laserspectrum import ConstantSpectrum as LaserSpectrum
 from raysect.optical.spectrum import Spectrum
+
 
 class TestLaserSpectrum(unittest.TestCase):
 
@@ -24,12 +26,12 @@ class TestLaserSpectrum(unittest.TestCase):
                                msg="LaserSpectrum did not raise a ValueError with max_wavelength < min_wavelength."):
             LaserSpectrum(40, 30, 200)
             LaserSpectrum(30, 30, 200)
-        
+
         # test bins > 0
         with self.assertRaises(ValueError,
-                               msg="LaserSpectrum did not raise a ValueError with max_wavelength < min_wavelength."):
-            LaserSpectrum(30, 30, 0)
-            LaserSpectrum(30, 30, -1)
+                               msg="LaserSpectrum did not raise a ValueError with bins <= 0."):
+            LaserSpectrum(30, 40, 0)
+            LaserSpectrum(30, 40, -1)
 
     def test_laserspectrum_changes(self):
         laser_spectrum = LaserSpectrum(100, 200, 100)

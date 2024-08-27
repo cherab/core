@@ -1,6 +1,41 @@
 Project Changelog
 =================
 
+Release 1.5.0 (27 Aug 2024)
+-------------------
+
+API changes:
+* The line shape models are moved to a dedicated submodule. The user code should not be affected though. (#396)
+* The line shape models now have AtomicData as a required parameter.
+* The method show_supported_transitions() of StarkBroadenedLine and ParametrisedZeemanTriplet is removed.
+* The argument stark_model_coefficients of StarkBroadenedLine is now a tuple instead of a dict.
+* The argument line_parameters of ParametrisedZeemanTriplet is now a tuple instead of a dict.
+
+New:
+* Support Raysect 0.8
+* Cython version 3 is now required to build the package.
+* Add custom line shape support to BeamCXLine model. (#394)
+* Add PeriodicTransformXD and VectorPeriodicTransformXD functions to support the data simulated with periodic boundary conditions. (#387)
+* Add CylindricalTransform and VectorCylindricalTransform to transform functions from cylindrical to Cartesian coordinates. (#387)
+* Add numerical integration of Bremsstrahlung spectrum over a spectral bin. (#395)
+* Replace the coarse numerical constant in the Bremsstrahlung model with an exact expression. (#409)
+* Add the kind attribute to RayTransferPipelineXD that determines whether the ray transfer matrix is multiplied by sensitivity ('power') or not ('radiance'). (#412)
+* Improved parsing of metadata from the ADAS ADF15 'bnd' files for H-like ions. Raises a runtime error if the metadata cannot be parsed. (#424)
+* **Beam dispersion calculation has changed from sigma(z) = sigma + z * tan(alpha) to sigma(z) = sqrt(sigma^2 + (z * tan(alpha))^2) for consistancy with the Gaussian beam model. Attention!!! The results of BES and CX spectroscopy are affected by this change. (#414)**
+* Improved beam direction calculation to allow for natural broadening of the BES line shape due to beam divergence. (#414)
+* Add kwargs to invert_regularised_nnls to pass them to scipy.optimize.nnls. (#438)
+* StarkBroadenedLine now supports Doppler broadening and Zeeman splitting. (#393)
+* Add the power radiated in spectral lines due to charge exchange with thermal neutral hydrogen to the TotalRadiatedPower model. (#370)
+* Add thermal charge-exchange emission model. (#57)
+* PECs for C VI spectral lines for n <= 5 are now included in populate(). Rerun populate() after upgrading to 1.5 to update the atomic data repository.
+* All interpolated atomic rates now return 0 if plasma parameters <= 0, which matches the behaviour of emission models. (#450)
+
+Bug fixes:
+* Fix deprecated transforms being cached in LaserMaterial after laser.transform update (#420)
+* Fix IRVB calculate sensitivity method.
+* Fix missing donor_metastable attribute in the core BeamCXPEC class (#411).
+* **Fix the receiver ion density being passed to the BeamCXPEC instead of the total ion density in the BeamCXLine. Also fix incorrect BeamCXPEC dosctrings. Attention!!! The results of CX spectroscopy are affected by this change. (#441)**
+
 Release 1.4.0 (3 Feb 2023)
 -------------------
 
@@ -9,7 +44,6 @@ API changes:
 * Support for Python 3.6 is dropped. It may still work, but is no longer actively tested.
 
 Bug fixes:
-* Fixed generomak plasma edge data paths.
 * Fix and improve OpenCL utility functions. (#358)
 * Fixed Bremsstrahlung trapezium evaluation (#384).
 

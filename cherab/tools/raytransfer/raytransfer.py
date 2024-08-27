@@ -127,7 +127,7 @@ class RayTransferObject:
 
 
 class RayTransferCylinder(RayTransferObject):
-    """
+    r"""
     Ray transfer object for cylindrical emitter defined on a regular 3D :math:`(R, \phi, Z)` grid.
     This emitter is periodic in :math:`\phi` direction.
     The base of the cylinder is located at `Z = 0` plane. Use `transform`

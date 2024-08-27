@@ -1,6 +1,6 @@
-# Copyright 2016-2018 Euratom
-# Copyright 2016-2018 United Kingdom Atomic Energy Authority
-# Copyright 2016-2018 Centro de Investigaciones Energéticas, Medioambientales y Tecnológicas
+# Copyright 2016-2023 Euratom
+# Copyright 2016-2023 United Kingdom Atomic Energy Authority
+# Copyright 2016-2023 Centro de Investigaciones Energéticas, Medioambientales y Tecnológicas
 #
 # Licensed under the EUPL, Version 1.1 or – as soon they will be approved by the
 # European Commission - subsequent versions of the EUPL (the "Licence");
@@ -60,17 +60,25 @@ def parse_adf15(element, charge, adf_file_path, header_format=None):
 
         # for check header line
         header = file.readline()
-        if not re.match('^\s*(\d*) {4}/(.*)/?\s*$', header):
+        if not re.match(r'^\s*(\d*) {4}/(.*)/?\s*$', header):
             raise ValueError('The specified path does not point to a valid ADF15 file.')
 
         # scrape transition information and wavelength
         # use simple electron configuration structure for hydrogen-like ions
         if header_format == 'hydrogen' or element == hydrogen:
             config = _scrape_metadata_hydrogen(file, element, charge)
-        elif header_format == 'hydrogen-like' or element.atomic_number - charge == 1:
+        elif header_format == 'hydrogen-like':
             config = _scrape_metadata_hydrogen_like(file, element, charge)
+        elif element.atomic_number - charge == 1:
+            config = _scrape_metadata_hydrogen_like(file, element, charge)
+            if not config and 'bnd#' in adf_file_path:
+                # ADF15 files with the "bnd" suffix may have metadata in the "hydrogen" format
+                config = _scrape_metadata_hydrogen(file, element, charge)
         else:
             config = _scrape_metadata_full(file, element, charge)
+
+        if not config:
+            raise RuntimeError("Unable to parse ADF15 metadata.")
 
         # process rate data
         rates = RecursiveDict()
@@ -96,14 +104,14 @@ def _scrape_metadata_hydrogen(file, element, charge):
     file.seek(0)
     lines = file.readlines()
 
-    pec_index_header_match = '^C\s*ISEL\s*WAVELENGTH\s*TRANSITION\s*TYPE'
+    pec_index_header_match = r'^C\s*ISEL\s*WAVELENGTH\s*TRANSITION\s*TYPE'
     while not re.match(pec_index_header_match, lines[0], re.IGNORECASE):
         lines.pop(0)
     index_lines = lines
 
     for i in range(len(index_lines)):
 
-        pec_hydrogen_transition_match = '^C\s*([0-9]*)\.\s*([0-9]*\.[0-9]*)\s*N=\s*([0-9]*) - N=\s*([0-9]*)\s*([A-Z]*)'
+        pec_hydrogen_transition_match = r'^C\s*([0-9]*)\.\s*([0-9]*\.[0-9]*)\s*N=\s*([0-9]*) - N=\s*([0-9]*)\s*([A-Z]*)'
         match = re.match(pec_hydrogen_transition_match, index_lines[i], re.IGNORECASE)
         if not match:
             continue
@@ -118,7 +126,7 @@ def _scrape_metadata_hydrogen(file, element, charge):
         elif rate_type_adas == 'RECOM':
             rate_type = 'recombination'
         elif rate_type_adas == 'CHEXC':
-            rate_type = 'cx_thermal'
+            rate_type = 'thermalcx'
         else:
             raise ValueError("Unrecognised rate type - {}".format(rate_type_adas))
 
@@ -139,14 +147,14 @@ def _scrape_metadata_hydrogen_like(file, element, charge):
     file.seek(0)
     lines = file.readlines()
 
-    pec_index_header_match = '^C\s*ISEL\s*WAVELENGTH\s*TRANSITION\s*TYPE'
+    pec_index_header_match = r'^C\s*ISEL\s*WAVELENGTH\s*TRANSITION\s*TYPE'
     while not re.match(pec_index_header_match, lines[0], re.IGNORECASE):
         lines.pop(0)
     index_lines = lines
 
     for i in range(len(index_lines)):
 
-        pec_full_transition_match = '^C\s*([0-9]*)\.\s*([0-9]*\.[0-9]*)\s*([0-9]*)[\(\)\.0-9\s]*-\s*([0-9]*)[\(\)\.0-9\s]*([A-Z]*)'
+        pec_full_transition_match = r'^C\s*([0-9]*)\.\s*([0-9]*\.[0-9]*)\s*([0-9]*)[\(\)\.0-9\s]*-\s*([0-9]*)[\(\)\.0-9\s]*([A-Z]*)'
         match = re.match(pec_full_transition_match, index_lines[i], re.IGNORECASE)
         if not match:
             continue
@@ -161,7 +169,7 @@ def _scrape_metadata_hydrogen_like(file, element, charge):
         elif rate_type_adas == 'RECOM':
             rate_type = 'recombination'
         elif rate_type_adas == 'CHEXC':
-            rate_type = 'cx_thermal'
+            rate_type = 'thermalcx'
         else:
             raise ValueError("Unrecognised rate type - {}".format(rate_type_adas))
 
@@ -185,10 +193,10 @@ def _scrape_metadata_full(file, element, charge):
     configuration_lines = []
     configuration_dict = {}
 
-    configuration_header_match = '^C\s*Configuration\s*\(2S\+1\)L\(w-1/2\)\s*Energy \(cm\*\*-1\)$'
+    configuration_header_match = r'^C\s*Configuration\s*\(2S\+1\)L\(w-1/2\)\s*Energy \(cm\*\*-1\)$'
     while not re.match(configuration_header_match, lines[0], re.IGNORECASE):
         lines.pop(0)
-    pec_index_header_match = '^C\s*ISEL\s*WAVELENGTH\s*TRANSITION\s*TYPE'
+    pec_index_header_match = r'^C\s*ISEL\s*WAVELENGTH\s*TRANSITION\s*TYPE'
     while not re.match(pec_index_header_match, lines[0], re.IGNORECASE):
         configuration_lines.append(lines[0])
         lines.pop(0)
@@ -196,7 +204,7 @@ def _scrape_metadata_full(file, element, charge):
 
     for i in range(len(configuration_lines)):
 
-        configuration_string_match = "^C\s*([0-9]*)\s*((?:[0-9][SPDFG][0-9]\s)*)\s*\(([0-9]*\.?[0-9]*)\)([0-9]*)\(\s*([0-9]*\.?[0-9]*)\)"
+        configuration_string_match = r"^C\s*([0-9]*)\s*((?:[0-9][SPDFG][0-9]\s)*)\s*\(([0-9]*\.?[0-9]*)\)([0-9]*)\(\s*([0-9]*\.?[0-9]*)\)"
         match = re.match(configuration_string_match, configuration_lines[i], re.IGNORECASE)
         if not match:
             continue
@@ -212,7 +220,7 @@ def _scrape_metadata_full(file, element, charge):
 
     for i in range(len(index_lines)):
 
-        pec_full_transition_match = '^C\s*([0-9]*)\.?\s*([0-9]*\.[0-9]*)\s*([0-9]*)[\(\)\.0-9\s]*-\s*([0-9]*)[\(\)\.0-9\s]*([A-Z]*)'
+        pec_full_transition_match = r'^C\s*([0-9]*)\.?\s*([0-9]*\.[0-9]*)\s*([0-9]*)[\(\)\.0-9\s]*-\s*([0-9]*)[\(\)\.0-9\s]*([A-Z]*)'
         match = re.match(pec_full_transition_match, index_lines[i], re.IGNORECASE)
         if not match:
             continue
@@ -229,7 +237,7 @@ def _scrape_metadata_full(file, element, charge):
         elif rate_type_adas == 'RECOM':
             rate_type = 'recombination'
         elif rate_type_adas == 'CHEXC':
-            rate_type = 'cx_thermal'
+            rate_type = 'thermalcx'
         else:
             raise ValueError("Unrecognised rate type - {}".format(rate_type_adas))
 
@@ -247,8 +255,8 @@ def _extract_rate(file, block_num):
     # search from start of file
     file.seek(0)
 
-    wavelength_match = "^\s*[0-9]*\.[0-9]* ?a? +.*$"
-    block_id_match = "^\s*[0-9]*\.[0-9]* ?a?\s*([0-9]*)\s*([0-9]*).*/type *= *([a-zA-Z]*).*/isel *= * ([0-9]*)$"
+    wavelength_match = r"^\s*[0-9]*\.[0-9]* ?a? +.*$"
+    block_id_match = r"^\s*[0-9]*\.[0-9]* ?a?\s*([0-9]*)\s*([0-9]*).*/type *= *([a-zA-Z]*).*/isel *= * ([0-9]*)$"
 
     for block in _group_by_block(file, wavelength_match):
         match = re.match(block_id_match, block[0], re.IGNORECASE)

@@ -30,7 +30,7 @@ from cherab.core.utility.constants cimport SPEED_OF_LIGHT, ELECTRON_CLASSICAL_RA
 
 
 cdef class SeldenMatobaThomsonSpectrum(LaserModel):
-    """
+    r"""
     Thomson Scattering based on Selden-Matoba.
 
     The class calculates Thomson scattering of the laser to the spectrum. The model of the scattered spectrum used is based on

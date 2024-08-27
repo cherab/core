@@ -45,6 +45,8 @@ cdef class AtomicData:
 
     cpdef RecombinationPEC recombination_pec(self, Element ion, int charge, tuple transition)
 
+    cpdef ThermalCXPEC thermal_cx_pec(self, Element donor_ion, int donor_charge, Element receiver_ion, int receiver_charge, tuple transition)
+
     cpdef TotalRadiatedPower total_radiated_power(self, Element element)
 
     cpdef LineRadiationPower line_radiated_power_rate(self, Element element, int charge)
@@ -57,5 +59,8 @@ cdef class AtomicData:
 
     cpdef ZeemanStructure zeeman_structure(self, Line line, object b_field=*)
 
-    cpdef FreeFreeGauntFactor free_free_gaunt_factor(self)
+    cpdef tuple zeeman_triplet_parameters(self, Line line)
 
+    cpdef tuple stark_model_coefficients(self, Line line)
+
+    cpdef FreeFreeGauntFactor free_free_gaunt_factor(self)

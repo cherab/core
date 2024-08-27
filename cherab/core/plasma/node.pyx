@@ -394,7 +394,7 @@ cdef class Plasma(Node):
 
     @cython.cdivision(True)
     cpdef double z_effective(self, double x, double y, double z) except -1:
-        """
+        r"""
         Calculates the effective Z of the plasma.
 
         .. math::
@@ -435,7 +435,7 @@ cdef class Plasma(Node):
     @cython.boundscheck(False)
     @cython.wraparound(False)
     cpdef double ion_density(self, double x, double y, double z):
-        """
+        r"""
         Calculates the total ion density of the plasma.
 
         .. math::

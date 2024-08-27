@@ -27,6 +27,9 @@ cdef:
     double ELEMENTARY_CHARGE
     double SPEED_OF_LIGHT
     double PLANCK_CONSTANT
+    double HC_EV_NM
     double ELECTRON_CLASSICAL_RADIUS
     double ELECTRON_REST_MASS
     double RYDBERG_CONSTANT_EV
+    double VACUUM_PERMITTIVITY
+    double BOHR_MAGNETON

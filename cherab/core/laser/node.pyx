@@ -153,6 +153,12 @@ cdef class Laser(Node):
         self._plasma.notifier.add(self._plasma_changed)
 
         self._configure_materials()
+    
+    cdef Plasma get_plasma(self):
+        """
+        Fast method to obtain laser's plasma reference.
+        """
+        return self._plasma
 
     @property
     def importance(self):

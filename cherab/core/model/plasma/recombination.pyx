@@ -1,6 +1,8 @@
-# Copyright 2016-2018 Euratom
-# Copyright 2016-2018 United Kingdom Atomic Energy Authority
-# Copyright 2016-2018 Centro de Investigaciones Energéticas, Medioambientales y Tecnológicas
+# cython: language_level=3
+
+# Copyright 2016-2023 Euratom
+# Copyright 2016-2023 United Kingdom Atomic Energy Authority
+# Copyright 2016-2023 Centro de Investigaciones Energéticas, Medioambientales y Tecnológicas
 #
 # Licensed under the EUPL, Version 1.1 or – as soon they will be approved by the
 # European Commission - subsequent versions of the EUPL (the "Licence");
@@ -23,6 +25,29 @@ from cherab.core.utility.constants cimport RECIP_4_PI
 
 
 cdef class RecombinationLine(PlasmaModel):
+    r"""
+    Emitter that calculates spectral line emission from a plasma object
+    as a result of dielectronic recombination of the target species.
+
+    .. math::
+        \epsilon_{\mathrm{recomb}}(\lambda) = \frac{1}{4 \pi} n_{Z_\mathrm{i} + 1} n_\mathrm{e}
+        \mathrm{PEC}_{\mathrm{recomb}}(n_\mathrm{e}, T_\mathrm{e}) f(\lambda),
+
+    where :math:`n_{Z_\mathrm{i} + 1}` is the recombining species density,
+    :math:`\mathrm{PEC}_{\mathrm{recomb}}` is the dielectronic recombination photon emission coefficient
+    for the specified spectral line of the :math:`Z_\mathrm{i}` ion,
+    :math:`f(\lambda)` is the normalised spectral line shape,
+
+    :param Line line: Spectroscopic emission line object.
+    :param Plasma plasma: The plasma to which this emission model is attached. Default is None.
+    :param AtomicData atomic_data: The atomic data provider for this model. Default is None.
+    :param object lineshape: Line shape model class. Default is None (GaussianLine).
+    :param object lineshape_args: A list of line shape model arguments. Default is None.
+    :param object lineshape_kwargs: A dictionary of line shape model keyword arguments. Default is None.
+
+    :ivar Plasma plasma: The plasma to which this emission model is attached.
+    :ivar AtomicData atomic_data: The atomic data provider for this model.
+    """
 
     def __init__(self, Line line, Plasma plasma=None, AtomicData atomic_data=None, object lineshape=None,
                  object lineshape_args=None, object lineshape_kwargs=None):
@@ -103,7 +128,7 @@ cdef class RecombinationLine(PlasmaModel):
 
         # instance line shape renderer
         self._lineshape = self._lineshape_class(self._line, self._wavelength, self._target_species, self._plasma,
-                                                *self._lineshape_args, **self._lineshape_kwargs)
+                                                self._atomic_data, *self._lineshape_args, **self._lineshape_kwargs)
 
     def _change(self):
 

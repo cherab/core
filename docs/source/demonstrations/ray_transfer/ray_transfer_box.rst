@@ -1,3 +1,5 @@
+:orphan:
+
 
 .. _ray_transfer_box:
 

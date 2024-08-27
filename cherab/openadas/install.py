@@ -1,7 +1,7 @@
 
-# Copyright 2016-2018 Euratom
-# Copyright 2016-2018 United Kingdom Atomic Energy Authority
-# Copyright 2016-2018 Centro de Investigaciones Energéticas, Medioambientales y Tecnológicas
+# Copyright 2016-2023 Euratom
+# Copyright 2016-2023 United Kingdom Atomic Energy Authority
+# Copyright 2016-2023 Centro de Investigaciones Energéticas, Medioambientales y Tecnológicas
 #
 # Licensed under the EUPL, Version 1.1 or – as soon they will be approved by the
 # European Commission - subsequent versions of the EUPL (the "Licence");
@@ -21,9 +21,11 @@
 import os
 import urllib.parse
 import urllib.request
+import numpy as np
 
 from cherab.openadas import repository
 from cherab.openadas.parse import *
+from cherab.core.atomic import hydrogen
 from cherab.core.utility import RecursiveDict, PerCm3ToPerM3, Cm3ToM3
 
 
@@ -264,19 +266,29 @@ def install_adf15(element, ionisation, file_path, download=False, repository_pat
 
     # decode file and write out rates
     rates, wavelengths = parse_adf15(element, ionisation, path, header_format=header_format)
+
+    if 'thermalcx' in rates:
+        cx_rates = rates.pop('thermalcx')
+        # CX rates for Tdon = Trec (2D function of Ne, Te)
+        # converting to 3D function of Ne, Te, Tdon
+        repository.update_pec_thermal_cx_rates(_thermalcx_adf15_2dto3d_converter(cx_rates))
+
     repository.update_pec_rates(rates, repository_path)
     repository.update_wavelengths(wavelengths, repository_path)
 
 
 def install_adf21(beam_species, target_ion, target_charge, file_path, download=False, repository_path=None, adas_path=None):
-    # """
-    # Adds the rate defined in an ADF21 file to the repository.
-    #
-    # :param file_path: Path relative to ADAS root.
-    # :param download: Attempt to download file if not present (Default=True).
-    # :param repository_path: Path to the repository in which to install the rates (optional).
-    # :param adas_path: Path to ADAS files repository (optional).
-    # """
+    """
+    Adds the beam stopping rate defined in an ADF21 file to the repository.
+
+    :param beam_species: Beam neutral atom (Element/Isotope).
+    :param target_ion: Target species (Element/Isotope).
+    :param target_charge: Charge of the target species.
+    :param file_path: Path relative to ADAS root.
+    :param download: Attempt to download file if not present (Default=True).
+    :param repository_path: Path to the repository in which to install the rates (optional).
+    :param adas_path: Path to ADAS files repository (optional).
+    """
 
     print('Installing {}...'.format(file_path))
     path = _locate_adas_file(file_path, download, adas_path, repository_path)
@@ -289,15 +301,18 @@ def install_adf21(beam_species, target_ion, target_charge, file_path, download=F
 
 
 def install_adf22bmp(beam_species, beam_metastable, target_ion, target_charge, file_path, download=False, repository_path=None, adas_path=None):
-    pass
-    # """
-    # Adds the rate defined in an ADF21 file to the repository.
-    #
-    # :param file_path: Path relative to ADAS root.
-    # :param download: Attempt to download file if not present (Default=True).
-    # :param repository_path: Path to the repository in which to install the rates (optional).
-    # :param adas_path: Path to ADAS files repository (optional).
-    # """
+    """
+    Adds the beam population rate defined in an ADF22 BMP file to the repository.
+
+    :param beam_species: Beam neutral atom (Element/Isotope).
+    :param beam_metastable: Metastable/excitation level of beam neutral atom.
+    :param target_ion: Target species (Element/Isotope).
+    :param target_charge: Charge of the target species.
+    :param file_path: Path relative to ADAS root.
+    :param download: Attempt to download file if not present (Default=True).
+    :param repository_path: Path to the repository in which to install the rates (optional).
+    :param adas_path: Path to ADAS files repository (optional).
+    """
 
     print('Installing {}...'.format(file_path))
     path = _locate_adas_file(file_path, download, adas_path, repository_path)
@@ -310,15 +325,18 @@ def install_adf22bmp(beam_species, beam_metastable, target_ion, target_charge, f
 
 
 def install_adf22bme(beam_species, target_ion, target_charge, transition, file_path, download=False, repository_path=None, adas_path=None):
-    pass
-    # """
-    # Adds the rate defined in an ADF21 file to the repository.
-    #
-    # :param file_path: Path relative to ADAS root.
-    # :param download: Attempt to download file if not present (Default=True).
-    # :param repository_path: Path to the repository in which to install the rates (optional).
-    # :param adas_path: Path to ADAS files repository (optional).
-    # """
+    """
+    Adds the beam emission rate defined in an ADF22 BME file to the repository.
+
+    :param beam_species: Beam neutral atom (Element/Isotope).
+    :param target_ion: Target species (Element/Isotope).
+    :param target_charge: Charge of the target species.
+    :param transition: Tuple containing (initial level, final level).
+    :param file_path: Path relative to ADAS root.
+    :param download: Attempt to download file if not present (Default=True).
+    :param repository_path: Path to the repository in which to install the rates (optional).
+    :param adas_path: Path to ADAS files repository (optional).
+    """
 
     print('Installing {}...'.format(file_path))
     path = _locate_adas_file(file_path, download, adas_path, repository_path)
@@ -393,3 +411,23 @@ def _notation_adf11_adas2cherab(rate_adas, filetype):
     return rate_cherab
 
 
+def _thermalcx_adf15_2dto3d_converter(rates):
+    """
+    Converts thermal CX PEC rates parsed from a standard ADF 15 file
+    to the format supported by the repository.
+
+    In the standard ADF 15 file, it is assumed that the donor is H0 and Tdon = Trec.
+    """
+    new_rates = RecursiveDict()
+    for element, charge_states in rates.items():
+        for charge, transitions in charge_states.items():
+            for transition, rate in transitions.items():
+                data = np.empty((len(rate['ne']), len(rate['te']), 2))
+                data[:, :, :] = rate['rate'][:, :, None]
+                new_rate = {'ne': rate['ne'],
+                            'te': rate['te'],
+                            'td': np.array([0.01, 10000]),
+                            'rate': data}
+                new_rates[hydrogen][0][element][charge + 1][transition] = new_rate
+
+    return new_rates

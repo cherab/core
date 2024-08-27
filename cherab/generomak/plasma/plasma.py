@@ -305,7 +305,7 @@ def get_double_parabola(v_min, v_max, convexity, concavity, xmin=0, xmax=1):
 
 
 def get_exponential_growth(initial_value, growth_rate, initial_position=1):
-    """
+    r"""
     returns exponentially growing Function1D
 
     The returned Function1D is of the form:

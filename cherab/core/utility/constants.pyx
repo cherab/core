@@ -29,6 +29,9 @@ cdef:
     double ELEMENTARY_CHARGE = 1.602176634e-19
     double SPEED_OF_LIGHT = 299792458.0
     double PLANCK_CONSTANT = 6.62607015e-34
+    double HC_EV_NM = 1239.8419738620933  # (Planck constant in eV s) x (speed of light in nm/s)
     double ELECTRON_CLASSICAL_RADIUS = 2.8179403262e-15
     double ELECTRON_REST_MASS = 9.1093837015e-31
     double RYDBERG_CONSTANT_EV = 13.605693122994
+    double VACUUM_PERMITTIVITY = 8.8541878128e-12
+    double BOHR_MAGNETON = 5.78838180123e-5  # in eV/T
