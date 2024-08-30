@@ -1,6 +1,13 @@
 Project Changelog
 =================
 
+Release 1.6.0 (TBD)
+-------------------
+
+New:
+* Add e_field attribute to Plasma object for electric field vector. (#465)
+
+
 Release 1.5.0 (27 Aug 2024)
 -------------------
 

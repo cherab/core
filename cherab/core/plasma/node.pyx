@@ -258,6 +258,8 @@ cdef class Plasma(Node):
       All plasma emission from this plasma will be calculated with the same provider.
     :ivar VectorFunction3D b_field: A vector function in 3D space that returns the
       magnetic field vector at any requested point.
+    :ivar VectorFunction3D e_field: A vector function in 3D space that returns the
+      electric field vector at any requested point.
     :ivar Composition composition: The composition object manages all the atomic plasma
       species and provides access to their distribution functions.
     :ivar DistributionFunction electron_distribution: A distribution function object
@@ -324,6 +326,7 @@ cdef class Plasma(Node):
 
         # plasma properties
         self.b_field = None
+        self.e_field = None
         self.electron_distribution = None
 
         # setup plasma composition handler and pass through notifications
@@ -361,6 +364,24 @@ cdef class Plasma(Node):
     # cython fast access
     cdef VectorFunction3D get_b_field(self):
         return self._b_field
+
+    @property
+    def e_field(self):
+        return self._e_field
+
+    @e_field.setter
+    def e_field(self, object value):
+        # assign Vector3D(0, 0, 0) if None is passed
+        if value is None:
+            self._e_field = autowrap_vectorfunction3d(Vector3D(0, 0, 0))
+        else:
+            self._e_field = autowrap_vectorfunction3d(value)
+
+        self._modified()
+
+    # cython fast access
+    cdef VectorFunction3D get_e_field(self):
+        return self._e_field
 
     @property
     def electron_distribution(self):
