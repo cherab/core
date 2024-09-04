@@ -1,5 +1,3 @@
-# cython: language_level=3
-
 # Copyright 2016-2023 Euratom
 # Copyright 2016-2023 United Kingdom Atomic Energy Authority
 # Copyright 2016-2023 Centro de Investigaciones Energéticas, Medioambientales y Tecnológicas
@@ -18,20 +16,29 @@
 # See the Licence for the specific language governing permissions and limitations
 # under the Licence.
 
-from raysect.optical cimport Spectrum, Point3D, Vector3D
-from cherab.core.atomic cimport Line
-from cherab.core.beam cimport Beam
-from cherab.core.atomic cimport AtomicData
+
+from numpy cimport ndarray
 
 
-cdef class BeamLineShapeModel:
+cdef class StarkStructure:
 
     cdef:
+        readonly ndarray index
+        readonly ndarray polarisation
+        const int[::1] index_mv
+        const int[::1] polarisation_mv
 
-        Line line
-        double wavelength
-        Beam beam
-        AtomicData atomic_data
+    cdef double[::1] evaluate(self, double energy, double density, double b_field)
 
-    cpdef Spectrum add_line(self, double radiance, Point3D beam_point, Point3D plasma_point,
-                            Vector3D beam_velocity, Vector3D observation_direction, Spectrum spectrum)
+
+cdef class InterpolatedStarkStructure(StarkStructure):
+
+    cdef:
+        readonly dict raw_data
+        readonly tuple beam_energy_range
+        readonly tuple density_range
+        readonly tuple b_field_range
+        list _ratio_functions
+        double _cached_energy, _cached_density, _cached_b_field
+        ndarray _ratios
+        double[::1] _ratios_mv
