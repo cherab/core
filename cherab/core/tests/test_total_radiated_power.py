@@ -104,7 +104,7 @@ class TestTotalRadiatedPower(unittest.TestCase):
         self.plasma.parent = self.world
         self.plasma.atomic_data = self.atomic_data
 
-    def test_beam_density(self):
+    def test_total_radiated_power(self):
 
         self.plasma.models = [TotalRadiatedPower(nitrogen, 6)]
 

@@ -25,7 +25,7 @@ jobs:
     - name: Install Python dependencies
       run: python -m pip install --prefer-binary cython~=3.0 ${{ matrix.numpy-version }} scipy matplotlib "pyopencl[pocl]>=2022.2.4"
     - name: Install Raysect from pypi
-      run: pip install raysect==0.8.1
+      run: pip install raysect==0.8.1.*
     - name: Build cherab
       run: dev/build.sh
     - name: Run tests

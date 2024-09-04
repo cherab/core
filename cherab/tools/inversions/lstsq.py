@@ -21,7 +21,7 @@ import numpy as np
 
 
 def invert_regularised_lstsq(w_matrix, b_vector, alpha=0.01, tikhonov_matrix=None):
-    """
+    r"""
     Solves :math:`\mathbf{b} = \mathbf{W} \mathbf{x}` for the vector :math:`\mathbf{x}`,
     using Tikhonov regulariastion.
 

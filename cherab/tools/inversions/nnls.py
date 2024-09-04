@@ -39,7 +39,7 @@ def invert_regularised_nnls(w_matrix, b_vector, alpha=0.01, tikhonov_matrix=None
       the regularisation strength of the tikhonov matrix.
     :param np.ndarray tikhonov_matrix: The tikhonov regularisation matrix operator, an array
       with shape :math:`(N_s, N_s)`. If None, the identity matrix is used.
-    :param **kwargs: Keyword arguments passed to scipy.optimize.nnls.
+    :param \**kwargs: Keyword arguments passed to scipy.optimize.nnls.
     :return: (x, norm), the solution vector and the residual norm.
 
     .. code-block:: pycon

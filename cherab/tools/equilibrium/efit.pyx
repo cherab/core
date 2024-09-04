@@ -36,7 +36,7 @@ from cherab.core.math cimport IsoMapper2D, AxisymmetricMapper, VectorAxisymmetri
 from cherab.core.math cimport ClampOutput2D
 
 cdef class EFITEquilibrium:
-    """
+    r"""
     An object representing an EFIT equilibrium time-slice.
 
     EFIT is a code commonly used throughout the Fusion research community
@@ -278,7 +278,7 @@ cdef class EFITEquilibrium:
         return AxisymmetricMapper(self.map2d(profile, value_outside_lcfs))
 
     def map_vector2d(self, object toroidal, object poloidal, object normal, Vector3D value_outside_lcfs=None):
-        """
+        r"""
         Maps velocity components in flux coordinates onto flux surfaces in the r-z plane.
 
         It is often convenient to express the plasma velocity components in flux coordinates,
@@ -344,7 +344,7 @@ cdef class EFITEquilibrium:
         return VectorBlend2D(value_outside_lcfs, v, self.inside_lcfs)
 
     def map_vector3d(self, object toroidal, object poloidal, object normal, Vector3D value_outside_lcfs=None):
-        """
+        r"""
         Maps velocity components in flux coordinates onto flux surfaces in 3D space.
 
         It is often convenient to express the plasma velocity components in flux coordinates,

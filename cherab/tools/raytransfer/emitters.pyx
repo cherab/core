@@ -71,7 +71,7 @@ cdef class RayTransferIntegrator(VolumeIntegrator):
 
 
 cdef class CylindricalRayTransferIntegrator(RayTransferIntegrator):
-    """
+    r"""
     Calculates the distances traveled by the ray through the voxels defined on a regular grid
     in cylindrical coordinate system: :math:`(R, \phi, Z)`. This integrator is used
     with the `CylindricalRayTransferEmitter` material class to calculate ray transfer matrices
@@ -338,7 +338,7 @@ cdef class RayTransferEmitter(InhomogeneousVolumeEmitter):
 
 
 cdef class CylindricalRayTransferEmitter(RayTransferEmitter):
-    """
+    r"""
     A unit emitter defined on a regular 3D :math:`(R, \phi, Z)` grid, which
     can be used to calculate ray transfer matrices (geometry matrices) for a single value
     of wavelength.
