@@ -33,6 +33,14 @@ cdef class Line:
       specify the n-levels with integers (e.g. (3,2)). For all other ions the full spectroscopic
       configuration string should be specified for both states. It is up to the atomic data
       provider package to define the exact notation.
+    
+    :ivar Element element: The atomic element/isotope to which this emission line belongs.
+    :ivar int charge: The charge state of the element/isotope that emits this line.
+    :ivar tuple transition: A two element tuple that defines the upper and lower electron
+      configuration states of the transition. For hydrogen-like ions it may be enough to
+      specify the n-levels with integers (e.g. (3,2)). For all other ions the full spectroscopic
+      configuration string should be specified for both states. It is up to the atomic data
+      provider package to define the exact notation.
 
     .. code-block:: pycon
 
