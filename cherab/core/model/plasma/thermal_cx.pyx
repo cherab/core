@@ -49,6 +49,8 @@ cdef class ThermalCXLine(PlasmaModel):
 
     :ivar Plasma plasma: The plasma to which this emission model is attached.
     :ivar AtomicData atomic_data: The atomic data provider for this model.
+    :ivar Line line: The emission line object.
+    :ivar LineShapeModel lineshape: The line shape model.
     """
 
     def __init__(self, Line line, Plasma plasma=None, AtomicData atomic_data=None, object lineshape=None,
@@ -77,6 +79,14 @@ cdef class ThermalCXLine(PlasmaModel):
     def __repr__(self):
         return '<ThermalCXLine: element={}, charge={}, transition={}>'.format(self._line.element.name, self._line.charge, self._line.transition)
 
+    @property
+    def line(self):
+        return self._line
+    
+    @property
+    def lineshape(self):
+        return self._lineshape
+    
     cpdef Spectrum emission(self, Point3D point, Vector3D direction, Spectrum spectrum):
 
         cdef:
