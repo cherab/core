@@ -1,14 +1,15 @@
-from collections import defaultdict
-import sys
+import multiprocessing
 import os
 import os.path as path
+import sys
+from collections import defaultdict
 from pathlib import Path
-import multiprocessing
-import numpy
-from setuptools import setup, find_packages, Extension
-from Cython.Build import cythonize
 
-multiprocessing.set_start_method('fork')
+import numpy
+from Cython.Build import cythonize
+from setuptools import Extension, find_packages, setup
+
+multiprocessing.set_start_method("fork")
 
 force = False
 profile = False
@@ -117,14 +118,14 @@ setup(
     long_description=long_description,
     long_description_content_type="text/markdown",
     install_requires=[
-        "numpy>=1.14,<2.0",
+        "numpy>=2",
         "scipy",
         "matplotlib",
-        "raysect==0.8.1.*",
+        "raysect==0.9.1.*",
     ],
     extras_require={
         # Running ./dev/build_docs.sh runs setup.py, which requires cython.
-        "docs": ["cython~=3.0", "sphinx", "sphinx-rtd-theme", "sphinx-tabs"],
+        "docs": ["cython~=3.1", "sphinx", "sphinx-rtd-theme", "sphinx-tabs"],
     },
     packages=find_packages(include=["cherab*"]),
     package_data={"": [
