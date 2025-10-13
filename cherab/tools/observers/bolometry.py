@@ -22,12 +22,12 @@ import functools
 import numpy as np
 
 from raysect.core import Node, translate, rotate_basis, Point3D, Vector3D, Ray as CoreRay, Primitive, World
-from raysect.core.math.sampler import TargettedHemisphereSampler, RectangleSampler3D
+from raysect.core.math.sampler import TargetedHemisphereSampler, RectangleSampler3D
 from raysect.primitive import Box, Cylinder, Subtract, Union
 from raysect.optical.observer import PowerPipeline0D, RadiancePipeline0D, \
-    SpectralPowerPipeline0D, SpectralRadiancePipeline0D, SightLine, TargettedPixel
+    SpectralPowerPipeline0D, SpectralRadiancePipeline0D, SightLine, TargetedPixel
 from raysect.optical.observer import PowerPipeline2D, RadiancePipeline2D, \
-    SpectralPowerPipeline2D, SpectralRadiancePipeline2D, TargettedCCDArray
+    SpectralPowerPipeline2D, SpectralRadiancePipeline2D, TargetedCCDArray
 from raysect.optical.material.material import NullMaterial
 from raysect.optical.material import AbsorbingSurface
 
@@ -351,7 +351,7 @@ class BolometerSlit(Node):
         return self._curvature_radius
 
 
-class BolometerFoil(TargettedPixel):
+class BolometerFoil(TargetedPixel):
     """
     A rectangular foil bolometer detector.
 
@@ -447,7 +447,7 @@ class BolometerFoil(TargettedPixel):
         translation = translate(centre_point.x, centre_point.y, centre_point.z)
         rotation = rotate_basis(normal_vec, basis_y)
 
-        super().__init__([slit.target], targetted_path_prob=1.0,
+        super().__init__([slit.target], targeted_path_prob=1.0,
                          pixel_samples=1000, x_width=dx, y_width=dy, spectral_bins=1, quiet=True,
                          parent=parent, transform=translation * rotation, name=detector_id)
 
@@ -662,7 +662,7 @@ class BolometerFoil(TargettedPixel):
         sphere = target.bounding_sphere()
         spheres = [(sphere.centre.transform(self.to_local()), sphere.radius, 1.0)]
         # instance targetted pixel sampler to sample directions
-        targetted_sampler = TargettedHemisphereSampler(spheres)
+        targetted_sampler = TargetedHemisphereSampler(spheres)
         # instance rectangle pixel sampler to sample origins
         point_sampler = RectangleSampler3D(width=self.x_width, height=self.y_width)
 
@@ -701,7 +701,7 @@ class BolometerFoil(TargettedPixel):
         return etendue, etendue_error
 
 
-class BolometerIRVB(TargettedCCDArray):
+class BolometerIRVB(TargetedCCDArray):
     """
     A rectangular infra red video bolometer (IRVB).
 
@@ -784,7 +784,7 @@ class BolometerIRVB(TargettedCCDArray):
         self._accumulate = None  # Will be set after pipeline is created.
 
         super().__init__([slit.target], pixels=pixels, width=width,
-                         targetted_path_prob=0.99, parent=parent, pipelines=[],
+                         targeted_path_prob=0.99, parent=parent, pipelines=[],
                          transform=transform, name=name)
         self.pixel_samples = 1000
         self.spectral_bins = 1

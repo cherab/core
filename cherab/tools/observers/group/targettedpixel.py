@@ -17,14 +17,14 @@
 # under the Licence.
 
 from numpy import ndarray
-from raysect.optical.observer import TargettedPixel
+from raysect.optical.observer import TargetedPixel
 
 from .base import Observer0DGroup
 
 
 class TargettedPixelGroup(Observer0DGroup):
     """
-    A group of targetted pixel under a single scene-graph node.
+    A group of targeted pixel under a single scene-graph node.
 
     A scene-graph object regrouping a series of 'TargettedPixel'
     observers as a scene-graph parent. Allows combined observation and display
@@ -33,9 +33,10 @@ class TargettedPixelGroup(Observer0DGroup):
     :ivar list x_width: Width of pixel along local x axis
     :ivar list y_width: Width of pixel along local y axis
     :ivar list targets: Targets for preferential sampling
-    :ivar list targetted_path_prob: Probability of ray being casted at the target
+    :ivar list targeted_path_prob: Probability of ray being casted at the target
     """
-    _OBSERVER_TYPE = TargettedPixel
+
+    _OBSERVER_TYPE = TargetedPixel
 
     @property
     def x_width(self):
@@ -76,7 +77,7 @@ class TargettedPixelGroup(Observer0DGroup):
         """
         List of target lists used by pixels for preferential sampling
 
-        :param list value: List of primitives to be set to each pixel or 
+        :param list value: List of primitives to be set to each pixel or
                            list of lists containing targets specific for each pixel
                            in this case the number of lists must match number of pixels
 
@@ -99,18 +100,17 @@ class TargettedPixelGroup(Observer0DGroup):
                 pixel.targets = value
 
     @property
-    def targetted_path_prob(self):
-        return [pixel.targetted_path_prob for pixel in self._observers]
-    
-    @targetted_path_prob.setter
-    def targetted_path_prob(self, value):
+    def targeted_path_prob(self):
+        return [pixel.targeted_path_prob for pixel in self._observers]
+
+    @targeted_path_prob.setter
+    def targeted_path_prob(self, value):
         if isinstance(value, (list, tuple)):
             if len(value) == len(self._observers):
                 for pixel, v in zip(self._observers, value):
-                    pixel.targetted_path_prob = v
+                    pixel.targeted_path_prob = v
             else:
-                raise ValueError("The length of 'value' ({}) "
-                                 "mismatches the number of pixels ({}).".format(len(value), len(self._observers)))
+                raise ValueError("The length of 'value' ({}) mismatches the number of pixels ({}).".format(len(value), len(self._observers)))
         else:
             for pixel in self._observers:
-                pixel.targetted_path_prob = value
+                pixel.targeted_path_prob = value
