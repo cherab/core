@@ -22,11 +22,11 @@ from raysect.optical.observer import TargetedPixel
 from .base import Observer0DGroup
 
 
-class TargettedPixelGroup(Observer0DGroup):
+class TargetedPixelGroup(Observer0DGroup):
     """
     A group of targeted pixel under a single scene-graph node.
 
-    A scene-graph object regrouping a series of 'TargettedPixel'
+    A scene-graph object regrouping a series of `TargetedPixel`
     observers as a scene-graph parent. Allows combined observation and display
     control simultaneously.
 
@@ -49,8 +49,9 @@ class TargettedPixelGroup(Observer0DGroup):
                 for pixel, v in zip(self._observers, value):
                     pixel.x_width = v
             else:
-                raise ValueError("The length of 'x_width' ({}) "
-                                 "mismatches the number of pixels ({}).".format(len(value), len(self._observers)))
+                raise ValueError(
+                    "The length of 'x_width' ({}) mismatches the number of pixels ({}).".format(len(value), len(self._observers))
+                )
         else:
             for pixel in self._observers:
                 pixel.x_width = value
@@ -66,8 +67,9 @@ class TargettedPixelGroup(Observer0DGroup):
                 for pixel, v in zip(self._observers, value):
                     pixel.y_width = v
             else:
-                raise ValueError("The length of 'y_width' ({}) "
-                                 "mismatches the number of pixels ({}).".format(len(value), len(self._observers)))
+                raise ValueError(
+                    "The length of 'y_width' ({}) mismatches the number of pixels ({}).".format(len(value), len(self._observers))
+                )
         else:
             for pixel in self._observers:
                 pixel.y_width = value
@@ -92,8 +94,11 @@ class TargettedPixelGroup(Observer0DGroup):
                 for pixel, v in zip(self._observers, value):
                     pixel.targets = v
             else:
-                raise ValueError("The number of provided target lists' ({}) "
-                                 "mismatches the number of pixels ({}).".format(len(value), len(self._observers)))
+                raise ValueError(
+                    "The number of provided target lists' ({}) mismatches the number of pixels ({}).".format(
+                        len(value), len(self._observers)
+                    )
+                )
         else:
             # assuming a list of primitives, the pixel's setter will throw an error if not
             for pixel in self._observers:
@@ -110,7 +115,9 @@ class TargettedPixelGroup(Observer0DGroup):
                 for pixel, v in zip(self._observers, value):
                     pixel.targeted_path_prob = v
             else:
-                raise ValueError("The length of 'value' ({}) mismatches the number of pixels ({}).".format(len(value), len(self._observers)))
+                raise ValueError(
+                    "The length of 'value' ({}) mismatches the number of pixels ({}).".format(len(value), len(self._observers))
+                )
         else:
             for pixel in self._observers:
                 pixel.targeted_path_prob = value

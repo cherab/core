@@ -1,4 +1,3 @@
-
 # Copyright 2016-2018 Euratom
 # Copyright 2016-2018 United Kingdom Atomic Energy Authority
 # Copyright 2016-2018 Centro de Investigaciones Energéticas, Medioambientales y Tecnológicas
@@ -17,8 +16,15 @@
 # See the Licence for the specific language governing permissions and limitations
 # under the Licence.
 
-from .bolometry import BolometerCamera, BolometerFoil, BolometerSlit, BolometerIRVB
+from .bolometry import BolometerCamera, BolometerFoil, BolometerIRVB, BolometerSlit
 from .calcam import load_calcam_calibration
+from .group import (
+    FibreOpticGroup,
+    PixelGroup,
+    SightLineGroup,
+    SpectroscopicFibreOpticGroup,
+    SpectroscopicSightLineGroup,
+    TargetedPixelGroup,
+)
 from .intersections import find_wall_intersection
-from .spectroscopy import SpectroscopicSightLine, SpectroscopicFibreOptic
-from .group import PixelGroup, TargettedPixelGroup, SightLineGroup, FibreOpticGroup, SpectroscopicFibreOpticGroup, SpectroscopicSightLineGroup
+from .spectroscopy import SpectroscopicFibreOptic, SpectroscopicSightLine

@@ -1,11 +1,11 @@
 import unittest
 
 from raysect.core.workflow import RenderEngine
-from raysect.optical.observer import Observer0D, SightLine, FibreOptic, Pixel, TargetedPixel, PowerPipeline0D, SpectralPowerPipeline0D
+from raysect.optical.observer import FibreOptic, Observer0D, Pixel, PowerPipeline0D, SightLine, SpectralPowerPipeline0D, TargetedPixel
 from raysect.primitive import Sphere
 
+from cherab.tools.observers.group import FibreOpticGroup, PixelGroup, SightLineGroup, TargetedPixelGroup
 from cherab.tools.observers.group.base import Observer0DGroup
-from cherab.tools.observers.group import SightLineGroup, FibreOpticGroup, PixelGroup, TargettedPixelGroup
 from cherab.tools.raytransfer import pipelines
 
 
@@ -20,13 +20,13 @@ class Observer0DGroupTestCase(unittest.TestCase):
     def test_get_item(self):
         """Tests all inputs for the __get_item__ method"""
         group = self._GROUP_CLASS(observers=self.observers)
-        names = ['zero', 'one', 'two']
+        names = ["zero", "one", "two"]
         group.names = names
 
         idx = slice(1, 3, 1)
         for observer, input_observer in zip(group[idx], self.observers[idx]):
             self.assertIs(observer, input_observer)
-        
+
         for i, name in enumerate(names):
             self.assertIs(group[name], self.observers[i])
 
@@ -37,11 +37,11 @@ class Observer0DGroupTestCase(unittest.TestCase):
             group[1.2]
 
         with self.assertRaises(ValueError):
-            group['fail']
+            group["fail"]
 
-        group.names = ['fail'] * len(group)
+        group.names = ["fail"] * len(group)
         with self.assertRaises(ValueError):
-            group['fail']
+            group["fail"]
 
     def test_assignments(self):
         """Test assignments of all supported attributes of Observer0DGroup"""
@@ -49,7 +49,7 @@ class Observer0DGroupTestCase(unittest.TestCase):
         group.observers = self.observers
 
         for grouped_observer, input_observer in zip(group.observers, self.observers):
-            self.assertIs(grouped_observer, input_observer, msg='Observers do not match')
+            self.assertIs(grouped_observer, input_observer, msg="Observers do not match")
 
         with self.assertRaises(ValueError):
             group.observers = [Sphere()]
@@ -58,32 +58,32 @@ class Observer0DGroupTestCase(unittest.TestCase):
             group.observers = Sphere()
 
         # names
-        names = ['zero', 'one', 'two']
+        names = ["zero", "one", "two"]
         group.names = names
         for grouped_observer, input_name in zip(group.observers, names):
-            self.assertEqual(grouped_observer.name, input_name, msg='Observer name do not match')
+            self.assertEqual(grouped_observer.name, input_name, msg="Observer name do not match")
         with self.assertRaises(ValueError):
-            group.names = ['fail']
+            group.names = ["fail"]
         with self.assertRaises(TypeError):
-            group.names = 'fail'
+            group.names = "fail"
 
         # pipelines
-        ppln_0 = PowerPipeline0D(name='pipeline zero, observer zero')
-        ppln_1 = PowerPipeline0D(name='pipeline one, observer one')
-        ppln_2 = PowerPipeline0D(name='pipeline two, observer two')
-        ppln_3 = PowerPipeline0D(name='pipeline three, observer two')
+        ppln_0 = PowerPipeline0D(name="pipeline zero, observer zero")
+        ppln_1 = PowerPipeline0D(name="pipeline one, observer one")
+        ppln_2 = PowerPipeline0D(name="pipeline two, observer two")
+        ppln_3 = PowerPipeline0D(name="pipeline three, observer two")
 
         pipelist = [[ppln_0], [ppln_1], [ppln_2, ppln_3]]
         group.pipelines = pipelist
-        self.assertIs(group[0].pipelines[0], ppln_0, 'non matching pipeline')
-        self.assertIs(group[1].pipelines[0], ppln_1, 'non matching pipeline')
-        self.assertIs(group[2].pipelines[0], ppln_2, 'non matching pipeline')
-        self.assertIs(group[2].pipelines[1], ppln_3, 'non matching pipeline')
+        self.assertIs(group[0].pipelines[0], ppln_0, "non matching pipeline")
+        self.assertIs(group[1].pipelines[0], ppln_1, "non matching pipeline")
+        self.assertIs(group[2].pipelines[0], ppln_2, "non matching pipeline")
+        self.assertIs(group[2].pipelines[1], ppln_3, "non matching pipeline")
 
         with self.assertRaises(ValueError):
             group.pipelines = [ppln_0]
 
-        # render_engine        
+        # render_engine
         engine = RenderEngine()
         group.render_engine = engine
         for group_engine in group.render_engine:
@@ -102,15 +102,15 @@ class Observer0DGroupTestCase(unittest.TestCase):
         with self.assertRaises(ValueError):
             group.render_engine = [RenderEngine() for _ in range(len(group) - 1)]
 
-        # wavelengths        
+        # wavelengths
         wvl = 500
         group.min_wavelength = wvl - 100
         group.max_wavelength = wvl + 100
         self.assertListEqual(group.min_wavelength, [wvl - 100] * len(group))
         self.assertListEqual(group.max_wavelength, [wvl + 100] * len(group))
 
-        min_wvls = [90 + 10*i for i in range(len(group))]
-        max_wvls = [100 + 10*i for i in range(len(group))]
+        min_wvls = [90 + 10 * i for i in range(len(group))]
+        max_wvls = [100 + 10 * i for i in range(len(group))]
         group.min_wavelength = min_wvls
         group.max_wavelength = max_wvls
         self.assertListEqual(group.min_wavelength, min_wvls)
@@ -122,7 +122,7 @@ class Observer0DGroupTestCase(unittest.TestCase):
             group.min_wavelength = [90] * (len(group) - 1)
 
         # spectral
-        bins = [200 + i*100 for i in range(len(group))]
+        bins = [200 + i * 100 for i in range(len(group))]
         rays = [2] * len(group)
         group.spectral_bins = bins
         group.spectral_rays = rays
@@ -139,7 +139,7 @@ class Observer0DGroupTestCase(unittest.TestCase):
         with self.assertRaises(ValueError):
             group.spectral_bins = [1000] * (len(group) + 1)
 
-        # quiet        
+        # quiet
         quiet = [True] * len(group)
         group.quiet = quiet
         self.assertListEqual(group.quiet, quiet)
@@ -152,8 +152,8 @@ class Observer0DGroupTestCase(unittest.TestCase):
         with self.assertRaises(ValueError):
             group.quiet = [False] * (len(group) + 1)
 
-        # rays        
-        probs = [0.2 + i*0.1 for i in range(len(group))]
+        # rays
+        probs = [0.2 + i * 0.1 for i in range(len(group))]
         max_depths = [5 + i for i in range(len(group))]
         min_depths = [2 + i for i in range(len(group))]
         sampling = [False] * len(group)
@@ -196,10 +196,10 @@ class Observer0DGroupTestCase(unittest.TestCase):
             group.ray_importance_sampling = [False] * (len(group) + 1)
         with self.assertRaises(ValueError):
             group.ray_important_path_weight = [0.7] * (len(group) + 1)
-        
+
         # samples
-        pixel_samples = [2000 + i*500 for i in range(len(group))]
-        per_task = [5000 + i*100 for i in range(len(group))]
+        pixel_samples = [2000 + i * 500 for i in range(len(group))]
+        per_task = [5000 + i * 100 for i in range(len(group))]
         group.pixel_samples = pixel_samples
         group.samples_per_task = per_task
         self.assertListEqual(group.pixel_samples, pixel_samples)
@@ -228,7 +228,7 @@ class Observer0DGroupTestCase(unittest.TestCase):
         group = self._GROUP_CLASS(observers=self.observers)
 
         ppln_classes = [PowerPipeline0D, SpectralPowerPipeline0D]
-        names = ['power', 'spectral']
+        names = ["power", "spectral"]
         keywords = [
             dict(name=names[0]),
             dict(name=names[1], display_progress=True),
@@ -348,8 +348,8 @@ class PixelGroupTestCase(Observer0DGroupTestCase):
             group.y_width = [1e-1] * (len(group) + 1)
 
 
-class TargettedPixelGroupTestCase(PixelGroupTestCase):
-    _GROUP_CLASS = TargettedPixelGroup
+class TargetedPixelGroupTestCase(PixelGroupTestCase):
+    _GROUP_CLASS = TargetedPixelGroup
 
     def setUp(self):
         self.observers = [TargetedPixel(targets=[Sphere()], pipelines=[PowerPipeline0D()]) for _ in range(self._NUM)]
@@ -374,7 +374,7 @@ class TargettedPixelGroupTestCase(PixelGroupTestCase):
         with self.assertRaises(ValueError):
             group.targets = targets
 
-        # targetted path prob
+        # targeted path prob
         prob = [0.9, 0.95, 1]
         group.targeted_path_prob = prob
         self.assertListEqual(group.targeted_path_prob, prob)

@@ -18,6 +18,6 @@
 
 from .fibreoptic import FibreOpticGroup
 from .sightline import SightLineGroup
-from .targettedpixel import TargettedPixelGroup
+from .targetedpixel import TargetedPixelGroup
 from .pixel import PixelGroup
 from .spectroscopic import SpectroscopicFibreOpticGroup, SpectroscopicSightLineGroup
