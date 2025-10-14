@@ -3,11 +3,15 @@ Project Changelog
 
 Release 1.6.0 (TBD)
 -------------------
+API changes:
+* Rename 'targetted' to 'targeted' following Raysect change. (#486)
 
 New:
 * Add Function6D framework. (#478)
 * Add e_field attribute to Plasma object for electric field vector. (#465)
 * Add Integrator2D base class for integration of two-dimensional functions. (#472)
+* Support Raysect 0.9. (#486)
+* Test against Python 3.9, 3.10, 3.11, 3.12, 3.13 and latest released Numpy. Drop Python 3.7, 3.8 and older Numpy from tests. (#486)
 
 Release 1.5.0 (27 Aug 2024)
 -------------------
@@ -134,7 +138,7 @@ API changes:
 
 New:
 * Merged cherab-openadas package into the core cherab package to simplify installation.
-* Beam object uses a cone primitive instead of a cylinder for the bounding volume of divergent beams. 
+* Beam object uses a cone primitive instead of a cylinder for the bounding volume of divergent beams.
 * Added Clamp functions.
 * Added ThermalCXRate.
 * Added optimised ray transfer grid calculation tools.
@@ -162,7 +166,7 @@ New:
 
 Bug fixes:
 * Improved handling on non c-order arrays in various methods.
-* Numerous minor bug fixes (see commit history) 
+* Numerous minor bug fixes (see commit history)
 
 
 Release 1.0.1 (1 Oct 2018)
