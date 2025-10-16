@@ -213,7 +213,7 @@ class BolometerSlit(Node):
        larger than the slit dx and dy, which can cause partial occlusion of
        nearby primitives. It also relies on no rays being launched with directions
        outside the solid angle of the aperture's bounding sphere: depending on the
-       foil-slit distance and slit size, and also the foil's targetted_path_prob,
+       foil-slit distance and slit size, and also the foil's targeted_path_prob,
        this may not be guaranteed. Supplying a proper mesh geometry for the camera
        is recommended instead of using a CSG aperture.
 
@@ -661,8 +661,8 @@ class BolometerFoil(TargetedPixel):
         # generate bounding sphere and convert to local coordinate system
         sphere = target.bounding_sphere()
         spheres = [(sphere.centre.transform(self.to_local()), sphere.radius, 1.0)]
-        # instance targetted pixel sampler to sample directions
-        targetted_sampler = TargetedHemisphereSampler(spheres)
+        # instance targeted pixel sampler to sample directions
+        targeted_sampler = TargetedHemisphereSampler(spheres)
         # instance rectangle pixel sampler to sample origins
         point_sampler = RectangleSampler3D(width=self.x_width, height=self.y_width)
 
@@ -671,8 +671,8 @@ class BolometerFoil(TargetedPixel):
             origins = point_sampler(samples=ray_count)
             passed = 0.0
             for origin in origins:
-                # obtain targetted vector sample
-                direction, pdf = targetted_sampler(origin, pdf=True)
+                # obtain targeted vector sample
+                direction, pdf = targeted_sampler(origin, pdf=True)
                 path_weight = R_2_PI * direction.z / pdf
                 # Transform to world space
                 origin = origin.transform(detector_transform)
