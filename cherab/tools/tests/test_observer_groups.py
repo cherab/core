@@ -2,7 +2,7 @@ import unittest
 import warnings
 
 from raysect.core.workflow import RenderEngine
-from raysect.optical.observer import Observer0D, SightLine, FibreOptic, Pixel, TargettedPixel, PowerPipeline0D, SpectralPowerPipeline0D
+from raysect.optical.observer import Observer0D, SightLine, FibreOptic, Pixel, TargetedPixel, PowerPipeline0D, SpectralPowerPipeline0D
 from raysect.primitive import Sphere
 
 from cherab.tools.observers.group import FibreOpticGroup, PixelGroup, SightLineGroup, TargetedPixelGroup, TargettedPixelGroup
@@ -353,7 +353,7 @@ class TargetedPixelGroupTestCase(PixelGroupTestCase):
     _GROUP_CLASS = TargetedPixelGroup
 
     def setUp(self):
-        self.observers = [TargettedPixel(targets=[Sphere()], pipelines=[PowerPipeline0D()]) for _ in range(self._NUM)]
+        self.observers = [TargetedPixel(targets=[Sphere()], pipelines=[PowerPipeline0D()]) for _ in range(self._NUM)]
 
     def test_targets(self):
         group = self._GROUP_CLASS(observers=self.observers)
@@ -377,13 +377,13 @@ class TargetedPixelGroupTestCase(PixelGroupTestCase):
 
         # targeted path prob
         prob = [0.9, 0.95, 1]
-        group.targetted_path_prob = prob
-        self.assertListEqual(group.targetted_path_prob, prob)
+        group.targeted_path_prob = prob
+        self.assertListEqual(group.targeted_path_prob, prob)
 
         prob = 0.8
-        group.targetted_path_prob = prob
-        for group_targetted_path_prob in group.targetted_path_prob:
-            self.assertEqual(group_targetted_path_prob, prob)
+        group.targeted_path_prob = prob
+        for group_targeted_path_prob in group.targeted_path_prob:
+            self.assertEqual(group_targeted_path_prob, prob)
 
         with self.assertRaises(ValueError):
             group.targeted_path_prob = [0.7] * (len(group) + 1)
