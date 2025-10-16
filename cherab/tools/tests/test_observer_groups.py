@@ -1,11 +1,12 @@
 import unittest
+import warnings
 
 from raysect.core.workflow import RenderEngine
 from raysect.optical.observer import Observer0D, SightLine, FibreOptic, Pixel, TargettedPixel, PowerPipeline0D, SpectralPowerPipeline0D
 from raysect.primitive import Sphere
 
+from cherab.tools.observers.group import FibreOpticGroup, PixelGroup, SightLineGroup, TargetedPixelGroup, TargettedPixelGroup
 from cherab.tools.observers.group.base import Observer0DGroup
-from cherab.tools.observers.group import SightLineGroup, FibreOpticGroup, PixelGroup, TargettedPixelGroup
 from cherab.tools.raytransfer import pipelines
 
 
@@ -348,8 +349,8 @@ class PixelGroupTestCase(Observer0DGroupTestCase):
             group.y_width = [1e-1] * (len(group) + 1)
 
 
-class TargettedPixelGroupTestCase(PixelGroupTestCase):
-    _GROUP_CLASS = TargettedPixelGroup
+class TargetedPixelGroupTestCase(PixelGroupTestCase):
+    _GROUP_CLASS = TargetedPixelGroup
 
     def setUp(self):
         self.observers = [TargettedPixel(targets=[Sphere()], pipelines=[PowerPipeline0D()]) for _ in range(self._NUM)]
@@ -374,7 +375,7 @@ class TargettedPixelGroupTestCase(PixelGroupTestCase):
         with self.assertRaises(ValueError):
             group.targets = targets
 
-        # targetted path prob
+        # targeted path prob
         prob = [0.9, 0.95, 1]
         group.targetted_path_prob = prob
         self.assertListEqual(group.targetted_path_prob, prob)
@@ -385,4 +386,22 @@ class TargettedPixelGroupTestCase(PixelGroupTestCase):
             self.assertEqual(group_targetted_path_prob, prob)
 
         with self.assertRaises(ValueError):
-            group.targetted_path_prob = [0.7] * (len(group) + 1)
+            group.targeted_path_prob = [0.7] * (len(group) + 1)
+
+
+class TargettedPixelGroupTestCase(TargetedPixelGroupTestCase):
+    """Test case for deprecated TargettedPixelGroup class."""
+
+    _GROUP_CLASS = TargettedPixelGroup
+
+    def test_deprecation_warning(self):
+        """Test that using TargettedPixelGroup raises a deprecation warning."""
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")
+            group = TargettedPixelGroup(observers=self.observers)
+
+            # Check that a warning was issued
+            self.assertEqual(len(w), 1)
+            self.assertTrue(issubclass(w[0].category, DeprecationWarning))
+            self.assertIn("TargettedPixelGroup is deprecated", str(w[0].message))
+            self.assertIn("Use TargetedPixelGroup instead", str(w[0].message))
