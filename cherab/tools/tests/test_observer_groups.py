@@ -27,7 +27,7 @@ class Observer0DGroupTestCase(unittest.TestCase):
         idx = slice(1, 3, 1)
         for observer, input_observer in zip(group[idx], self.observers[idx]):
             self.assertIs(observer, input_observer)
-        
+
         for i, name in enumerate(names):
             self.assertIs(group[name], self.observers[i])
 
@@ -84,7 +84,7 @@ class Observer0DGroupTestCase(unittest.TestCase):
         with self.assertRaises(ValueError):
             group.pipelines = [ppln_0]
 
-        # render_engine        
+        # render_engine
         engine = RenderEngine()
         group.render_engine = engine
         for group_engine in group.render_engine:
@@ -103,7 +103,7 @@ class Observer0DGroupTestCase(unittest.TestCase):
         with self.assertRaises(ValueError):
             group.render_engine = [RenderEngine() for _ in range(len(group) - 1)]
 
-        # wavelengths        
+        # wavelengths
         wvl = 500
         group.min_wavelength = wvl - 100
         group.max_wavelength = wvl + 100
@@ -140,7 +140,7 @@ class Observer0DGroupTestCase(unittest.TestCase):
         with self.assertRaises(ValueError):
             group.spectral_bins = [1000] * (len(group) + 1)
 
-        # quiet        
+        # quiet
         quiet = [True] * len(group)
         group.quiet = quiet
         self.assertListEqual(group.quiet, quiet)
@@ -153,7 +153,7 @@ class Observer0DGroupTestCase(unittest.TestCase):
         with self.assertRaises(ValueError):
             group.quiet = [False] * (len(group) + 1)
 
-        # rays        
+        # rays
         probs = [0.2 + i*0.1 for i in range(len(group))]
         max_depths = [5 + i for i in range(len(group))]
         min_depths = [2 + i for i in range(len(group))]
@@ -197,7 +197,7 @@ class Observer0DGroupTestCase(unittest.TestCase):
             group.ray_importance_sampling = [False] * (len(group) + 1)
         with self.assertRaises(ValueError):
             group.ray_important_path_weight = [0.7] * (len(group) + 1)
-        
+
         # samples
         pixel_samples = [2000 + i*500 for i in range(len(group))]
         per_task = [5000 + i*100 for i in range(len(group))]
