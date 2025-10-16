@@ -1,0 +1,153 @@
+[workspace]
+channels = ["https://prefix.dev/conda-forge"]
+platforms = ["linux-64", "osx-arm64", "osx-64"]
+preview = ["pixi-build"]
+
+# -------------------------------
+# === Packaging Configuration ===
+# -------------------------------
+[package]
+name = "cherab"
+version = "dynamic"
+
+[package.build]
+backend = { name = "pixi-build-python", version = "*" }
+
+[package.build.config]
+noarch = false
+compilers = ["c"]
+
+[workspace.build-variants]
+python = ["3.9", "3.10.*", "3.11.*", "3.12.*", "3.13.*"]
+
+[package.host-dependencies]
+uv = "*"
+python = "*"
+setuptools = "*"
+cython = ">=3.1"
+numpy = "*"
+raysect = "0.9.*"
+
+[package.run-dependencies]
+scipy = "*"
+matplotlib-base = "*"
+pyopencl = "*"
+pocl = "*"
+
+# ---------------------------------
+# === Development Configuration ===
+# ---------------------------------
+[dependencies]
+ipython = "*"
+
+[tasks]
+clean = { cmd = [
+    "find",
+    "cherab/",
+    "-type",
+    "f",
+    "\\(",
+    "-name",
+    "'*.c'",
+    "-o",
+    "-name",
+    "'*.so'",
+    "-o",
+    "-name",
+    "'*.dylib'",
+    "\\)",
+    "-delete",
+], description = "🔥 Remove in-place build artifacts and temporary files (*.c, *.so, *.dylib)" }
+
+# The documentation-related tasks below do not require the source package.
+doc-clean = { cmd = [
+    "rm",
+    "-rf",
+    "build",
+], cwd = "docs", description = "🔥 Clean the docs build directory" }
+doc-serve = { cmd = [
+    "python",
+    "-m",
+    "http.server",
+    "8000",
+    "--directory",
+    "build/html",
+], cwd = "docs", description = "🚀 Start a local server for the docs" }
+
+# === Testing feature ===
+[feature.test.dependencies]
+cherab = { path = "." }
+
+[feature.test.tasks]
+test = { cmd = "python -m unittest discover cherab -v", description = "🧪 Run the tests" }
+
+# === Documentation feature ===
+[feature.docs.dependencies]
+cherab = { path = "." }
+sphinx = "*"
+sphinx_rtd_theme = "<1"
+
+[feature.docs.pypi-dependencies]
+sphinx-tabs = "*" # >=3.4.4 has not yet been released to conda-forge
+
+[feature.docs.tasks]
+doc-build = { cmd = [
+    "sphinx-build",
+    "-b",
+    "{{ target }}",
+    "source",
+    "build/{{ target }}",
+], cwd = "docs", args = [
+    { arg = "target", default = "html" },
+], description = "📝 Build the docs" }
+
+# === Linting feature ===
+[feature.lint.dependencies]
+dprint = "*"
+lefthook = "*"
+ruff = "*"
+typos = "*"
+actionlint = "*"
+shellcheck = "*"
+validate-pyproject = "*"
+cython-lint = "*"
+blacken-docs = "*"
+taplo = "*"
+
+[feature.lint.tasks]
+lefthook = { cmd = "lefthook", description = "🔗 Run lefthook" }
+hooks = { cmd = "lefthook install", description = "🔗 Install pre-commit hooks" }
+pre-commit = { cmd = "lefthook run pre-commit", description = "🔗 Run pre-commit checks" }
+ruff-check = { cmd = "ruff check", description = "Lint with ruff" }
+ruff-format = { cmd = "ruff format", description = "Format with ruff" }
+dprint = { cmd = "dprint fmt", description = "Format with dprint" }
+typos = { cmd = "typos --write-changes --force-exclude", description = "Fix typos" }
+taplo = { cmd = "taplo fmt", description = "Format toml files with taplo" }
+actionlint = { cmd = "actionlint", description = "Lint actions with actionlint" }
+blacken-docs = { cmd = "blacken-docs", description = "Format Python markdown blocks with Black" }
+validate-pyproject = { cmd = "validate-pyproject pyproject.toml", description = "Validate pyproject.toml" }
+cython-lint = { cmd = "cython-lint", description = "Lint Cython files" }
+lint = { cmd = "lefthook run pre-commit --all-files --force", description = "🧹 Run all linters" }
+
+# === Python Version Features ===
+[feature.py39.dependencies]
+python = "3.9.*"
+[feature.py313.dependencies]
+python = "3.13.*"
+
+[environments]
+default = { features = ["py313"], solve-group = "py313" }
+test = { features = ["test"], solve-group = "py313" }
+docs = { features = [
+    "py39",
+    "docs",
+], solve-group = "py39" } # TODO: change to py313 when bumping RTD theme to >=1.0
+test-py313 = { features = [
+    "py313",
+    "test",
+], solve-group = "py313" } # alias of tests
+test-py39 = { features = [
+    "py39",
+    "test",
+], solve-group = "py39" } # alias of tests
+lint = { features = ["lint"], no-default-feature = true }

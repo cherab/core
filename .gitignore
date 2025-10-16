@@ -22,3 +22,10 @@ build/
 .coverage
 htmlcov*
 cherab.egg-info/
+
+# pixi environments
+.pixi/*
+!.pixi/config.toml
+
+# Ignore lock files until we start using them
+pixi.lock
