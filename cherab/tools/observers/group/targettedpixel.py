@@ -33,7 +33,7 @@ class TargettedPixelGroup(Observer0DGroup):
     :ivar list x_width: Width of pixel along local x axis
     :ivar list y_width: Width of pixel along local y axis
     :ivar list targets: Targets for preferential sampling
-    :ivar list targeted_path_prob: Probability of ray being casted at the target
+    :ivar list targetted_path_prob: Probability of ray being casted at the target
     """
 
     _OBSERVER_TYPE = TargetedPixel
@@ -100,11 +100,11 @@ class TargettedPixelGroup(Observer0DGroup):
                 pixel.targets = value
 
     @property
-    def targeted_path_prob(self):
+    def targetted_path_prob(self):
         return [pixel.targeted_path_prob for pixel in self._observers]
 
-    @targeted_path_prob.setter
-    def targeted_path_prob(self, value):
+    @targetted_path_prob.setter
+    def targetted_path_prob(self, value):
         if isinstance(value, (list, tuple)):
             if len(value) == len(self._observers):
                 for pixel, v in zip(self._observers, value):
