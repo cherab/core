@@ -3,8 +3,6 @@ Project Changelog
 
 Release 1.6.0 (TBD)
 -------------------
-API changes:
-* Rename 'targetted' to 'targeted' following Raysect change. (#486)
 
 New:
 * Add Function6D framework. (#478)
