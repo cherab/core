@@ -380,7 +380,7 @@ class TargettedPixelGroupTestCase(PixelGroupTestCase):
         self.assertListEqual(group.targetted_path_prob, prob)
 
         prob = 0.8
-        group.targeted_path_prob = prob
+        group.targetted_path_prob = prob
         for group_targeted_path_prob in group.targetted_path_prob:
             self.assertEqual(group_targeted_path_prob, prob)
 
