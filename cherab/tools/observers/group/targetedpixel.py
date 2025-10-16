@@ -24,7 +24,7 @@ from .base import Observer0DGroup
 
 class TargetedPixelGroup(Observer0DGroup):
     """
-    A group of targeted pixel under a single scene-graph node.
+    A group of targeted pixels under a single scene-graph node.
 
     A scene-graph object regrouping a series of 'TargetedPixel'
     observers as a scene-graph parent. Allows combined observation and display
