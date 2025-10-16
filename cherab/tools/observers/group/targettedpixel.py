@@ -46,3 +46,11 @@ class TargettedPixelGroup(_TargetedPixelGroup):
             stacklevel=2,
         )
         super().__init__(*args, **kwargs)
+
+    @property
+    def targetted_path_prob(self):
+        return self.targeted_path_prob
+
+    @targetted_path_prob.setter
+    def targetted_path_prob(self, value):
+        self.targeted_path_prob = value
