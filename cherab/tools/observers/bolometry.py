@@ -1,3 +1,4 @@
+
 # Copyright 2016-2018 Euratom
 # Copyright 2016-2018 United Kingdom Atomic Energy Authority
 # Copyright 2016-2018 Centro de Investigaciones Energéticas, Medioambientales y Tecnológicas
@@ -16,31 +17,22 @@
 # See the Licence for the specific language governing permissions and limitations
 # under the Licence.
 
-import functools
 from enum import Enum
-
+import functools
 import numpy as np
-from raysect.core import Node, Point3D, Primitive, Vector3D, World, rotate_basis, translate
-from raysect.core import Ray as CoreRay
-from raysect.core.math.sampler import RectangleSampler3D, TargetedHemisphereSampler
-from raysect.optical.material import AbsorbingSurface
-from raysect.optical.material.material import NullMaterial
-from raysect.optical.observer import (
-    PowerPipeline0D,
-    PowerPipeline2D,
-    RadiancePipeline0D,
-    RadiancePipeline2D,
-    SightLine,
-    SpectralPowerPipeline0D,
-    SpectralPowerPipeline2D,
-    SpectralRadiancePipeline0D,
-    SpectralRadiancePipeline2D,
-    TargetedCCDArray,
-    TargetedPixel,
-)
+
+from raysect.core import Node, translate, rotate_basis, Point3D, Vector3D, Ray as CoreRay, Primitive, World
+from raysect.core.math.sampler import TargetedHemisphereSampler, RectangleSampler3D
 from raysect.primitive import Box, Cylinder, Subtract, Union
+from raysect.optical.observer import PowerPipeline0D, RadiancePipeline0D, \
+    SpectralPowerPipeline0D, SpectralRadiancePipeline0D, SightLine, TargetedPixel
+from raysect.optical.observer import PowerPipeline2D, RadiancePipeline2D, \
+    SpectralPowerPipeline2D, SpectralRadiancePipeline2D, TargetedCCDArray
+from raysect.optical.material.material import NullMaterial
+from raysect.optical.material import AbsorbingSurface
 
 from cherab.tools.inversions.voxels import VoxelCollection
+
 
 R_2_PI = 1 / (2 * np.pi)
 
@@ -79,7 +71,8 @@ class BolometerCamera(Node):
        >>> camera = BolometerCamera(name="MyBolometer", parent=world)
     """
 
-    def __init__(self, camera_geometry=None, parent=None, transform=None, name=""):
+    def __init__(self, camera_geometry=None, parent=None, transform=None, name=''):
+
         super().__init__(parent=parent, transform=transform, name=name)
 
         self._foil_detectors = []
@@ -140,8 +133,12 @@ class BolometerCamera(Node):
 
     @foil_detectors.setter
     def foil_detectors(self, value):
+
         if not isinstance(value, list):
-            raise TypeError("The foil_detectors attribute of BolometerCamera must be a list of BolometerFoils or BolometerIRVBs.")
+            raise TypeError(
+                "The foil_detectors attribute of BolometerCamera must be a list of "
+                "BolometerFoils or BolometerIRVBs."
+            )
 
         # Prevent external changes being made to this list
         value = value.copy()
@@ -151,8 +148,8 @@ class BolometerCamera(Node):
                     "The foil_detectors attribute of BolometerCamera must be a list of "
                     "BolometerFoil or BolometerIRVB objects. Value {} is not a BolometerFoil "
                     "or BolometerIRVB.".format(foil_detector)
-                )
-            if foil_detector.slit not in self._slits:
+                    )
+            if not foil_detector.slit in self._slits:
                 self._slits.append(foil_detector.slit)
             foil_detector.parent = self
 
@@ -170,9 +167,11 @@ class BolometerCamera(Node):
         """
 
         if not isinstance(foil_detector, (BolometerFoil, BolometerIRVB)):
-            raise TypeError("The foil_detector argument must be of type BolometerFoil or BolometerIRVB.")
+            raise TypeError(
+                "The foil_detector argument must be of type BolometerFoil or BolometerIRVB."
+            )
 
-        if foil_detector.slit not in self._slits:
+        if not foil_detector.slit in self._slits:
             self._slits.append(foil_detector.slit)
 
         foil_detector.parent = self
@@ -214,7 +213,7 @@ class BolometerSlit(Node):
        larger than the slit dx and dy, which can cause partial occlusion of
        nearby primitives. It also relies on no rays being launched with directions
        outside the solid angle of the aperture's bounding sphere: depending on the
-       foil-slit distance and slit size, and also the foil's targeted_path_prob,
+       foil-slit distance and slit size, and also the foil's targetted_path_prob,
        this may not be guaranteed. Supplying a proper mesh geometry for the camera
        is recommended instead of using a CSG aperture.
 
@@ -256,7 +255,9 @@ class BolometerSlit(Node):
        >>> slit = BolometerSlit("slit", centre_point, basis_x, dx, basis_y, dy, parent=camera)
     """
 
-    def __init__(self, slit_id, centre_point, basis_x, dx, basis_y, dy, dz=0.001, parent=None, csg_aperture=False, curvature_radius=0):
+    def __init__(self, slit_id, centre_point, basis_x, dx, basis_y, dy, dz=0.001,
+                 parent=None, csg_aperture=False, curvature_radius=0):
+
         # perform validation of input parameters
 
         if not isinstance(dx, (float, int)):
@@ -273,9 +274,11 @@ class BolometerSlit(Node):
             raise TypeError("centre_point argument for BolometerSlit must be of type Point3D.")
 
         if not isinstance(curvature_radius, (float, int)):
-            raise TypeError("curvature_radius argument for BolometerSlit must be of type float/int.")
+            raise TypeError("curvature_radius argument for BolometerSlit "
+                            "must be of type float/int.")
         if curvature_radius < 0:
-            raise ValueError("curvature_radius argument for BolometerSlit must not be negative.")
+            raise ValueError("curvature_radius argument for BolometerSlit "
+                             "must not be negative.")
 
         if not isinstance(basis_x, Vector3D):
             raise TypeError("The basis vectors of BolometerSlit must be of type Vector3D.")
@@ -297,14 +300,8 @@ class BolometerSlit(Node):
 
         super().__init__(parent=parent, transform=transform, name=slit_id)
 
-        self.target = Box(
-            lower=Point3D(-dx / 2 * 1.01, -dy / 2 * 1.01, -dz / 2),
-            upper=Point3D(dx / 2 * 1.01, dy / 2 * 1.01, dz / 2),
-            transform=None,
-            material=NullMaterial(),
-            parent=self,
-            name=slit_id + " - target",
-        )
+        self.target = Box(lower=Point3D(-dx/2*1.01, -dy/2*1.01, -dz/2), upper=Point3D(dx/2*1.01, dy/2*1.01, dz/2),
+                          transform=None, material=NullMaterial(), parent=self, name=slit_id+' - target')
 
         self._csg_aperture = None
         self.csg_aperture = csg_aperture
@@ -335,14 +332,14 @@ class BolometerSlit(Node):
 
     @csg_aperture.setter
     def csg_aperture(self, value):
+
         if value is True:
             width = max(self.dx, self.dy)
-            face = Box(Point3D(-width, -width, -self.dz / 2), Point3D(width, width, self.dz / 2))
-            slit = Box(
-                lower=Point3D(-self.dx / 2, -self.dy / 2, -self.dz / 2 - self.dz * 0.1),
-                upper=Point3D(self.dx / 2, self.dy / 2, self.dz / 2 + self.dz * 0.1),
-            )
-            self._csg_aperture = Subtract(face, slit, parent=self, material=AbsorbingSurface(), name=self.name + " - CSG Aperture")
+            face = Box(Point3D(-width, -width, -self.dz/2), Point3D(width, width, self.dz/2))
+            slit = Box(lower=Point3D(-self.dx/2, -self.dy/2, -self.dz/2 - self.dz*0.1),
+                       upper=Point3D(self.dx/2, self.dy/2, self.dz/2 + self.dz*0.1))
+            self._csg_aperture = Subtract(face, slit, parent=self,
+                                          material=AbsorbingSurface(), name=self.name+' - CSG Aperture')
 
         else:
             if isinstance(self._csg_aperture, Primitive):
@@ -406,9 +403,9 @@ class BolometerFoil(TargetedPixel):
        >>> detector = BolometerFoil("ch#1", centre_point, basis_x, dx, basis_y, dy, slit, parent=camera)
     """
 
-    def __init__(
-        self, detector_id, centre_point, basis_x, dx, basis_y, dy, slit, parent=None, units="Power", accumulate=False, curvature_radius=0
-    ):
+    def __init__(self, detector_id, centre_point, basis_x, dx, basis_y, dy, slit,
+                 parent=None, units="Power", accumulate=False, curvature_radius=0):
+
         # perform validation of input parameters
 
         if not isinstance(dx, (float, int)):
@@ -428,9 +425,11 @@ class BolometerFoil(TargetedPixel):
             raise TypeError("centre_point argument for BolometerFoil must be of type Point3D.")
 
         if not isinstance(curvature_radius, (float, int)):
-            raise TypeError("curvature_radius argument for BolometerFoil must be of type float/int.")
+            raise TypeError("curvature_radius argument for BolometerFoil "
+                            "must be of type float/int.")
         if curvature_radius < 0:
-            raise ValueError("curvature_radius argument for BolometerFoil must not be negative.")
+            raise ValueError("curvature_radius argument for BolometerFoil "
+                             "must not be negative.")
 
         if not isinstance(basis_x, Vector3D):
             raise TypeError("The basis vectors of BolometerFoil must be of type Vector3D.")
@@ -448,18 +447,9 @@ class BolometerFoil(TargetedPixel):
         translation = translate(centre_point.x, centre_point.y, centre_point.z)
         rotation = rotate_basis(normal_vec, basis_y)
 
-        super().__init__(
-            [slit.target],
-            targeted_path_prob=1.0,
-            pixel_samples=1000,
-            x_width=dx,
-            y_width=dy,
-            spectral_bins=1,
-            quiet=True,
-            parent=parent,
-            transform=translation * rotation,
-            name=detector_id,
-        )
+        super().__init__([slit.target], targeted_path_prob=1.0,
+                         pixel_samples=1000, x_width=dx, y_width=dy, spectral_bins=1, quiet=True,
+                         parent=parent, transform=translation * rotation, name=detector_id)
 
         # Update pipeline based on units
         self.units = units
@@ -540,13 +530,16 @@ class BolometerFoil(TargetedPixel):
         else:
             raise ValueError("The units argument of BolometerFoil must be one of 'Power' or 'Radiance'.")
 
-        los_observer = SightLine(pipelines=[pipeline], pixel_samples=1, quiet=True, parent=self, name=self.name)
+        los_observer = SightLine(pipelines=[pipeline], pixel_samples=1, quiet=True,
+                                 parent=self, name=self.name)
         los_observer.render_engine = self.render_engine
         los_observer.spectral_bins = self.spectral_bins
         los_observer.min_wavelength = self.min_wavelength
         los_observer.max_wavelength = self.max_wavelength
         # The observer's Z axis should be aligned along the line of sight vector
-        los_observer.transform = rotate_basis(self.sightline_vector.transform(self.to_local()), self.basis_y)
+        los_observer.transform = rotate_basis(
+            self.sightline_vector.transform(self.to_local()), self.basis_y
+        )
 
         return los_observer
 
@@ -567,6 +560,7 @@ class BolometerFoil(TargetedPixel):
         direction = self.sightline_vector
 
         while True:
+
             # Find the next intersection point of the ray with the world
             intersection = self.root.hit(CoreRay(origin, direction))
 
@@ -667,8 +661,8 @@ class BolometerFoil(TargetedPixel):
         # generate bounding sphere and convert to local coordinate system
         sphere = target.bounding_sphere()
         spheres = [(sphere.centre.transform(self.to_local()), sphere.radius, 1.0)]
-        # instance targeted pixel sampler to sample directions
-        targeted_sampler = TargetedHemisphereSampler(spheres)
+        # instance targetted pixel sampler to sample directions
+        targetted_sampler = TargetedHemisphereSampler(spheres)
         # instance rectangle pixel sampler to sample origins
         point_sampler = RectangleSampler3D(width=self.x_width, height=self.y_width)
 
@@ -677,8 +671,8 @@ class BolometerFoil(TargetedPixel):
             origins = point_sampler(samples=ray_count)
             passed = 0.0
             for origin in origins:
-                # obtain targeted vector sample
-                direction, pdf = targeted_sampler(origin, pdf=True)
+                # obtain targetted vector sample
+                direction, pdf = targetted_sampler(origin, pdf=True)
                 path_weight = R_2_PI * direction.z / pdf
                 # Transform to world space
                 origin = origin.transform(detector_transform)
@@ -764,10 +758,14 @@ class BolometerIRVB(TargetedCCDArray):
        >>> detector = BolometerIRVB("irvb", width, pixels, slit, transform, parent=camera)
     """
 
-    _PIPELINES = {_Units.POWER: PowerPipeline2D, _Units.RADIANCE: RadiancePipeline2D}
-    _SPECTRAL_PIPELINES = {_Units.POWER: SpectralPowerPipeline2D, _Units.RADIANCE: SpectralRadiancePipeline2D}
+    _PIPELINES = {_Units.POWER: PowerPipeline2D,
+                  _Units.RADIANCE: RadiancePipeline2D}
+    _SPECTRAL_PIPELINES = {_Units.POWER: SpectralPowerPipeline2D,
+                           _Units.RADIANCE: SpectralRadiancePipeline2D}
 
-    def __init__(self, name, width, pixels, slit, transform, parent=None, units="power", accumulate=False, curvature_radius=0):
+    def __init__(self, name, width, pixels, slit, transform, parent=None,
+                 units="power", accumulate=False, curvature_radius=0):
+
         # perform validation of input parameters
         width = float(width)
         if width < 0:
@@ -778,15 +776,16 @@ class BolometerIRVB(TargetedCCDArray):
 
         curvature_radius = float(curvature_radius)
         if curvature_radius < 0:
-            raise ValueError("curvature_radius argument for BolometerIRVB must not be negative.")
+            raise ValueError("curvature_radius argument for BolometerIRVB "
+                             "must not be negative.")
 
         self._slit = slit
         self._curvature_radius = curvature_radius
         self._accumulate = None  # Will be set after pipeline is created.
 
-        super().__init__(
-            [slit.target], pixels=pixels, width=width, targeted_path_prob=0.99, parent=parent, pipelines=[], transform=transform, name=name
-        )
+        super().__init__([slit.target], pixels=pixels, width=width,
+                         targeted_path_prob=0.99, parent=parent, pipelines=[],
+                         transform=transform, name=name)
         self.pixel_samples = 1000
         self.spectral_bins = 1
         self.quiet = True
@@ -816,22 +815,18 @@ class BolometerIRVB(TargetedCCDArray):
         for x in range(nx):
             pixel_column = []
             for y in range(ny):
-                pixel_centre = foil_bottom_left + (x + 0.5) * XAXIS * pixel_width + (y + 0.5) * YAXIS * pixel_height
+                pixel_centre = (foil_bottom_left
+                                + (x + 0.5) * XAXIS * pixel_width
+                                + (y + 0.5) * YAXIS * pixel_height)
                 pixel = BolometerFoil(
                     detector_id="IRVB pixel ({},{})".format(x + 1, y + 1),
-                    centre_point=pixel_centre,
-                    basis_x=XAXIS,
-                    dx=pixel_width,
-                    basis_y=YAXIS,
-                    dy=pixel_height,
-                    slit=self._slit,
-                    units=self._units.value.capitalize(),
-                    accumulate=False,
-                    parent=self,
+                    centre_point=pixel_centre, basis_x=XAXIS, dx=pixel_width,
+                    basis_y=YAXIS, dy=pixel_height, slit=self._slit,
+                    units=self._units.value.capitalize(), accumulate=False, parent=self
                 )
                 pixel_column.append(pixel)
             pixels.append(pixel_column)
-        return np.asarray(pixels, dtype="object")
+        return np.asarray(pixels, dtype='object')
 
     @property
     def height(self):
@@ -856,8 +851,9 @@ class BolometerIRVB(TargetedCCDArray):
     @property
     def sightline_vectors(self):
         return np.asarray(
-            [[pixel.centre_point.vector_to(self._slit.centre_point) for pixel in pixel_column] for pixel_column in self.pixels_as_foils],
-            dtype="object",
+            [[pixel.centre_point.vector_to(self._slit.centre_point) for pixel in pixel_column]
+             for pixel_column in self.pixels_as_foils],
+            dtype='object'
         )
 
     @property
@@ -880,7 +876,8 @@ class BolometerIRVB(TargetedCCDArray):
             self._units = _Units.RADIANCE
         else:
             raise ValueError(
-                "The units property of BolometerIRVB must be one of {}".format([member.value for member in _Units.__members__])
+                "The units property of BolometerIRVB must be one of {}"
+                .format([member.value for member in _Units.__members__])
             )
         pipeline_class = self._PIPELINES[self._units]
         pipeline = pipeline_class(accumulate=self.accumulate)
@@ -907,7 +904,7 @@ class BolometerIRVB(TargetedCCDArray):
         """
         pixels = self.pixels_as_foils
         sightlines = [[pixel.as_sightline() for pixel in pixel_column] for pixel_column in pixels]
-        return np.asarray(sightlines, dtype="object")
+        return np.asarray(sightlines, dtype='object')
 
     def trace_sightlines(self):
         """
@@ -921,7 +918,7 @@ class BolometerIRVB(TargetedCCDArray):
         """
         pixels = self.pixels_as_foils
         traces = [[pixel.trace_sightline() for pixel in pixel_column] for pixel_column in pixels]
-        return np.asarray(traces, dtype="object")
+        return np.asarray(traces, dtype='object')
 
     def calculate_sensitivity(self, voxel_collection, ray_count=None):
         r"""
@@ -1046,24 +1043,26 @@ def mask_corners(element):
 
     # Make the elements to cut out from the cover slightly thicker than the
     # cover, to guard against rounding errors
-    long_box = Box(lower=Point3D(-dx / 2 + rc, -dy / 2, -0.5 * dz), upper=Point3D(dx / 2 - rc, dy / 2, 1.5 * dz))
-    shot_box = Box(lower=Point3D(-dx / 2, -dy / 2 + rc, -0.5 * dz), upper=Point3D(dx / 2, dy / 2 - rc, 1.5 * dz))
+    long_box = Box(lower=Point3D(-dx/2 + rc, -dy/2, -0.5 * dz),
+                   upper=Point3D(dx/2 - rc, dy/2, 1.5 * dz))
+    shot_box = Box(lower=Point3D(-dx/2, -dy/2 + rc, -0.5 * dz),
+                   upper=Point3D(dx/2, dy/2 - rc, 1.5 * dz))
     cylinder_template = Cylinder(radius=rc, height=2 * dz)
     top_left_cylinder = cylinder_template.instance()
-    top_left_cylinder.transform = translate(-dx / 2 + rc, dy / 2 - rc, -dz / 2)
+    top_left_cylinder.transform = translate(-dx/2 + rc, dy/2 - rc, -dz/2)
     top_right_cylinder = cylinder_template.instance()
-    top_right_cylinder.transform = translate(dx / 2 - rc, dy / 2 - rc, -dz / 2)
+    top_right_cylinder.transform = translate(dx/2 - rc, dy/2 - rc, -dz/2)
     bottom_right_cylinder = cylinder_template.instance()
-    bottom_right_cylinder.transform = translate(dx / 2 - rc, -dy / 2 + rc, -dz / 2)
+    bottom_right_cylinder.transform = translate(dx/2 - rc, -dy/2 + rc, -dz/2)
     bottom_left_cylinder = cylinder_template.instance()
-    bottom_left_cylinder.transform = translate(-dx / 2 + rc, -dy / 2 + rc, -dz / 2)
-    cutout = functools.reduce(
-        Union, (long_box, shot_box, top_left_cylinder, top_right_cylinder, bottom_right_cylinder, bottom_left_cylinder)
-    )
-    cover = Box(lower=Point3D(-dx / 2, -dy / 2, 0), upper=Point3D(dx / 2, dy / 2, dz))
+    bottom_left_cylinder.transform = translate(-dx/2 + rc, -dy/2 + rc, -dz/2)
+    cutout = functools.reduce(Union, (long_box, shot_box, top_left_cylinder,
+                                      top_right_cylinder, bottom_right_cylinder,
+                                      bottom_left_cylinder))
+    cover = Box(lower=Point3D(-dx/2, -dy/2, 0), upper=Point3D(dx/2, dy/2, dz))
     mask = Subtract(cover, cutout)
 
     mask.material = AbsorbingSurface()
     mask.transform = translate(0, 0, dz)
-    mask.name = element.name + " - rounded edges mask"
+    mask.name = element.name + ' - rounded edges mask'
     mask.parent = element
