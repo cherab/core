@@ -1,15 +1,14 @@
-import multiprocessing
+from collections import defaultdict
+import sys
 import os
 import os.path as path
-import sys
-from collections import defaultdict
 from pathlib import Path
-
+import multiprocessing
 import numpy
+from setuptools import setup, find_packages, Extension
 from Cython.Build import cythonize
-from setuptools import Extension, find_packages, setup
 
-multiprocessing.set_start_method("fork")
+multiprocessing.set_start_method('fork')
 
 force = False
 profile = False
