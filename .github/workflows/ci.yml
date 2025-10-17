@@ -11,7 +11,7 @@ on:
 
 jobs:
   tests:
-    if: ${{ !github.event.pull_request.draft }}
+    if: ${{ github.event_name == 'push' || !github.event.pull_request.draft }}
     name: Run tests
     runs-on: ubuntu-22.04  # Needed for Python 3.7 compatibility
     strategy:
