@@ -5,7 +5,7 @@ Release 1.6.0 (TBD)
 -------------------
 
 API changes:
-* Rename `TargettedPixelGroup` to `TargetedPixelGroup` for correct spelling. Still keep `TargettedPixelGroup` as an alias for backwards compatibility. (#487)
+* Rename `TargettedPixelGroup` to `TargetedPixelGroup` for correct spelling. Still keep `TargettedPixelGroup` as an alias for backwards compatibility until the next major release. (#487)
 
 New:
 * Add Function6D framework. (#478)

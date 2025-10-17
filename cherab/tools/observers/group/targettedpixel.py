@@ -26,10 +26,10 @@ class TargettedPixelGroup(_TargetedPixelGroup):
     A group of targeted pixel under a single scene-graph node.
 
     .. deprecated::
-        TargettedPixelGroup is deprecated and will be removed in a future version.
-        Use TargetedPixelGroup instead.
+        `TargettedPixelGroup` is deprecated and will be removed in version 2.0.
+        Use `TargetedPixelGroup` instead.
 
-    A scene-graph object regrouping a series of 'TargetedPixel'
+    A scene-graph object regrouping a series of `TargetedPixel`
     observers as a scene-graph parent. Allows combined observation and display
     control simultaneously.
 
@@ -41,7 +41,8 @@ class TargettedPixelGroup(_TargetedPixelGroup):
 
     def __init__(self, *args, **kwargs):
         warnings.warn(
-            "TargettedPixelGroup is deprecated and will be removed in a future version. Use TargetedPixelGroup instead.",
+            "TargettedPixelGroup is deprecated and will be removed in version 2.0. "
+            + "Use TargetedPixelGroup instead.",
             DeprecationWarning,
             stacklevel=2,
         )
