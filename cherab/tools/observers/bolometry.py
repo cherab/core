@@ -18,6 +18,7 @@
 # under the Licence.
 
 from enum import Enum
+from warnings import warn
 import functools
 import numpy as np
 
@@ -516,6 +517,24 @@ class BolometerFoil(TargetedPixel):
             # Discard any samples from previous accumulate behaviour
             pipeline.value.clear()
 
+    @property
+    def targetted_path_prob(self):
+        warn(
+            "The 'targetted_path_prob' property is deprecated, use 'targeted_path_prob' instead.",
+            DeprecationWarning,
+            stacklevel=2
+        )
+        return self._targeted_path_prob
+
+    @targetted_path_prob.setter
+    def targetted_path_prob(self, value):
+        warn(
+            "The 'targetted_path_prob' property is deprecated, use 'targeted_path_prob' instead.",
+            DeprecationWarning,
+            stacklevel=2
+        )
+        self.targeted_path_prob = value
+
     def as_sightline(self):
         """
         Constructs a SightLine observer for this bolometer.
@@ -895,6 +914,24 @@ class BolometerIRVB(TargetedCCDArray):
             # Discard any samples from previous accumulate behaviour
             if pipeline.frame is not None:
                 pipeline.frame.clear()
+
+    @property
+    def targetted_path_prob(self):
+        warn(
+            "The 'targetted_path_prob' property is deprecated, use 'targeted_path_prob' instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        return self._targeted_path_prob
+
+    @targetted_path_prob.setter
+    def targetted_path_prob(self, value):
+        warn(
+            "The 'targetted_path_prob' property is deprecated, use 'targeted_path_prob' instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        self.targeted_path_prob = value
 
     def as_sightlines(self):
         """
