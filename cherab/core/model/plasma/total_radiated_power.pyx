@@ -54,8 +54,8 @@ cdef class TotalRadiatedPower(PlasmaModel):
     :param Plasma plasma: The plasma to which this emission model is attached. Default is None.
     :param AtomicData atomic_data: The atomic data provider for this model. Default is None.
 
-    :ivar Element element: The atomic element/isotope.
-    :ivar int charge: The charge state of the element/isotope.
+    :ivar Element element: See parameter 'element'.
+    :ivar int charge: See parameter 'charge'.
     """
 
     def __init__(self, Element element, int charge, Plasma plasma=None, AtomicData atomic_data=None):

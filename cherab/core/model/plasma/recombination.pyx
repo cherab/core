@@ -45,8 +45,8 @@ cdef class RecombinationLine(PlasmaModel):
     :param object lineshape_args: A list of line shape model arguments. Default is None.
     :param object lineshape_kwargs: A dictionary of line shape model keyword arguments. Default is None.
 
-    :ivar Plasma plasma: The plasma to which this emission model is attached.
-    :ivar AtomicData atomic_data: The atomic data provider for this model.
+    :ivar Plasma plasma: See parameter 'plasma'.
+    :ivar AtomicData atomic_data: See parameter 'atomic_data'.
     :ivar Line line: The emission line object.
     :ivar LineShapeModel lineshape: The line shape model.
     """
