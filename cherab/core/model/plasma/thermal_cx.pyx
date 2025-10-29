@@ -80,11 +80,11 @@ cdef class ThermalCXLine(PlasmaModel):
         return '<ThermalCXLine: element={}, charge={}, transition={}>'.format(self._line.element.name, self._line.charge, self._line.transition)
 
     @property
-    def line(self):
+    def line(self) -> Line:
         return self._line
     
     @property
-    def lineshape(self):
+    def lineshape(self) -> LineShapeModel:
         return self._lineshape
     
     cpdef Spectrum emission(self, Point3D point, Vector3D direction, Spectrum spectrum):

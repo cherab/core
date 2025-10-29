@@ -73,11 +73,11 @@ cdef class TotalRadiatedPower(PlasmaModel):
         self._change()
     
     @property
-    def element(self):
+    def element(self) -> Element:
         return self._element
     
     @property
-    def charge(self):
+    def charge(self) -> int:
         return self._charge
 
     cpdef Spectrum emission(self, Point3D point, Vector3D direction, Spectrum spectrum):
