@@ -25,7 +25,7 @@ class TestPlasmaModels(unittest.TestCase):
 
     def setUp(self):
         # setup mock to avoid reading the data from the repository
-        self.patcher_pec = patch(
+        self.patcher_excitation = patch(
             "cherab.openadas.openadas.repository.get_pec_excitation_rate",
             return_value={
                 "ne": np.linspace(1e18, 1e20, 10),
@@ -33,9 +33,9 @@ class TestPlasmaModels(unittest.TestCase):
                 "rate": np.ones((10, 12)),
             },
         )
-        self.mock_get_pec = self.patcher_pec.start()
+        self.mock_get_excitation = self.patcher_excitation.start()
 
-        self.patcher_rec = patch(
+        self.patcher_recombination = patch(
             "cherab.openadas.openadas.repository.get_pec_recombination_rate",
             return_value={
                 "ne": np.linspace(1e18, 1e20, 10),
@@ -43,7 +43,7 @@ class TestPlasmaModels(unittest.TestCase):
                 "rate": np.ones((10, 12)),
             },
         )
-        self.mock_get_rec = self.patcher_rec.start()
+        self.mock_get_recombination = self.patcher_recombination.start()
 
         self.patcher_wl = patch(
             "cherab.openadas.openadas.repository.get_wavelength", return_value=656.28
@@ -52,8 +52,8 @@ class TestPlasmaModels(unittest.TestCase):
 
     def tearDown(self):
         # stop the mocks after a test is run
-        self.patcher_pec.stop()
-        self.patcher_rec.stop()
+        self.patcher_excitation.stop()
+        self.patcher_recombination.stop()
         self.patcher_wl.stop()
 
     def test_excitation(self):
@@ -70,7 +70,7 @@ class TestPlasmaModels(unittest.TestCase):
         self.assertIsInstance(exc.lineshape, GaussianLine)
 
         # check the mock was called
-        self.mock_get_pec.assert_called_once()
+        self.mock_get_excitation.assert_called_once()
         self.assertEqual(self.mock_get_wavelength.call_count, 2)
 
     def test_recombination(self):
@@ -87,7 +87,7 @@ class TestPlasmaModels(unittest.TestCase):
         self.assertIsInstance(rec.lineshape, GaussianLine)
 
         # check the mock was called
-        self.mock_get_rec.assert_called_once()
+        self.mock_get_recombination.assert_called_once()
         self.assertEqual(self.mock_get_wavelength.call_count, 2)
 
     def test_total_radiated_power(self):
