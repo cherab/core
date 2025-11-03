@@ -4,6 +4,9 @@ Project Changelog
 Release 1.6.0 (TBD)
 -------------------
 
+API changes:
+* Add emission model attribute access to line and lineshape . (#294)
+
 New:
 * Add Function6D framework. (#478)
 * Add e_field attribute to Plasma object for electric field vector. (#465)
