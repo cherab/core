@@ -20,11 +20,11 @@ The following authors have contributed to the project:
 Current Development Team
 ------------------------
 
-* Jack Lovell (Oak Ridge, USA)
+* Jack Lovell (Oak Ridge National Laboratory, USA)
 * Vlad Neverov
-* Matej Tomes (IPP, Czechia)
+* Matej Tomes (Institute of Plasma Physics of the Czech Academy of Sciences, Czechia)
 * Koyo Munechika (ITER Organisation)
-* Jakub Svoboda (IPP, Czechia)
+* Jakub Svoboda (Institute of Plasma Physics of the Czech Academy of Sciences, Czechia)
 
 
 Contributors
@@ -38,7 +38,7 @@ Contributors
 * Andy Meigs (Physics)
 
 
-Honorary Developers
+Former Developers
 -----------------------------------
 * Matthew Carr (Core Developer)
 * Alex Meakins (Architect/Core Developer)

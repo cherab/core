@@ -85,13 +85,13 @@ of code / physics algorithm quality standards.
 TMC Members
 -----------
 
-- Jack Lovell (Oak Ridge, USA)
-- Matej Tomes (IPP, Czechia)
+- Jack Lovell (Oak Ridge National Laboratory, USA)
+- Matej Tomes (Institute of Plasma Physics of the Czech Academy of Sciences, Czechia)
 - Koyo Munechika (ITER Organisation)
-- Jakub Svoboda (IPP, Czechia)
+- Jakub Svoboda (Institute of Plasma Physics of the Czech Academy of Sciences, Czechia)
 
 
-Honorary TMC Members
+Former TMC Members
 -----------
 
 - Alys Brett (chairwoman, master account holder, responsible for delegation, UKAEA, UK)
