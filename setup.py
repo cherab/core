@@ -117,14 +117,14 @@ setup(
     long_description=long_description,
     long_description_content_type="text/markdown",
     install_requires=[
-        "numpy>=1.14,<2.0",
+        "numpy>=2.0",
         "scipy",
         "matplotlib",
-        "raysect==0.8.1.*",
+        "raysect==0.9.1.*",
     ],
     extras_require={
         # Running ./dev/build_docs.sh runs setup.py, which requires cython.
-        "docs": ["cython~=3.0", "sphinx", "sphinx-rtd-theme", "sphinx-tabs"],
+        "docs": ["cython~=3.1", "sphinx", "sphinx-rtd-theme", "sphinx-tabs"],
     },
     packages=find_packages(include=["cherab*"]),
     package_data={"": [
