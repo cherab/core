@@ -85,12 +85,19 @@ of code / physics algorithm quality standards.
 TMC Members
 -----------
 
+- Jack Lovell (Oak Ridge, USA)
+- Matej Tomes (IPP, Czechia)
+- Koyo Munechika (ITER Organisation)
+- Jakub Svoboda (IPP, Czechia)
+
+
+Honorary TMC Members
+-----------
+
 - Alys Brett (chairwoman, master account holder, responsible for delegation, UKAEA, UK)
 - Matt Carr (External consultant, diagnostic physics models)
-- Jack Lovell (Oak Ridge, USA)
 - Alex Meakins (External consultant, Architecture, software integrity)
 - Vlad Neverov (NRC Kurchatov Institute, Moscow)
-- Matej Tomes (Compass, IPP, Prague)
 
 
 Citing The Code
