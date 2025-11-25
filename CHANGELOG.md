@@ -5,6 +5,7 @@ Release 1.6.0 (TBD)
 -------------------
 
 API changes:
+* Add generic distribution function. (#481)
 * Add emission model attribute access to line and lineshape . (#294)
 
 New:
