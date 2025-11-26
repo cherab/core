@@ -53,6 +53,9 @@ cdef class TotalRadiatedPower(PlasmaModel):
     :param int charge: The charge state of the element/isotope.
     :param Plasma plasma: The plasma to which this emission model is attached. Default is None.
     :param AtomicData atomic_data: The atomic data provider for this model. Default is None.
+
+    :ivar Element element: See parameter 'element'.
+    :ivar int charge: See parameter 'charge'.
     """
 
     def __init__(self, Element element, int charge, Plasma plasma=None, AtomicData atomic_data=None):
@@ -68,6 +71,14 @@ cdef class TotalRadiatedPower(PlasmaModel):
 
         # ensure that cache is initialised
         self._change()
+    
+    @property
+    def element(self) -> Element:
+        return self._element
+    
+    @property
+    def charge(self) -> int:
+        return self._charge
 
     cpdef Spectrum emission(self, Point3D point, Vector3D direction, Spectrum spectrum):
 

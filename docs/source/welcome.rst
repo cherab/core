@@ -20,10 +20,11 @@ The following authors have contributed to the project:
 Current Development Team
 ------------------------
 
-* Matthew Carr (Core Developer)
-* Alex Meakins (Architect/Core Developer)
-* Alfonso Baciero (Model development)
-* Carine Giroud (JET Project Management)
+* Jack Lovell (Oak Ridge National Laboratory, USA)
+* Vlad Neverov
+* Matej Tomes (Institute of Plasma Physics of the Czech Academy of Sciences, Czechia)
+* Koyo Munechika (ITER Organisation)
+* Jakub Svoboda (Institute of Plasma Physics of the Czech Academy of Sciences, Czechia)
 
 
 Contributors
@@ -35,6 +36,14 @@ Contributors
 * Nick Hawkes (Physics)
 * Ephrem Delabie (Physics)
 * Andy Meigs (Physics)
+
+
+Former Developers
+-----------------------------------
+* Matthew Carr (Core Developer)
+* Alex Meakins (Architect/Core Developer)
+* Alfonso Baciero (Model development)
+* Carine Giroud (JET Project Management)
 
 
 Project History

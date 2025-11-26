@@ -280,8 +280,7 @@ class TestVoxelCalculations(unittest.TestCase):
         for rectangle in RECTANGULAR_VOXEL_COORDS:
             coords = np.asarray(rectangle)
             voxel = AxisymmetricVoxel(coords)
-            dx = coords[:, 0].ptp()
-            dy = coords[:, 1].ptp()
+            dx, dy = np.ptp(coords, axis=0)
             expected_area = dx * dy
             self.assertEqual(voxel.cross_sectional_area, expected_area)
 
