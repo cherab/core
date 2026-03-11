@@ -38,6 +38,13 @@ _L_LOOKUP = {
     11: 'O',
     12: 'Q',
     13: 'R',
+    14: 'T',
+    15: 'U',
+    16: 'V',
+    17: 'W',
+    18: 'X',
+    19: 'Y',
+    20: 'Z',
 }
 
 
@@ -120,7 +127,7 @@ def _scrape_metadata_hydrogen(file, element, charge):
         wavelength = float(match.groups()[1]) / 10  # convert Angstroms to nm
         upper_level = int(match.groups()[2])
         lower_level = int(match.groups()[3])
-        rate_type_adas = match.groups()[4]
+        rate_type_adas = match.groups()[4].upper()
         if rate_type_adas == 'EXCIT':
             rate_type = 'excitation'
         elif rate_type_adas == 'RECOM':
@@ -147,14 +154,14 @@ def _scrape_metadata_hydrogen_like(file, element, charge):
     file.seek(0)
     lines = file.readlines()
 
-    pec_index_header_match = r'^C\s*ISEL\s*WAVELENGTH\s*TRANSITION\s*TYPE'
+    pec_index_header_match = r'^C\s*ISEL\s*(?:WAVELENGTH|WVLEN\(A\))\s*TRANSITION\s*TYPE'
     while not re.match(pec_index_header_match, lines[0], re.IGNORECASE):
         lines.pop(0)
     index_lines = lines
 
     for i in range(len(index_lines)):
 
-        pec_full_transition_match = r'^C\s*([0-9]*)\.\s*([0-9]*\.[0-9]*)\s*([0-9]*)[\(\)\.0-9\s]*-\s*([0-9]*)[\(\)\.0-9\s]*([A-Z]*)'
+        pec_full_transition_match = r'^C\s*([0-9]*)\.?\s*([0-9]*\.[0-9]*)\s*([0-9]*)[\(\)\.0-9\s]*-\s*([0-9]*)[\(\)\.0-9\s]*([A-Z]*)'
         match = re.match(pec_full_transition_match, index_lines[i], re.IGNORECASE)
         if not match:
             continue
@@ -163,7 +170,7 @@ def _scrape_metadata_hydrogen_like(file, element, charge):
         wavelength = float(match.groups()[1]) / 10  # convert Angstroms to nm
         upper_level = int(match.groups()[2])
         lower_level = int(match.groups()[3])
-        rate_type_adas = match.groups()[4]
+        rate_type_adas = match.groups()[4].upper()
         if rate_type_adas == 'EXCIT':
             rate_type = 'excitation'
         elif rate_type_adas == 'RECOM':
@@ -193,10 +200,10 @@ def _scrape_metadata_full(file, element, charge):
     configuration_lines = []
     configuration_dict = {}
 
-    configuration_header_match = r'^C\s*Configuration\s*\(2S\+1\)L\(w-1/2\)\s*Energy \(cm\*\*-1\)$'
+    configuration_header_match = r'^C\s*(?:lv\s+)?Configuration\s*\(2S\+1\)L\(w-1/2\)\s*Energy\s*\(cm(?:\*\*|\^)-1\)\s*$'
     while not re.match(configuration_header_match, lines[0], re.IGNORECASE):
         lines.pop(0)
-    pec_index_header_match = r'^C\s*ISEL\s*WAVELENGTH\s*TRANSITION\s*TYPE'
+    pec_index_header_match = r'^C\s*ISEL\s*(?:WAVELENGTH|WVLEN\(A\))\s*TRANSITION\s*TYPE'
     while not re.match(pec_index_header_match, lines[0], re.IGNORECASE):
         configuration_lines.append(lines[0])
         lines.pop(0)
@@ -204,7 +211,7 @@ def _scrape_metadata_full(file, element, charge):
 
     for i in range(len(configuration_lines)):
 
-        configuration_string_match = r"^C\s*([0-9]*)\s*((?:[0-9][SPDFG][0-9]\s)*)\s*\(([0-9]*\.?[0-9]*)\)([0-9]*)\(\s*([0-9]*\.?[0-9]*)\)"
+        configuration_string_match = r'^[Cc]\s*([0-9]+)\s+(\S+)\s+\(([0-9]+(?:\.[0-9]+)?)\)\s*([0-9]+)\(\s*([0-9]+(?:\.[0-9]+)?)\)\s*([0-9]+(?:\.[0-9]+)?)?\s*$'
         match = re.match(configuration_string_match, configuration_lines[i], re.IGNORECASE)
         if not match:
             continue
@@ -231,7 +238,7 @@ def _scrape_metadata_full(file, element, charge):
         upper_level = configuration_dict[upper_level_id]
         lower_level_id = int(match.groups()[3])
         lower_level = configuration_dict[lower_level_id]
-        rate_type_adas = match.groups()[4]
+        rate_type_adas = match.groups()[4].upper()
         if rate_type_adas == 'EXCIT':
             rate_type = 'excitation'
         elif rate_type_adas == 'RECOM':
