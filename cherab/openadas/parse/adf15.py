@@ -116,9 +116,8 @@ def _scrape_metadata_hydrogen(file, element, charge):
         lines.pop(0)
     index_lines = lines
 
+    pec_hydrogen_transition_match = r'^C\s*([0-9]*)\.\s*([0-9]*\.[0-9]*)\s*N=\s*([0-9]*) - N=\s*([0-9]*)\s*([A-Z]*)'
     for i in range(len(index_lines)):
-
-        pec_hydrogen_transition_match = r'^C\s*([0-9]*)\.\s*([0-9]*\.[0-9]*)\s*N=\s*([0-9]*) - N=\s*([0-9]*)\s*([A-Z]*)'
         match = re.match(pec_hydrogen_transition_match, index_lines[i], re.IGNORECASE)
         if not match:
             continue
@@ -159,9 +158,8 @@ def _scrape_metadata_hydrogen_like(file, element, charge):
         lines.pop(0)
     index_lines = lines
 
+    pec_full_transition_match = r'^[cC]\s*([0-9]*)\.?\s*([0-9]*\.[0-9]*)\s*([0-9]*)[\(\)\.0-9\s]*-\s*([0-9]*)[\(\)\.0-9\s]*([A-Z]*)'
     for i in range(len(index_lines)):
-
-        pec_full_transition_match = r'^C\s*([0-9]*)\.?\s*([0-9]*\.[0-9]*)\s*([0-9]*)[\(\)\.0-9\s]*-\s*([0-9]*)[\(\)\.0-9\s]*([A-Z]*)'
         match = re.match(pec_full_transition_match, index_lines[i], re.IGNORECASE)
         if not match:
             continue
@@ -209,13 +207,8 @@ def _scrape_metadata_full(file, element, charge):
         lines.pop(0)
     index_lines = lines
 
+    configuration_string_match = r'^[cC]\s*([0-9]*)\s*((?:[0-9][SPDFG][0-9]\s)*)\s*\(([0-9]*\.?[0-9]*)\)([0-9]*)\(\s*([0-9]*\.?[0-9]*)\)'
     for i in range(len(configuration_lines)):
-
-        configuration_string_match = (
-            r'^[Cc]\s*([0-9]+)\s+([0-9A-Za-z#]+(?:\s+[0-9A-Za-z#]+)*)\s+'
-            r'\(([0-9]+(?:\.[0-9]+)?)\)\s*([0-9]+)\(\s*([0-9]+(?:\.[0-9]+)?)\)'
-            r'\s*(?:[0-9]+(?:\.[0-9]+)?)?\s*$'
-        )
         match = re.match(configuration_string_match, configuration_lines[i], re.IGNORECASE)
         if not match:
             continue
@@ -229,9 +222,8 @@ def _scrape_metadata_full(file, element, charge):
         configuration_dict[config_id] = (electron_configuration + " " + spin_multiplicity +
                                          total_orbital_quantum_number + total_angular_momentum_quantum_number)
 
+    pec_full_transition_match = r'^[cC]\s*([0-9]*)\.?\s*([0-9]*\.[0-9]*)\s*([0-9]*)[\(\)\.0-9\s]*-\s*([0-9]*)[\(\)\.0-9\s]*([A-Z]*)'
     for i in range(len(index_lines)):
-
-        pec_full_transition_match = r'^C\s*([0-9]*)\.?\s*([0-9]*\.[0-9]*)\s*([0-9]*)[\(\)\.0-9\s]*-\s*([0-9]*)[\(\)\.0-9\s]*([A-Z]*)'
         match = re.match(pec_full_transition_match, index_lines[i], re.IGNORECASE)
         if not match:
             continue
