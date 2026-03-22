@@ -207,7 +207,13 @@ def _scrape_metadata_full(file, element, charge):
         lines.pop(0)
     index_lines = lines
 
-    configuration_string_match = r'^[cC]\s*([0-9]*)\s*((?:[0-9][SPDFG][0-9]\s)*)\s*\(([0-9]*\.?[0-9]*)\)([0-9]*)\(\s*([0-9]*\.?[0-9]*)\)'
+    configuration_string_match = (
+        r'^[cC]\s*([0-9]+)\s*'
+        r'((?:[0-9][SPDFG][0-9](?:\s+[0-9][SPDFG][0-9])*)|(?:[0-9A-Z]+))\s*'
+        r'\(([0-9]*\.?[0-9]+)\)'
+        r'\s*([0-9]+)'
+        r'\(\s*([0-9]*\.?[0-9]+)\)'
+    )
     for i in range(len(configuration_lines)):
         match = re.match(configuration_string_match, configuration_lines[i], re.IGNORECASE)
         if not match:
