@@ -159,57 +159,57 @@ class TestADF15Parser(unittest.TestCase):
     def _create_test_file(self, filename, content):
         """Helper to create a test file."""
         filepath = os.path.join(self.temp_dir, filename)
-        with open(filepath, 'w') as f:
+        with open(filepath, "w") as f:
             f.write(content)
         return filepath
 
     def test_parse_hydrogen_adf15(self):
         """Test parsing of hydrogen format ADF15 file."""
         content = MockADF15Files.create_hydrogen_adf15()
-        filepath = self._create_test_file('test_h.adf15', content)
+        filepath = self._create_test_file("test_h.adf15", content)
 
-        rates, wavelengths = parse_adf15(hydrogen, 0, filepath, header_format='hydrogen')
+        rates, wavelengths = parse_adf15(hydrogen, 0, filepath, header_format="hydrogen")
 
         # Check that rates were extracted
-        self.assertIn('excitation', rates)
-        self.assertIn(hydrogen, rates['excitation'])
-        self.assertIn(0, rates['excitation'][hydrogen])
+        self.assertIn("excitation", rates)
+        self.assertIn(hydrogen, rates["excitation"])
+        self.assertIn(0, rates["excitation"][hydrogen])
 
         # Check that wavelengths were extracted
         self.assertIn(hydrogen, wavelengths)
         self.assertIn(0, wavelengths[hydrogen])
 
         # Check specific transitions
-        self.assertIn((2, 1), rates['excitation'][hydrogen][0])
-        self.assertIn((3, 2), rates['recombination'][hydrogen][0])
-        self.assertIn((4, 2), rates['thermalcx'][hydrogen][0])
+        self.assertIn((2, 1), rates["excitation"][hydrogen][0])
+        self.assertIn((3, 2), rates["recombination"][hydrogen][0])
+        self.assertIn((4, 2), rates["thermalcx"][hydrogen][0])
 
     def test_parse_carbon_adf15_full_config(self):
         """Test parsing of carbon format ADF15 file with full configuration."""
         content = MockADF15Files.create_carbon_adf15()
-        filepath = self._create_test_file('test_c.adf15', content)
+        filepath = self._create_test_file("test_c.adf15", content)
 
         rates, wavelengths = parse_adf15(carbon, 0, filepath)
 
         # Check that rates were extracted
-        self.assertIn('excitation', rates)
-        self.assertIn(carbon, rates['excitation'])
-        self.assertIn(0, rates['excitation'][carbon])
+        self.assertIn("excitation", rates)
+        self.assertIn(carbon, rates["excitation"])
+        self.assertIn(0, rates["excitation"][carbon])
 
         # Check that wavelengths were extracted
         self.assertIn(carbon, wavelengths)
 
         # Verify rate data has correct shape
-        transitions = list(rates['excitation'][carbon][0].keys())
+        transitions = list(rates["excitation"][carbon][0].keys())
         self.assertGreater(len(transitions), 0)
 
-        for transition, rate_data in rates['excitation'][carbon][0].items():
-            self.assertIn('ne', rate_data)
-            self.assertIn('te', rate_data)
-            self.assertIn('rate', rate_data)
-            self.assertTrue(isinstance(rate_data['ne'], np.ndarray))
-            self.assertTrue(isinstance(rate_data['te'], np.ndarray))
-            self.assertTrue(isinstance(rate_data['rate'], np.ndarray))
+        for transition, rate_data in rates["excitation"][carbon][0].items():
+            self.assertIn("ne", rate_data)
+            self.assertIn("te", rate_data)
+            self.assertIn("rate", rate_data)
+            self.assertTrue(isinstance(rate_data["ne"], np.ndarray))
+            self.assertTrue(isinstance(rate_data["te"], np.ndarray))
+            self.assertTrue(isinstance(rate_data["rate"], np.ndarray))
 
     def test_parse_tungsten_adf15(self):
         """Test parsing of tungsten format ADF15 file."""
@@ -218,14 +218,14 @@ class TestADF15Parser(unittest.TestCase):
         from cherab.core.atomic import tungsten
 
         content = MockADF15Files.create_tungsten_adf15()
-        filepath = self._create_test_file('test_w.adf15', content)
+        filepath = self._create_test_file("test_w.adf15", content)
 
         rates, wavelengths = parse_adf15(tungsten, 0, filepath)
 
         # Check that rates were extracted
-        self.assertIn('excitation', rates)
-        self.assertIn(tungsten, rates['excitation'])
-        self.assertIn(0, rates['excitation'][tungsten])
+        self.assertIn("excitation", rates)
+        self.assertIn(tungsten, rates["excitation"])
+        self.assertIn(0, rates["excitation"][tungsten])
 
         # Check that wavelengths were extracted
         self.assertIn(tungsten, wavelengths)
@@ -233,44 +233,44 @@ class TestADF15Parser(unittest.TestCase):
     def test_rate_data_structure(self):
         """Test that rate data has correct structure and units."""
         content = MockADF15Files.create_hydrogen_adf15()
-        filepath = self._create_test_file('test_structure.adf15', content)
+        filepath = self._create_test_file("test_structure.adf15", content)
 
-        rates, wavelengths = parse_adf15(hydrogen, 0, filepath, header_format='hydrogen')
+        rates, wavelengths = parse_adf15(hydrogen, 0, filepath, header_format="hydrogen")
 
         # Extract first rate
-        first_transition = list(rates['excitation'][hydrogen][0].keys())[0]
-        rate_data = rates['excitation'][hydrogen][0][first_transition]
+        first_transition = list(rates["excitation"][hydrogen][0].keys())[0]
+        rate_data = rates["excitation"][hydrogen][0][first_transition]
 
         # Check structure
-        self.assertEqual(set(rate_data.keys()), {'ne', 'te', 'rate'})
+        self.assertEqual(set(rate_data.keys()), {"ne", "te", "rate"})
 
         # Check that units were converted (values should be large after conversion from cm^-3 to m^-3)
-        self.assertTrue(np.all(rate_data['ne'] >= 1e14))  # Should be in m^-3
-        self.assertTrue(np.all(rate_data['te'] > 0))  # Temperature should be positive
-        self.assertTrue(np.all(rate_data['rate'] > 0))  # Rate should be positive
+        self.assertTrue(np.all(rate_data["ne"] >= 1e14))  # Should be in m^-3
+        self.assertTrue(np.all(rate_data["te"] > 0))  # Temperature should be positive
+        self.assertTrue(np.all(rate_data["rate"] > 0))  # Rate should be positive
 
         # Check array dimensions match
-        ne_count = len(rate_data['ne'])
-        te_count = len(rate_data['te'])
-        rate_shape = rate_data['rate'].shape
+        ne_count = len(rate_data["ne"])
+        te_count = len(rate_data["te"])
+        rate_shape = rate_data["rate"].shape
         self.assertEqual(rate_shape, (ne_count, te_count))
 
     def test_invalid_adf15_file(self):
         """Test that invalid ADF15 file raises appropriate error."""
         invalid_content = "This is not a valid ADF15 file\n"
-        filepath = self._create_test_file('invalid.adf15', invalid_content)
+        filepath = self._create_test_file("invalid.adf15", invalid_content)
 
         with self.assertRaises(ValueError) as context:
             parse_adf15(hydrogen, 0, filepath)
 
-        self.assertIn('valid ADF15 file', str(context.exception))
+        self.assertIn("valid ADF15 file", str(context.exception))
 
     def test_wavelength_conversion(self):
         """Test that wavelengths are correctly converted from Angstroms to nm."""
         content = MockADF15Files.create_hydrogen_adf15()
-        filepath = self._create_test_file('test_wavelength.adf15', content)
+        filepath = self._create_test_file("test_wavelength.adf15", content)
 
-        rates, wavelengths = parse_adf15(hydrogen, 0, filepath, header_format='hydrogen')
+        rates, wavelengths = parse_adf15(hydrogen, 0, filepath, header_format="hydrogen")
 
         # Check specific wavelengths (656.3 Angstrom = 65.63 nm)
         transition_21 = (2, 1)
@@ -282,15 +282,15 @@ class TestADF15Parser(unittest.TestCase):
     def test_multiple_rate_types(self):
         """Test parsing file with multiple rate types."""
         content = MockADF15Files.create_hydrogen_adf15()
-        filepath = self._create_test_file('test_multitypes.adf15', content)
+        filepath = self._create_test_file("test_multitypes.adf15", content)
 
-        rates, wavelengths = parse_adf15(hydrogen, 0, filepath, header_format='hydrogen')
+        rates, wavelengths = parse_adf15(hydrogen, 0, filepath, header_format="hydrogen")
 
         # Check both rate types exist
-        self.assertIn('excitation', rates)
-        self.assertIn('recombination', rates)
-        self.assertIn('thermalcx', rates)
+        self.assertIn("excitation", rates)
+        self.assertIn("recombination", rates)
+        self.assertIn("thermalcx", rates)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

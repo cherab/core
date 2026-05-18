@@ -25,44 +25,44 @@ from cherab.core.utility import RecursiveDict
 from cherab.core.utility.conversion import Cm3ToM3, PerCm3ToPerM3
 
 # Compiled regex patterns for ADF15 file parsing
-_ADF_HEADER_MATCH = re.compile(r'^\s*(\d*) {4}/(.*)/?\s*$')
-_PEC_INDEX_HEADER_MATCH_STANDARD = re.compile(r'^C\s*ISEL\s*(?:WAVELENGTH|WVLEN\(A\))\s*TRANSITION\s*TYPE', re.IGNORECASE)
-_PEC_HYDROGEN_TRANSITION_MATCH = re.compile(r'^C\s*([0-9]*)\.\s*([0-9]*\.[0-9]*)\s*N=\s*([0-9]*) - N=\s*([0-9]*)\s*([A-Z]*)', re.IGNORECASE)
-_PEC_FULL_TRANSITION_MATCH = re.compile(r'^[cC]\s*([0-9]*)\.?\s*([0-9]*\.[0-9]*)\s*([0-9]*)[\(\)\.0-9\s]*-\s*([0-9]*)[\(\)\.0-9\s]*([A-Z]*)', re.IGNORECASE)
-_CONFIGURATION_HEADER_MATCH = re.compile(r'^C\s*(?:lv\s+)?Configuration\s*\(2S\+1\)L\(w-1/2\)\s*Energy\s*\(cm(?:\*\*|\^)-1\)\s*$', re.IGNORECASE)
+_ADF_HEADER_MATCH = re.compile(r"^\s*(\d*) {4}/(.*)/?\s*$")
+_PEC_INDEX_HEADER_MATCH_STANDARD = re.compile(r"^C\s*ISEL\s*(?:WAVELENGTH|WVLEN\(A\))\s*TRANSITION\s*TYPE", re.IGNORECASE)
+_PEC_HYDROGEN_TRANSITION_MATCH = re.compile(r"^C\s*([0-9]*)\.\s*([0-9]*\.[0-9]*)\s*N=\s*([0-9]*) - N=\s*([0-9]*)\s*([A-Z]*)", re.IGNORECASE)
+_PEC_FULL_TRANSITION_MATCH = re.compile(r"^[cC]\s*([0-9]*)\.?\s*([0-9]*\.[0-9]*)\s*([0-9]*)[\(\)\.0-9\s]*-\s*([0-9]*)[\(\)\.0-9\s]*([A-Z]*)", re.IGNORECASE)
+_CONFIGURATION_HEADER_MATCH = re.compile(r"^C\s*(?:lv\s+)?Configuration\s*\(2S\+1\)L\(w-1/2\)\s*Energy\s*\(cm(?:\*\*|\^)-1\)\s*$", re.IGNORECASE)
 _CONFIGURATION_STRING_MATCH = re.compile(
-    r'^[cC]\s*([0-9]+)\s*'
-    r'((?:[0-9][SPDFG][0-9](?:\s+[0-9][SPDFG][0-9])*)|(?:[0-9A-Z]+))\s*'
-    r'\(([0-9]*\.?[0-9]+)\)'
-    r'\s*([0-9]+)'
-    r'\(\s*([0-9]*\.?[0-9]+)\)',
+    r"^[cC]\s*([0-9]+)\s*"
+    r"((?:[0-9][SPDFG][0-9](?:\s+[0-9][SPDFG][0-9])*)|(?:[0-9A-Z]+))\s*"
+    r"\(([0-9]*\.?[0-9]+)\)"
+    r"\s*([0-9]+)"
+    r"\(\s*([0-9]*\.?[0-9]+)\)",
     re.IGNORECASE,
 )
 _WAVELENGTH_MATCH = re.compile(r"^\s*[0-9]*\.[0-9]* ?a?\s+[0-9]+\s+[0-9]+.*?/isel *= *[0-9]+$", re.IGNORECASE)
 _BLOCK_ID_MATCH = re.compile(r"^\s*[0-9]*\.[0-9]* ?a?\s*([0-9]*)\s*([0-9]*).*/type *= *([a-zA-Z]*).*/isel *= * ([0-9]*)$", re.IGNORECASE)
 
 _L_LOOKUP = {
-    0: 'S',
-    1: 'P',
-    2: 'D',
-    3: 'F',
-    4: 'G',
-    5: 'H',
-    6: 'I',
-    7: 'K',
-    8: 'L',
-    9: 'M',
-    10: 'N',
-    11: 'O',
-    12: 'Q',
-    13: 'R',
-    14: 'T',
-    15: 'U',
-    16: 'V',
-    17: 'W',
-    18: 'X',
-    19: 'Y',
-    20: 'Z',
+    0: "S",
+    1: "P",
+    2: "D",
+    3: "F",
+    4: "G",
+    5: "H",
+    6: "I",
+    7: "K",
+    8: "L",
+    9: "M",
+    10: "N",
+    11: "O",
+    12: "Q",
+    13: "R",
+    14: "T",
+    15: "U",
+    16: "V",
+    17: "W",
+    18: "X",
+    19: "Y",
+    20: "Z",
 }
 
 
@@ -77,7 +77,7 @@ def parse_adf15(element, charge, adf_file_path, header_format=None):
     """
 
     if not isinstance(element, Element):
-        raise TypeError('The element must be an Element object.')
+        raise TypeError("The element must be an Element object.")
 
     charge = int(charge)
 
@@ -85,17 +85,17 @@ def parse_adf15(element, charge, adf_file_path, header_format=None):
         # for check header line
         header = file.readline()
         if not _ADF_HEADER_MATCH.match(header):
-            raise ValueError('The specified path does not point to a valid ADF15 file.')
+            raise ValueError("The specified path does not point to a valid ADF15 file.")
 
         # scrape transition information and wavelength
         # use simple electron configuration structure for hydrogen-like ions
-        if header_format == 'hydrogen' or element == hydrogen:
+        if header_format == "hydrogen" or element == hydrogen:
             config = _scrape_metadata_hydrogen(file, element, charge)
-        elif header_format == 'hydrogen-like':
+        elif header_format == "hydrogen-like":
             config = _scrape_metadata_hydrogen_like(file, element, charge)
         elif element.atomic_number - charge == 1:
             config = _scrape_metadata_hydrogen_like(file, element, charge)
-            if not config and 'bnd#' in adf_file_path:
+            if not config and "bnd#" in adf_file_path:
                 # ADF15 files with the "bnd" suffix may have metadata in the "hydrogen" format
                 config = _scrape_metadata_hydrogen(file, element, charge)
         else:
@@ -106,14 +106,14 @@ def parse_adf15(element, charge, adf_file_path, header_format=None):
 
         # process rate data
         rates = RecursiveDict()
-        for cls in ('excitation', 'recombination', 'thermalcx'):
+        for cls in ("excitation", "recombination", "thermalcx"):
             for element, charge_states in config[cls].items():
                 for charge, transitions in charge_states.items():
                     for transition in transitions.keys():
                         block_num = config[cls][element][charge][transition]
                         rates[cls][element][charge][transition] = _extract_rate(file, block_num)
 
-    wavelengths = config['wavelength']
+    wavelengths = config["wavelength"]
     return rates, wavelengths
 
 
@@ -141,12 +141,12 @@ def _scrape_metadata_hydrogen(file, element, charge):
         upper_level = int(match.groups()[2])
         lower_level = int(match.groups()[3])
         rate_type_adas = match.groups()[4].upper()
-        if rate_type_adas == 'EXCIT':
-            rate_type = 'excitation'
-        elif rate_type_adas == 'RECOM':
-            rate_type = 'recombination'
-        elif rate_type_adas == 'CHEXC':
-            rate_type = 'thermalcx'
+        if rate_type_adas == "EXCIT":
+            rate_type = "excitation"
+        elif rate_type_adas == "RECOM":
+            rate_type = "recombination"
+        elif rate_type_adas == "CHEXC":
+            rate_type = "thermalcx"
         else:
             raise ValueError("Unrecognised rate type - {}".format(rate_type_adas))
 
@@ -180,12 +180,12 @@ def _scrape_metadata_hydrogen_like(file, element, charge):
         upper_level = int(match.groups()[2])
         lower_level = int(match.groups()[3])
         rate_type_adas = match.groups()[4].upper()
-        if rate_type_adas == 'EXCIT':
-            rate_type = 'excitation'
-        elif rate_type_adas == 'RECOM':
-            rate_type = 'recombination'
-        elif rate_type_adas == 'CHEXC':
-            rate_type = 'thermalcx'
+        if rate_type_adas == "EXCIT":
+            rate_type = "excitation"
+        elif rate_type_adas == "RECOM":
+            rate_type = "recombination"
+        elif rate_type_adas == "CHEXC":
+            rate_type = "thermalcx"
         else:
             raise ValueError("Unrecognised rate type - {}".format(rate_type_adas))
 
@@ -240,12 +240,12 @@ def _scrape_metadata_full(file, element, charge):
         lower_level_id = int(match.groups()[3])
         lower_level = configuration_dict[lower_level_id]
         rate_type_adas = match.groups()[4].upper()
-        if rate_type_adas == 'EXCIT':
-            rate_type = 'excitation'
-        elif rate_type_adas == 'RECOM':
-            rate_type = 'recombination'
-        elif rate_type_adas == 'CHEXC':
-            rate_type = 'thermalcx'
+        if rate_type_adas == "EXCIT":
+            rate_type = "excitation"
+        elif rate_type_adas == "RECOM":
+            rate_type = "recombination"
+        elif rate_type_adas == "CHEXC":
+            rate_type = "thermalcx"
         else:
             raise ValueError("Unrecognised rate type - {}".format(rate_type_adas))
 
@@ -316,10 +316,10 @@ def _extract_rate(file, block_num):
             density = PerCm3ToPerM3.to(density)
             rates = Cm3ToM3.to(rates)
 
-            return {'ne': density, 'te': temperature, 'rate': rates}
+            return {"ne": density, "te": temperature, "rate": rates}
 
     # If code gets to here, block wasn't found.
-    raise RuntimeError('Block number {} was not found in the ADF15 file.'.format(block_num))
+    raise RuntimeError("Block number {} was not found in the ADF15 file.".format(block_num))
 
 
 def _group_by_block(source_file, match_pattern):
