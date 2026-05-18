@@ -21,4 +21,4 @@ from .bolometry import BolometerCamera, BolometerFoil, BolometerSlit, BolometerI
 from .calcam import load_calcam_calibration
 from .intersections import find_wall_intersection
 from .spectroscopy import SpectroscopicSightLine, SpectroscopicFibreOptic
-from .group import PixelGroup, TargettedPixelGroup, SightLineGroup, FibreOpticGroup, SpectroscopicFibreOpticGroup, SpectroscopicSightLineGroup
+from .group import PixelGroup, TargetedPixelGroup, TargettedPixelGroup, SightLineGroup, FibreOpticGroup, SpectroscopicFibreOpticGroup, SpectroscopicSightLineGroup
