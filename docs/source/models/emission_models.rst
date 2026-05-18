@@ -6,6 +6,7 @@ Cherab contains a number of independent physics models for spectroscopic emissio
 
 .. toctree::
    custom_models
+   beam/beam_attenuator
    cxs/cxs_model
    cxs/charge_exchange_calculation
    bes/bes_model

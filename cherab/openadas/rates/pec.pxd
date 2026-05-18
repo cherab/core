@@ -19,7 +19,7 @@
 from cherab.core cimport ImpactExcitationPEC as CoreImpactExcitationPEC
 from cherab.core cimport RecombinationPEC as CoreRecombinationPEC
 from cherab.core cimport ThermalCXPEC as CoreThermalCXPEC
-from cherab.core.math cimport Function2D
+from cherab.core.math cimport Function2D, Function3D
 
 
 cdef class ImpactExcitationPEC(CoreImpactExcitationPEC):
@@ -48,8 +48,14 @@ cdef class NullRecombinationPEC(CoreRecombinationPEC):
     pass
 
 
-# cdef class CXThermalRate(CoreCXThermalRate):
-#     pass
-#
-# cdef class ThermalCXRate(CoreThermalCXRate):
-#     pass
+cdef class ThermalCXPEC(CoreThermalCXPEC):
+
+    cdef:
+        readonly dict raw_data
+        readonly double wavelength
+        readonly tuple density_range, temperature_range, donor_temperature_range
+        Function3D _rate
+
+
+cdef class NullThermalCXPEC(CoreThermalCXPEC):
+    pass

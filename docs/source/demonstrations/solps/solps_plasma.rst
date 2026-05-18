@@ -1,3 +1,5 @@
+:orphan:
+
 
 .. _mastu_solps_plasma:
 

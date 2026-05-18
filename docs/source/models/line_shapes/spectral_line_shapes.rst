@@ -2,36 +2,46 @@
 Spectral Line Shapes
 ====================
 
-Cherab contains Doppler-broadened, Stark-broadened and Doppler-Zeeman line shapes of
-atomic spectra. Stark-Doppler and Stark-Doppler-Zeeman line shapes of hydrogen spectra
-will be added in the future.
+Cherab contains Doppler-broadened, Doppler-Zeeman and Stark-Doppler-Zeeman line shapes of
+atomic spectra.
 
 **Assumption: Maxwellian distribution of emitting species is assumed.**
 **A general model of Doppler broadening will be implemented in the future.**
 
-.. autoclass:: cherab.core.model.lineshape.add_gaussian_line
+.. autoclass:: cherab.core.model.lineshape.doppler.doppler_shift
 
-.. autoclass:: cherab.core.model.lineshape.LineShapeModel
+.. autoclass:: cherab.core.model.lineshape.doppler.thermal_broadening
+
+.. autoclass:: cherab.core.model.lineshape.gaussian.add_gaussian_line
+
+.. autoclass:: cherab.core.model.lineshape.stark.add_lorentzian_line
+
+.. autoclass:: cherab.core.model.lineshape.base.LineShapeModel
    :members:
 
-.. autoclass:: cherab.core.model.lineshape.GaussianLine
+.. autoclass:: cherab.core.model.lineshape.gaussian.GaussianLine
    :members:
 
-.. autoclass:: cherab.core.model.lineshape.MultipletLineShape
+.. autoclass:: cherab.core.model.lineshape.multiplet.MultipletLineShape
    :members:
 
-.. autoclass:: cherab.core.model.lineshape.StarkBroadenedLine
+.. autoclass:: cherab.core.model.lineshape.zeeman.ZeemanLineShapeModel
    :members:
 
-.. autoclass:: cherab.core.model.lineshape.ZeemanLineShapeModel
+.. autoclass:: cherab.core.model.lineshape.zeeman.ZeemanTriplet
    :members:
 
-.. autoclass:: cherab.core.model.lineshape.ZeemanTriplet
+.. autoclass:: cherab.core.model.lineshape.zeeman.ParametrisedZeemanTriplet
    :members:
 
-.. autoclass:: cherab.core.model.lineshape.ParametrisedZeemanTriplet
+.. autoclass:: cherab.core.model.lineshape.zeeman.ZeemanMultiplet
    :members:
 
-.. autoclass:: cherab.core.model.lineshape.ZeemanMultiplet
+.. autoclass:: cherab.core.model.lineshape.stark.StarkBroadenedLine
    :members:
 
+.. autoclass:: cherab.core.model.lineshape.beam.base.BeamLineShapeModel
+   :members:
+
+.. autoclass:: cherab.core.model.lineshape.beam.mse.BeamEmissionMultiplet
+   :members:

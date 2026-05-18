@@ -147,6 +147,7 @@ def populate(download=True, repository_path=None, adas_path=None):
             (carbon,    0, 'adf15/pec96#c/pec96#c_vsu#c0.dat'),
             (carbon,    1, 'adf15/pec96#c/pec96#c_vsu#c1.dat'),
             (carbon,    2, 'adf15/pec96#c/pec96#c_vsu#c2.dat'),
+            (carbon,    5, 'adf15/pec96#c/pec96#c_pju#c5.dat'),
             # (neon,      0, 'adf15/pec96#ne/pec96#ne_pju#ne0.dat'),     #TODO: OPENADAS DATA CORRUPT
             # (neon,      1, 'adf15/pec96#ne/pec96#ne_pju#ne1.dat'),     #TODO: OPENADAS DATA CORRUPT
             (nitrogen,  0, 'adf15/pec96#n/pec96#n_vsu#n0.dat'),

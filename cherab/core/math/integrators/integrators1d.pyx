@@ -201,6 +201,7 @@ cdef class GaussianQuadrature(Integrator1D):
             double newval, oldval, error, x, c, d
 
         oldval = INFINITY
+        newval = 0
         ibegin = 0
         c = 0.5 * (a + b)
         d = 0.5 * (b - a)

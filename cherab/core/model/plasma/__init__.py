@@ -20,4 +20,5 @@
 from .bremsstrahlung import Bremsstrahlung
 from .impact_excitation import ExcitationLine
 from .recombination import RecombinationLine
+from .thermal_cx import ThermalCXLine
 from .total_radiated_power import TotalRadiatedPower

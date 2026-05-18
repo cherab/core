@@ -36,7 +36,7 @@ cdef class BeamCXLine(BeamModel):
         object _lineshape_class, _lineshape_args, _lineshape_kwargs
 
     cdef double _composite_cx_rate(self, double x, double y, double z, double interaction_energy,
-                                          Vector3D donor_velocity, double receiver_temperature, double receiver_density) except? -1e999
+                                          Vector3D donor_velocity, double receiver_temperature) except? -1e999
 
     cdef double _beam_population(self, double x, double y, double z, Vector3D beam_velocity, list population_data) except? -1e999
 

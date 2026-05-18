@@ -1,6 +1,6 @@
-# Copyright 2016-2018 Euratom
-# Copyright 2016-2018 United Kingdom Atomic Energy Authority
-# Copyright 2016-2018 Centro de Investigaciones Energéticas, Medioambientales y Tecnológicas
+# Copyright 2016-2024 Euratom
+# Copyright 2016-2024 United Kingdom Atomic Energy Authority
+# Copyright 2016-2024 Centro de Investigaciones Energéticas, Medioambientales y Tecnológicas
 #
 # Licensed under the EUPL, Version 1.1 or – as soon they will be approved by the
 # European Commission - subsequent versions of the EUPL (the "Licence");
@@ -34,8 +34,15 @@ def add_ionisation_rate(species, charge, rate, repository_path=None):
     function instead. The update function avoids repeatedly opening and closing
     the rate files.
 
-    :param repository_path:
-    :return:
+    :param species: Plasma species (Element/Isotope).
+    :param charge: Charge of the plasma species.
+    :param rate: Ionisation rate dictionary containing the following entries:
+
+    |      'ne': array-like of size (N) with electron density in m^-3,
+    |      'te': array-like of size (M) with electron temperature in eV,
+    |      'rate': array-like of size (N, M) with ionisation rate in m^3.s^-1.
+
+    :param repository_path: Path to the atomic data repository.
     """
 
     update_ionisation_rates({
@@ -47,11 +54,21 @@ def add_ionisation_rate(species, charge, rate, repository_path=None):
 
 def update_ionisation_rates(rates, repository_path=None):
     """
-    Ionisation rate file structure
-
-    /ionisation/<species>.json
+    Updates the ionisation rate files `/ionisation/<species>.json`
+    in atomic data repository.
 
     File contains multiple rates, indexed by the ion charge state.
+
+    :param rates: Dictionary in the form {<species>: {<charge>: <rate>}}, where
+
+    |      <species> is the plasma species (Element/Isotope),
+    |      <charge> is the charge of the plasma species,
+    |      <rate> is the ionisation rate dictionary containing the following entries:
+    |          'ne': array-like of size (N) with electron density in m^-3,
+    |          'te': array-like of size (M) with electron temperature in eV,
+    |          'rate': array-like of size (N, M) with ionisation rate in m^3.s^-1.
+
+    :param repository_path: Path to the atomic data repository.
     """
 
     repository_path = repository_path or DEFAULT_REPOSITORY_PATH
@@ -75,8 +92,15 @@ def add_recombination_rate(species, charge, rate, repository_path=None):
     function instead. The update function avoids repeatedly opening and closing
     the rate files.
 
-    :param repository_path:
-    :return:
+    :param species: Plasma species (Element/Isotope).
+    :param charge: Charge of the plasma species.
+    :param rate: Recombination rate dictionary containing the following entries:
+
+    |      'ne': array-like of size (N) with electron density in m^-3,
+    |      'te': array-like of size (M) with electron temperature in eV,
+    |      'rate': array-like of size (N, M) with recombination rate in m^3.s^-1.
+
+    :param repository_path: Path to the atomic data repository.
     """
 
     update_recombination_rates({
@@ -88,11 +112,21 @@ def add_recombination_rate(species, charge, rate, repository_path=None):
 
 def update_recombination_rates(rates, repository_path=None):
     """
-    Ionisation rate file structure
-
-    /recombination/<species>.json
+    Updates the recombination rate files `/recombination/<species>.json`
+    in the atomic data repository.
 
     File contains multiple rates, indexed by the ion charge state.
+
+    :param rates: Dictionary in the form {<species>: {<charge>: <rate>}}, where
+
+    |      <species> is the plasma species (Element/Isotope),
+    |      <charge> is the charge of the plasma species,
+    |      <rate> is the recombination rate dictionary containing the following entries:
+    |          'ne': array-like of size (N) with electron density in m^-3,
+    |          'te': array-like of size (M) with electron temperature in eV,
+    |          'rate': array-like of size (N, M) with recombination rate in m^3.s^-1.
+
+    :param repository_path: Path to the atomic data repository.
     """
 
     repository_path = repository_path or DEFAULT_REPOSITORY_PATH
@@ -109,7 +143,6 @@ def update_recombination_rates(rates, repository_path=None):
 
 
 def add_thermal_cx_rate(donor_element, donor_charge, receiver_element, rate, repository_path=None):
-
     """
     Adds a single thermal charge exchange rate to the repository.
 
@@ -118,11 +151,16 @@ def add_thermal_cx_rate(donor_element, donor_charge, receiver_element, rate, rep
     the rate files.
 
     :param donor_element: Element donating the electron.
-    :param donor_charge: Charge of the donating atom/ion
-    :param receiver_element: Element receiving the electron
-    :param rate: rates
-    :param repository_path:
-    :return:
+    :param donor_charge: Charge of the donating atom/ion.
+    :param receiver_element: Element receiving the electron.
+    :param receiver_charge: Charge of the receiving atom/ion.
+    :param rate: Thermal CX rate dictionary containing the following entries:
+
+    |      'ne': array-like of size (N) with electron density in m^-3,
+    |      'te': array-like of size (M) with electron temperature in eV,
+    |      'rate': array-like of size (N, M) with thermal CX rate in m^3.s^-1.
+
+    :param repository_path: Path to the atomic data repository.
     """
 
     rates2update = RecursiveDict()
@@ -133,11 +171,25 @@ def add_thermal_cx_rate(donor_element, donor_charge, receiver_element, rate, rep
 
 def update_thermal_cx_rates(rates, repository_path=None):
     """
-    Thermal charge exchange rate file structure
-
-    /thermal_cx/<donor_element>/<donor_charge>/<receiver_element>.json
+    Updates the thermal charge exchange rate files
+    `/thermal_cx/<donor_element>/<donor_charge>/<receiver_element>.json`
+    in the atomic data repository.
 
     File contains multiple rates, indexed by the ion charge state.
+
+    :param rates: Dictionary in the form:
+
+    |  { <donor_element>: { <donor_charge>: { <receiver_element>: { <donor_charge>: <rate> } } } }, where
+    |      <donor_element> is the element donating the electron.
+    |      <donor_charge> is the charge of the donating atom/ion.
+    |      <receiver_element> is the element receiving the electron.
+    |      <receiver_charge> is the charge of the receiving atom/ion.
+    |      <rate> is the thermal CX rate dictionary containing the following entries:
+    |          'ne': array-like of size (N) with electron density in m^-3,
+    |          'te': array-like of size (M) with electron temperature in eV,
+    |          'rate': array-like of size (N, M) with thermal CX rate in m^3.s^-1.
+
+    :param repository_path: Path to the atomic data repository.
     """
 
     repository_path = repository_path or DEFAULT_REPOSITORY_PATH
@@ -203,6 +255,21 @@ def _update_and_write_adf11(species, rate_data, path):
 
 
 def get_ionisation_rate(element, charge, repository_path=None):
+    """
+    Reads the ionisation rate for the given species and charge
+    from the atomic data repository.
+
+    :param element: Plasma species (Element/Isotope).
+    :param charge: Charge of the plasma species.
+    :param repository_path: Path to the atomic data repository.
+
+    :return rate: Ionisation rate dictionary containing the following entries:
+
+    |      'ne': 1D array of size (N) with electron density in m^-3,
+    |      'te': 1D array of size (M) with electron temperature in eV,
+    |      'rate': 2D array of size (N, M) with ionisation rate in m^3.s^-1.
+
+    """
 
     repository_path = repository_path or DEFAULT_REPOSITORY_PATH
 
@@ -224,6 +291,21 @@ def get_ionisation_rate(element, charge, repository_path=None):
 
 
 def get_recombination_rate(element, charge, repository_path=None):
+    """
+    Reads the recombination rate for the given species and charge
+    from the atomic data repository.
+
+    :param element: Plasma species (Element/Isotope).
+    :param charge: Charge of the plasma species.
+    :param repository_path: Path to the atomic data repository.
+
+    :return rate: Recombination rate dictionary containing the following entries:
+
+    |      'ne': 1D array of size (N) with electron density in m^-3,
+    |      'te': 1D array of size (M) with electron temperature in eV,
+    |      'rate': 2D array of size (N, M) with recombination rate in m^3.s^-1.
+
+    """
 
     repository_path = repository_path or DEFAULT_REPOSITORY_PATH
 
@@ -245,6 +327,23 @@ def get_recombination_rate(element, charge, repository_path=None):
 
 
 def get_thermal_cx_rate(donor_element, donor_charge, receiver_element, receiver_charge, repository_path=None):
+    """
+    Reads the thermal charge exchange rate for the given species and charge
+    from the atomic data repository.
+
+    :param donor_element: Element donating the electron.
+    :param donor_charge: Charge of the donating atom/ion.
+    :param receiver_element: Element receiving the electron.
+    :param receiver_charge: Charge of the receiving atom/ion.
+    :param repository_path: Path to the atomic data repository.
+
+    :return rate: Thermal CX rate dictionary containing the following entries:
+
+    |      'ne': 1D array of size (N) with electron density in m^-3,
+    |      'te': 1D array of size (M) with electron temperature in eV,
+    |      'rate': 2D array of size (N, M) with thermal CX rate in m^3.s^-1.
+
+    """
 
     repository_path = repository_path or DEFAULT_REPOSITORY_PATH
 

@@ -17,3 +17,4 @@
 # under the Licence.
 
 from .integrators1d import Integrator1D, GaussianQuadrature
+from .integrators2d import Integrator2D

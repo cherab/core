@@ -38,7 +38,7 @@ def parse_adf11(element, adf_file_path):
     with open(adf_file_path, "r") as source_file:
 
         lines = source_file.readlines()  # read file contents by lines
-        tmp = re.split("\s{2,}", lines[0].strip())  # split into relevant variables
+        tmp = re.split(r"\s{2,}", lines[0].strip())  # split into relevant variables
         # exctract variables
         z_nuclear = int(tmp[0])
         n_densities = int(tmp[1])
@@ -53,15 +53,15 @@ def parse_adf11(element, adf_file_path):
                              "specified ADF11 file, '{}'.".format(element.name, element_name))
 
         # check if it is a resolved file
-        if re.match("\s*[0-9]+", lines[3]):  # is it unresolved?
+        if re.match(r"\s*[0-9]+", lines[3]):  # is it unresolved?
             startsearch = 2
         else:
             startsearch = 4  # skip vectors with info about resolved states
 
         # get temperature and density vectors
         for i in range(startsearch, len(lines)):
-            if re.match("^\s*C{0}-{2,}", lines[i]):
-                tmp = re.sub("\n*\s+", "\t",
+            if re.match(r"^\s*C{0}-{2,}", lines[i]):
+                tmp = re.sub(r"\n*\s+", "\t",
                              "".join(lines[startsearch:i]).strip())  # replace unwanted chars
                 tmp = np.fromstring(tmp, sep="\t", dtype=float)  # put into nunpy array
                 densities = tmp[:n_densities]  # read density values
@@ -77,13 +77,13 @@ def parse_adf11(element, adf_file_path):
         blockrates_stop = None
         for i in range(startsearch, len(lines)):
 
-            if re.match("^\s*C*-{2,}", lines[i]):  # is it a rates block header?
+            if re.match(r"^\s*C*-{2,}", lines[i]):  # is it a rates block header?
 
                 # is it a first data block found?
                 if not blockrates_start is None:
                     blockrates_stop = i  # end of the requested block
 
-                    rates_table = re.sub("\n*\s+", "\t",
+                    rates_table = re.sub(r"\n*\s+", "\t",
                                          "".join(lines[
                                                  blockrates_start:blockrates_stop]).strip())  # replace unwanted chars
                     rates_table = np.fromstring(rates_table, sep="\t",
@@ -95,18 +95,18 @@ def parse_adf11(element, adf_file_path):
                     rates[element][ion_charge]['rates'] = np.swapaxes(rates_table, 0, 1)
 
                     # if end of data block beak the loop or reassign start of data block for next stage
-                    if re.match("^\s*C{1}-{2,}", lines[i]) or re.match("^\s*C{0,1}-{2,}", lines[i]) and \
-                            re.match("^\s*C\n", lines[i + 1]):
+                    if re.match(r"^\s*C{1}-{2,}", lines[i]) or re.match(r"^\s*C{0,1}-{2,}", lines[i]) and \
+                            re.match(r"^\s*C\n", lines[i + 1]):
                         break
 
-                z1_pos = re.search("Z1\s*=*\s*[0-9]+\s*", lines[i]).group()  # get Z1 part
-                ion_charge = int(re.sub("Z1[\s*=]", "", z1_pos))  # remove Z1 to avoid getting 1  later
-                if not re.search("IGRD\s*=*\s*[0-9]+\s*", lines[i]) is None:  # get the IGRD part
-                    igrd_pos = re.search("IGRD\s*=*\s*[0-9]+\s*", lines[i]).group()  # get the IGRD part
+                z1_pos = re.search(r"Z1\s*=*\s*[0-9]+\s*", lines[i]).group()  # get Z1 part
+                ion_charge = int(re.sub(r"Z1[\s*=]", "", z1_pos))  # remove Z1 to avoid getting 1  later
+                if not re.search(r"IGRD\s*=*\s*[0-9]+\s*", lines[i]) is None:  # get the IGRD part
+                    igrd_pos = re.search(r"IGRD\s*=*\s*[0-9]+\s*", lines[i]).group()  # get the IGRD part
                 else:
                     igrd_pos = "No spec"
-                if not re.search("IPRT\s*=*\s*[0-9]+\s*", lines[i]) is None:
-                    iptr_pos = re.search("IPRT\s*=*\s*[0-9]+\s*", lines[i]).group()  # get the IPRT part
+                if not re.search(r"IPRT\s*=*\s*[0-9]+\s*", lines[i]) is None:
+                    iptr_pos = re.search(r"IPRT\s*=*\s*[0-9]+\s*", lines[i]).group()  # get the IPRT part
                 else:
                     iptr_pos = "No spec"
                 blockrates_start = i + 1  # if block start not known, check if we are at the right position

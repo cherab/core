@@ -1,3 +1,5 @@
+:orphan:
+
 
 .. _slab_plasma:
 

@@ -122,7 +122,7 @@ cVI_10_8 = Line(carbon, 5, (10, 8))
 
 integration_step = 0.0025
 beam_transform = translate(-0.5, 0.0, 0) * rotate_basis(Vector3D(1, 0, 0), Vector3D(0, 0, 1))
-beam_energy = 50000  # keV
+beam_energy = 50000  # eV
 
 beam_full = Beam(parent=world, transform=beam_transform)
 beam_full.plasma = plasma

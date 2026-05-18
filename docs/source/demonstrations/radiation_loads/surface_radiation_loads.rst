@@ -1,3 +1,5 @@
+:orphan:
+
 
 .. _aug_solps_radiation_load:
 

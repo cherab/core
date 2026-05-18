@@ -31,11 +31,23 @@ def add_beam_stopping_rate(beam_species, target_ion, target_charge, rate, reposi
     """
     Adds a single beam stopping/excitation rate to the repository.
 
-    :param beam_species:
-    :param target_ion:
-    :param target_charge:
-    :param rate:
-    :return:
+    :param beam_species: Beam neutral atom (Element/Isotope).
+    :param target_ion: Target species (Element/Isotope).
+    :param target_charge: Charge of the target species.
+    :param rate: Beam stopping rate dictionary containing the following entries:
+
+    |      'e': array-like of size (N) with interaction energy in eV/amu,
+    |      'n': array-like of size (M) with target electron density in m^-3,
+    |      't': array-like of size (K) with target electron temperature in eV,
+    |      'sen': array-like of size (N, M) with beam stopping rate energy component in m^3.s^-1.
+    |      'st': array-like of size (K) with beam stopping rate temperature component in m^3.s^-1.
+    |      'eref': reference interaction energy in eV/amu,
+    |      'nref': reference target electron density in m^-3,
+    |      'tref': reference target electron temperature in eV,
+    |      'sref': reference beam stopping rate in m^3.s^-1.
+    |  The total beam stopping rate: s = sen * st / sref.
+
+    :param repository_path: Path to the atomic data repository.
     """
 
     repository_path = repository_path or DEFAULT_REPOSITORY_PATH
@@ -98,11 +110,30 @@ def add_beam_stopping_rate(beam_species, target_ion, target_charge, rate, reposi
 
 def update_beam_stopping_rates(rates, repository_path=None):
     """
-    Beam stopping rate file structure
-
-    /beam/stopping/<beam species>/<target ion>/<target_charge>.json
+    Updates the beam stopping rate files
+    /beam/stopping/<beam species>/<beam metastable>/<target ion>/<target_charge>.json
+    in the atomic data repository.
 
     Each json file contains a single rate, so it can simply be replaced.
+
+    :param rates: Dictionary in the form:
+
+    |  { <beam_species>: { <beam_metastable>: { <target_ion>: {<target_charge>: <rate>} } } }, where
+    |      <beam_species> is the beam neutral species (Element/Isotope).
+    |      <target_ion> is the target species (Element/Isotope).
+    |      <target_charge> is the charge of the target species.
+    |      <rate> is the beam stopping rate dictionary containing the following entries:
+    |          'e': array-like of size (N) with interaction energy in eV/amu,
+    |          'n': array-like of size (M) with target electron density in m^-3,
+    |          't': array-like of size (K) with target electron temperature in eV,
+    |          'sen': array-like of size (N, M) with beam stopping rate energy component in m^3.s^-1.
+    |          'st': array-like of size (K) with beam stopping rate temperature component in m^3.s^-1.
+    |          'eref': reference interaction energy in eV/amu,
+    |          'nref': reference target electron density in m^-3,
+    |          'tref': reference target electron temperature in eV,
+    |          'sref': reference beam stopping rate in m^3.s^-1.
+    |      The total beam stopping rate: s = sen * st / sref.
+
     """
 
     for beam_species, target_ions in rates.items():
@@ -112,6 +143,28 @@ def update_beam_stopping_rates(rates, repository_path=None):
 
 
 def get_beam_stopping_rate(beam_species, target_ion, target_charge, repository_path=None):
+    """
+    Reads a single beam stopping/excitation rate from the repository.
+
+    :param beam_species: Beam neutral atom (Element/Isotope).
+    :param target_ion: Target species (Element/Isotope).
+    :param target_charge: Charge of the target species.
+    :param repository_path: Path to the atomic data repository.
+
+    :return rate: Beam stopping rate dictionary containing the following entries:
+
+    |      'e': 1D array of size (N) with interaction energy in eV/amu,
+    |      'n': 1D array of size (M) with target electron density in m^-3,
+    |      't': 1D array of size (K) with target electron temperature in eV,
+    |      'sen': 2D array of size (N, M) with beam stopping rate energy component in m^3.s^-1.
+    |      'st': 1D array of size (K) with beam stopping rate temperature component in m^3.s^-1.
+    |      'eref': reference interaction energy in eV/amu,
+    |      'nref': reference target electron density in m^-3,
+    |      'tref': reference target electron temperature in eV,
+    |      'sref': reference beam stopping rate in m^3.s^-1.
+    |  The total beam stopping rate: s = sen * st / sref.
+
+    """
 
     repository_path = repository_path or DEFAULT_REPOSITORY_PATH
     path = os.path.join(repository_path, 'beam/stopping/{}/{}/{}.json'.format(beam_species.symbol.lower(), target_ion.symbol.lower(), target_charge))

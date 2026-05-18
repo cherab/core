@@ -1,3 +1,5 @@
+:orphan:
+
 .. _flux_function_plasmas:
 
 Flux Function Plasmas

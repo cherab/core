@@ -24,7 +24,7 @@ cimport cython
 
 
 cdef class RadiationFunction(InhomogeneousVolumeEmitter):
-    """
+    r"""
     A general purpose radiation material.
 
     Radiates power over 4 pi according to the supplied 3D radiation

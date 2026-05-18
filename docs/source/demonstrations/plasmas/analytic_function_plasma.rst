@@ -1,3 +1,5 @@
+:orphan:
+
 
 .. _analytic_function_plasma:
 

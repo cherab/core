@@ -2,15 +2,6 @@
 CXS models
 ----------
 
-CXS models.
-
-
-Single Ray Attenuator
-^^^^^^^^^^^^^^^^^^^^^
-
-.. autoclass:: cherab.core.model.attenuator.singleray.SingleRayAttenuator
-   :members:
-
 
 CXS Beam Plasma Intersection
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^

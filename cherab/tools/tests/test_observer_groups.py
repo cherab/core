@@ -1,11 +1,12 @@
 import unittest
+import warnings
 
 from raysect.core.workflow import RenderEngine
-from raysect.optical.observer import Observer0D, SightLine, FibreOptic, Pixel, TargettedPixel, PowerPipeline0D, SpectralPowerPipeline0D
+from raysect.optical.observer import Observer0D, SightLine, FibreOptic, Pixel, TargetedPixel, PowerPipeline0D, SpectralPowerPipeline0D
 from raysect.primitive import Sphere
 
+from cherab.tools.observers.group import FibreOpticGroup, PixelGroup, SightLineGroup, TargetedPixelGroup, TargettedPixelGroup
 from cherab.tools.observers.group.base import Observer0DGroup
-from cherab.tools.observers.group import SightLineGroup, FibreOpticGroup, PixelGroup, TargettedPixelGroup
 from cherab.tools.raytransfer import pipelines
 
 
@@ -26,7 +27,7 @@ class Observer0DGroupTestCase(unittest.TestCase):
         idx = slice(1, 3, 1)
         for observer, input_observer in zip(group[idx], self.observers[idx]):
             self.assertIs(observer, input_observer)
-        
+
         for i, name in enumerate(names):
             self.assertIs(group[name], self.observers[i])
 
@@ -83,7 +84,7 @@ class Observer0DGroupTestCase(unittest.TestCase):
         with self.assertRaises(ValueError):
             group.pipelines = [ppln_0]
 
-        # render_engine        
+        # render_engine
         engine = RenderEngine()
         group.render_engine = engine
         for group_engine in group.render_engine:
@@ -102,7 +103,7 @@ class Observer0DGroupTestCase(unittest.TestCase):
         with self.assertRaises(ValueError):
             group.render_engine = [RenderEngine() for _ in range(len(group) - 1)]
 
-        # wavelengths        
+        # wavelengths
         wvl = 500
         group.min_wavelength = wvl - 100
         group.max_wavelength = wvl + 100
@@ -139,7 +140,7 @@ class Observer0DGroupTestCase(unittest.TestCase):
         with self.assertRaises(ValueError):
             group.spectral_bins = [1000] * (len(group) + 1)
 
-        # quiet        
+        # quiet
         quiet = [True] * len(group)
         group.quiet = quiet
         self.assertListEqual(group.quiet, quiet)
@@ -152,7 +153,7 @@ class Observer0DGroupTestCase(unittest.TestCase):
         with self.assertRaises(ValueError):
             group.quiet = [False] * (len(group) + 1)
 
-        # rays        
+        # rays
         probs = [0.2 + i*0.1 for i in range(len(group))]
         max_depths = [5 + i for i in range(len(group))]
         min_depths = [2 + i for i in range(len(group))]
@@ -196,7 +197,7 @@ class Observer0DGroupTestCase(unittest.TestCase):
             group.ray_importance_sampling = [False] * (len(group) + 1)
         with self.assertRaises(ValueError):
             group.ray_important_path_weight = [0.7] * (len(group) + 1)
-        
+
         # samples
         pixel_samples = [2000 + i*500 for i in range(len(group))]
         per_task = [5000 + i*100 for i in range(len(group))]
@@ -348,11 +349,11 @@ class PixelGroupTestCase(Observer0DGroupTestCase):
             group.y_width = [1e-1] * (len(group) + 1)
 
 
-class TargettedPixelGroupTestCase(PixelGroupTestCase):
-    _GROUP_CLASS = TargettedPixelGroup
+class TargetedPixelGroupTestCase(PixelGroupTestCase):
+    _GROUP_CLASS = TargetedPixelGroup
 
     def setUp(self):
-        self.observers = [TargettedPixel(targets=[Sphere()], pipelines=[PowerPipeline0D()]) for _ in range(self._NUM)]
+        self.observers = [TargetedPixel(targets=[Sphere()], pipelines=[PowerPipeline0D()]) for _ in range(self._NUM)]
 
     def test_targets(self):
         group = self._GROUP_CLASS(observers=self.observers)
@@ -374,15 +375,33 @@ class TargettedPixelGroupTestCase(PixelGroupTestCase):
         with self.assertRaises(ValueError):
             group.targets = targets
 
-        # targetted path prob
+        # targeted path prob
         prob = [0.9, 0.95, 1]
-        group.targetted_path_prob = prob
-        self.assertListEqual(group.targetted_path_prob, prob)
+        group.targeted_path_prob = prob
+        self.assertListEqual(group.targeted_path_prob, prob)
 
         prob = 0.8
-        group.targetted_path_prob = prob
-        for group_targetted_path_prob in group.targetted_path_prob:
-            self.assertEqual(group_targetted_path_prob, prob)
+        group.targeted_path_prob = prob
+        for group_targeted_path_prob in group.targeted_path_prob:
+            self.assertEqual(group_targeted_path_prob, prob)
 
         with self.assertRaises(ValueError):
-            group.targetted_path_prob = [0.7] * (len(group) + 1)
+            group.targeted_path_prob = [0.7] * (len(group) + 1)
+
+
+class TargettedPixelGroupTestCase(TargetedPixelGroupTestCase):
+    """Test case for deprecated TargettedPixelGroup class."""
+
+    _GROUP_CLASS = TargettedPixelGroup
+
+    def test_deprecation_warning(self):
+        """Test that using TargettedPixelGroup raises a deprecation warning."""
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")
+            group = TargettedPixelGroup(observers=self.observers)
+
+            # Check that a warning was issued
+            self.assertEqual(len(w), 1)
+            self.assertTrue(issubclass(w[0].category, DeprecationWarning))
+            self.assertIn("TargettedPixelGroup is deprecated", str(w[0].message))
+            self.assertIn("Use TargetedPixelGroup instead", str(w[0].message))

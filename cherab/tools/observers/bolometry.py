@@ -18,16 +18,17 @@
 # under the Licence.
 
 from enum import Enum
+from warnings import warn
 import functools
 import numpy as np
 
 from raysect.core import Node, translate, rotate_basis, Point3D, Vector3D, Ray as CoreRay, Primitive, World
-from raysect.core.math.sampler import TargettedHemisphereSampler, RectangleSampler3D
+from raysect.core.math.sampler import TargetedHemisphereSampler, RectangleSampler3D
 from raysect.primitive import Box, Cylinder, Subtract, Union
 from raysect.optical.observer import PowerPipeline0D, RadiancePipeline0D, \
-    SpectralPowerPipeline0D, SpectralRadiancePipeline0D, SightLine, TargettedPixel
+    SpectralPowerPipeline0D, SpectralRadiancePipeline0D, SightLine, TargetedPixel
 from raysect.optical.observer import PowerPipeline2D, RadiancePipeline2D, \
-    SpectralPowerPipeline2D, SpectralRadiancePipeline2D, TargettedCCDArray
+    SpectralPowerPipeline2D, SpectralRadiancePipeline2D, TargetedCCDArray
 from raysect.optical.material.material import NullMaterial
 from raysect.optical.material import AbsorbingSurface
 
@@ -213,7 +214,7 @@ class BolometerSlit(Node):
        larger than the slit dx and dy, which can cause partial occlusion of
        nearby primitives. It also relies on no rays being launched with directions
        outside the solid angle of the aperture's bounding sphere: depending on the
-       foil-slit distance and slit size, and also the foil's targetted_path_prob,
+       foil-slit distance and slit size, and also the foil's targeted_path_prob,
        this may not be guaranteed. Supplying a proper mesh geometry for the camera
        is recommended instead of using a CSG aperture.
 
@@ -351,7 +352,7 @@ class BolometerSlit(Node):
         return self._curvature_radius
 
 
-class BolometerFoil(TargettedPixel):
+class BolometerFoil(TargetedPixel):
     """
     A rectangular foil bolometer detector.
 
@@ -447,7 +448,7 @@ class BolometerFoil(TargettedPixel):
         translation = translate(centre_point.x, centre_point.y, centre_point.z)
         rotation = rotate_basis(normal_vec, basis_y)
 
-        super().__init__([slit.target], targetted_path_prob=1.0,
+        super().__init__([slit.target], targeted_path_prob=1.0,
                          pixel_samples=1000, x_width=dx, y_width=dy, spectral_bins=1, quiet=True,
                          parent=parent, transform=translation * rotation, name=detector_id)
 
@@ -515,6 +516,24 @@ class BolometerFoil(TargettedPixel):
             pipeline.accumulate = value
             # Discard any samples from previous accumulate behaviour
             pipeline.value.clear()
+
+    @property
+    def targetted_path_prob(self):
+        warn(
+            "The 'targetted_path_prob' property is deprecated, use 'targeted_path_prob' instead.",
+            DeprecationWarning,
+            stacklevel=2
+        )
+        return self._targeted_path_prob
+
+    @targetted_path_prob.setter
+    def targetted_path_prob(self, value):
+        warn(
+            "The 'targetted_path_prob' property is deprecated, use 'targeted_path_prob' instead.",
+            DeprecationWarning,
+            stacklevel=2
+        )
+        self.targeted_path_prob = value
 
     def as_sightline(self):
         """
@@ -661,8 +680,8 @@ class BolometerFoil(TargettedPixel):
         # generate bounding sphere and convert to local coordinate system
         sphere = target.bounding_sphere()
         spheres = [(sphere.centre.transform(self.to_local()), sphere.radius, 1.0)]
-        # instance targetted pixel sampler to sample directions
-        targetted_sampler = TargettedHemisphereSampler(spheres)
+        # instance targeted pixel sampler to sample directions
+        targeted_sampler = TargetedHemisphereSampler(spheres)
         # instance rectangle pixel sampler to sample origins
         point_sampler = RectangleSampler3D(width=self.x_width, height=self.y_width)
 
@@ -671,8 +690,8 @@ class BolometerFoil(TargettedPixel):
             origins = point_sampler(samples=ray_count)
             passed = 0.0
             for origin in origins:
-                # obtain targetted vector sample
-                direction, pdf = targetted_sampler(origin, pdf=True)
+                # obtain targeted vector sample
+                direction, pdf = targeted_sampler(origin, pdf=True)
                 path_weight = R_2_PI * direction.z / pdf
                 # Transform to world space
                 origin = origin.transform(detector_transform)
@@ -701,7 +720,7 @@ class BolometerFoil(TargettedPixel):
         return etendue, etendue_error
 
 
-class BolometerIRVB(TargettedCCDArray):
+class BolometerIRVB(TargetedCCDArray):
     """
     A rectangular infra red video bolometer (IRVB).
 
@@ -784,7 +803,7 @@ class BolometerIRVB(TargettedCCDArray):
         self._accumulate = None  # Will be set after pipeline is created.
 
         super().__init__([slit.target], pixels=pixels, width=width,
-                         targetted_path_prob=0.99, parent=parent, pipelines=[],
+                         targeted_path_prob=0.99, parent=parent, pipelines=[],
                          transform=transform, name=name)
         self.pixel_samples = 1000
         self.spectral_bins = 1
@@ -896,6 +915,24 @@ class BolometerIRVB(TargettedCCDArray):
             if pipeline.frame is not None:
                 pipeline.frame.clear()
 
+    @property
+    def targetted_path_prob(self):
+        warn(
+            "The 'targetted_path_prob' property is deprecated, use 'targeted_path_prob' instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        return self._targeted_path_prob
+
+    @targetted_path_prob.setter
+    def targetted_path_prob(self, value):
+        warn(
+            "The 'targetted_path_prob' property is deprecated, use 'targeted_path_prob' instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        self.targeted_path_prob = value
+
     def as_sightlines(self):
         """
         Constructs a SightLine observer for each pixel in this bolometer.
@@ -943,7 +980,7 @@ class BolometerIRVB(TargettedCCDArray):
             raise TypeError("voxel_collection must be of type VoxelCollection")
 
         pipeline_class = self._SPECTRAL_PIPELINES[self._units]
-        pipeline = pipeline_class(display_progress=False)
+        pipeline = pipeline_class()
 
         voxel_collection.set_active("all")
 

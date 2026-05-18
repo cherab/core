@@ -47,7 +47,7 @@ cdef class Beam(Node):
         Vector3D BEAM_AXIS
         double _energy, _power, _temperature
         Element _element
-        double _divergence_x, _divergence_y
+        double _divergence_x, _divergence_y, _tanxdiv, _tanydiv
         double _length, _sigma
         Plasma _plasma
         AtomicData _atomic_data

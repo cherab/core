@@ -2,4 +2,4 @@
 Total Radiated Power
 ====================
 
-Documentation for this model will go here soon...
+.. autoclass:: cherab.core.model.plasma.total_radiated_power.TotalRadiatedPower
