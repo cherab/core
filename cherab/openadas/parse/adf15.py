@@ -17,11 +17,29 @@
 # under the Licence.
 
 import re
+
 import numpy as np
-from cherab.core.atomic import hydrogen, Element
+
+from cherab.core.atomic import Element, hydrogen
 from cherab.core.utility import RecursiveDict
 from cherab.core.utility.conversion import Cm3ToM3, PerCm3ToPerM3
 
+# Compiled regex patterns for ADF15 file parsing
+_ADF_HEADER_MATCH = re.compile(r'^\s*(\d*) {4}/(.*)/?\s*$')
+_PEC_INDEX_HEADER_MATCH_STANDARD = re.compile(r'^C\s*ISEL\s*(?:WAVELENGTH|WVLEN\(A\))\s*TRANSITION\s*TYPE', re.IGNORECASE)
+_PEC_HYDROGEN_TRANSITION_MATCH = re.compile(r'^C\s*([0-9]*)\.\s*([0-9]*\.[0-9]*)\s*N=\s*([0-9]*) - N=\s*([0-9]*)\s*([A-Z]*)', re.IGNORECASE)
+_PEC_FULL_TRANSITION_MATCH = re.compile(r'^[cC]\s*([0-9]*)\.?\s*([0-9]*\.[0-9]*)\s*([0-9]*)[\(\)\.0-9\s]*-\s*([0-9]*)[\(\)\.0-9\s]*([A-Z]*)', re.IGNORECASE)
+_CONFIGURATION_HEADER_MATCH = re.compile(r'^C\s*(?:lv\s+)?Configuration\s*\(2S\+1\)L\(w-1/2\)\s*Energy\s*\(cm(?:\*\*|\^)-1\)\s*$', re.IGNORECASE)
+_CONFIGURATION_STRING_MATCH = re.compile(
+    r'^[cC]\s*([0-9]+)\s*'
+    r'((?:[0-9][SPDFG][0-9](?:\s+[0-9][SPDFG][0-9])*)|(?:[0-9A-Z]+))\s*'
+    r'\(([0-9]*\.?[0-9]+)\)'
+    r'\s*([0-9]+)'
+    r'\(\s*([0-9]*\.?[0-9]+)\)',
+    re.IGNORECASE,
+)
+_WAVELENGTH_MATCH = re.compile(r"^\s*[0-9]*\.[0-9]* ?a?\s+[0-9]+\s+[0-9]+.*?/isel *= *[0-9]+$", re.IGNORECASE)
+_BLOCK_ID_MATCH = re.compile(r"^\s*[0-9]*\.[0-9]* ?a?\s*([0-9]*)\s*([0-9]*).*/type *= *([a-zA-Z]*).*/isel *= * ([0-9]*)$", re.IGNORECASE)
 
 _L_LOOKUP = {
     0: 'S',
@@ -64,10 +82,9 @@ def parse_adf15(element, charge, adf_file_path, header_format=None):
     charge = int(charge)
 
     with open(adf_file_path, "r") as file:
-
         # for check header line
         header = file.readline()
-        if not re.match(r'^\s*(\d*) {4}/(.*)/?\s*$', header):
+        if not _ADF_HEADER_MATCH.match(header):
             raise ValueError('The specified path does not point to a valid ADF15 file.')
 
         # scrape transition information and wavelength
@@ -111,14 +128,11 @@ def _scrape_metadata_hydrogen(file, element, charge):
     file.seek(0)
     lines = file.readlines()
 
-    pec_index_header_match = r'^C\s*ISEL\s*WAVELENGTH\s*TRANSITION\s*TYPE'
-    while not re.match(pec_index_header_match, lines[0], re.IGNORECASE):
+    while not _PEC_INDEX_HEADER_MATCH_STANDARD.match(lines[0]):
         lines.pop(0)
     index_lines = lines
-
-    pec_hydrogen_transition_match = r'^C\s*([0-9]*)\.\s*([0-9]*\.[0-9]*)\s*N=\s*([0-9]*) - N=\s*([0-9]*)\s*([A-Z]*)'
     for i in range(len(index_lines)):
-        match = re.match(pec_hydrogen_transition_match, index_lines[i], re.IGNORECASE)
+        match = _PEC_HYDROGEN_TRANSITION_MATCH.match(index_lines[i])
         if not match:
             continue
 
@@ -153,14 +167,11 @@ def _scrape_metadata_hydrogen_like(file, element, charge):
     file.seek(0)
     lines = file.readlines()
 
-    pec_index_header_match = r'^C\s*ISEL\s*(?:WAVELENGTH|WVLEN\(A\))\s*TRANSITION\s*TYPE'
-    while not re.match(pec_index_header_match, lines[0], re.IGNORECASE):
+    while not _PEC_INDEX_HEADER_MATCH_STANDARD.match(lines[0]):
         lines.pop(0)
     index_lines = lines
-
-    pec_full_transition_match = r'^[cC]\s*([0-9]*)\.?\s*([0-9]*\.[0-9]*)\s*([0-9]*)[\(\)\.0-9\s]*-\s*([0-9]*)[\(\)\.0-9\s]*([A-Z]*)'
     for i in range(len(index_lines)):
-        match = re.match(pec_full_transition_match, index_lines[i], re.IGNORECASE)
+        match = _PEC_FULL_TRANSITION_MATCH.match(index_lines[i])
         if not match:
             continue
 
@@ -198,24 +209,14 @@ def _scrape_metadata_full(file, element, charge):
     configuration_lines = []
     configuration_dict = {}
 
-    configuration_header_match = r'^C\s*(?:lv\s+)?Configuration\s*\(2S\+1\)L\(w-1/2\)\s*Energy\s*\(cm(?:\*\*|\^)-1\)\s*$'
-    while not re.match(configuration_header_match, lines[0], re.IGNORECASE):
+    while not _CONFIGURATION_HEADER_MATCH.match(lines[0]):
         lines.pop(0)
-    pec_index_header_match = r'^C\s*ISEL\s*(?:WAVELENGTH|WVLEN\(A\))\s*TRANSITION\s*TYPE'
-    while not re.match(pec_index_header_match, lines[0], re.IGNORECASE):
+    while not _PEC_INDEX_HEADER_MATCH_STANDARD.match(lines[0]):
         configuration_lines.append(lines[0])
         lines.pop(0)
     index_lines = lines
-
-    configuration_string_match = (
-        r'^[cC]\s*([0-9]+)\s*'
-        r'((?:[0-9][SPDFG][0-9](?:\s+[0-9][SPDFG][0-9])*)|(?:[0-9A-Z]+))\s*'
-        r'\(([0-9]*\.?[0-9]+)\)'
-        r'\s*([0-9]+)'
-        r'\(\s*([0-9]*\.?[0-9]+)\)'
-    )
     for i in range(len(configuration_lines)):
-        match = re.match(configuration_string_match, configuration_lines[i], re.IGNORECASE)
+        match = _CONFIGURATION_STRING_MATCH.match(configuration_lines[i])
         if not match:
             continue
 
@@ -225,12 +226,10 @@ def _scrape_metadata_full(file, element, charge):
         total_orbital_quantum_number = _L_LOOKUP[int(match.groups()[3])]  # L
         total_angular_momentum_quantum_number = match.groups()[4]  # J
 
-        configuration_dict[config_id] = (electron_configuration + " " + spin_multiplicity +
-                                         total_orbital_quantum_number + total_angular_momentum_quantum_number)
+        configuration_dict[config_id] = electron_configuration + " " + spin_multiplicity + total_orbital_quantum_number + total_angular_momentum_quantum_number
 
-    pec_full_transition_match = r'^[cC]\s*([0-9]*)\.?\s*([0-9]*\.[0-9]*)\s*([0-9]*)[\(\)\.0-9\s]*-\s*([0-9]*)[\(\)\.0-9\s]*([A-Z]*)'
     for i in range(len(index_lines)):
-        match = re.match(pec_full_transition_match, index_lines[i], re.IGNORECASE)
+        match = _PEC_FULL_TRANSITION_MATCH.match(index_lines[i])
         if not match:
             continue
 
@@ -264,11 +263,8 @@ def _extract_rate(file, block_num):
     # search from start of file
     file.seek(0)
 
-    wavelength_match = r"^\s*[0-9]*\.[0-9]* ?a? +.*$"
-    block_id_match = r"^\s*[0-9]*\.[0-9]* ?a?\s*([0-9]*)\s*([0-9]*).*/type *= *([a-zA-Z]*).*/isel *= * ([0-9]*)$"
-
-    for block in _group_by_block(file, wavelength_match):
-        match = re.match(block_id_match, block[0], re.IGNORECASE)
+    for block in _group_by_block(file, _WAVELENGTH_MATCH):
+        match = _BLOCK_ID_MATCH.match(block[0])
 
         if not match:
             continue
@@ -326,18 +322,18 @@ def _extract_rate(file, block_num):
     raise RuntimeError('Block number {} was not found in the ADF15 file.'.format(block_num))
 
 
-def _group_by_block(source_file, match_string):
+def _group_by_block(source_file, match_pattern):
     """
     Generator the splits the ADF15 file into blocks.
 
-    Groups lines of file into blocks based on precursor '  6561.9A   24...'
+    Groups lines of file into blocks based on wavelength pattern match.
 
     Note: comment section not filtered out of last block, don't over-read!
     """
 
     buffer = []
     for line in source_file:
-        if re.match(match_string, line, re.IGNORECASE):
+        if match_pattern.match(line):
             if buffer:
                 yield buffer
             buffer = [line]
