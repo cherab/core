@@ -20,6 +20,7 @@ BOX_WIDTH = 0.05
 BOX_WIDTH = 0.2
 BOX_HEIGHT = 0.07
 BOX_DEPTH = 0.2
+THICKNESS = 1e-3
 SLIT_WIDTH = 0.004
 SLIT_HEIGHT = 0.005
 FOIL_WIDTH = 0.0013
@@ -39,13 +40,13 @@ def _make_bolometer_camera(slit_sensor_separation, sensor_angles):
     """
     camera_box = Box(lower=Point3D(-BOX_WIDTH / 2, -BOX_HEIGHT / 2, -BOX_DEPTH),
                      upper=Point3D(BOX_WIDTH / 2, BOX_HEIGHT / 2, 0))
-    # Hollow out the box
-    inside_box = Box(lower=camera_box.lower + Vector3D(1e-5, 1e-5, 1e-5),
-                     upper=camera_box.upper - Vector3D(1e-5, 1e-5, 1e-5))
+    # Hollow out the box: it has 1 mm thick walls.
+    inside_box = Box(lower=camera_box.lower + Vector3D(THICKNESS, THICKNESS, THICKNESS),
+                     upper=camera_box.upper - Vector3D(THICKNESS, THICKNESS, THICKNESS))
     camera_box = Subtract(camera_box, inside_box)
-    # The slit is a hole in the box
-    aperture = Box(lower=Point3D(-SLIT_WIDTH / 2, -SLIT_HEIGHT / 2, -1e-4),
-                   upper=Point3D(SLIT_WIDTH / 2, SLIT_HEIGHT / 2, 1e-4))
+    # The slit is a hole in the box. Make it thicker than the wall.
+    aperture = Box(lower=Point3D(-SLIT_WIDTH / 2, -SLIT_HEIGHT / 2, -1.1 * THICKNESS),
+                   upper=Point3D(SLIT_WIDTH / 2, SLIT_HEIGHT / 2, 0.1 * THICKNESS))
     camera_box = Subtract(camera_box, aperture)
     camera_box.material = AbsorbingSurface()
     bolometer_camera = BolometerCamera(camera_geometry=camera_box)
@@ -93,75 +94,69 @@ def load_bolometers(parent=None):
     :return: a list of BolometerCamera instances, one for each of the
              cameras described above.
     """
-    poloidal_camera_rotations = [
-        30, -30,  # Horizontal poloidal,
-        -90,  # Vertical poloidal,
-        0, # Tangential,
-        0,  # Combined poloidal/tangential,
-    ]
-    toroidal_camera_rotations = [
-        0, 0,  # Horizontal poloidal
-        0,  # Vertical poloidal
-        -40, # Tangential
-        40,  # Combined poloidal/tangential
-    ]
-    radial_camera_rotations = [
-        0, 0,  # Horizontal poloidal
-        0,  # Vertical poloidal
-        90,  # Tangential
-        90,  # Combined poloidal/tangential
-    ]
-    camera_origins = [
-        Point3D(2.5, 0.05, 0), Point3D(2.5, -0.05, 0),  # Horizontal poloidal
-        Point3D(1.3, 0, 1.42),  # Vertical poloidal
-        Point3D(2.5, 0, 0),  # Midplane tangential horizontal
-        Point3D(2.5, 0, -0.2),  # Combined poloidal/tangential
-    ]
-    slit_sensor_separations = [
-        0.08, 0.08,  # Horizontal poloidal
-        0.05,  # Vertical poloidal
-        0.1, # Tangential
-        0.1, # Combined poloidal/tangential
-    ]
-    all_sensor_angles = [
-        [-22.5, -7.5, 7.5, 22.5], [-22.5, -7.5, 7.5, 22.5],  # Horizontal poloidal
-        [-36, -12, 12, 36],  # Vertical poloidal
-        [-18, -6, 6, 18],  # Tangential
-        [-18, -6, 6, 18],  # Combined poloidal/tangential
-    ]
-    toroidal_angles = [
-        10, 10,  # Horizontal poloidal, need to avoid LFS limiters.
-        0,  # Vertical poloidal, happy to hit LFS limiters.
-        -15,  # Tangential, avoid LFS limiters.
-        15,  # Combined poloidal/tangential, avoid LFS limiters.
-    ]
-    names = [
-        'HozPol1', 'HozPol2',
-        'VertPol',
-        'TanMid1',
-        'TanPol1',
-    ]
+    camera_properties = {
+        'HozPol1': {},  # Horizontal poloidal
+        'HozPol2': {},  # Horizontal poloidal,
+        'VertPol': {},  # Vertical poloidal
+        'TanMid1': {},  # Tangential
+        'TanPol1': {}   # Combined poloidal/tangential
+    }
+    # poloidal rotations
+    camera_properties['HozPol1']['rotation_poloidal'] = 30
+    camera_properties['HozPol2']['rotation_poloidal'] = -30
+    camera_properties['VertPol']['rotation_poloidal'] = -90
+    camera_properties['TanMid1']['rotation_poloidal'] = 0
+    camera_properties['TanPol1']['rotation_poloidal'] = 0
+    # toroidal rotation
+    camera_properties['HozPol1']['rotation_toroidal'] = 0
+    camera_properties['HozPol2']['rotation_toroidal'] = 0
+    camera_properties['VertPol']['rotation_toroidal'] = 0
+    camera_properties['TanMid1']['rotation_toroidal'] = -40
+    camera_properties['TanPol1']['rotation_toroidal'] = 40
+    # radial rotation
+    camera_properties['HozPol1']['rotation_radial'] = 0
+    camera_properties['HozPol2']['rotation_radial'] = 0
+    camera_properties['VertPol']['rotation_radial'] = 0
+    camera_properties['TanMid1']['rotation_radial'] = 90
+    camera_properties['TanPol1']['rotation_radial'] = 90
+    # origins
+    camera_properties['HozPol1']['origin'] = Point3D(2.5, 0.05, 0)
+    camera_properties['HozPol2']['origin'] = Point3D(2.5, -0.05, 0)
+    camera_properties['VertPol']['origin'] = Point3D(1.3, 0, 1.42)
+    camera_properties['TanMid1']['origin'] = Point3D(2.5, 0, 0)
+    camera_properties['TanPol1']['origin'] = Point3D(2.5, 0, -0.2)
+    # slit sensor separations
+    camera_properties['HozPol1']['slit_sensor_separation'] = 0.08
+    camera_properties['HozPol2']['slit_sensor_separation'] = 0.08
+    camera_properties['VertPol']['slit_sensor_separation'] = 0.05
+    camera_properties['TanMid1']['slit_sensor_separation'] = 0.1
+    camera_properties['TanPol1']['slit_sensor_separation'] = 0.1
+    # sensor angles
+    camera_properties['HozPol1']['sensor_angles'] = [-22.5, -7.5, 7.5, 22.5]
+    camera_properties['HozPol2']['sensor_angles'] = [-22.5, -7.5, 7.5, 22.5]
+    camera_properties['VertPol']['sensor_angles'] = [-36, -12, 12, 36]
+    camera_properties['TanMid1']['sensor_angles'] = [-18, -6, 6, 18]
+    camera_properties['TanPol1']['sensor_angles'] = [-18, -6, 6, 18]
+    # toroidal angles
+    camera_properties['HozPol1']['toroidal_angle'] = 10  # need to avoid LFS limiters
+    camera_properties['HozPol2']['toroidal_angle'] = 10  # need to avoid LFS limiters
+    camera_properties['VertPol']['toroidal_angle'] = 0  # happy to hit LFS limiters
+    camera_properties['TanMid1']['toroidal_angle'] = -15  # avoid LFS limiters
+    camera_properties['TanPol1']['toroidal_angle'] = 15  # avoid LFS limiters
+
     cameras = []
-    # FIXME: this for loop definition is really ugly!
-    for (
-            poloidal_rotation, toroidal_rotation, radial_rotation, camera_origin,
-            slit_sensor_separation, sensor_angles, toroidal_angle, name
-    ) in zip(
-        poloidal_camera_rotations, toroidal_camera_rotations, radial_camera_rotations,
-        camera_origins,
-        slit_sensor_separations, all_sensor_angles, toroidal_angles, names
-    ):
-        camera = _make_bolometer_camera(slit_sensor_separation, sensor_angles)
+    for name, prop in camera_properties.items():
+        camera = _make_bolometer_camera(prop['slit_sensor_separation'], prop['sensor_angles'])
         # FIXME: work out how to combine tangential and poloidal rotations.
         camera.transform = (
-            rotate_z(toroidal_angle)
-            * translate(camera_origin.x, camera_origin.y, camera_origin.z)
-            * rotate_z(toroidal_rotation)
-            * rotate_x(radial_rotation)
-            * rotate_y(poloidal_rotation + 90)
+            rotate_z(prop['toroidal_angle'])
+            * translate(prop['origin'].x, prop['origin'].y, prop['origin'].z)
+            * rotate_z(prop['rotation_toroidal'])
+            * rotate_x(prop['rotation_radial'])
+            * rotate_y(prop['rotation_poloidal'] + 90)
             * rotate_basis(-ZAXIS, YAXIS)
         )
         camera.parent = parent
-        camera.name = "{} at angle {}".format(name, poloidal_rotation)
+        camera.name = "{} at angle {}".format(name, prop['rotation_poloidal'])
         cameras.append(camera)
     return cameras
