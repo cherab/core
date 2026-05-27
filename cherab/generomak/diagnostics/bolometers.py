@@ -3,7 +3,6 @@ Some foil bolometers for measuring total radiated power.
 """
 from raysect.core import (Node, Point3D, Vector3D, rotate_basis,
                           rotate_x, rotate_y, rotate_z, translate)
-from raysect.core.math import rotate
 from raysect.optical.material import AbsorbingSurface
 from raysect.primitive import Box, Subtract
 
