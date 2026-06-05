@@ -96,7 +96,6 @@ setup(
     name="cherab",
     version=version,
     license="EUPL 1.1",
-    namespace_packages=["cherab"],
     description="Cherab spectroscopy framework",
     classifiers=[
         "Development Status :: 5 - Production/Stable",
