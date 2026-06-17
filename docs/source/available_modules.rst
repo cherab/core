@@ -35,8 +35,7 @@ Fusion Experiment Packages
    * - `cherab-compass <https://github.com/cherab/compass>`_
      - The Cherab configuration package for COMPASS.
    * - `cherab-iter <https://github.com/cherab/iter>`_
-     - Integrates Cherab with IMAS and provides diagnostic configuration
-       for ITER.
+     - The Cherab configuration package for ITER.
    * - `cherab-jet <https://github.com/cherab/jet>`_
      - Experiment configuration package for JET.
    * - `cherab-mastu <https://github.com/cherab/mastu>`_
@@ -59,4 +58,5 @@ and workflow management tools.
      - Module for providing OMFIT integration and example workflow scripts.
    * - `cherab-solps <https://github.com/cherab/solps>`_
      - Allows loading of Cherab plasma objects from saved SOLPS simulations.
-
+   * - `cherab-imas <https://github.com/cherab/imas>`_
+     - Provides Cherab integration with IMAS (Integrated Modelling & Analysis Suite).
