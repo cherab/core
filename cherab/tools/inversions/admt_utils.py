@@ -28,10 +28,14 @@ __author__ = "Jack Lovell, Oak Ridge National Laboratory"
 
 from collections.abc import Mapping
 import numpy as np
+try:
+    from scipy.sparse import coo_array as coo
+except ImportError:  # Scipy < 1.8, deprecated from 1.18
+    from scipy.sparse import coo_matrix as coo
 
 
 def generate_derivative_operators(voxel_vertices, grid_index_1d_to_2d_map,
-                                  grid_index_2d_to_1d_map):
+                                  grid_index_2d_to_1d_map, sparse=False):
     r"""
     Generate the first and second derivative operators for a regular grid.
 
@@ -42,6 +46,8 @@ def generate_derivative_operators(voxel_vertices, grid_index_1d_to_2d_map,
         spatially.
     :param dict grid_2d_to_1d_map: the inverse mapping from a 2D
         spatially-arranged array of voxels to the 1D array.
+    :param sparse: return the operators as sparse matrices if True, or
+        as dense matrices if False.
 
     :return: a dictionary containing the derivative operators: Dij for
         i, j ∊ (x, y) and Di for i ∊ (x, y), Dsp and Dsm.
@@ -87,13 +93,14 @@ def generate_derivative_operators(voxel_vertices, grid_index_1d_to_2d_map,
     num_cells = voxel_vertices.shape[0]
     cell_centres = np.mean(voxel_vertices, axis=1)
     # Individual derivative operators
-    Dx = np.zeros((num_cells, num_cells))
-    Dy = np.zeros((num_cells, num_cells))
-    Dxx = np.zeros((num_cells, num_cells))
-    Dxy = np.zeros((num_cells, num_cells))
-    Dyy = np.zeros((num_cells, num_cells))
-    Dsp = np.zeros((num_cells, num_cells))
-    Dsm = np.zeros((num_cells, num_cells))
+    # Store derivative operators in dictionary-of-keys sparse array format.
+    Dx = {}
+    Dy = {}
+    Dxx = {}
+    Dxy = {}
+    Dyy = {}
+    Dsp = {}
+    Dsm = {}
     # TODO: for now, we assume all voxels have rectangular cross sections
     # which are approximately identical. As per Ingesson's notation, we
     # assume voxels are ordered from top left to bottom right, in column-major
@@ -115,8 +122,9 @@ def generate_derivative_operators(voxel_vertices, grid_index_1d_to_2d_map,
     # that we only need to consider nearest neighbours
     for ith_cell in range(num_cells):
         at_top, at_bottom, at_left, at_right = False, False, False, False
-        n_left, n_right, n_below, n_above = np.nan, np.nan, np.nan, np.nan
-        n_above_left, n_above_right, n_below_left, n_below_right = np.nan, np.nan, np.nan, np.nan
+        n_left, n_right, n_below, n_above = None, None, None, None
+        n_above_left, n_above_right, n_below_left, n_below_right = None, None, None, None
+
         # get the 2D mesh coordinates of this cell
         ix, iy = grid_index_1d_to_2d_map[ith_cell]
 
@@ -125,6 +133,7 @@ def generate_derivative_operators(voxel_vertices, grid_index_1d_to_2d_map,
         iabove = iy + yinc
         ibelow = iy - yinc
 
+        # Handle voxels not at the edges/corners of the grid.
         try:
             n_left = grid_index_2d_to_1d_map[ileft, iy]  # left of n0
         except KeyError:
@@ -186,13 +195,17 @@ def generate_derivative_operators(voxel_vertices, grid_index_1d_to_2d_map,
         else:
             Dxy[ith_cell, n_above_left] = -1 / 4
 
+
+        # Cases which are the same throughout the matrix.
+        Dxx[ith_cell, ith_cell] = -2
+        Dyy[ith_cell, ith_cell] = -2
+
+
+        # Handle cases at the edges/corners
         top_left = at_top and at_left
         top_right = at_top and at_right
         bottom_left = at_bottom and at_left
         bottom_right = at_bottom and at_right
-
-        Dxx[ith_cell, ith_cell] = -2
-        Dyy[ith_cell, ith_cell] = -2
 
         if at_left:
             Dx[ith_cell, ith_cell] = -1
@@ -262,32 +275,51 @@ def generate_derivative_operators(voxel_vertices, grid_index_1d_to_2d_map,
             Dxy[ith_cell, ith_cell] = -1
             Dxy[ith_cell, n_above_left] = -1
 
-        if np.isnan(n_above_left) and not np.isnan(n_below_right):
+
+        # Handle the "skewed" operators.
+        if n_above_left is None and n_below_right is not None:
             Dsm[ith_cell, ith_cell] = -1
             Dsm[ith_cell, n_below_right] = 1
-        elif np.isnan(n_below_right) and not np.isnan(n_above_left):
+        elif n_below_right is None and n_above_left is not None:
             Dsm[ith_cell, ith_cell] = -1
             Dsm[ith_cell, n_above_left] = 1
-        elif np.isnan(n_above_left) and np.isnan(n_below_right):
+        elif n_above_left is None and n_below_right is None:
             Dsm[ith_cell, ith_cell] = 0
         else:
             Dsm[ith_cell, ith_cell] = -2
             Dsm[ith_cell, n_above_left] = 1
             Dsm[ith_cell, n_below_right] = 1
 
-        if np.isnan(n_above_right) and not np.isnan(n_below_left):
+        if n_above_right is None and n_below_left is not None:
             Dsp[ith_cell, ith_cell] = -1
             Dsp[ith_cell, n_below_left] = 1
-        elif np.isnan(n_below_left) and not np.isnan(n_above_right):
+        elif n_below_left is None and n_above_right is not None:
             Dsp[ith_cell, ith_cell] = -1
             Dsp[ith_cell, n_above_right] = 1
-        elif np.isnan(n_below_left) and np.isnan(n_above_right):
+        elif n_below_left is None and n_above_right is None:
             Dsp[ith_cell, ith_cell] = 0
         else:
             Dsp[ith_cell, ith_cell] = -2
             Dsp[ith_cell, n_above_right] = 1
             Dsp[ith_cell, n_below_left] = 1
 
+
+    # Although we've stored the operators as dictionaries of keys, it turns out to be
+    # more convenient to construct a COOrdinate sparse matrix rather than a DOK one
+    # in Scipy. We then convert that to CSR representation for efficient numerical
+    # operations later.
+    def dok_to_sparse(D):
+        row, col = zip(*D.keys())
+        vals = list(D.values())
+        return coo((vals, (row, col)), shape=(num_cells, num_cells)).tocsr()
+
+    Dx = dok_to_sparse(Dx)
+    Dy = dok_to_sparse(Dy)
+    Dxx = dok_to_sparse(Dxx)
+    Dyy = dok_to_sparse(Dyy)
+    Dxy = dok_to_sparse(Dxy)
+    Dsp = dok_to_sparse(Dsp)
+    Dsm = dok_to_sparse(Dsm)
     Dx = Dx / dx
     Dy = Dy / dy
     Dxx = Dxx / dx**2
@@ -295,6 +327,15 @@ def generate_derivative_operators(voxel_vertices, grid_index_1d_to_2d_map,
     Dxy = Dxy / (dx * dy)
     Dsp = Dsp / (dx**2 + dy**2)
     Dsm = Dsm / (dx**2 + dy**2)
+
+    # If the user requests dense matrices, convert them after performing all the scaling.
+    if not sparse:
+        Dx = Dx.toarray()
+        Dy = Dy.toarray()
+        Dxx = Dxx.toarray()
+        Dxy = Dxy.toarray()
+        Dsp = Dsp.toarray()
+        Dsm = Dsm.toarray()
 
     # Package all operators up into a dictionary
     operators = dict(Dx=Dx, Dy=Dy, Dxx=Dxx, Dyy=Dyy, Dxy=Dxy, Dsp=Dsp, Dsm=Dsm)
