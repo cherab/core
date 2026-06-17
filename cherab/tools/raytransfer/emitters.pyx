@@ -25,7 +25,7 @@ with other integrators is not guaranteed.
 """
 
 import numpy as np
-from raysect.core.math.function.float.function3d cimport Function3D, autowrap_function3d
+from raysect.core.math.function.float.function3d cimport autowrap_function3d
 from raysect.optical cimport World, Primitive, Ray, Spectrum, Point3D, Vector3D, AffineMatrix3D
 from raysect.optical.material cimport VolumeIntegrator, InhomogeneousVolumeEmitter
 from libc.math cimport sqrt, atan2, M_PI as pi
@@ -711,10 +711,6 @@ cdef class IndexedRayTransferEmitter(InhomogeneousVolumeEmitter):
         camera.min_wavelength = 600.
         camera.max_wavelength = 601.
     """
-
-    cdef:
-        readonly Function3D index_function
-        readonly int _bins
 
     def __init__(
         self,
