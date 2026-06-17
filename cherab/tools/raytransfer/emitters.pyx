@@ -25,6 +25,7 @@ with other integrators is not guaranteed.
 """
 
 import numpy as np
+from raysect.core.math.function.float.function3d cimport Function3D, autowrap_function3d
 from raysect.optical cimport World, Primitive, Ray, Spectrum, Point3D, Vector3D, AffineMatrix3D
 from raysect.optical.material cimport VolumeIntegrator, InhomogeneousVolumeEmitter
 from libc.math cimport sqrt, atan2, M_PI as pi
@@ -216,6 +217,89 @@ cdef class CartesianRayTransferIntegrator(RayTransferIntegrator):
                         spectrum.samples_mv[isource_current] += res  # writing results for the current source
                     isource_current = isource
                     res = 0
+            if isource_current > -1:
+                res += dt
+        if isource_current > -1:
+            spectrum.samples_mv[isource_current] += res
+
+        return spectrum
+
+
+
+cdef class IndexedRayTransferIntegrator(RayTransferIntegrator):
+    """Calculates the distances traveled by the ray through indexed regions in 3D coordinate system: :math:`(X, Y, Z)`.
+
+    This integrator is used with the `IndexedRayTransferEmitter` material class and
+    an index function to calculate ray transfer matrices (geometry matrices).
+    The value for each voxel is stored in respective bin of the spectral array.
+    The distances traveled by the ray through the voxel is calculated
+    approximately and the accuracy depends on the integration step.
+
+    Parameters
+    ----------
+    step : float
+        Integration step, by default 0.001.
+    min_samples : int
+        Number of minimum samples of integration, by default 2.
+    """
+    def __init__(self, double step=0.001, int min_samples=2):
+        super().__init__(step=step, min_samples=min_samples)
+
+    @cython.wraparound(False)
+    @cython.cdivision(True)
+    @cython.initializedcheck(False)
+    @cython.nonecheck(False)
+    cpdef Spectrum integrate(
+        self,
+        Spectrum spectrum,
+        World world,
+        Ray ray,
+        Primitive primitive,
+        InhomogeneousVolumeEmitter material,
+        Point3D start_point,
+        Point3D end_point,
+        AffineMatrix3D world_to_primitive,
+        AffineMatrix3D primitive_to_world
+    ):
+
+        cdef:
+            Point3D start, end
+            Vector3D direction
+            int isource_pre, isource_current, it, n
+            double length, t, dt, x, y, z, res
+
+        if not isinstance(material, IndexedRayTransferEmitter):
+            raise TypeError(
+                'Only IndexedRayTransferEmitter material is supported '
+                'by IndexedRayTransferIntegrator'
+            )
+        start = start_point  # start point in world coordinates
+        end = end_point  # end point in world coordinates
+        direction = start.vector_to(end)  # direction of integration
+        length = direction.get_length()  # integration length
+        if length < 0.1 * self._step:  # return if ray's path is too short
+            return spectrum
+        direction = direction.normalise()  # normalized direction
+        # number of points along ray's trajectory
+        n = max(self._min_samples, <int>(length / self._step))
+        dt = length / n  # integration step
+        # cython performs checks on attributes of external class,
+        # so it's better to do the checks before the loop
+        isource_current = -1
+        isource_pre = -1
+        res = 0
+        for it in range(n):
+            t = (it + 0.5) * dt
+            x = start.x + direction.x * t  # x coordinates of the points
+            y = start.y + direction.y * t  # y coordinates of the points
+            z = start.z + direction.z * t  # z coordinates of the points
+            isource_current = <int>material.index_function(x, y, z)  # get geometry grid index
+            if isource_current != isource_pre:  # we moved to the next cell
+                if isource_pre > -1:
+                    # writing results for the current source
+                    spectrum.samples_mv[isource_pre] += res
+                isource_pre = isource_current
+                res = 0
             if isource_current > -1:
                 res += dt
         if isource_current > -1:
@@ -565,6 +649,116 @@ cdef class CartesianRayTransferEmitter(RayTransferEmitter):
         iy = <int>(point.y / self._dy)  # Y-index of grid cell, in which the point is located
         iz = <int>(point.z / self._dz)  # Z-index of grid cell, in which the point is located
         isource = self.voxel_map_mv[ix, iy, iz]  # index of the light source in spectral array
+        if isource < 0:  # grid cell is not mapped to any light source
+            return spectrum
+        spectrum.samples_mv[isource] += 1.  # unit emissivity
+        return spectrum
+
+
+cdef class IndexedRayTransferEmitter(InhomogeneousVolumeEmitter):
+    """A unit emitter defined by an index function, which can be used
+    to calculate ray transfer matrices (geometry matrices).
+
+    Note that for performance reason there are no boundary checks in `emission_function()`,
+    or in `IndexedRayTransferIntegrator`,
+    so this emitter must be placed inside a bounding box.
+
+    Parameters
+    ----------
+    index_function : callable
+        Callable objects taking 3 positional arguments :math:`(X, Y, Z)`.
+    bins : int
+        Number of bins for the spectral array, by default 0.
+    integration_step : float
+        The length of line integration step, by default 0.01.
+    integrator : :obj:`~raysect.optical.material.emitter.inhomogeneous.VolumeIntegrator`
+        Volume integrator, by default `.IndexedRayTransferIntegrator(integration_step)`.
+
+    Examples
+    --------
+    .. code-block:: python
+
+        from numpy import hypot
+        from raysect.optical import World, translate, Point3D
+        from raysect.primitive import Cylinder
+        from cherab.tools.raytransfer import IndexedRayTransferEmitter
+
+        def index_func(x, y, z):
+            if hypot(x, y) <= 1:
+                return 0
+            elif 1 < hypot(x, y) <= 2:
+                return 1
+            else:
+                return -1  # must be set -1 outside meshes.
+
+        world = World()
+        bins = 2  # Note that bins must be same as the number of meshes.
+                  # Here thinking of two meshes like bins.shape = (2, ).
+        material = IndexedRayTransferEmitter(index_func, bins, integration_step=0.001)
+        eps = 1.e-6  # ray must never leave the grid when passing through the volume
+        radius = 2.0 - eps
+        height = 10.0
+        cylinder = Cylinder(
+            radius,
+            height,
+            material=material,
+            parent=world,
+            transform=translate(0, 0, -0.5 * height)
+        )
+
+        camera.spectral_bins = material.bins
+        # ray transfer matrix will be calculated for 600.5 nm
+        camera.min_wavelength = 600.
+        camera.max_wavelength = 601.
+    """
+
+    cdef:
+        readonly Function3D index_function
+        readonly int _bins
+
+    def __init__(
+        self,
+        object index_function not None,
+        int bins=0,
+        double integration_step=0.01,
+        VolumeIntegrator integrator=None
+    ):
+
+        integrator = integrator or IndexedRayTransferIntegrator(step=integration_step)
+        super().__init__(integrator=integrator)
+
+        self.index_function = autowrap_function3d(index_function)
+        self._bins = bins
+
+    @property
+    def bins(self):
+        """
+        Number of indexed regions, must not exceed the maximum of `index_function`.
+
+        :rtype: int
+        """
+        return self._bins
+
+    @cython.wraparound(False)
+    @cython.cdivision(True)
+    @cython.initializedcheck(False)
+    @cython.nonecheck(False)
+    cpdef Spectrum emission_function(
+        self, Point3D point,
+        Vector3D direction,
+        Spectrum spectrum,
+        World world,
+        Ray ray,
+        Primitive primitive,
+        AffineMatrix3D world_to_primitive,
+        AffineMatrix3D primitive_to_world
+    ):
+
+        cdef:
+            int isource
+
+        # index of the light source for the current region
+        isource = <int>self.index_function(point.x, point.y, point.z)
         if isource < 0:  # grid cell is not mapped to any light source
             return spectrum
         spectrum.samples_mv[isource] += 1.  # unit emissivity

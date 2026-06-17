@@ -19,6 +19,7 @@
 # under the Licence
 
 from numpy cimport ndarray
+from raysect.core.math.function.float.function3d cimport Function3D
 from raysect.optical cimport World, Primitive, Ray, Spectrum, Point3D, Vector3D, AffineMatrix3D
 from raysect.optical.material cimport VolumeIntegrator, InhomogeneousVolumeEmitter
 
@@ -38,6 +39,13 @@ cdef class CylindricalRayTransferIntegrator(RayTransferIntegrator):
 
 
 cdef class CartesianRayTransferIntegrator(RayTransferIntegrator):
+
+    cpdef Spectrum integrate(self, Spectrum spectrum, World world, Ray ray, Primitive primitive,
+                             InhomogeneousVolumeEmitter material, Point3D start_point, Point3D end_point,
+                             AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world)
+
+
+cdef class IndexedRayTransferIntegrator(RayTransferIntegrator):
 
     cpdef Spectrum integrate(self, Spectrum spectrum, World world, Ray ray, Primitive primitive,
                              InhomogeneousVolumeEmitter material, Point3D start_point, Point3D end_point,
@@ -71,6 +79,17 @@ cdef class CartesianRayTransferEmitter(RayTransferEmitter):
 
     cdef:
         double _dx, _dy, _dz
+
+    cpdef Spectrum emission_function(self, Point3D point, Vector3D direction, Spectrum spectrum,
+                                     World world, Ray ray, Primitive primitive,
+                                     AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world)
+
+
+cdef class IndexedRayTransferEmitter(InhomogeneousVolumeEmitter):
+
+    cdef:
+        Function3D index_function
+        int _bins
 
     cpdef Spectrum emission_function(self, Point3D point, Vector3D direction, Spectrum spectrum,
                                      World world, Ray ray, Primitive primitive,
