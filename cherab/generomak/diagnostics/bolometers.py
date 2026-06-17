@@ -201,7 +201,7 @@ def load_bolometers(parent=None):
         )
         # The transform is applied as follows:
         # 1. Point the camera along the inward radial direction in the (x, z) plane.
-        # 2. Make the poloidal, radial and toroidal rotations while the camera is at
+        # 2. Make the radial, poloidal and toroidal rotations while the camera is at
         #    the origin.
         # 3. Move the camera to its position relative to the (x, z) plane.
         # 4. Rotate the (x, z) plane to the correct toroidal angle.
