@@ -235,12 +235,8 @@ cdef class IndexedRayTransferIntegrator(RayTransferIntegrator):
     The distances traveled by the ray through the voxel is calculated
     approximately and the accuracy depends on the integration step.
 
-    Parameters
-    ----------
-    step : float
-        Integration step, by default 0.001.
-    min_samples : int
-        Number of minimum samples of integration, by default 2.
+    :param float step: Integration step, by default 0.001.
+    :param int min_samples: Number of minimum samples of integration, by default 2.
     """
     def __init__(self, double step=0.001, int min_samples=2):
         super().__init__(step=step, min_samples=min_samples)
@@ -663,19 +659,15 @@ cdef class IndexedRayTransferEmitter(InhomogeneousVolumeEmitter):
     or in `IndexedRayTransferIntegrator`,
     so this emitter must be placed inside a bounding box.
 
-    Parameters
-    ----------
-    index_function : callable
-        Callable objects taking 3 positional arguments :math:`(X, Y, Z)`.
-    bins : int
-        Number of bins for the spectral array, by default 0.
-    integration_step : float
-        The length of line integration step, by default 0.01.
-    integrator : :obj:`~raysect.optical.material.emitter.inhomogeneous.VolumeIntegrator`
+    :param callable index_function: Callable objects taking 3 positional arguments :math:`(X, Y, Z)`.
+    :param int bins: Number of bins for the spectral array, by default 0.
+    :param float integration_step: The length of line integration step, by default 0.01.
+    :param VolumeIntegrator integrator: Volume integrator, by default `.IndexedRayTransferIntegrator(integration_step)`.
         Volume integrator, by default `.IndexedRayTransferIntegrator(integration_step)`.
 
-    Examples
-    --------
+    :ivar callable index_function: Callable objects taking 3 positional arguments :math:`(X, Y, Z)`.
+    :ivar int bins: Number of bins for the spectral array.
+
     .. code-block:: python
 
         from numpy import hypot
