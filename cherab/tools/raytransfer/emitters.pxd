@@ -88,7 +88,7 @@ cdef class CartesianRayTransferEmitter(RayTransferEmitter):
 cdef class IndexedRayTransferEmitter(InhomogeneousVolumeEmitter):
 
     cdef:
-        Function3D index_function
+        public Function3D index_function
         int _bins
 
     cpdef Spectrum emission_function(self, Point3D point, Vector3D direction, Spectrum spectrum,
