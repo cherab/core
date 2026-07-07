@@ -5,7 +5,7 @@ import os.path as path
 from pathlib import Path
 import multiprocessing
 import numpy
-from setuptools import setup, find_packages, Extension
+from setuptools import setup, find_namespace_packages, Extension
 from Cython.Build import cythonize
 
 multiprocessing.set_start_method('fork')
@@ -125,7 +125,7 @@ setup(
         # Running ./dev/build_docs.sh runs setup.py, which requires cython.
         "docs": ["cython~=3.1", "sphinx", "sphinx-rtd-theme", "sphinx-tabs"],
     },
-    packages=find_packages(include=["cherab*"]),
+    packages=find_namespace_packages(include=["cherab*"]),
     package_data={"": [
         "**/*.pyx", "**/*.pxd",  # Needed to build Cython extensions.
         "**/*.json", "**/*.cl", "**/*.npy", "**/*.obj",  # Supplementary data
