@@ -20,7 +20,7 @@ from cherab.core.math import sample2d, sample2d_grid, sample2d_points, Axisymmet
 from cherab.tools.emitters import RadiationFunction
 from cherab.tools.raytransfer import RayTransferCylinder, RayTransferPipeline0D
 from cherab.tools.inversions import admt_utils as admt
-from cherab.tools.inversions import invert_regularised_nnls
+from cherab.tools.inversions import invert_sparse_regularised_nnls
 
 
 plt.ion()
@@ -78,7 +78,8 @@ world = World()
 load_first_wall(world, material=AbsorbingSurface())
 bolos = load_bolometers(world)
 # Only consider the purely-poloidal cameras for now...
-bolos = bolos[:3]
+poloidal_bolos = bolos[:3]
+tangential_bolos = bolos[3:]  # Includes midplane and divertor tangential
 
 ########################################################################
 # Produce a voxel grid
@@ -99,7 +100,7 @@ cell_vertices_z = np.linspace(cell_z[0] - 0.5 * cell_dz, cell_z[-1] + 0.5 * cell
 # Build a mask, only including cells within the wall.
 mask_2d = sample2d_grid(eq.inside_limiter, cell_r, cell_z)
 mask_3d = mask_2d[:, np.newaxis, :]
-ncells = mask_3d.sum()
+ncells = int(mask_3d.sum())
 
 # We'll use the Ray Transfer frameworks as these voxels are rectangular
 # and it's much faster than the Voxel framework for simple cases like this.
@@ -119,7 +120,7 @@ print("Calculating the geometry matrix...")
 ray_transfer_grid.parent = world
 
 sensitivity_matrix = []
-for camera in bolos:
+for camera in poloidal_bolos:
     for foil in camera:
         # Temporarily override foil pipelines for the sensitivity calculation.
         orig_pipelines = foil.pipelines
@@ -136,6 +137,10 @@ for camera in bolos:
         foil.pipelines = orig_pipelines
 sensitivity_matrix = np.asarray(sensitivity_matrix)
 
+# Remove the ray transfer object from the world so it doesn't interfere with
+# later observations.
+ray_transfer_grid.parent = None
+
 
 ################################################################################
 # Generate the regularisation operators.
@@ -143,9 +148,10 @@ sensitivity_matrix = np.asarray(sensitivity_matrix)
 print("Generating regularisation operators...")
 # generate_derivative_operators requires two mappings, one from a flat list of
 # voxels to the original 2D grid, and one for the 2D grid coordinates to the
-# flat list of voxels. We could build these by hand, but the RayTransferCylinder
-# object helpfully provides the data already so we just need to convert from
-# arrays to dictionaries.
+# flat list of voxels. We could build these by hand - and in the general case
+# they must be built by hand - but the RayTransferCylinder object we're using
+# helpfully provides the data already so we just need to convert from arrays
+# to dictionaries.
 grid_index_1d_to_2d_map = {}
 for k, idx2d in enumerate(ray_transfer_grid.invert_voxel_map()):
     # We want the x and z elements, as the Ray Transfer grid is 3D and this
@@ -167,8 +173,13 @@ vertex_displacements = np.array([[-cell_dx/2, -cell_dz/2],
                                  [cell_dx/2, -cell_dz/2]])
 # Combine the (N,2) and (4,2) arrays to get an (N,4,2) array.
 voxel_vertices = voxel_centres[:, None, :] + vertex_displacements[None, :, :]
+# The derivative operators are (ncells x ncells) matrices which are sparse. We
+# have quite a lot of cells (around 2100), so it's more efficient to generate
+# and use sparse matrices here, though dense ones will be returned by default
+# for backwards compatibility.
+sparse = True
 derivative_operators = admt.generate_derivative_operators(
-    voxel_vertices, grid_index_1d_to_2d_map, grid_index_2d_to_1d_map
+    voxel_vertices, grid_index_1d_to_2d_map, grid_index_2d_to_1d_map, sparse
 )
 
 # As described in the docstring for generate_derivative_operators, we can
@@ -222,7 +233,7 @@ emitter.parent = world
 # with all bolometers. The measurements should have the same channel order as
 # the sensitivity matrix.
 all_measurements = []
-for camera in bolos:
+for camera in poloidal_bolos:
     all_measurements.extend(camera.observe())
 
 
@@ -230,17 +241,19 @@ for camera in bolos:
 # Perform the inversions.
 ################################################################################
 print("Performing inversions...")
-# We'll use NNLS with regularisation. The hyperparameters have been chosen by
+# We'll use NNLS with regularisation. Since the number of voxels is reasonably
+# large (around 2100), we'll use the sparse variant of the NNLS inversion for
+# memory and computational efficiency. The hyperparameters have been chosen by
 # hand but techniques such as the discrepancy principle or L curve optimisation
 # could also be used to determine them. That is out of the scope of this demo.
 isotropic_alpha = 1e-10
-isotropic_inversion, _ = invert_regularised_nnls(
+isotropic_inversion, _ = invert_sparse_regularised_nnls(
     sensitivity_matrix, all_measurements, alpha=isotropic_alpha,
     tikhonov_matrix=laplacian,
 )
 
 admt_alpha = 1e-10
-admt_inversion, _ = invert_regularised_nnls(
+admt_inversion, _ = invert_sparse_regularised_nnls(
     sensitivity_matrix, all_measurements, alpha=admt_alpha,
     tikhonov_matrix=admt_operator,
 )
@@ -254,6 +267,7 @@ emiss2d = np.zeros((nx, ny))
 # Isotropic
 for index1d, indices2d in grid_index_1d_to_2d_map.items():
     emiss2d[indices2d] = isotropic_inversion[index1d]
+emiss2d *= 4 * np.pi
 plt.figure()
 im = plt.imshow(emiss2d.T, extent=(cell_r[0], cell_r[-1], cell_z[0], cell_z[-1]), cmap='Purples')
 plt.contour(rsamp, zsamp, psisamp.T, linewidths=0.5, alpha=0.3,
@@ -264,11 +278,12 @@ plt.colorbar(im, label="Inverted\nEmissivity [W/m3]")
 plt.xlim([rsamp[0], rsamp[-1]])
 plt.ylim([zsamp[0], zsamp[-1]])
 plt.gca().set_aspect('equal')
-plt.title("Isotropic regularisation")
+plt.title("Isotropic regularisation,\npoloidal channels")
 
 # Anisotropic.
 for index1d, indices2d in grid_index_1d_to_2d_map.items():
     emiss2d[indices2d] = admt_inversion[index1d]
+emiss2d *= 4 * np.pi
 plt.figure()
 im = plt.imshow(emiss2d.T, extent=(cell_r[0], cell_r[-1], cell_z[0], cell_z[-1]), cmap='Purples')
 plt.contour(rsamp, zsamp, psisamp.T, linewidths=0.5, alpha=0.3,
@@ -279,7 +294,94 @@ plt.colorbar(im, label="Inverted\nEmissivity [W/m3]")
 plt.xlim([rsamp[0], rsamp[-1]])
 plt.ylim([zsamp[0], zsamp[-1]])
 plt.gca().set_aspect('equal')
-plt.title("Anisotropic regularisation")
+plt.title("Anisotropic regularisation\npoloidal channels")
+
+plt.pause(0.5)
+
+
+########################################################################
+# Can we get a better inversion by including tangential information?
+########################################################################
+print("Augmenting the geometry matrix with tangential bolos...")
+# The ray transfer object must be in the same world as the bolometers,
+# and the plasma emitter must be absent.
+ray_transfer_grid.parent = world
+emitter.parent = None
+
+
+# sensitivity_matrix = []
+sensitivity_matrix = sensitivity_matrix.tolist()
+for camera in tangential_bolos:
+    for foil in camera:
+        # Temporarily override foil pipelines for the sensitivity calculation.
+        orig_pipelines = foil.pipelines
+        foil.pipelines = [RayTransferPipeline0D(kind=foil.units)]
+        # All objects in world have wavelength-independent material properties,
+        # so it doesn't matter which wavelength range we use (as long as
+        # max_wavelength - min_wavelength = 1)
+        foil.min_wavelength = 1
+        foil.max_wavelength = 2
+        foil.spectral_bins = ray_transfer_grid.bins
+        foil.observe()
+        sensitivity_matrix.append(foil.pipelines[0].matrix)
+        # Restore original pipelines for subsequent observe calls.
+        foil.pipelines = orig_pipelines
+sensitivity_matrix = np.asarray(sensitivity_matrix)
+
+ray_transfer_grid.parent = None
+
+
+print("Adding tangential bolometer measurements...")
+emitter.parent = world
+for camera in tangential_bolos:
+    all_measurements.extend(camera.observe())
+
+
+print("Performing new inversions...")
+isotropic_inversion, _ = invert_sparse_regularised_nnls(
+    sensitivity_matrix, all_measurements, alpha=isotropic_alpha,
+    tikhonov_matrix=laplacian,
+)
+
+admt_inversion, _ = invert_sparse_regularised_nnls(
+    sensitivity_matrix, all_measurements, alpha=admt_alpha,
+    tikhonov_matrix=admt_operator,
+)
+
+print("Plotting results...")
+emiss2d = np.zeros((nx, ny))
+
+# Isotropic
+for index1d, indices2d in grid_index_1d_to_2d_map.items():
+    emiss2d[indices2d] = isotropic_inversion[index1d]
+emiss2d *= 4 * np.pi
+plt.figure()
+im = plt.imshow(emiss2d.T, extent=(cell_r[0], cell_r[-1], cell_z[0], cell_z[-1]), cmap='Purples')
+plt.contour(rsamp, zsamp, psisamp.T, linewidths=0.5, alpha=0.3,
+            levels=np.linspace(0, 1, 10), colors=['k']*9 + ['red'])
+plt.xlabel("R[m]")
+plt.ylabel("Z[m]")
+plt.colorbar(im, label="Inverted\nEmissivity [W/m3]")
+plt.xlim([rsamp[0], rsamp[-1]])
+plt.ylim([zsamp[0], zsamp[-1]])
+plt.gca().set_aspect('equal')
+plt.title("Isotropic regularisation,\nall channels")
+
+# Anisotropic.
+for index1d, indices2d in grid_index_1d_to_2d_map.items():
+    emiss2d[indices2d] = admt_inversion[index1d]
+emiss2d *= 4 * np.pi
+plt.figure()
+im = plt.imshow(emiss2d.T, extent=(cell_r[0], cell_r[-1], cell_z[0], cell_z[-1]), cmap='Purples')
+plt.contour(rsamp, zsamp, psisamp.T, linewidths=0.5, alpha=0.3,
+            levels=np.linspace(0, 1, 10), colors=['k']*9 + ['red'])
+plt.xlabel("R[m]")
+plt.ylabel("Z[m]")
+plt.colorbar(im, label="Inverted\nEmissivity [W/m3]")
+plt.xlim([rsamp[0], rsamp[-1]])
+plt.ylim([zsamp[0], zsamp[-1]])
+plt.gca().set_aspect('equal')
+plt.title("Anisotropic regularisation\nall channels")
 
 plt.ioff()
 plt.show()
