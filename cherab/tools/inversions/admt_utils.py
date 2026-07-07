@@ -28,10 +28,11 @@ __author__ = "Jack Lovell, Oak Ridge National Laboratory"
 
 from collections.abc import Mapping
 import numpy as np
+from scipy.sparse import issparse
 try:
-    from scipy.sparse import coo_array as coo
+    from scipy.sparse import coo_array as coo, diags_array as diags
 except ImportError:  # Scipy < 1.8, deprecated from 1.18
-    from scipy.sparse import coo_matrix as coo
+    from scipy.sparse import coo_matrix as coo, diags
 
 
 def generate_derivative_operators(voxel_vertices, grid_index_1d_to_2d_map,
@@ -348,7 +349,7 @@ def calculate_admt(voxel_radii, derivative_operators, psi_at_voxels, dx, dy, ani
 
     :param ndarray voxel_radii: a 1D array of the radius at the centre
         of each voxel in the grid
-    :param tuple derivative_operators: a named tuple with the derivative
+    :param dict derivative_operators: a dictionary with the derivative
         operators for the grid, as returned by :func:generate_derivative_operators
     :param ndarray psi_at_voxels: the magnetic flux at the centre of
         each voxel in the grid
@@ -377,6 +378,10 @@ def calculate_admt(voxel_radii, derivative_operators, psi_at_voxels, dx, dy, ani
 
     This means it is suitable for use in Cherab's inversion methods,
     such as NNLS and SART.
+
+    If the derivative operators are sparse matrices, the returned admt
+    operator is also a sparse matrix. Otherwise a dense matrix is
+    returned.
     """
     Dpar = np.full(psi_at_voxels.shape, 1)
     Dperp = Dpar / anisotropy
@@ -428,11 +433,17 @@ def calculate_admt(voxel_radii, derivative_operators, psi_at_voxels, dx, dy, ani
         + (Dperp - Dpar) * (dpsidxdy * dpsidx + dpsidxx * dpsidy)
         + ddiff_term_cy + dnorm_term_cy + toroidal_term_cy
     ) / normalisation
-    cx = np.diag(cx)
-    cy = np.diag(cy)
-    cxx = np.diag(cxx)
-    cyy = np.diag(cyy)
-    cxy = np.diag(cxy)
+    if all(issparse(d) for d in derivative_operators.values()):
+        # Make sparse versions of the diagonal matrices.
+        diag = diags
+    else:
+        # Dense versions using Numpy.
+        diag = np.diag
+    cx = diag(cx)
+    cy = diag(cy)
+    cxx = diag(cxx)
+    cyy = diag(cyy)
+    cxy = diag(cxy)
     admt_operator = cx @ Dx + cy @ Dy + cxx @ Dxx + 2 * cxy @ Dxy + cyy @ Dyy
     admt_operator *= np.sqrt(dx * dy)
     return admt_operator
