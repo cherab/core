@@ -25,7 +25,7 @@ with other integrators is not guaranteed.
 """
 
 import numpy as np
-from raysect.core.math.function.float.function3d cimport autowrap_function3d
+from raysect.core.math.function.float.function3d cimport autowrap_function3d, Function3D
 from raysect.optical cimport World, Primitive, Ray, Spectrum, Point3D, Vector3D, AffineMatrix3D
 from raysect.optical.material cimport VolumeIntegrator, InhomogeneousVolumeEmitter
 from libc.math cimport sqrt, atan2, M_PI as pi
@@ -263,6 +263,7 @@ cdef class IndexedRayTransferIntegrator(RayTransferIntegrator):
             Vector3D direction
             int isource_pre, isource_current, it, n
             double length, t, dt, x, y, z, res
+            Function3D index_function
 
         if not isinstance(material, IndexedRayTransferEmitter):
             raise TypeError(
@@ -281,6 +282,7 @@ cdef class IndexedRayTransferIntegrator(RayTransferIntegrator):
         dt = length / n  # integration step
         # cython performs checks on attributes of external class,
         # so it's better to do the checks before the loop
+        index_function = material.index_function
         isource_current = -1
         isource_pre = -1
         res = 0
@@ -289,7 +291,7 @@ cdef class IndexedRayTransferIntegrator(RayTransferIntegrator):
             x = start.x + direction.x * t  # x coordinates of the points
             y = start.y + direction.y * t  # y coordinates of the points
             z = start.z + direction.z * t  # z coordinates of the points
-            isource_current = <int>material.index_function(x, y, z)  # get geometry grid index
+            isource_current = <int>index_function(x, y, z)  # get geometry grid index
             if isource_current != isource_pre:  # we moved to the next cell
                 if isource_pre > -1:
                     # writing results for the current source
@@ -655,17 +657,23 @@ cdef class IndexedRayTransferEmitter(InhomogeneousVolumeEmitter):
     """A unit emitter defined by an index function, which can be used
     to calculate ray transfer matrices (geometry matrices).
 
+    This approach is suitable for arbitrary source geometries defined via a callable,
+    for example the 3D application in
+    `K. Munechika et al., Rev. Sci. Instrum. 96, 043509 (2024) <https://doi.org/10.1063/5.0225703>`_.
+
     Note that for performance reason there are no boundary checks in `emission_function()`,
     or in `IndexedRayTransferIntegrator`,
     so this emitter must be placed inside a bounding box.
 
     :param callable index_function: Callable objects taking 3 positional arguments :math:`(X, Y, Z)`.
+        This function should return an integer value; any fractional part will be discarded.
     :param int bins: Number of bins for the spectral array, by default 0.
     :param float integration_step: The length of line integration step, by default 0.01.
     :param VolumeIntegrator integrator: Volume integrator, by default `.IndexedRayTransferIntegrator(integration_step)`.
         Volume integrator, by default `.IndexedRayTransferIntegrator(integration_step)`.
 
     :ivar callable index_function: Callable objects taking 3 positional arguments :math:`(X, Y, Z)`.
+        This function should return an integer value; any fractional part will be discarded.
     :ivar int bins: Number of bins for the spectral array.
 
     .. code-block:: python
