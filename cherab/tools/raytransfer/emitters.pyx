@@ -659,7 +659,7 @@ cdef class IndexedRayTransferEmitter(InhomogeneousVolumeEmitter):
 
     This approach is suitable for arbitrary source geometries defined via a callable,
     for example the 3D application in
-    `K. Munechika et al., Rev. Sci. Instrum. 96, 043509 (2024) <https://doi.org/10.1063/5.0225703>`_.
+    `K. Munechika et al., Rev. Sci. Instrum. 96, 043509 (2025) <https://doi.org/10.1063/5.0225703>`_.
 
     Note that for performance reason there are no boundary checks in `emission_function()`,
     or in `IndexedRayTransferIntegrator`,
