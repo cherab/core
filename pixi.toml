@@ -55,6 +55,9 @@ clean = { cmd = [
     "-o",
     "-name",
     "'*.dylib'",
+    "-o",
+    "-name",
+    "'*.html'",
     "\\)",
     "-delete",
 ], description = "🔥 Remove in-place build artifacts and temporary files (*.c, *.so, *.dylib)" }
