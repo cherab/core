@@ -1,5 +1,5 @@
 [workspace]
-channels = ["https://prefix.dev/conda-forge"]
+channels = ["conda-forge"]
 platforms = ["linux-64", "osx-arm64", "osx-64"]
 preview = ["pixi-build"]
 
@@ -21,7 +21,6 @@ compilers = ["c"]
 python = ["3.9.*", "3.10.*", "3.11.*", "3.12.*", "3.13.*", "3.14.*"]
 
 [package.host-dependencies]
-uv = "*"
 python = "*"
 setuptools = "*"
 cython = ">=3.1"
@@ -89,9 +88,7 @@ test = { cmd = "python -m unittest discover cherab -v", description = "🧪 Run 
 cherab = { path = "." }
 sphinx = "*"
 sphinx_rtd_theme = "<1"
-
-[feature.docs.pypi-dependencies]
-sphinx-tabs = "*" # >=3.4.4 has not yet been released to conda-forge
+sphinx-tabs = "*"
 
 [feature.docs.tasks]
 doc-build = { cmd = [
