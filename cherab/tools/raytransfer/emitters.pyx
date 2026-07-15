@@ -670,7 +670,6 @@ cdef class IndexedRayTransferEmitter(InhomogeneousVolumeEmitter):
     :param int bins: Number of bins for the spectral array, by default 0.
     :param float integration_step: The length of line integration step, by default 0.01.
     :param VolumeIntegrator integrator: Volume integrator, by default `.IndexedRayTransferIntegrator(integration_step)`.
-        Volume integrator, by default `.IndexedRayTransferIntegrator(integration_step)`.
 
     :ivar callable index_function: Callable objects taking 3 positional arguments :math:`(X, Y, Z)`.
         This function should return an integer value; any fractional part will be discarded.
