@@ -7,9 +7,30 @@ line-length = 120
 include = ["cherab/**/*.py", "demos/**/*.py"]
 
 [tool.ruff.lint]
-ignore = [
-    "F401",  # ignore unused imports
+select = [
+  "E",   # pycodestyle
+  "B",   # flake8-bugbear
+  "F",   # pyflakes
+  "I",   # isort (import order)
+  "N",   # pep8-naming
+  "W",   # Warning
+  "UP",  # pyupgrade
+  "NPY", # numpy specific rules
+  "D",   # pydocstyle
+  "DOC", # pydoclint
 ]
+preview = true
+ignore = [
+  # Recommended ignores by ruff when using formatter
+  "E501", # line too long
+  "N803", # argument name should be lowercase
+  "N806", # variable in function should be lowercase
+  "D107", # missing docstring in __init__
+  "F401", # ignore unused imports
+]
+
+[tool.ruff.lint.pydocstyle]
+convention = "numpy"
 
 [tool.cython-lint]
 max-line-length = 140
