@@ -133,24 +133,24 @@ cython-lint = { cmd = "cython-lint", description = "Lint Cython files" }
 lint = { cmd = "lefthook run pre-commit --all-files --force", description = "🧹 Run all linters" }
 
 # === Python Version Features ===
-[feature.py39.dependencies]
+[feature.pyoldest.dependencies]
 python = "3.9.*"
-[feature.py313.dependencies]
-python = "3.13.*"
+[feature.pylatest.dependencies]
+python = "3.14.*"
 
 [environments]
-default = { features = ["py313"], solve-group = "py313" }
-test = { features = ["test"], solve-group = "py313" }
+default = { features = ["pylatest"], solve-group = "pylatest" }
+test = { features = ["test"], solve-group = "pylatest" }
 docs = { features = [
-    "py39",
+    "pyoldest",
     "docs",
-], solve-group = "py39" } # TODO: change to py313 when bumping RTD theme to >=1.0
-test-py313 = { features = [
-    "py313",
+], solve-group = "pyoldest" } # TODO: change to pylatest when bumping RTD theme to >=1.0
+test-pylatest = { features = [
+    "pylatest",
     "test",
-], solve-group = "py313" } # alias of tests
-test-py39 = { features = [
-    "py39",
+], solve-group = "pylatest" } # alias of test
+test-pyoldest = { features = [
+    "pyoldest",
     "test",
-], solve-group = "py39" } # alias of tests
+], solve-group = "pyoldest" }
 lint = { features = ["lint"], no-default-feature = true }
