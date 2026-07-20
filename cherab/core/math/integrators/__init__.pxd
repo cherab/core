@@ -16,6 +16,6 @@
 # See the Licence for the specific language governing permissions and limitations
 # under the Licence.
 
-from cherab.core.math.integrators.integrators1d cimport Integrator1D, GaussianQuadrature
+from cherab.core.math.integrators.integrators1d cimport Integrator1D, GaussianQuadrature1D, GaussianQuadrature
 from cherab.core.math.integrators.integrators2d cimport Integrator2D, GaussianQuadrature2D
 

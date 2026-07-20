@@ -28,7 +28,7 @@ cdef class Integrator1D:
     cdef double evaluate(self, double a, double b) except? -1e999
 
 
-cdef class GaussianQuadrature(Integrator1D):
+cdef class GaussianQuadrature1D(Integrator1D):
 
     cdef:
         int _min_order, _max_order
@@ -37,3 +37,7 @@ cdef class GaussianQuadrature(Integrator1D):
         double[:] _roots_mv, _weights_mv
 
     cdef _build_cache(self)
+
+
+cdef class GaussianQuadrature(GaussianQuadrature1D):
+    pass
