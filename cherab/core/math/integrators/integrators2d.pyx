@@ -246,7 +246,9 @@ cdef class GaussianQuadrature2D(Integrator2D):
         cdef:
             int order, n, i
 
-        # cache roots and weights for x dimension
+        # Pack the variable-length quadrature rules for each coordinate direction into
+        # contiguous 1D arrays, avoiding the unused padding of rectangular caches.
+        # x-direction
         n = (self._x_max_order + self._x_min_order) * (self._x_max_order - self._x_min_order + 1) // 2
 
         self._x_roots = np.zeros(n, dtype=np.float64)
@@ -259,8 +261,8 @@ cdef class GaussianQuadrature2D(Integrator2D):
 
         self._x_roots_mv = self._x_roots
         self._x_weights_mv = self._x_weights
-        
-        # cache roots and weights for y dimension
+
+        # y-direction
         n = (self._y_max_order + self._y_min_order) * (self._y_max_order - self._y_min_order + 1) // 2
 
         self._y_roots = np.zeros(n, dtype=np.float64)

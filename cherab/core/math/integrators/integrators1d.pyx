@@ -171,6 +171,8 @@ cdef class GaussianQuadrature1D(Integrator1D):
         cdef:
             int order, n, i
 
+        # Store the variable-length roots and weights for each quadrature order
+        # consecutively in packed 1D arrays to avoid rectangular-array padding.
         n = (self._max_order + self._min_order) * (self._max_order - self._min_order + 1) // 2
 
         self._roots = np.zeros(n, dtype=np.float64)
