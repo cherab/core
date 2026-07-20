@@ -68,7 +68,7 @@ cdef class Integrator2D:
 
 
 cdef class GaussianQuadrature2D(Integrator2D):
-    """
+    r"""
     Approximates an integral of a two-dimensional function over a finite interval.
 
     The integral is approximated with fixed-tolerance Gauss-Legendre quadrature.
