@@ -39,7 +39,7 @@ cdef class Integrator1D:
         """
         A 1D function to integrate.
 
-        :rtype: int
+        :rtype: Function1D
         """
         return self.function
 
