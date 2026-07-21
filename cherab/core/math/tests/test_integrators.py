@@ -17,13 +17,14 @@
 # under the Licence.
 
 from raysect.core.math.function.float import Exp1D, Arg1D, Exp2D, Arg2D, Constant1D
-from cherab.core.math.integrators import GaussianQuadrature, GaussianQuadrature2D
+from cherab.core.math.integrators import GaussianQuadrature1D, GaussianQuadrature2D
 from math import sqrt, pi
 from scipy.special import erf
 import unittest
+import itertools
 
 
-class TestGaussianQuadrature(unittest.TestCase):
+class TestGaussianQuadrature1D(unittest.TestCase):
     """Gaussian quadrature integrator tests."""
 
     def test_properties(self):
@@ -31,7 +32,7 @@ class TestGaussianQuadrature(unittest.TestCase):
         min_order = 3
         max_order = 30
         reltol = 1.0e-6
-        quadrature = GaussianQuadrature(
+        quadrature = GaussianQuadrature1D(
             integrand=Arg1D,
             relative_tolerance=reltol,
             max_order=max_order,
@@ -72,7 +73,7 @@ class TestGaussianQuadrature(unittest.TestCase):
 
     def test_integrate(self):
         """Test integration."""
-        quadrature = GaussianQuadrature(relative_tolerance=1.0e-8)
+        quadrature = GaussianQuadrature1D(relative_tolerance=1.0e-8)
         a = -0.5
         b = 3.0
         quadrature.integrand = (2 / sqrt(pi)) * Exp1D(-Arg1D() * Arg1D())
@@ -161,29 +162,43 @@ class TestGaussianQuadrature2D(unittest.TestCase):
 
     def test_integrate(self):
         """Test 2D integration."""
-        quadrature = GaussianQuadrature2D(relative_tolerance=1.0e-8)
 
-        # Integration limits
-        a_x, b_x = -2.0, 2.0
-        a_y, b_y = -3.0, 3.0
-        
-        # Bivariate Normal distribution with std_dev=1, mean=0 and no correlation
-        quadrature.integrand = (
-            1 / (2 * pi) * Exp2D(-0.5 * (Arg2D("x") ** 2 + Arg2D("y") ** 2))
-        )
+        max_orders = [40, 50, 60]
+        min_orders = [10, 20, 30]
 
-        # Exact integral of the bivariate normal distribution
-        exact_integral = (
-            1 / 4.0
-            * (erf(b_x / sqrt(2)) - erf(a_x / sqrt(2)))
-            * (erf(b_y / sqrt(2)) - erf(a_y / sqrt(2)))
-        )
+        for x_max_order, y_max_order in itertools.product(max_orders, repeat=2):
+            for x_min_order, y_min_order in itertools.product(min_orders, repeat=2):
+                quadrature = GaussianQuadrature2D(
+                    relative_tolerance=1.0e-8,
+                    x_max_order=x_max_order,
+                    y_max_order=y_max_order,
+                    x_min_order=x_min_order,
+                    y_min_order=y_min_order,
+                )
 
-        self.assertAlmostEqual(
-            quadrature(a_x, b_x, Constant1D(a_y), Constant1D(b_y)),
-            exact_integral,
-            places=8,
-        )
+                # Integration limits
+                a_x, b_x = -2.0, 2.0
+                a_y, b_y = -3.0, 3.0
+
+                # Bivariate Normal distribution with std_dev=1, mean=0 and no correlation
+                quadrature.integrand = (
+                    1 / (2 * pi) * Exp2D(-0.5 * (Arg2D("x") ** 2 + Arg2D("y") ** 2))
+                )
+
+                # Exact integral of the bivariate normal distribution
+                exact_integral = (
+                    1
+                    / 4.0
+                    * (erf(b_x / sqrt(2)) - erf(a_x / sqrt(2)))
+                    * (erf(b_y / sqrt(2)) - erf(a_y / sqrt(2)))
+                )
+
+                self.assertAlmostEqual(
+                    quadrature(a_x, b_x, Constant1D(a_y), Constant1D(b_y)),
+                    exact_integral,
+                    places=8,
+                    msg=f"x_max_order={x_max_order}, y_max_order={y_max_order}, x_min_order={x_min_order}, y_min_order={y_min_order}",
+                )
 
 
 if __name__ == "__main__":
