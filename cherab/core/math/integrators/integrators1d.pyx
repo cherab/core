@@ -73,17 +73,19 @@ cdef class GaussianQuadrature1D(Integrator1D):
     using fixed-tolerance Gaussian quadrature.
     (see Scipy `quadrature <https://docs.scipy.org/doc/scipy/reference/generated/scipy.integrate.quadrature.html>`).
 
+    The integration is performed by iteratively increasing the order of the Gaussian quadrature until the relative tolerance is met or the maximum order is reached.
+
     :param object integrand: A 1D function to integrate. Default is Constant1D(0).
     :param double relative_tolerance: Iteration stops when relative error between
         last two iterates is less than this value. Default is 1.e-5.
-    :param int max_order: Maximum order on Gaussian quadrature. Default is 50.
-    :param int min_order: Minimum order on Gaussian quadrature. Default is 1.
+    :param int max_order: Maximum order on Gaussian quadrature the integration stops at. Default is 50.
+    :param int min_order: Minimum order on Gaussian quadrature the integration starts from. Default is 1.
 
     :ivar Function1D integrand: A 1D function to integrate.
     :ivar double relative_tolerance: Iteration stops when relative error between
         last two iterates is less than this value.
-    :ivar int max_order: Maximum order on Gaussian quadrature.
-    :ivar int min_order: Minimum order on Gaussian quadrature.
+    :ivar int max_order: Maximum order on Gaussian quadrature the integration stops at.
+    :ivar int min_order: Minimum order on Gaussian quadrature the integration starts from.
     """
 
     def __init__(self, object integrand=Constant1D(0), double relative_tolerance=1.e-5, int max_order=50, int min_order=1):
