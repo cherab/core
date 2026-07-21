@@ -5,6 +5,7 @@ Release 1.6.0 (TBD)
 -------------------
 
 API changes:
+* Rename `TargettedPixelGroup` to `TargetedPixelGroup` for correct spelling. Still keep `TargettedPixelGroup` as an alias for backwards compatibility until the next major release. (#487)
 * Add generic distribution function. (#481)
 * Add emission model attribute access to line and lineshape . (#294)
 
