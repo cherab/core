@@ -97,22 +97,24 @@ cdef class GaussianQuadrature2D(Integrator2D):
         -  :math:`B = \\frac{x_{\\mathrm{upper}} - x_{\\mathrm{lower}}}{2}`: Half-width of the x-interval.
         -  :math:`D(x) = \\frac{y_{\\mathrm{upper}}(x) - y_{\\mathrm{lower}}(x)}{2}`: Half-width of the y-interval.
         -  :math:`C(x) = \\frac{y_{\\mathrm{upper}}(x) + y_{\\mathrm{lower}}(x)}{2}`: Midpoint of the y-interval.
+    
+    The integration is performed by iteratively increasing the order of the Gaussian quadrature in both the x and y dimensions until the relative tolerance is met or the maximum orders is reached.
 
     :param Function2D integrand: A 2D function to integrate. Default is `Constant2D(0)`.
     :param double relative_tolerance: Iteration stops when relative error between
         last two iterates is less than this value. Default is `1.e-5`.
-    :param int x_max_order: Maximum order on Gaussian quadrature in the x dimension. Default is `50`.
-    :param int x_min_order: Minimum order on Gaussian quadrature in the x dimension. Default is `1`.
-    :param int y_max_order: Maximum order on Gaussian quadrature in the y dimension. Default is `50`.
-    :param int y_min_order: Minimum order on Gaussian quadrature in the y dimension. Default is `1`.
+    :param int x_max_order: Maximum order on Gaussian quadrature in the x dimension the integration stops at. Default is `50`.
+    :param int x_min_order: Minimum order on Gaussian quadrature in the x dimension the integration starts from. Default is `1`.
+    :param int y_max_order: Maximum order on Gaussian quadrature in the y dimension the integration stops at. Default is `50`.
+    :param int y_min_order: Minimum order on Gaussian quadrature in the y dimension the integration starts from. Default is `1`.
 
     :ivar Function1D integrand: A 1D function to integrate.
     :ivar double relative_tolerance: Iteration stops when relative error between
         last two iterates is less than this value.
-    :ivar int x_max_order: Maximum order on Gaussian quadrature in the x dimension.
-    :ivar int x_min_order: Minimum order on Gaussian quadrature in the x dimension.
-    :ivar int y_max_order: Maximum order on Gaussian quadrature in the y dimension.
-    :ivar int y_min_order: Minimum order on Gaussian quadrature in the y dimension.
+    :ivar int x_max_order: Maximum order on Gaussian quadrature in the x dimension the integration stops at.
+    :ivar int x_min_order: Minimum order on Gaussian quadrature in the x dimension the integration starts from.
+    :ivar int y_max_order: Maximum order on Gaussian quadrature in the y dimension the integration stops at.
+    :ivar int y_min_order: Minimum order on Gaussian quadrature in the y dimension the integration starts from.
     """
     def __init__(self, object integrand=Constant2D(0), double relative_tolerance=1.e-5, int x_max_order=50, int x_min_order=1,
                  int y_max_order=50, int y_min_order=1):
@@ -276,25 +278,6 @@ cdef class GaussianQuadrature2D(Integrator2D):
         self._y_roots_mv = self._y_roots
         self._y_weights_mv = self._y_weights
     
-    cpdef double profile_evaluate(self, int n, double x_lower, double x_upper, Function1D y_lower, Function1D y_upper):
-        
-        cdef:
-            int i
-
-        for i in range(n):
-            self.evaluate(x_lower, x_upper, y_lower, y_upper)
-
-        return 0.
-    
-    cpdef double evaluate_overhead(self, int n):
-        cdef:
-            int i
-
-        for i in range(n):
-            continue
-        
-        return 0.
-
     @cython.boundscheck(False)
     @cython.wraparound(False)
     @cython.cdivision(True)
@@ -312,60 +295,155 @@ cdef class GaussianQuadrature2D(Integrator2D):
         """
 
         cdef:
-            int x_order, y_order
-            int x_ibegin, y_ibegin
-            int i, j
-            double current_integral, previous_integral, y_contribution, error
-            double x, y, x_offset, y_offset, x_slope, y_slope, scale, rtol, y_lower_val, y_upper_val
+            int x_order = self._x_min_order
+            int y_order = self._y_min_order
 
-        # set initial iteration values
-        previous_integral = INFINITY
-        x_ibegin = 0
-        y_ibegin = 0
+            double previous_integral
+            double current_integral
+            double rtol = self._rtol
 
-        # x variable transformations from [-1, 1] to [x_lower, x_upper] and [y_lower, y_upper]
-        x_offset = 0.5 * (x_lower + x_upper)
-        x_slope = 0.5 * (x_upper - x_lower)
+        current_integral = self._evaluate_orders(
+            x_lower,
+            x_upper,
+            y_lower,
+            y_upper,
+            x_order,
+            y_order,
+        )
 
-        # create local caches
-        x_order = self._x_min_order
-        y_order = self._y_min_order
-        
-        while True:
-            current_integral = 0.
-            for i in range(x_ibegin, x_ibegin + x_order):
-                x = x_offset + x_slope * self._x_roots_mv[i]
-                y_contribution = 0.
-
-                # calculate integration limits and transformation from [-1, 1] to [y_lower, y_upper]
-                y_lower_val = y_lower.evaluate(x)
-                y_upper_val = y_upper.evaluate(x)
-                y_offset = 0.5 * (y_lower_val + y_upper_val)
-                y_slope = 0.5 * (y_upper_val - y_lower_val)
-
-                for j in range(y_ibegin, y_ibegin + y_order):
-                    y = y_offset + y_slope * self._y_roots_mv[j]
-                    y_contribution += self._y_weights_mv[j] * self.function.evaluate(x, y)
-            
-                current_integral += self._x_weights_mv[i] * y_contribution
-            current_integral *= x_slope * y_slope
-
-            error = abs(current_integral - previous_integral)
-
-            # terminate integration if relative error is less than tolerance
-            # or if both x and y maximum orders have been reached
-            if error < self._rtol * abs(current_integral) or (x_order == self._x_max_order and y_order == self._y_max_order):
-                break
-            
+        while (
+            x_order < self._x_max_order
+            or y_order < self._y_max_order
+        ):
             previous_integral = current_integral
 
-            # increase the orders of x and y and shift indexes
             if x_order < self._x_max_order:
-                x_ibegin += x_order
                 x_order += 1
 
             if y_order < self._y_max_order:
-                y_ibegin += y_order
                 y_order += 1
 
+            current_integral = self._evaluate_orders(
+                x_lower,
+                x_upper,
+                y_lower,
+                y_upper,
+                x_order,
+                y_order,
+            )
+
+            if (
+                abs(current_integral - previous_integral)
+                <= rtol * abs(current_integral)
+            ):
+                return current_integral
+
         return current_integral
+
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    @cython.cdivision(True)
+    @cython.initializedcheck(False)
+    cdef double _evaluate_orders(
+        self,
+        double x_lower,
+        double x_upper,
+        Function1D y_lower,
+        Function1D y_upper,
+        int x_order,
+        int y_order,
+    ) except? -1e999:
+        """
+        Evaluate the quadrature using fixed x and y orders.
+
+        :param double x_lower: Lower limit of integration in the x dimension.
+        :param double x_upper: Upper limit of integration in the x dimension.
+        :param Function1D y_lower: Lower limit of integration in the y dimension as a function of x.
+        :param Function1D y_upper: Upper limit of integration in the y dimension as a function of x.
+        :param int x_order: Order of Gaussian quadrature in the x dimension.
+        :param int y_order: Order of Gaussian quadrature in the y dimension.
+
+        :returns: Gaussian quadrature approximation to integral.
+        """
+
+        cdef:
+            Py_ssize_t x_ibegin, y_ibegin
+            Py_ssize_t i, j
+
+            double integral
+            double y_contribution
+
+            double x, y
+
+            double x_offset, x_slope
+            double y_offset, y_slope
+            double y_lower_val, y_upper_val
+
+        x_ibegin = self._packed_offset(
+            x_order,
+            self._x_min_order,
+        )
+
+        y_ibegin = self._packed_offset(
+            y_order,
+            self._y_min_order,
+        )
+
+        # Transform the x interval from [-1, 1] to [x_lower, x_upper].
+        x_offset = 0.5 * (x_lower + x_upper)
+        x_slope = 0.5 * (x_upper - x_lower)
+
+        integral = 0.
+
+        for i in range(x_ibegin, x_ibegin + x_order):
+
+            x = x_offset + x_slope * self._x_roots_mv[i]
+
+            y_lower_val = y_lower.evaluate(x)
+            y_upper_val = y_upper.evaluate(x)
+
+            # Transform the y interval from [-1, 1] to
+            # [y_lower(x), y_upper(x)].
+            y_offset = 0.5 * (y_lower_val + y_upper_val)
+            y_slope = 0.5 * (y_upper_val - y_lower_val)
+
+            y_contribution = 0.
+
+            for j in range(y_ibegin, y_ibegin + y_order):
+
+                y = y_offset + y_slope * self._y_roots_mv[j]
+
+                y_contribution += (
+                    self._y_weights_mv[j]
+                    * self.function.evaluate(x, y)
+                )
+
+            # y_slope depends on x, so it must be applied separately
+            # for every x quadrature node.
+            integral += (
+                self._x_weights_mv[i]
+                * y_slope
+                * y_contribution
+            )
+
+        return x_slope * integral
+
+    cdef inline Py_ssize_t _packed_offset(
+        self,
+        int order,
+        int min_order,
+    ) noexcept:
+        """
+        Return the start index of a quadrature rule in a packed cache of roots and weights.
+
+        :param int order: Order of Gaussian quadrature.
+        :param int min_order: Minimum order of Gaussian quadrature.
+
+        :returns: Start index of a quadrature rule in a packed cache of roots and weights.
+        """
+
+        return (
+            <Py_ssize_t> (order - min_order)
+            * (order + min_order - 1)
+            // 2
+        )

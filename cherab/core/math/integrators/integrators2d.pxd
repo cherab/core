@@ -37,6 +37,6 @@ cdef class GaussianQuadrature2D(Integrator2D):
 
     cdef _build_cache(self)
     
-    cpdef double profile_evaluate(self, int n, double x_lower, double x_upper, Function1D y_lower, Function1D y_upper)
+    cdef double _evaluate_orders(self, double x_lower, double x_upper, Function1D y_lower, Function1D y_upper, int x_order, int y_order) except? -1e999
 
-    cpdef double evaluate_overhead(self, int n)
+    cdef inline Py_ssize_t _packed_offset(self, int order, int min_order) noexcept
