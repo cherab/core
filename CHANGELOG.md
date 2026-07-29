@@ -8,6 +8,9 @@ API changes:
 * Rename `TargettedPixelGroup` to `TargetedPixelGroup` for correct spelling. Still keep `TargettedPixelGroup` as an alias for backwards compatibility until the next major release. (#487)
 * Add emission model attribute access to line and lineshape . (#294)
 
+Bug fixes:
+* Fix the import statement for `netcdf_file` in `calcam.py` for compatibility with the upcoming `scipy` v2.0.0. (#510)
+
 New:
 * Add GaussianQuadrature2D integrator. (#475)
 * Support Raysect 0.9. (#486)
