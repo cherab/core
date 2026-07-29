@@ -17,6 +17,7 @@ New:
 * Add Integrator2D base class for integration of two-dimensional functions. (#472)
 * Support Raysect 0.9. (#486)
 * Test against Python 3.9, 3.10, 3.11, 3.12, 3.13 and latest released Numpy. Drop Python 3.7, 3.8 and older Numpy from tests. (#486)
+* Make values in `cherab.core.utility.constants` accessible to Python. (#509)
 
 Release 1.5.0 (27 Aug 2024)
 -------------------
