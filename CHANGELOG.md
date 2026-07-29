@@ -5,6 +5,7 @@ Release 1.6.0 (TBD)
 -------------------
 
 API changes:
+* Rename `GaussianQuadrature` to `GaussianQuadrature1D` to conform to Cherab's naming convention. Original name kept as an alias for backwards compatibility until the next minor release. (#475)
 * Rename `TargettedPixelGroup` to `TargetedPixelGroup` for correct spelling. Still keep `TargettedPixelGroup` as an alias for backwards compatibility until the next major release. (#487)
 * Add emission model attribute access to line and lineshape . (#294)
 
