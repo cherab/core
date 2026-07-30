@@ -7,6 +7,8 @@ Release 1.6.0 (TBD)
 API changes:
 * Rename `TargettedPixelGroup` to `TargetedPixelGroup` for correct spelling. Still keep `TargettedPixelGroup` as an alias for backwards compatibility until the next major release. (#487)
 * Add emission model attribute access to line and lineshape . (#294)
+* The `generate_derivative_operators` function in `admt_utils` can now return sparse matrices rather than dense if requested. (#427)
+* The `calculate_admt` function in `admt_utils` will return a sparse matrix if the input derivative operators are themselves sparse. (#427)
 
 Bug fixes:
 * Fix the import statement for `netcdf_file` in `calcam.py` for compatibility with the upcoming `scipy` v2.0.0. (#510)
@@ -18,6 +20,10 @@ New:
 * Support Raysect 0.9. (#486)
 * Test against Python 3.9, 3.10, 3.11, 3.12, 3.13 and latest released Numpy. Drop Python 3.7, 3.8 and older Numpy from tests. (#486)
 * Make values in `cherab.core.utility.constants` accessible to Python. (#509)
+* Generomak now contains an example bolometer diagnostic. (#427)
+* The regularisation utilities in `admt_utils` are now in the HTML documention. (#427)
+* A new non-negative least squares inversion using sparse matrices, to complement the existing dense version. (#427)
+* A demo performing bolometry inversions using both isotropic and anisotropic regularisation. (#427)
 
 Release 1.5.0 (27 Aug 2024)
 -------------------
