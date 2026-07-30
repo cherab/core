@@ -14,8 +14,8 @@ XAXIS = Vector3D(1, 0, 0)
 YAXIS = Vector3D(0, 1, 0)
 ZAXIS = Vector3D(0, 0, 1)
 ORIGIN = Point3D(0, 0, 0)
-# Bolometer geometry, independent of camera.
-BOX_WIDTH = 0.05
+# Bolometer geometry, independent of camera. The foil shapes and separation are
+# inspired by the 4-channel bolometer head currently used by many tokamaks.
 BOX_WIDTH = 0.1
 BOX_HEIGHT = 0.07
 BOX_DEPTH = 0.2
