@@ -5,7 +5,6 @@ Release 1.6.0 (TBD)
 -------------------
 
 API changes:
-* Add generic distribution function. (#481)
 * Rename `TargettedPixelGroup` to `TargetedPixelGroup` for correct spelling. Still keep `TargettedPixelGroup` as an alias for backwards compatibility until the next major release. (#487)
 * Add emission model attribute access to line and lineshape . (#294)
 
@@ -13,6 +12,7 @@ Bug fixes:
 * Fix the import statement for `netcdf_file` in `calcam.py` for compatibility with the upcoming `scipy` v2.0.0. (#510)
 
 New:
+* Add generic distribution function. (#481)
 * Add Function6D framework. (#478)
 * Add e_field attribute to Plasma object for electric field vector. (#465)
 * Add Integrator2D base class for integration of two-dimensional functions. (#472)
