@@ -75,30 +75,31 @@ cdef class GaussianQuadrature2D(Integrator2D):
     The quadrature approximation is calculated as follows:
 
     .. math::
-        \\int_{x_{\\text{lower}}}^{x_{\\text{upper}}} \\int_{y_{\\text{lower}}(x)}^{y_{\\text{upper}}(x)} f(x, y) \\, dy \\, dx
-        \\approx \\sum_{i=1}^{n_x} \\sum_{j=1}^{n_y} w_{i} w_{j} \\,
-        f\\left( B \\xi_i + A, \\, D(x) \\eta_j + C(x) \\right) \\,
-        B \\cdot D(x)
+        \int_{x_{\mathrm{lower}}}^{x_{\mathrm{upper}}} \int_{y_{\mathrm{lower}}(x)}^{y_{\mathrm{upper}}(x)} f(x, y) \, dy \, dx
+        \approx \sum_{i=1}^{n_x} \sum_{j=1}^{n_y} w_{i} w_{j} \,
+        f\left( B \xi_i + A, \, D(x) \eta_j + C(x) \right) \,
+        B \cdot D(x)
+
     where:
         -  :math:`x_{\mathrm{lower}}`: Lower limit of integration for the x-dimension.
         -  :math:`x_{\mathrm{upper}}`: Upper limit of integration for the x-dimension.
         -  :math:`y_{\mathrm{lower}}(x)`: Lower limit of integration for the y-dimension, a function of :math:`x`.
         -  :math:`y_{\mathrm{upper}}(x)`: Upper limit of integration for the y-dimension, a function of :math:`x`.
         -  :math:`f(x, y)`: The function to be integrated over the specified region.
-        -  :math:`\\xi`: The transformed variable for the x-dimension, ranging from -1 to 1.
-        -  :math:`\\eta`: The transformed variable for the y-dimension, ranging from -1 to 1.
+        -  :math:`\xi`: The transformed variable for the x-dimension, ranging from -1 to 1.
+        -  :math:`\eta`: The transformed variable for the y-dimension, ranging from -1 to 1.
         -  :math:`w_i`: The weight corresponding to the :math:`i`-th root of the Legendre polynomial in the x-dimension.
         -  :math:`w_j`: The weight corresponding to the :math:`j`-th root of the Legendre polynomial in the y-dimension.
-        -  :math:`\\xi_i`: The :math:`i`-th root of the Legendre polynomial in the x-dimension.
-        -  :math:`\\eta_j`: The :math:`j`-th root of the Legendre polynomial in the y-dimension.
+        -  :math:`\xi_i`: The :math:`i`-th root of the Legendre polynomial in the x-dimension.
+        -  :math:`\eta_j`: The :math:`j`-th root of the Legendre polynomial in the y-dimension.
         -  :math:`n_x`: The number of roots (or nodes) in the x-dimension.
         -  :math:`n_y`: The number of roots (or nodes) in the y-dimension.
-        -  :math:`A = \\frac{x_{\\mathrm{upper}} + x_{\\mathrm{lower}}}{2}`: Midpoint of the x-interval.
-        -  :math:`B = \\frac{x_{\\mathrm{upper}} - x_{\\mathrm{lower}}}{2}`: Half-width of the x-interval.
-        -  :math:`D(x) = \\frac{y_{\\mathrm{upper}}(x) - y_{\\mathrm{lower}}(x)}{2}`: Half-width of the y-interval.
-        -  :math:`C(x) = \\frac{y_{\\mathrm{upper}}(x) + y_{\\mathrm{lower}}(x)}{2}`: Midpoint of the y-interval.
+        -  :math:`A = \frac{x_{\mathrm{upper}} + x_{\mathrm{lower}}}{2}`: Midpoint of the x-interval.
+        -  :math:`B = \frac{x_{\mathrm{upper}} - x_{\mathrm{lower}}}{2}`: Half-width of the x-interval.
+        -  :math:`D(x) = \frac{y_{\mathrm{upper}}(x) - y_{\mathrm{lower}}(x)}{2}`: Half-width of the y-interval.
+        -  :math:`C(x) = \frac{y_{\mathrm{upper}}(x) + y_{\mathrm{lower}}(x)}{2}`: Midpoint of the y-interval.
     
-    The integration is performed by iteratively increasing the order of the Gaussian quadrature in both the x and y dimensions until the relative tolerance is met or the maximum orders is reached.
+    The integration is performed by iteratively increasing the order of the Gaussian quadrature in both the x and y dimensions until the relative tolerance is met or the maximum orders are reached.
 
     :param Function2D integrand: A 2D function to integrate. Default is `Constant2D(0)`.
     :param double relative_tolerance: Iteration stops when relative error between
