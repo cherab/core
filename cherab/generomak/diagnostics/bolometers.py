@@ -1,5 +1,41 @@
 """
 Some foil bolometers for measuring total radiated power.
+
+Each individual channel consists of a BolometerFoil which receives
+radiation. 4 such channels are packaged into a single bolometer "head",
+similar to the bolometer hardware used in many tokamaks worldwide.
+Individual bolometer cameras consist of a box with an aperture and
+several bolometer heads. The overall diagnostic is made up of multiple
+cameras spaced around the vessel.
+
+A description of the camera positions and orientations can be found in
+the CAMERA_GEOMETRY dictionary within this module, which has a
+separate key for each camera. This is not the only way to define the
+geometry, but is convenient for computing relative transforms between
+the components of the bolometer system.
+
+The coordinate system conventions in CAMERA_GEOMETRY are as follows.
+All angles are in degrees and increase clockwise when viewing along
+the relevant axes: y axis for poloidal rotation, z axis for toroidal
+rotation and x axis for radial rotation.
+
+- rotation_poloidal: viewing angle of the slit in the poloidal plane,
+                     with 0 being horizontally inwards.
+- rotation_toroidal: viewing angle of the slit in the toroidal plane,
+                     with 0 being purely radial.
+- rotation_radial: rotation about the radial axis, 0 being vertically upwards.
+- origin: position of the slit relative to the (x, z) poloidal plane i.e. y=0.
+- slit_sensor_separation: distance between slit and each 4-channel sensor.
+- sensor_angles: angle between slit normal and sensor normal.
+- sensor_rotations: rotation angle about the slit-sensor vector, enables
+                    reversing the order of lines of sight spatially within
+                    each sensor.
+- toroidal_angle: the angle of the poloidal plane in which the origin is
+                  definied, with 0 being the (x, z) plane.
+
+
+All of the heads and foils are identical, and are defined by other
+module-level constants.
 """
 from raysect.core import (Node, Point3D, Vector3D, rotate_basis,
                           rotate_x, rotate_y, rotate_z, translate)
@@ -26,6 +62,62 @@ FOIL_WIDTH = 0.0013
 FOIL_HEIGHT = 0.0038
 FOIL_CORNER_CURVATURE = 0.0005
 FOIL_SEPARATION = 0.00508  # 0.2 inch between foils
+
+CAMERA_GEOMETRY = {
+    'HozPol1': {},  # Horizontal poloidal
+    'HozPol2': {},  # Horizontal poloidal,
+    'VertPol': {},  # Vertical poloidal
+    'TanMid1': {},  # Tangential
+    'TanPol1': {}   # Combined poloidal/tangential
+}
+# poloidal rotations
+CAMERA_GEOMETRY['HozPol1']['rotation_poloidal'] = 30
+CAMERA_GEOMETRY['HozPol2']['rotation_poloidal'] = -30
+CAMERA_GEOMETRY['VertPol']['rotation_poloidal'] = -90
+CAMERA_GEOMETRY['TanMid1']['rotation_poloidal'] = 0
+CAMERA_GEOMETRY['TanPol1']['rotation_poloidal'] = -25
+# toroidal rotation
+CAMERA_GEOMETRY['HozPol1']['rotation_toroidal'] = 0
+CAMERA_GEOMETRY['HozPol2']['rotation_toroidal'] = 0
+CAMERA_GEOMETRY['VertPol']['rotation_toroidal'] = 0
+CAMERA_GEOMETRY['TanMid1']['rotation_toroidal'] = -40
+CAMERA_GEOMETRY['TanPol1']['rotation_toroidal'] = 40
+# radial rotation
+CAMERA_GEOMETRY['HozPol1']['rotation_radial'] = -90
+CAMERA_GEOMETRY['HozPol2']['rotation_radial'] = -90
+CAMERA_GEOMETRY['VertPol']['rotation_radial'] = -90
+CAMERA_GEOMETRY['TanMid1']['rotation_radial'] = 0
+CAMERA_GEOMETRY['TanPol1']['rotation_radial'] = 0
+# origins relative to the poloidal (x, z) plane
+CAMERA_GEOMETRY['HozPol1']['origin'] = Point3D(2.45, 0.05, 0)
+CAMERA_GEOMETRY['HozPol2']['origin'] = Point3D(2.45, -0.05, 0)
+CAMERA_GEOMETRY['VertPol']['origin'] = Point3D(1.3, 0, 1.42)
+CAMERA_GEOMETRY['TanMid1']['origin'] = Point3D(2.5, 0, 0)
+CAMERA_GEOMETRY['TanPol1']['origin'] = Point3D(2.2, 0, -0.8)
+# slit-sensor separations
+CAMERA_GEOMETRY['HozPol1']['slit_sensor_separation'] = 0.08
+CAMERA_GEOMETRY['HozPol2']['slit_sensor_separation'] = 0.08
+CAMERA_GEOMETRY['VertPol']['slit_sensor_separation'] = 0.05
+CAMERA_GEOMETRY['TanMid1']['slit_sensor_separation'] = 0.1
+CAMERA_GEOMETRY['TanPol1']['slit_sensor_separation'] = 0.15
+# sensor angles relative to the slit
+CAMERA_GEOMETRY['HozPol1']['sensor_angles'] = [22.5, 7.5, -7.5, -22.5]
+CAMERA_GEOMETRY['HozPol2']['sensor_angles'] = [22.5, 7.5, -7.5, -22.5]
+CAMERA_GEOMETRY['VertPol']['sensor_angles'] = [36, 12, -12, -36]
+CAMERA_GEOMETRY['TanMid1']['sensor_angles'] = [18, 6, -6, -18]
+CAMERA_GEOMETRY['TanPol1']['sensor_angles'] = [-12, -4, 4, 12]
+# sensor rotation relative to the slit
+CAMERA_GEOMETRY['HozPol1']['sensor_rotations'] = [0, 0, 0, 0]
+CAMERA_GEOMETRY['HozPol2']['sensor_rotations'] = [0, 0, 0, 0]
+CAMERA_GEOMETRY['VertPol']['sensor_rotations'] = [0, 0, 0, 0]
+CAMERA_GEOMETRY['TanMid1']['sensor_rotations'] = [0, 0, 0, 0]
+CAMERA_GEOMETRY['TanPol1']['sensor_rotations'] = [180, 180, 180, 180]
+# toroidal angles about which to rotate the poloidal plane
+CAMERA_GEOMETRY['HozPol1']['toroidal_angle'] = 10  # need to avoid LFS limiters
+CAMERA_GEOMETRY['HozPol2']['toroidal_angle'] = 10  # need to avoid LFS limiters
+CAMERA_GEOMETRY['VertPol']['toroidal_angle'] = 0  # happy to hit LFS limiters
+CAMERA_GEOMETRY['TanMid1']['toroidal_angle'] = -15  # avoid LFS limiters
+CAMERA_GEOMETRY['TanPol1']['toroidal_angle'] = 15  # avoid LFS limiters
 
 
 def _make_bolometer_camera(slit_sensor_separation, sensor_angles, sensor_rotations):
@@ -119,81 +211,8 @@ def load_bolometers(parent=None):
     :return: a list of BolometerCamera instances, one for each of the
              cameras described above.
     """
-    # The coordinate system conventions are as follows. All angles are in
-    # degrees and increase clockwise when viewing along the relevant axes:
-    # y axis for poloidal rotation, z axis for toroidal rotation and x axis
-    # for radial rotation.
-    # - rotation_poloidal: viewing angle of the slit in the poloidal plane,
-    #                      with 0 being horizontally inwards.
-    # - rotation_toroidal: viewing angle of the slit in the toroidal plane,
-    #                      with 0 being purely radial.
-    # - rotation_radial: rotation about the radial axis, 0 being vertically upwards.
-    # - origin: position of the slit relative to the (x, z) poloidal plane i.e. y=0.
-    # - slit_sensor_separation: distance between slit and each 4-channel sensor.
-    # - sensor_angles: angle between slit normal and sensor normal.
-    # - sensor_rotations: rotation angle about the slit-sensor vector, enables
-    #                     reversing the order of lines of sight spatially within
-    #                     each sensor.
-    # - toroidal_angle: the angle of the poloidal plane in which the origin is
-    #                   definied, with 0 being the (x, z) plane.
-    camera_properties = {
-        'HozPol1': {},  # Horizontal poloidal
-        'HozPol2': {},  # Horizontal poloidal,
-        'VertPol': {},  # Vertical poloidal
-        'TanMid1': {},  # Tangential
-        'TanPol1': {}   # Combined poloidal/tangential
-    }
-    # poloidal rotations
-    camera_properties['HozPol1']['rotation_poloidal'] = 30
-    camera_properties['HozPol2']['rotation_poloidal'] = -30
-    camera_properties['VertPol']['rotation_poloidal'] = -90
-    camera_properties['TanMid1']['rotation_poloidal'] = 0
-    camera_properties['TanPol1']['rotation_poloidal'] = -25
-    # toroidal rotation
-    camera_properties['HozPol1']['rotation_toroidal'] = 0
-    camera_properties['HozPol2']['rotation_toroidal'] = 0
-    camera_properties['VertPol']['rotation_toroidal'] = 0
-    camera_properties['TanMid1']['rotation_toroidal'] = -40
-    camera_properties['TanPol1']['rotation_toroidal'] = 40
-    # radial rotation
-    camera_properties['HozPol1']['rotation_radial'] = -90
-    camera_properties['HozPol2']['rotation_radial'] = -90
-    camera_properties['VertPol']['rotation_radial'] = -90
-    camera_properties['TanMid1']['rotation_radial'] = 0
-    camera_properties['TanPol1']['rotation_radial'] = 0
-    # origins relative to the poloidal (x, z) plane
-    camera_properties['HozPol1']['origin'] = Point3D(2.45, 0.05, 0)
-    camera_properties['HozPol2']['origin'] = Point3D(2.45, -0.05, 0)
-    camera_properties['VertPol']['origin'] = Point3D(1.3, 0, 1.42)
-    camera_properties['TanMid1']['origin'] = Point3D(2.5, 0, 0)
-    camera_properties['TanPol1']['origin'] = Point3D(2.2, 0, -0.8)
-    # slit-sensor separations
-    camera_properties['HozPol1']['slit_sensor_separation'] = 0.08
-    camera_properties['HozPol2']['slit_sensor_separation'] = 0.08
-    camera_properties['VertPol']['slit_sensor_separation'] = 0.05
-    camera_properties['TanMid1']['slit_sensor_separation'] = 0.1
-    camera_properties['TanPol1']['slit_sensor_separation'] = 0.15
-    # sensor angles relative to the slit
-    camera_properties['HozPol1']['sensor_angles'] = [22.5, 7.5, -7.5, -22.5]
-    camera_properties['HozPol2']['sensor_angles'] = [22.5, 7.5, -7.5, -22.5]
-    camera_properties['VertPol']['sensor_angles'] = [36, 12, -12, -36]
-    camera_properties['TanMid1']['sensor_angles'] = [18, 6, -6, -18]
-    camera_properties['TanPol1']['sensor_angles'] = [-12, -4, 4, 12]
-    # sensor rotation relative to the slit
-    camera_properties['HozPol1']['sensor_rotations'] = [0, 0, 0, 0]
-    camera_properties['HozPol2']['sensor_rotations'] = [0, 0, 0, 0]
-    camera_properties['VertPol']['sensor_rotations'] = [0, 0, 0, 0]
-    camera_properties['TanMid1']['sensor_rotations'] = [0, 0, 0, 0]
-    camera_properties['TanPol1']['sensor_rotations'] = [180, 180, 180, 180]
-    # toroidal angles about which to rotate the poloidal plane
-    camera_properties['HozPol1']['toroidal_angle'] = 10  # need to avoid LFS limiters
-    camera_properties['HozPol2']['toroidal_angle'] = 10  # need to avoid LFS limiters
-    camera_properties['VertPol']['toroidal_angle'] = 0  # happy to hit LFS limiters
-    camera_properties['TanMid1']['toroidal_angle'] = -15  # avoid LFS limiters
-    camera_properties['TanPol1']['toroidal_angle'] = 15  # avoid LFS limiters
-
     cameras = []
-    for name, prop in camera_properties.items():
+    for name, prop in CAMERA_GEOMETRY.items():
         camera = _make_bolometer_camera(
             prop['slit_sensor_separation'],
             prop['sensor_angles'],
