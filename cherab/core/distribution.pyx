@@ -311,7 +311,7 @@ cdef class GenericDistribution(DistributionFunction):
     a 3D function that provides the spatial density, a 3D function that provides the temperature,
     and a 3D vector function that provides the bulk velocity.
 
-    ..Warning::
+    .. warning::
         The consistency of the provided functions is not checked and is the responsibilty of the user.
 
     :param Function6D phase_space_density: 6D function defining the phase space density in s^3/m^6.
