@@ -20,11 +20,10 @@ import unittest
 
 import numpy as np
 
-from cherab.core.distribution import ZeroDistribution, GenericDistribution, Maxwellian
 from raysect.core import Vector3D
 
-ATOMIC_MASS = 1.66053906660e-27
-ELEMENTARY_CHARGE = 1.602176634e-19
+from cherab.core.distribution import ZeroDistribution, GenericDistribution, Maxwellian
+from cherab.core.utility.constants import ATOMIC_MASS, ELEMENTARY_CHARGE
 
 
 # Note: DistributionFunction is a cdef class (abstract base class) that cannot be
