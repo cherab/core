@@ -2,7 +2,7 @@
 Integrators
 -------------
 
-.. autoclass:: cherab.core.math.integrators.integrators1d.GaussianQuadrature
+.. autoclass:: cherab.core.math.integrators.integrators1d.GaussianQuadrature1D
    :members:
    :show-inheritance:
 
