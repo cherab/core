@@ -25,17 +25,17 @@ rotation and x axis for radial rotation.
                      with 0 being purely radial.
 - rotation_radial: rotation about the radial axis, 0 being vertically upwards.
 - origin: position of the slit relative to the (x, z) poloidal plane i.e. y=0.
-- slit_sensor_separation: distance between slit and each 4-channel sensor.
-- sensor_angles: angle between slit normal and sensor normal.
-- sensor_rotations: rotation angle about the slit-sensor vector, enables
+- slit_head_separation: distance between slit and each 4-channel head.
+- head_angles: angle between slit normal and bolometer head normal.
+- head_rotations: rotation angle about the slit-head vector, enables
                     reversing the order of lines of sight spatially within
-                    each sensor.
+                    each bolometer head.
 - toroidal_angle: the angle of the poloidal plane in which the origin is
                   definied, with 0 being the (x, z) plane.
 
 
-All of the heads and foils are identical, and are defined by other
-module-level constants.
+All of the bolometer heads and foils are identical, and are defined by
+other module-level constants.
 """
 from raysect.core import (Node, Point3D, Vector3D, rotate_basis,
                           rotate_x, rotate_y, rotate_z, translate)
@@ -94,24 +94,24 @@ CAMERA_GEOMETRY['HozPol2']['origin'] = Point3D(2.45, -0.05, 0)
 CAMERA_GEOMETRY['VertPol']['origin'] = Point3D(1.3, 0, 1.42)
 CAMERA_GEOMETRY['TanMid1']['origin'] = Point3D(2.5, 0, 0)
 CAMERA_GEOMETRY['TanPol1']['origin'] = Point3D(2.2, 0, -0.8)
-# slit-sensor separations
-CAMERA_GEOMETRY['HozPol1']['slit_sensor_separation'] = 0.08
-CAMERA_GEOMETRY['HozPol2']['slit_sensor_separation'] = 0.08
-CAMERA_GEOMETRY['VertPol']['slit_sensor_separation'] = 0.05
-CAMERA_GEOMETRY['TanMid1']['slit_sensor_separation'] = 0.1
-CAMERA_GEOMETRY['TanPol1']['slit_sensor_separation'] = 0.15
-# sensor angles relative to the slit
-CAMERA_GEOMETRY['HozPol1']['sensor_angles'] = [22.5, 7.5, -7.5, -22.5]
-CAMERA_GEOMETRY['HozPol2']['sensor_angles'] = [22.5, 7.5, -7.5, -22.5]
-CAMERA_GEOMETRY['VertPol']['sensor_angles'] = [36, 12, -12, -36]
-CAMERA_GEOMETRY['TanMid1']['sensor_angles'] = [18, 6, -6, -18]
-CAMERA_GEOMETRY['TanPol1']['sensor_angles'] = [-12, -4, 4, 12]
-# sensor rotation relative to the slit
-CAMERA_GEOMETRY['HozPol1']['sensor_rotations'] = [0, 0, 0, 0]
-CAMERA_GEOMETRY['HozPol2']['sensor_rotations'] = [0, 0, 0, 0]
-CAMERA_GEOMETRY['VertPol']['sensor_rotations'] = [0, 0, 0, 0]
-CAMERA_GEOMETRY['TanMid1']['sensor_rotations'] = [0, 0, 0, 0]
-CAMERA_GEOMETRY['TanPol1']['sensor_rotations'] = [180, 180, 180, 180]
+# slit-head separations
+CAMERA_GEOMETRY['HozPol1']['slit_head_separation'] = 0.08
+CAMERA_GEOMETRY['HozPol2']['slit_head_separation'] = 0.08
+CAMERA_GEOMETRY['VertPol']['slit_head_separation'] = 0.05
+CAMERA_GEOMETRY['TanMid1']['slit_head_separation'] = 0.1
+CAMERA_GEOMETRY['TanPol1']['slit_head_separation'] = 0.15
+# bolometer head angles relative to the slit
+CAMERA_GEOMETRY['HozPol1']['head_angles'] = [22.5, 7.5, -7.5, -22.5]
+CAMERA_GEOMETRY['HozPol2']['head_angles'] = [22.5, 7.5, -7.5, -22.5]
+CAMERA_GEOMETRY['VertPol']['head_angles'] = [36, 12, -12, -36]
+CAMERA_GEOMETRY['TanMid1']['head_angles'] = [18, 6, -6, -18]
+CAMERA_GEOMETRY['TanPol1']['head_angles'] = [-12, -4, 4, 12]
+# bolometer head rotation relative to the slit
+CAMERA_GEOMETRY['HozPol1']['head_rotations'] = [0, 0, 0, 0]
+CAMERA_GEOMETRY['HozPol2']['head_rotations'] = [0, 0, 0, 0]
+CAMERA_GEOMETRY['VertPol']['head_rotations'] = [0, 0, 0, 0]
+CAMERA_GEOMETRY['TanMid1']['head_rotations'] = [0, 0, 0, 0]
+CAMERA_GEOMETRY['TanPol1']['head_rotations'] = [180, 180, 180, 180]
 # toroidal angles about which to rotate the poloidal plane
 CAMERA_GEOMETRY['HozPol1']['toroidal_angle'] = 10  # need to avoid LFS limiters
 CAMERA_GEOMETRY['HozPol2']['toroidal_angle'] = 10  # need to avoid LFS limiters
@@ -120,23 +120,23 @@ CAMERA_GEOMETRY['TanMid1']['toroidal_angle'] = -15  # avoid LFS limiters
 CAMERA_GEOMETRY['TanPol1']['toroidal_angle'] = 15  # avoid LFS limiters
 
 
-def _make_bolometer_camera(slit_sensor_separation, sensor_angles, sensor_rotations):
+def _make_bolometer_camera(slit_head_separation, head_angles, head_rotations):
     """
     Build a single bolometer camera.
 
-    The camera consists of a box with a rectangular slit and 4 sensors,
-    each of which has 4 foils.
+    The camera consists of a box with a rectangular slit and 4
+    bolometer heads, each of which has 4 foils.
 
-    In its local coordinate system, the camera's slit is located at the
-    origin with its width along the X axis and its height along the y
-    axis, and the sensors are below the z=0 plane looking up towards the
-    slit.
+    In its local coordinate system, the camera's slit is located at
+    the origin with its width along the X axis and its height along
+    the y axis, and the bolometer heads are below the z=0 plane
+    looking up towards the slit.
 
-    The sensors are rotated by sensor_angles about the y axis to form a
-    fan, and by sensor_rotations about the axis defined by the line
-    between the slit and the sensor. A rotation of 180 degrees flips
-    the sensor upside down and therefore reverses the spatial ordering
-    of lines of sight relative to a rotation of 0 degrees.
+    The bolometer heads are rotated by head_angles about the y axis to
+    form a fan, and by head_rotations about the axis defined by the
+    line between the slit and the head. A rotation of 180 degrees
+    flips the head upside down and therefore reverses the spatial
+    ordering of lines of sight relative to a rotation of 0 degrees.
     """
     camera_box = Box(lower=Point3D(-BOX_WIDTH / 2, -BOX_HEIGHT / 2, -BOX_DEPTH),
                      upper=Point3D(BOX_WIDTH / 2, BOX_HEIGHT / 2, 0))
@@ -156,19 +156,19 @@ def _make_bolometer_camera(slit_sensor_separation, sensor_angles, sensor_rotatio
     slit = BolometerSlit(slit_id="Example slit", centre_point=ORIGIN,
                          basis_x=XAXIS, dx=SLIT_WIDTH, basis_y=YAXIS, dy=SLIT_HEIGHT,
                          parent=bolometer_camera)
-    for j, (angle, rotation) in enumerate(zip(sensor_angles, sensor_rotations)):
+    for j, (angle, rotation) in enumerate(zip(head_angles, head_rotations)):
         # 4 bolometer foils, spaced at equal intervals along the local X axis
-        sensor = Node(name="Bolometer sensor", parent=bolometer_camera)
-        sensor.transform = (
+        head = Node(name="Bolometer head", parent=bolometer_camera)
+        head.transform = (
             rotate_y(angle)
             * rotate_z(rotation)
-            * translate(0, 0, -slit_sensor_separation)
+            * translate(0, 0, -slit_head_separation)
         )
         for i, shift in enumerate([-1.5, -0.5, 0.5, 1.5]):
-            # Note that the foils will be parented to the camera rather than the
-            # sensor, so we need to define their transform relative to the camera.
-            foil_transform = sensor.transform * translate(shift * FOIL_SEPARATION, 0, 0)
-            foil = BolometerFoil(detector_id="Foil {} sensor {}".format(i + 1, j + 1),
+            # Note that the foils will be parented to the camera rather than the bolometer
+            # head, so we need to define their transform relative to the camera.
+            foil_transform = head.transform * translate(shift * FOIL_SEPARATION, 0, 0)
+            foil = BolometerFoil(detector_id="Foil {} head {}".format(i + 1, j + 1),
                                  centre_point=ORIGIN.transform(foil_transform),
                                  basis_x=XAXIS.transform(foil_transform), dx=FOIL_WIDTH,
                                  basis_y=YAXIS.transform(foil_transform), dy=FOIL_HEIGHT,
@@ -183,7 +183,7 @@ def load_bolometers(parent=None):
     Load the Generomak bolometers.
 
     The Generomak bolometer diagnostic consists of multiple 16-channel
-    cameras. Each camera has 4 4-channel sensors inside.
+    cameras. Each camera has 4 4-channel bolometer heads inside.
 
     * 2 cameras are located at the midplane with purely-poloidal,
       horizontal views.
@@ -214,9 +214,9 @@ def load_bolometers(parent=None):
     cameras = []
     for name, prop in CAMERA_GEOMETRY.items():
         camera = _make_bolometer_camera(
-            prop['slit_sensor_separation'],
-            prop['sensor_angles'],
-            prop['sensor_rotations'],
+            prop['slit_head_separation'],
+            prop['head_angles'],
+            prop['head_rotations'],
         )
         # The transform is applied as follows:
         # 1. Point the camera along the inward radial direction in the (x, z) plane.
