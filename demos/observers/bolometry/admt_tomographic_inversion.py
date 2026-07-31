@@ -146,24 +146,22 @@ ray_transfer_grid.parent = None
 # Generate the regularisation operators.
 ################################################################################
 print("Generating regularisation operators...")
-# generate_derivative_operators requires two mappings, one from a flat list of
-# voxels to the original 2D grid, and one for the 2D grid coordinates to the
-# flat list of voxels. We could build these by hand - and in the general case
-# they must be built by hand - but the RayTransferCylinder object we're using
-# helpfully provides the data already so we just need to convert from arrays
-# to dictionaries.
+# Generating the derivative operators requires two mappings, one from a flat
+# list of voxels to the original 2D grid, and one for the 2D grid coordinates to
+# the flat list of voxels. Since these are the inverse of one another then one
+# can be computed from the other, and therefore we only need to provide one of
+# the mappings. We could build these by hand - and in the general case they must
+# be built by hand - but the RayTransferCylinder object we're using helpfully
+# provides the data already so we just need to convert from arrays to
+# dictionaries. The easist of these to convert is the inverse voxel map as it
+# already excludes masked elements from the original regular grid to leave only
+# the voxels actually used in the inversion.
 grid_index_1d_to_2d_map = {}
-for k, idx2d in enumerate(ray_transfer_grid.invert_voxel_map()):
-    # We want the x and z elements, as the Ray Transfer grid is 3D and this
+for k, (ir, iphi, iz) in enumerate(ray_transfer_grid.invert_voxel_map()):
+    # We want the r and z elements, as the Ray Transfer grid is 3D and this
     # inversion is going to be in 2D.
-    grid_index_1d_to_2d_map[k] = (idx2d[0].item(), idx2d[2].item())
-grid_index_2d_to_1d_map = {}
-nx, _, ny = ray_transfer_grid.voxel_map.shape
-for i in range(nx):
-    for j in range(ny):
-        voxel_index = ray_transfer_grid.voxel_map[i, 0, j]
-        if voxel_index != -1:
-            grid_index_2d_to_1d_map[(i, j)] = voxel_index
+    grid_index_1d_to_2d_map[k] = (ir.item(), iz.item())
+
 # We now need an (Nx4x2) array of voxel vertices, which can be easily calculated.
 voxel_centres = np.array([cell_centres[grid_index_1d_to_2d_map[i]]
                           for i in range(ray_transfer_grid.bins)])

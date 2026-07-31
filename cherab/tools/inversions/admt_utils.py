@@ -35,8 +35,8 @@ except ImportError:  # Scipy < 1.8, deprecated from 1.18
     from scipy.sparse import coo_matrix as coo, diags
 
 
-def generate_derivative_operators(voxel_vertices, grid_index_1d_to_2d_map,
-                                  grid_index_2d_to_1d_map, sparse=False):
+def generate_derivative_operators(voxel_vertices, grid_index_1d_to_2d_map=None,
+                                  grid_index_2d_to_1d_map=None, sparse=False):
     r"""
     Generate the first and second derivative operators for a regular grid.
 
@@ -44,9 +44,10 @@ def generate_derivative_operators(voxel_vertices, grid_index_1d_to_2d_map,
         vertices of each voxel, (R, Z)
     :param dict grid_1d_to_2d_map: a mapping from the 1D array of
         voxels in the grid to a 2D array of voxels if they were arranged
-        spatially.
+        spatially. Computed from grid_2d_to_1d_map if not given.
     :param dict grid_2d_to_1d_map: the inverse mapping from a 2D
-        spatially-arranged array of voxels to the 1D array.
+        spatially-arranged array of voxels to the 1D array. Computed from
+        grid_1d_to_2d_map if not given.
     :param sparse: return the operators as sparse matrices if True, or
         as dense matrices if False.
 
@@ -86,10 +87,19 @@ def generate_derivative_operators(voxel_vertices, grid_index_1d_to_2d_map,
     voxel_vertices = np.asarray(voxel_vertices)
     if voxel_vertices.ndim != 3 or voxel_vertices.shape[-2] != 4 or voxel_vertices.shape[-1] != 2:
         raise TypeError("voxel_vertices must be an NxMx2 array of vertices")
-    if not isinstance(grid_index_1d_to_2d_map, Mapping):
+    if not (isinstance(grid_index_1d_to_2d_map, Mapping) or grid_index_1d_to_2d_map is None):
         raise TypeError("grid_index_1d_to_2d_map should be dict-like")
-    if not isinstance(grid_index_2d_to_1d_map, Mapping):
+    if not (isinstance(grid_index_2d_to_1d_map, Mapping) or grid_index_2d_to_1d_map is None):
         raise TypeError("grid_index_2d_to_1d_map should be dict-like")
+    if grid_index_1d_to_2d_map is None and grid_index_2d_to_1d_map is None:
+        raise ValueError("At least one of grid_index_2d_to_1d_map or grid_index_1d_to_2d_map"
+                         " must be given")
+
+    # If only one of the mappings is given, compute the other one.
+    if grid_index_1d_to_2d_map is None and grid_index_2d_to_1d_map is not None:
+        grid_index_1d_to_2d_map = {k: rz for (rz, k) in grid_index_2d_to_1d_map.items()}
+    if grid_index_2d_to_1d_map is None and grid_index_1d_to_2d_map is not None:
+        grid_index_2d_to_1d_map = {rz: k for (k, rz) in grid_index_1d_to_2d_map.items()}
 
     num_cells = voxel_vertices.shape[0]
     cell_centres = np.mean(voxel_vertices, axis=1)
@@ -334,6 +344,7 @@ def generate_derivative_operators(voxel_vertices, grid_index_1d_to_2d_map,
         Dx = Dx.toarray()
         Dy = Dy.toarray()
         Dxx = Dxx.toarray()
+        Dyy = Dyy.toarray()
         Dxy = Dxy.toarray()
         Dsp = Dsp.toarray()
         Dsm = Dsm.toarray()
