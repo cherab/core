@@ -21,7 +21,7 @@
 from cherab.core.math.function.float.function6d.base cimport Function6D
 
 cdef enum ArgLabel:
-    X, Y, Z, U, W, V
+    X, Y, Z, U, V, W
 
 cdef class Arg6D(Function6D):
     cdef ArgLabel _argument

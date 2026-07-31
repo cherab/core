@@ -23,7 +23,7 @@ from raysect.core.math.function.float.base cimport FloatFunction
 
 
 cdef class Function6D(FloatFunction):
-    cdef double evaluate(self, double x, double y, double z, double u, double w, double v) except? -1e999
+    cdef double evaluate(self, double x, double y, double z, double u, double v, double w) except? -1e999
 
 
 cdef class AddFunction6D(Function6D):

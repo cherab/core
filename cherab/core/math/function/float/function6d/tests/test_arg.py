@@ -31,19 +31,19 @@ class TestArg6D(unittest.TestCase):
 
     def test_arg(self):
         testvals = [-1e10, -7, -0.001, 0.0, 0.00003, 10, 2.3e49]
-        for (x, y, z, u, w, v) in itertools.product(testvals, repeat=6):
+        for (x, y, z, u, v, w) in itertools.product(testvals, repeat=6):
             argx = Arg6D("x")
             argy = Arg6D("y")
             argz = Arg6D("z")
             argu = Arg6D("u")
             argw = Arg6D("w")
             argv = Arg6D("v")
-            self.assertEqual(argx(x, y, z, u, w, v), x, "Arg6D('x') call did not match reference value.")
-            self.assertEqual(argy(x, y, z, u, w, v), y, "Arg6D('y') call did not match reference value.")
-            self.assertEqual(argz(x, y, z, u, w, v), z, "Arg6D('z') call did not match reference value.")
-            self.assertEqual(argu(x, y, z, u, w, v), u, "Arg6D('u') call did not match reference value.")
-            self.assertEqual(argw(x, y, z, u, w, v), w, "Arg6D('w') call did not match reference value.")
-            self.assertEqual(argv(x, y, z, u, w, v), v, "Arg6D('v') call did not match reference value.")
+            self.assertEqual(argx(x, y, z, u, v, w), x, "Arg6D('x') call did not match reference value.")
+            self.assertEqual(argy(x, y, z, u, v, w), y, "Arg6D('y') call did not match reference value.")
+            self.assertEqual(argz(x, y, z, u, v, w), z, "Arg6D('z') call did not match reference value.")
+            self.assertEqual(argu(x, y, z, u, v, w), u, "Arg6D('u') call did not match reference value.")
+            self.assertEqual(argw(x, y, z, u, v, w), w, "Arg6D('w') call did not match reference value.")
+            self.assertEqual(argv(x, y, z, u, v, w), v, "Arg6D('v') call did not match reference value.")
 
     def test_invalid_inputs(self):
         with self.assertRaises(ValueError, msg="Arg6D did not raise ValueError with incorrect string."):
