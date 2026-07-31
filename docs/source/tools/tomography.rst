@@ -43,6 +43,8 @@ Inversion Methods
 
 .. autofunction:: cherab.tools.inversions.nnls.invert_regularised_nnls
 
+.. autofunction:: cherab.tools.inversions.nnls.invert_sparse_regularised_nnls
+
 .. autofunction:: cherab.tools.inversions.svd.invert_svd
 
 
@@ -125,7 +127,7 @@ Regularisation
 --------------
 
 Some of the inversion methods take a regularisation operator, which provides
-additional constraints to help achieved unique solutions to ill-posed
+additional constraints to help achieve unique solutions to ill-posed
 tomography problems. Many regularisation schemes impose constraints on the smoothness
 of the resulting solution, with this smoothness quantified by the second derivative
 of the solution. Two such regularisation schemes are common in fusion applications:
