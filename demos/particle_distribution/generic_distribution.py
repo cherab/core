@@ -102,8 +102,8 @@ x6d, y6d, z6d, vx6d, vy6d, vz6d = (
     Arg6D("y"),
     Arg6D("z"),
     Arg6D("u"),
-    Arg6D("w"),
     Arg6D("v"),
+    Arg6D("w"),
 )
 
 # Calculate R = sqrt(X^2 + Y^2) for 6D functions
