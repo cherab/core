@@ -8,6 +8,7 @@ API changes:
 * Rename `TargettedPixelGroup` to `TargetedPixelGroup` for correct spelling. Still keep `TargettedPixelGroup` as an alias for backwards compatibility until the next major release. (#487)
 * Add emission model attribute access to line and lineshape . (#294)
 * The `generate_derivative_operators` function in `admt_utils` can now return sparse matrices rather than dense if requested. (#427)
+* Only 1 of the 1D-to-2D or 2D-to-1D voxel mappings is now required for `admt_utils.generate_derivative_operators`: if the other is missing it is computed automatically. (#427)
 * The `calculate_admt` function in `admt_utils` will return a sparse matrix if the input derivative operators are themselves sparse. (#427)
 
 Bug fixes:
