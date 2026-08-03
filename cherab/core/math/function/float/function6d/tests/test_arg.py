@@ -36,14 +36,14 @@ class TestArg6D(unittest.TestCase):
             argy = Arg6D("y")
             argz = Arg6D("z")
             argu = Arg6D("u")
-            argw = Arg6D("w")
-            argv = Arg6D("v")
+            argw = Arg6D("v")
+            argv = Arg6D("w")
             self.assertEqual(argx(x, y, z, u, v, w), x, "Arg6D('x') call did not match reference value.")
             self.assertEqual(argy(x, y, z, u, v, w), y, "Arg6D('y') call did not match reference value.")
             self.assertEqual(argz(x, y, z, u, v, w), z, "Arg6D('z') call did not match reference value.")
             self.assertEqual(argu(x, y, z, u, v, w), u, "Arg6D('u') call did not match reference value.")
-            self.assertEqual(argw(x, y, z, u, v, w), w, "Arg6D('w') call did not match reference value.")
-            self.assertEqual(argv(x, y, z, u, v, w), v, "Arg6D('v') call did not match reference value.")
+            self.assertEqual(argw(x, y, z, u, v, w), v, "Arg6D('v') call did not match reference value.")
+            self.assertEqual(argv(x, y, z, u, v, w), w, "Arg6D('w') call did not match reference value.")
 
     def test_invalid_inputs(self):
         with self.assertRaises(ValueError, msg="Arg6D did not raise ValueError with incorrect string."):
