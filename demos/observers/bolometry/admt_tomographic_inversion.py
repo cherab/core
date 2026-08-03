@@ -177,7 +177,7 @@ voxel_vertices = voxel_centres[:, None, :] + vertex_displacements[None, :, :]
 # for backwards compatibility.
 sparse = True
 derivative_operators = admt.generate_derivative_operators(
-    voxel_vertices, grid_index_1d_to_2d_map, grid_index_2d_to_1d_map, sparse
+    voxel_vertices, grid_index_1d_to_2d_map, sparse=True,
 )
 
 # As described in the docstring for generate_derivative_operators, we can
