@@ -12,6 +12,7 @@ Bug fixes:
 * Fix the import statement for `netcdf_file` in `calcam.py` for compatibility with the upcoming `scipy` v2.0.0. (#510)
 
 New:
+* Add generic distribution function. (#481)
 * Add Function6D framework. (#478)
 * Add e_field attribute to Plasma object for electric field vector. (#465)
 * Add Integrator2D base class for integration of two-dimensional functions. (#472)

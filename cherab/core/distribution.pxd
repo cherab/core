@@ -19,6 +19,7 @@
 from raysect.optical cimport Vector3D
 
 from cherab.core.math cimport Function3D, VectorFunction3D
+from cherab.core.math.function.float cimport Function6D, autowrap_function6d
 
 
 cdef class DistributionFunction:
@@ -45,3 +46,10 @@ cdef class Maxwellian(DistributionFunction):
         VectorFunction3D _velocity
         double _atomic_mass
 
+
+cdef class GenericDistribution(DistributionFunction):
+
+    cdef readonly:
+        Function6D _phase_space_density
+        Function3D _density, _temperature
+        VectorFunction3D _velocity
