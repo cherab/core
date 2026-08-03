@@ -31,7 +31,7 @@ cdef class Blend6D(Function6D):
     this function is as follows:
 
     .. math::
-        v = (1 - f_m(x, y, z, u, w, v)) f_1(x, y, z, u, w, v) + f_m(x, y, z, u, w, v) f_2(x, y, z, u, w, v)
+        v = (1 - f_m(x, y, z, u, v, w)) f_1(x, y, z, u, v, w) + f_m(x, y, z, u, v, w) f_2(x, y, z, u, v, w)
 
     The value of the mask function is clamped to the range [0, 1] if the sampled
     value exceeds the required range.
@@ -48,18 +48,18 @@ cdef class Blend6D(Function6D):
         self._f2 = autowrap_function6d(f2)
         self._mask = autowrap_function6d(mask)
 
-    cdef double evaluate(self, double x, double y, double z, double u, double w, double v) except? -1e999:
+    cdef double evaluate(self, double x, double y, double z, double u, double v, double w) except? -1e999:
 
-        cdef double t = clamp(self._mask.evaluate(x, y, z, u, w, v), 0.0, 1.0)
+        cdef double t = clamp(self._mask.evaluate(x, y, z, u, v, w), 0.0, 1.0)
 
         # sample endpoints directly
         if t == 0:
-            return self._f1.evaluate(x, y, z, u, w, v)
+            return self._f1.evaluate(x, y, z, u, v, w)
 
         if t == 1:
-            return self._f2.evaluate(x, y, z, u, w, v)
+            return self._f2.evaluate(x, y, z, u, v, w)
 
         # lerp between function values
-        cdef double f1 = self._f1.evaluate(x, y, z, u, w, v)
-        cdef double f2 = self._f2.evaluate(x, y, z, u, w, v)
+        cdef double f1 = self._f1.evaluate(x, y, z, u, v, w)
+        cdef double f2 = self._f2.evaluate(x, y, z, u, v, w)
         return (1 - t) * f1 + t * f2

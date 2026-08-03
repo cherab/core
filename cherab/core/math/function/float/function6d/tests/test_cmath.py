@@ -32,36 +32,36 @@ from cherab.core.math.function.float.function6d.autowrap import PythonFunction6D
 class TestCmath6D(unittest.TestCase):
 
     def setUp(self):
-        self.f1 = PythonFunction6D(lambda x, y, z, u, w, v: x / 10 + y + z + u/2 + w/3 + v/4)
-        self.f2 = PythonFunction6D(lambda x, y, z, u, w, v: x * x + y * y - z * z + u * u + w * w - v * v)
+        self.f1 = PythonFunction6D(lambda x, y, z, u, v, w: x / 10 + y + z + u/2 + v/3 + w/4)
+        self.f2 = PythonFunction6D(lambda x, y, z, u, v, w: x * x + y * y - z * z + u * u + v * v - w * w)
 
     def test_exp(self):
         testvals = [-10.0, -7, -0.001, 0.0, 0.00003, 10, 23.4]
-        for (x, y, z, u, w, v) in itertools.product(testvals, repeat=6):
+        for (x, y, z, u, v, w) in itertools.product(testvals, repeat=6):
             function = cmath6d.Exp6D(self.f1)
-            expected = math.exp(self.f1(x, y, z, u, w, v))
-            self.assertEqual(function(x, y, z, u, w, v), expected, "Exp6D call did not match reference value.")
+            expected = math.exp(self.f1(x, y, z, u, v, w))
+            self.assertEqual(function(x, y, z, u, v, w), expected, "Exp6D call did not match reference value.")
 
     def test_sin(self):
         testvals = [-10.0, -7, -0.001, 0.0, 0.00003, 10, 23.4]
-        for (x, y, z, u, w, v) in itertools.product(testvals, repeat=6):
+        for (x, y, z, u, v, w) in itertools.product(testvals, repeat=6):
             function = cmath6d.Sin6D(self.f1)
-            expected = math.sin(self.f1(x, y, z, u, w, v))
-            self.assertEqual(function(x, y, z, u, w, v), expected, "Sin6D call did not match reference value.")
+            expected = math.sin(self.f1(x, y, z, u, v, w))
+            self.assertEqual(function(x, y, z, u, v, w), expected, "Sin6D call did not match reference value.")
 
     def test_cos(self):
         testvals = [-10.0, -7, -0.001, 0.0, 0.00003, 10, 23.4]
-        for (x, y, z, u, w, v) in itertools.product(testvals, repeat=6):
+        for (x, y, z, u, v, w) in itertools.product(testvals, repeat=6):
             function = cmath6d.Cos6D(self.f1)
-            expected = math.cos(self.f1(x, y, z, u, w, v))
-            self.assertEqual(function(x, y, z, u, w, v), expected, "Cos6D call did not match reference value.")
+            expected = math.cos(self.f1(x, y, z, u, v, w))
+            self.assertEqual(function(x, y, z, u, v, w), expected, "Cos6D call did not match reference value.")
 
     def test_tan(self):
         testvals = [-10.0, -7, -0.001, 0.0, 0.00003, 10, 23.4]
-        for (x, y, z, u, w, v) in itertools.product(testvals, repeat=6):
+        for (x, y, z, u, v, w) in itertools.product(testvals, repeat=6):
             function = cmath6d.Tan6D(self.f1)
-            expected = math.tan(self.f1(x, y, z, u, w, v))
-            self.assertEqual(function(x, y, z, u, w, v), expected, "Tan6D call did not match reference value.")
+            expected = math.tan(self.f1(x, y, z, u, v, w))
+            self.assertEqual(function(x, y, z, u, v, w), expected, "Tan6D call did not match reference value.")
 
     def test_asin(self):
         v = [-10, -6, -2, -0.001, 0, 0.001, 2, 6, 10]
@@ -85,31 +85,31 @@ class TestCmath6D(unittest.TestCase):
 
     def test_atan(self):
         testvals = [-10.0, -7, -0.001, 0.0, 0.00003, 10, 23.4]
-        for (x, y, z, u, w, v) in itertools.product(testvals, repeat=6):
+        for (x, y, z, u, v, w) in itertools.product(testvals, repeat=6):
             function = cmath6d.Atan6D(self.f1)
-            expected = math.atan(self.f1(x, y, z, u, w, v))
-            self.assertEqual(function(x, y, z, u, w, v), expected, "Atan6D call did not match reference value.")
+            expected = math.atan(self.f1(x, y, z, u, v, w))
+            self.assertEqual(function(x, y, z, u, v, w), expected, "Atan6D call did not match reference value.")
 
     def test_atan2(self):
         testvals = [-10.0, -7, -0.001, 0.0, 0.00003, 10, 23.4]
-        for (x, y, z, u, w, v) in itertools.product(testvals, repeat=6):
+        for (x, y, z, u, v, w) in itertools.product(testvals, repeat=6):
             function = cmath6d.Atan4Q6D(self.f1, self.f2)
-            expected = math.atan2(self.f1(x, y, z, u, w, v), self.f2(x, y, z, u, w, v))
-            self.assertEqual(function(x, y, z, u, w, v), expected, "Atan4Q6D call did not match reference value.")
+            expected = math.atan2(self.f1(x, y, z, u, v, w), self.f2(x, y, z, u, v, w))
+            self.assertEqual(function(x, y, z, u, v, w), expected, "Atan4Q6D call did not match reference value.")
 
     def test_erf(self):
         testvals = [-1e5, -7, -0.001, 0.0, 0.00003, 10, 23.4, 1e5]
         function = cmath6d.Erf6D(self.f1)
-        for (x, y, z, u, w, v) in itertools.product(testvals, repeat=6):
-            expected = math.erf(self.f1(x, y, z, u, w, v))
-            self.assertAlmostEqual(function(x, y, z, u, w, v), expected, 10, "Erf6D call did not match reference value.")
+        for (x, y, z, u, v, w) in itertools.product(testvals, repeat=6):
+            expected = math.erf(self.f1(x, y, z, u, v, w))
+            self.assertAlmostEqual(function(x, y, z, u, v, w), expected, 10, "Erf6D call did not match reference value.")
 
     def test_sqrt(self):
         testvals = [0.0, 0.00003, 10, 23.4, 1e5]
         function = cmath6d.Sqrt6D(self.f1)
-        for (x, y, z, u, w, v) in itertools.product(testvals, repeat=6):
-            expected = math.sqrt(self.f1(x, y, z, u, w, v))
-            self.assertEqual(function(x, y, z, u, w, v), expected, "Sqrt6D call did not match reference value.")
+        for (x, y, z, u, v, w) in itertools.product(testvals, repeat=6):
+            expected = math.sqrt(self.f1(x, y, z, u, v, w))
+            self.assertEqual(function(x, y, z, u, v, w), expected, "Sqrt6D call did not match reference value.")
 
         with self.assertRaises(ValueError, msg="Sqrt6D did not raise a ValueError with value outside domain."):
             function(-0.1, -0.1, -0.1, -0.1, -0.1, -0.1)
