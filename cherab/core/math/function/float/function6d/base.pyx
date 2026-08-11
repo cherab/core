@@ -40,21 +40,21 @@ cdef class Function6D(FloatFunction):
     that accepts a function object.
     """
 
-    cdef double evaluate(self, double x, double y, double z, double u, double w, double v) except? -1e999:
+    cdef double evaluate(self, double x, double y, double z, double u, double v, double w) except? -1e999:
         raise NotImplementedError("The evaluate() method has not been implemented.")
 
-    def __call__(self, double x, double y, double z, double u, double w, double v):
-        """ Evaluate the function f(x, y, z, u, w, v)
+    def __call__(self, double x, double y, double z, double u, double v, double w):
+        """ Evaluate the function f(x, y, z, u, v, w)
 
         :param float x: function parameter x
         :param float y: function parameter y
         :param float z: function parameter z
         :param float u: function parameter u
-        :param float w: function parameter w
         :param float v: function parameter v
+        :param float w: function parameter w
         :rtype: float
         """
-        return self.evaluate(x, y, z, u, w, v)
+        return self.evaluate(x, y, z, u, v, w)
     def __add__(self, object b):
         if is_callable(b):
             # a() + b()
@@ -224,8 +224,8 @@ cdef class AddFunction6D(Function6D):
         self._function1 = autowrap_function6d(function1)
         self._function2 = autowrap_function6d(function2)
 
-    cdef double evaluate(self, double x, double y, double z, double u, double w, double v) except? -1e999:
-        return self._function1.evaluate(x, y, z, u, w, v) + self._function2.evaluate(x, y, z, u, w, v)
+    cdef double evaluate(self, double x, double y, double z, double u, double v, double w) except? -1e999:
+        return self._function1.evaluate(x, y, z, u, v, w) + self._function2.evaluate(x, y, z, u, v, w)
 
 
 cdef class SubtractFunction6D(Function6D):
@@ -243,8 +243,8 @@ cdef class SubtractFunction6D(Function6D):
         self._function1 = autowrap_function6d(function1)
         self._function2 = autowrap_function6d(function2)
 
-    cdef double evaluate(self, double x, double y, double z, double u, double w, double v) except? -1e999:
-        return self._function1.evaluate(x, y, z, u, w, v) - self._function2.evaluate(x, y, z, u, w, v)
+    cdef double evaluate(self, double x, double y, double z, double u, double v, double w) except? -1e999:
+        return self._function1.evaluate(x, y, z, u, v, w) - self._function2.evaluate(x, y, z, u, v, w)
 
 
 cdef class MultiplyFunction6D(Function6D):
@@ -262,8 +262,8 @@ cdef class MultiplyFunction6D(Function6D):
         self._function1 = autowrap_function6d(function1)
         self._function2 = autowrap_function6d(function2)
 
-    cdef double evaluate(self, double x, double y, double z, double u, double w, double v) except? -1e999:
-        return self._function1.evaluate(x, y, z, u, w, v) * self._function2.evaluate(x, y, z, u, w, v)
+    cdef double evaluate(self, double x, double y, double z, double u, double v, double w) except? -1e999:
+        return self._function1.evaluate(x, y, z, u, v, w) * self._function2.evaluate(x, y, z, u, v, w)
 
 
 cdef class DivideFunction6D(Function6D):
@@ -282,11 +282,11 @@ cdef class DivideFunction6D(Function6D):
         self._function2 = autowrap_function6d(function2)
 
     @cython.cdivision(True)
-    cdef double evaluate(self, double x, double y, double z, double u, double w, double v) except? -1e999:
-        cdef double denominator = self._function2.evaluate(x, y, z, u, w, v)
+    cdef double evaluate(self, double x, double y, double z, double u, double v, double w) except? -1e999:
+        cdef double denominator = self._function2.evaluate(x, y, z, u, v, w)
         if denominator == 0.0:
             raise ZeroDivisionError("Function used as the denominator of the division returned a zero value.")
-        return self._function1.evaluate(x, y, z, u, w, v) / denominator
+        return self._function1.evaluate(x, y, z, u, v, w) / denominator
 
 
 cdef class ModuloFunction6D(Function6D):
@@ -304,11 +304,11 @@ cdef class ModuloFunction6D(Function6D):
         self._function2 = autowrap_function6d(function2)
 
     @cython.cdivision(True)
-    cdef double evaluate(self, double x, double y, double z, double u, double w, double v) except? -1e999:
-        cdef double divisor = self._function2.evaluate(x, y, z, u, w, v)
+    cdef double evaluate(self, double x, double y, double z, double u, double v, double w) except? -1e999:
+        cdef double divisor = self._function2.evaluate(x, y, z, u, v, w)
         if divisor == 0.0:
             raise ZeroDivisionError("Function used as the divisor of the modulo returned a zero value.")
-        return self._function1.evaluate(x, y, z, u, w, v) % divisor
+        return self._function1.evaluate(x, y, z, u, v, w) % divisor
 
 
 cdef class PowFunction6D(Function6D):
@@ -325,10 +325,10 @@ cdef class PowFunction6D(Function6D):
         self._function1 = autowrap_function6d(function1)
         self._function2 = autowrap_function6d(function2)
 
-    cdef double evaluate(self, double x, double y, double z, double u, double w, double v) except? -1e999:
+    cdef double evaluate(self, double x, double y, double z, double u, double v, double w) except? -1e999:
         cdef double base, exponent
-        base = self._function1.evaluate(x, y, z, u, w, v)
-        exponent = self._function2.evaluate(x, y, z, u, w, v)
+        base = self._function1.evaluate(x, y, z, u, v, w)
+        exponent = self._function2.evaluate(x, y, z, u, v, w)
         if base < 0 and floor(exponent) != exponent:  # Would return a complex value rather than double
             raise ValueError("Negative base and non-integral exponent is not supported")
         if base == 0 and exponent < 0:
@@ -348,8 +348,8 @@ cdef class AbsFunction6D(Function6D):
     def __init__(self, object function):
         self._function = autowrap_function6d(function)
 
-    cdef double evaluate(self, double x, double y, double z, double u, double w, double v) except? -1e999:
-        return abs(self._function.evaluate(x, y, z, u, w, v))
+    cdef double evaluate(self, double x, double y, double z, double u, double v, double w) except? -1e999:
+        return abs(self._function.evaluate(x, y, z, u, v, w))
 
 
 cdef class EqualsFunction6D(Function6D):
@@ -366,8 +366,8 @@ cdef class EqualsFunction6D(Function6D):
         self._function1 = autowrap_function6d(function1)
         self._function2 = autowrap_function6d(function2)
 
-    cdef double evaluate(self, double x, double y, double z, double u, double w, double v) except? -1e999:
-        return self._function1.evaluate(x, y, z, u, w, v) == self._function2.evaluate(x, y, z, u, w, v)
+    cdef double evaluate(self, double x, double y, double z, double u, double v, double w) except? -1e999:
+        return self._function1.evaluate(x, y, z, u, v, w) == self._function2.evaluate(x, y, z, u, v, w)
 
 
 cdef class NotEqualsFunction6D(Function6D):
@@ -384,8 +384,8 @@ cdef class NotEqualsFunction6D(Function6D):
         self._function1 = autowrap_function6d(function1)
         self._function2 = autowrap_function6d(function2)
 
-    cdef double evaluate(self, double x, double y, double z, double u, double w, double v) except? -1e999:
-        return self._function1.evaluate(x, y, z, u, w, v) != self._function2.evaluate(x, y, z, u, w, v)
+    cdef double evaluate(self, double x, double y, double z, double u, double v, double w) except? -1e999:
+        return self._function1.evaluate(x, y, z, u, v, w) != self._function2.evaluate(x, y, z, u, v, w)
 
 
 cdef class LessThanFunction6D(Function6D):
@@ -402,8 +402,8 @@ cdef class LessThanFunction6D(Function6D):
         self._function1 = autowrap_function6d(function1)
         self._function2 = autowrap_function6d(function2)
 
-    cdef double evaluate(self, double x, double y, double z, double u, double w, double v) except? -1e999:
-        return self._function1.evaluate(x, y, z, u, w, v) < self._function2.evaluate(x, y, z, u, w, v)
+    cdef double evaluate(self, double x, double y, double z, double u, double v, double w) except? -1e999:
+        return self._function1.evaluate(x, y, z, u, v, w) < self._function2.evaluate(x, y, z, u, v, w)
 
 
 cdef class GreaterThanFunction6D(Function6D):
@@ -420,8 +420,8 @@ cdef class GreaterThanFunction6D(Function6D):
         self._function1 = autowrap_function6d(function1)
         self._function2 = autowrap_function6d(function2)
 
-    cdef double evaluate(self, double x, double y, double z, double u, double w, double v) except? -1e999:
-        return self._function1.evaluate(x, y, z, u, w, v) > self._function2.evaluate(x, y, z, u, w, v)
+    cdef double evaluate(self, double x, double y, double z, double u, double v, double w) except? -1e999:
+        return self._function1.evaluate(x, y, z, u, v, w) > self._function2.evaluate(x, y, z, u, v, w)
 
 
 cdef class LessEqualsFunction6D(Function6D):
@@ -438,8 +438,8 @@ cdef class LessEqualsFunction6D(Function6D):
         self._function1 = autowrap_function6d(function1)
         self._function2 = autowrap_function6d(function2)
 
-    cdef double evaluate(self, double x, double y, double z, double u, double w, double v) except? -1e999:
-        return self._function1.evaluate(x, y, z, u, w, v) <= self._function2.evaluate(x, y, z, u, w, v)
+    cdef double evaluate(self, double x, double y, double z, double u, double v, double w) except? -1e999:
+        return self._function1.evaluate(x, y, z, u, v, w) <= self._function2.evaluate(x, y, z, u, v, w)
 
 
 cdef class GreaterEqualsFunction6D(Function6D):
@@ -456,8 +456,8 @@ cdef class GreaterEqualsFunction6D(Function6D):
         self._function1 = autowrap_function6d(function1)
         self._function2 = autowrap_function6d(function2)
 
-    cdef double evaluate(self, double x, double y, double z, double u, double w, double v) except? -1e999:
-        return self._function1.evaluate(x, y, z, u, w, v) >= self._function2.evaluate(x, y, z, u, w, v)
+    cdef double evaluate(self, double x, double y, double z, double u, double v, double w) except? -1e999:
+        return self._function1.evaluate(x, y, z, u, v, w) >= self._function2.evaluate(x, y, z, u, v, w)
 
 
 cdef class AddScalar6D(Function6D):
@@ -475,8 +475,8 @@ cdef class AddScalar6D(Function6D):
         self._value = value
         self._function = autowrap_function6d(function)
 
-    cdef double evaluate(self, double x, double y, double z, double u, double w, double v) except? -1e999:
-        return self._value + self._function.evaluate(x, y, z, u, w, v)
+    cdef double evaluate(self, double x, double y, double z, double u, double v, double w) except? -1e999:
+        return self._value + self._function.evaluate(x, y, z, u, v, w)
 
 
 cdef class SubtractScalar6D(Function6D):
@@ -494,8 +494,8 @@ cdef class SubtractScalar6D(Function6D):
         self._value = value
         self._function = autowrap_function6d(function)
 
-    cdef double evaluate(self, double x, double y, double z, double u, double w, double v) except? -1e999:
-        return self._value - self._function.evaluate(x, y, z, u, w, v)
+    cdef double evaluate(self, double x, double y, double z, double u, double v, double w) except? -1e999:
+        return self._value - self._function.evaluate(x, y, z, u, v, w)
 
 
 cdef class MultiplyScalar6D(Function6D):
@@ -513,8 +513,8 @@ cdef class MultiplyScalar6D(Function6D):
         self._value = value
         self._function = autowrap_function6d(function)
 
-    cdef double evaluate(self, double x, double y, double z, double u, double w, double v) except? -1e999:
-        return self._value * self._function.evaluate(x, y, z, u, w, v)
+    cdef double evaluate(self, double x, double y, double z, double u, double v, double w) except? -1e999:
+        return self._value * self._function.evaluate(x, y, z, u, v, w)
 
 
 cdef class DivideScalar6D(Function6D):
@@ -533,8 +533,8 @@ cdef class DivideScalar6D(Function6D):
         self._function = autowrap_function6d(function)
 
     @cython.cdivision(True)
-    cdef double evaluate(self, double x, double y, double z, double u, double w, double v) except? -1e999:
-        cdef double denominator = self._function.evaluate(x, y, z, u, w, v)
+    cdef double evaluate(self, double x, double y, double z, double u, double v, double w) except? -1e999:
+        cdef double denominator = self._function.evaluate(x, y, z, u, v, w)
         if denominator == 0.0:
             raise ZeroDivisionError("Function used as the denominator of the division returned a zero value.")
         return self._value / denominator
@@ -555,8 +555,8 @@ cdef class ModuloScalarFunction6D(Function6D):
         self._function = autowrap_function6d(function)
 
     @cython.cdivision(True)
-    cdef double evaluate(self, double x, double y, double z, double u, double w, double v) except? -1e999:
-        cdef double divisor = self._function.evaluate(x, y, z, u, w, v)
+    cdef double evaluate(self, double x, double y, double z, double u, double v, double w) except? -1e999:
+        cdef double divisor = self._function.evaluate(x, y, z, u, v, w)
         if divisor == 0.0:
             raise ZeroDivisionError("Function used as the divisor of the modulo returned a zero value.")
         return self._value % divisor
@@ -579,8 +579,8 @@ cdef class ModuloFunctionScalar6D(Function6D):
         self._function = autowrap_function6d(function)
 
     @cython.cdivision(True)
-    cdef double evaluate(self, double x, double y, double z, double u, double w, double v) except? -1e999:
-        return self._function.evaluate(x, y, z, u, w, v) % self._value
+    cdef double evaluate(self, double x, double y, double z, double u, double v, double w) except? -1e999:
+        return self._function.evaluate(x, y, z, u, v, w) % self._value
 
 
 cdef class PowScalarFunction6D(Function6D):
@@ -597,8 +597,8 @@ cdef class PowScalarFunction6D(Function6D):
         self._value = value
         self._function = autowrap_function6d(function)
 
-    cdef double evaluate(self, double x, double y, double z, double u, double w, double v) except? -1e999:
-        cdef double exponent = self._function.evaluate(x, y, z, u, w, v)
+    cdef double evaluate(self, double x, double y, double z, double u, double v, double w) except? -1e999:
+        cdef double exponent = self._function.evaluate(x, y, z, u, v, w)
         if self._value < 0 and floor(exponent) != exponent:
             raise ValueError("Negative base and non-integral exponent is not supported")
         if self._value == 0 and exponent < 0:
@@ -620,8 +620,8 @@ cdef class PowFunctionScalar6D(Function6D):
         self._value = value
         self._function = autowrap_function6d(function)
 
-    cdef double evaluate(self, double x, double y, double z, double u, double w, double v) except? -1e999:
-        cdef double base = self._function.evaluate(x, y, z, u, w, v)
+    cdef double evaluate(self, double x, double y, double z, double u, double v, double w) except? -1e999:
+        cdef double base = self._function.evaluate(x, y, z, u, v, w)
         if base < 0 and floor(self._value) != self._value:
             raise ValueError("Negative base and non-integral exponent is not supported")
         if base == 0 and self._value < 0:
@@ -643,8 +643,8 @@ cdef class EqualsScalar6D(Function6D):
         self._value = value
         self._function = autowrap_function6d(function)
 
-    cdef double evaluate(self, double x, double y, double z, double u, double w, double v) except? -1e999:
-        return self._value == self._function.evaluate(x, y, z, u, w, v)
+    cdef double evaluate(self, double x, double y, double z, double u, double v, double w) except? -1e999:
+        return self._value == self._function.evaluate(x, y, z, u, v, w)
 
 
 cdef class NotEqualsScalar6D(Function6D):
@@ -661,8 +661,8 @@ cdef class NotEqualsScalar6D(Function6D):
         self._value = value
         self._function = autowrap_function6d(function)
 
-    cdef double evaluate(self, double x, double y, double z, double u, double w, double v) except? -1e999:
-        return self._value != self._function.evaluate(x, y, z, u, w, v)
+    cdef double evaluate(self, double x, double y, double z, double u, double v, double w) except? -1e999:
+        return self._value != self._function.evaluate(x, y, z, u, v, w)
 
 
 cdef class LessThanScalar6D(Function6D):
@@ -679,8 +679,8 @@ cdef class LessThanScalar6D(Function6D):
         self._value = value
         self._function = autowrap_function6d(function)
 
-    cdef double evaluate(self, double x, double y, double z, double u, double w, double v) except? -1e999:
-        return self._value < self._function.evaluate(x, y, z, u, w, v)
+    cdef double evaluate(self, double x, double y, double z, double u, double v, double w) except? -1e999:
+        return self._value < self._function.evaluate(x, y, z, u, v, w)
 
 
 cdef class GreaterThanScalar6D(Function6D):
@@ -697,8 +697,8 @@ cdef class GreaterThanScalar6D(Function6D):
         self._value = value
         self._function = autowrap_function6d(function)
 
-    cdef double evaluate(self, double x, double y, double z, double u, double w, double v) except? -1e999:
-        return self._value > self._function.evaluate(x, y, z, u, w, v)
+    cdef double evaluate(self, double x, double y, double z, double u, double v, double w) except? -1e999:
+        return self._value > self._function.evaluate(x, y, z, u, v, w)
 
 
 cdef class LessEqualsScalar6D(Function6D):
@@ -715,8 +715,8 @@ cdef class LessEqualsScalar6D(Function6D):
         self._value = value
         self._function = autowrap_function6d(function)
 
-    cdef double evaluate(self, double x, double y, double z, double u, double w, double v) except? -1e999:
-        return self._value <= self._function.evaluate(x, y, z, u, w, v)
+    cdef double evaluate(self, double x, double y, double z, double u, double v, double w) except? -1e999:
+        return self._value <= self._function.evaluate(x, y, z, u, v, w)
 
 
 cdef class GreaterEqualsScalar6D(Function6D):
@@ -733,5 +733,5 @@ cdef class GreaterEqualsScalar6D(Function6D):
         self._value = value
         self._function = autowrap_function6d(function)
 
-    cdef double evaluate(self, double x, double y, double z, double u, double w, double v) except? -1e999:
-        return self._value >= self._function.evaluate(x, y, z, u, w, v)
+    cdef double evaluate(self, double x, double y, double z, double u, double v, double w) except? -1e999:
+        return self._value >= self._function.evaluate(x, y, z, u, v, w)
