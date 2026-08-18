@@ -18,6 +18,8 @@
 # See the Licence for the specific language governing permissions and limitations
 # under the Licence.
 
+import warnings
+
 import numpy as np
 from scipy.special import roots_legendre
 
@@ -65,23 +67,25 @@ cdef class Integrator1D:
         return self.evaluate(a, b)
 
 
-cdef class GaussianQuadrature(Integrator1D):
+cdef class GaussianQuadrature1D(Integrator1D):
     """
     Compute an integral of a one-dimensional function over a finite interval
     using fixed-tolerance Gaussian quadrature.
     (see Scipy `quadrature <https://docs.scipy.org/doc/scipy/reference/generated/scipy.integrate.quadrature.html>`).
 
+    The integration is performed by iteratively increasing the order of the Gaussian quadrature until the relative tolerance is met or the maximum order is reached.
+
     :param object integrand: A 1D function to integrate. Default is Constant1D(0).
     :param double relative_tolerance: Iteration stops when relative error between
         last two iterates is less than this value. Default is 1.e-5.
-    :param int max_order: Maximum order on Gaussian quadrature. Default is 50.
-    :param int min_order: Minimum order on Gaussian quadrature. Default is 1.
+    :param int max_order: Maximum order on Gaussian quadrature the integration stops at. Default is 50.
+    :param int min_order: Minimum order on Gaussian quadrature the integration starts from. Default is 1.
 
     :ivar Function1D integrand: A 1D function to integrate.
     :ivar double relative_tolerance: Iteration stops when relative error between
         last two iterates is less than this value.
-    :ivar int max_order: Maximum order on Gaussian quadrature.
-    :ivar int min_order: Minimum order on Gaussian quadrature.
+    :ivar int max_order: Maximum order on Gaussian quadrature the integration stops at.
+    :ivar int min_order: Minimum order on Gaussian quadrature the integration starts from.
     """
 
     def __init__(self, object integrand=Constant1D(0), double relative_tolerance=1.e-5, int max_order=50, int min_order=1):
@@ -169,6 +173,8 @@ cdef class GaussianQuadrature(Integrator1D):
         cdef:
             int order, n, i
 
+        # Store the variable-length roots and weights for each quadrature order
+        # consecutively in packed 1D arrays to avoid rectangular-array padding.
         n = (self._max_order + self._min_order) * (self._max_order - self._min_order + 1) // 2
 
         self._roots = np.zeros(n, dtype=np.float64)
@@ -222,3 +228,31 @@ cdef class GaussianQuadrature(Integrator1D):
                 break
 
         return newval
+
+
+cdef class GaussianQuadrature(GaussianQuadrature1D):
+    """
+    Compute an integral of a one-dimensional function over a finite interval
+    using fixed-tolerance Gaussian quadrature.
+    (see Scipy `quadrature <https://docs.scipy.org/doc/scipy/reference/generated/scipy.integrate.quadrature.html>`).
+
+    .. warning::
+        This class is deprecated and will be removed in cherab 1.7. Use :class:`GaussianQuadrature1D` instead.
+
+    :param object integrand: A 1D function to integrate. Default is Constant1D(0).
+    :param double relative_tolerance: Iteration stops when relative error between
+        last two iterates is less than this value. Default is 1.e-5.
+    :param int max_order: Maximum order on Gaussian quadrature. Default is 50.
+    :param int min_order: Minimum order on Gaussian quadrature. Default is 1.
+
+    :ivar Function1D integrand: A 1D function to integrate.
+    :ivar double relative_tolerance: Iteration stops when relative error between
+        last two iterates is less than this value.
+    :ivar int max_order: Maximum order on Gaussian quadrature.
+    :ivar int min_order: Minimum order on Gaussian quadrature.
+    """
+
+    def __init__(self, object integrand=Constant1D(0), double relative_tolerance=1.e-5, int max_order=50, int min_order=1):
+
+        warnings.warn("The GaussianQuadrature class is deprecated and will be removed in cherab 1.7. Use GaussianQuadrature1D instead.", DeprecationWarning, stacklevel=2)
+        super().__init__(integrand, relative_tolerance, max_order, min_order)

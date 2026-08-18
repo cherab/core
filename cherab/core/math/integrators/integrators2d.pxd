@@ -25,3 +25,18 @@ cdef class Integrator2D:
         Function2D function
 
     cdef double evaluate(self,double x_lower, double x_upper, Function1D y_lower, Function1D y_upper) except? -1e999
+
+
+cdef class GaussianQuadrature2D(Integrator2D):
+
+    cdef:
+        int _x_min_order, _x_max_order, _y_min_order, _y_max_order
+        double _rtol
+        object _x_roots, _x_weights, _y_roots, _y_weights
+        double[:] _x_roots_mv, _x_weights_mv, _y_roots_mv, _y_weights_mv
+
+    cdef _build_cache(self)
+    
+    cdef double _evaluate_orders(self, double x_lower, double x_upper, Function1D y_lower, Function1D y_upper, int x_order, int y_order) except? -1e999
+
+    cdef inline Py_ssize_t _packed_offset(self, int order, int min_order) noexcept

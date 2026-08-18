@@ -5,6 +5,7 @@ Release 1.6.0 (TBD)
 -------------------
 
 API changes:
+* Rename `GaussianQuadrature` to `GaussianQuadrature1D` to conform to Cherab's naming convention. Original name kept as an alias for backwards compatibility until the next minor release. (#475)
 * Rename `TargettedPixelGroup` to `TargetedPixelGroup` for correct spelling. Still keep `TargettedPixelGroup` as an alias for backwards compatibility until the next major release. (#487)
 * Add emission model attribute access to line and lineshape . (#294)
 
@@ -12,6 +13,9 @@ Bug fixes:
 * Fix the import statement for `netcdf_file` in `calcam.py` for compatibility with the upcoming `scipy` v2.0.0. (#510)
 
 New:
+* Add GaussianQuadrature2D integrator. (#475)
+* Support Raysect 0.9. (#486)
+* Test against Python 3.9, 3.10, 3.11, 3.12, 3.13 and latest released Numpy. Drop Python 3.7, 3.8 and older Numpy from tests. (#486)
 * Add generic distribution function. (#481)
 * Add Function6D framework. (#478)
 * Add e_field attribute to Plasma object for electric field vector. (#465)

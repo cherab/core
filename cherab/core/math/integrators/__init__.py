@@ -16,5 +16,5 @@
 # See the Licence for the specific language governing permissions and limitations
 # under the Licence.
 
-from .integrators1d import Integrator1D, GaussianQuadrature
-from .integrators2d import Integrator2D
+from .integrators1d import Integrator1D, GaussianQuadrature1D, GaussianQuadrature
+from .integrators2d import Integrator2D, GaussianQuadrature2D
