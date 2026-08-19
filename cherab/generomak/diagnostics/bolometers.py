@@ -70,6 +70,14 @@ CAMERA_GEOMETRY = {
     'TanMid1': {},  # Tangential
     'TanPol1': {}   # Combined poloidal/tangential
 }
+
+# The camera geometry definitions are grouped by property here, to illustrate
+# the relationship between the different cameras. The geometry can be viewed
+# grouped by camera instead as follows:
+# >>> from cherab.generomak.diagnostics.bolometers import CAMERA_GEOMETRY
+# >>> from pprint import pprint
+# >>> pprint(CAMERA_GEOMETRY)
+
 # poloidal rotations
 CAMERA_GEOMETRY['HozPol1']['rotation_poloidal'] = 30
 CAMERA_GEOMETRY['HozPol2']['rotation_poloidal'] = -30
