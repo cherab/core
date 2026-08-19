@@ -85,17 +85,17 @@ tangential_bolos = bolos[3:]  # Includes midplane and divertor tangential
 # Produce a voxel grid
 ########################################################################
 print("Producing the voxel grid...")
-# Define the centres of each voxel, as an (nx, ny, 2) array.
-nx = 40
-ny = 85
-cell_r, cell_dx = np.linspace(0.7, 2.5, nx, retstep=True)
-cell_z, cell_dz = np.linspace(-1.8, 1.6, ny, retstep=True)
+# Define the centres of each voxel, as an (nr, nz, 2) array.
+nr = 40
+nz = 85
+cell_r, cell_dr = np.linspace(0.7, 2.5, nr, retstep=True)
+cell_z, cell_dz = np.linspace(-1.8, 1.6, nz, retstep=True)
 cell_r_grid, cell_z_grid = np.broadcast_arrays(cell_r[:, None], cell_z[None, :])
-cell_centres = np.stack((cell_r_grid, cell_z_grid), axis=-1)  # (nx, ny, 2) array
+cell_centres = np.stack((cell_r_grid, cell_z_grid), axis=-1)  # (nr, nz, 2) array
 
 # Define the positions of the vertices of the voxels.
-cell_vertices_r = np.linspace(cell_r[0] - 0.5 * cell_dx, cell_r[-1] + 0.5 * cell_dx, nx + 1)
-cell_vertices_z = np.linspace(cell_z[0] - 0.5 * cell_dz, cell_z[-1] + 0.5 * cell_dz, ny + 1)
+cell_vertices_r = np.linspace(cell_r[0] - 0.5 * cell_dr, cell_r[-1] + 0.5 * cell_dr, nr + 1)
+cell_vertices_z = np.linspace(cell_z[0] - 0.5 * cell_dz, cell_z[-1] + 0.5 * cell_dz, nz + 1)
 
 # Build a mask, only including cells within the wall.
 mask_2d = sample2d_grid(eq.inside_limiter, cell_r, cell_z)
@@ -108,7 +108,7 @@ ray_transfer_grid = RayTransferCylinder(
     radius_outer=cell_vertices_r[-1],
     radius_inner=cell_vertices_r[0],
     height=cell_vertices_z[-1] - cell_vertices_z[0],
-    n_radius=nx, n_height=ny, mask=mask_3d, n_polar=1,
+    n_radius=nr, n_height=nz, mask=mask_3d, n_polar=1,
     transform=translate(0, 0, cell_vertices_z[0]),
 )
 
@@ -165,10 +165,10 @@ for k, (ir, iphi, iz) in enumerate(ray_transfer_grid.invert_voxel_map()):
 # We now need an (Nx4x2) array of voxel vertices, which can be easily calculated.
 voxel_centres = np.array([cell_centres[grid_index_1d_to_2d_map[i]]
                           for i in range(ray_transfer_grid.bins)])
-vertex_displacements = np.array([[-cell_dx/2, -cell_dz/2],
-                                 [-cell_dx/2, cell_dz/2],
-                                 [cell_dx/2, cell_dz/2],
-                                 [cell_dx/2, -cell_dz/2]])
+vertex_displacements = np.array([[-cell_dr/2, -cell_dz/2],
+                                 [-cell_dr/2, cell_dz/2],
+                                 [cell_dr/2, cell_dz/2],
+                                 [cell_dr/2, -cell_dz/2]])
 # Combine the (N,2) and (4,2) arrays to get an (N,4,2) array.
 voxel_vertices = voxel_centres[:, None, :] + vertex_displacements[None, :, :]
 # The derivative operators are (ncells x ncells) matrices which are sparse. We
@@ -183,8 +183,8 @@ derivative_operators = admt.generate_derivative_operators(
 # As described in the docstring for generate_derivative_operators, we can
 # calculate a 2D laplacian operator for "isotropic" smoothing easily:
 alpha = 1/3  # Optimal isotropy
-aligned = derivative_operators['Dxx'] * cell_dx**2 + derivative_operators['Dyy'] * cell_dz**2
-skewed = (derivative_operators['Dsp'] + derivative_operators['Dsm']) * (cell_dx**2 + cell_dz**2)
+aligned = derivative_operators['Dxx'] * cell_dr**2 + derivative_operators['Dyy'] * cell_dz**2
+skewed = (derivative_operators['Dsp'] + derivative_operators['Dsm']) * (cell_dr**2 + cell_dz**2)
 laplacian = (1 - alpha) * aligned + (alpha / 2) * skewed
 # We could also use alpha = 2/3, which would produce an operator akin to the one
 # used in Carr et. al. RSI 89, 083506 (2018).
@@ -200,7 +200,7 @@ psi_at_voxels = sample2d_points(eq.psi_normalised, voxel_centres)
 # The optimal value will depend on the problem at hand.
 anisotropy = 50
 admt_operator = admt.calculate_admt(
-    voxel_radii, derivative_operators, psi_at_voxels, cell_dx, cell_dz, anisotropy
+    voxel_radii, derivative_operators, psi_at_voxels, cell_dr, cell_dz, anisotropy
 )
 
 ################################################################################
@@ -260,7 +260,7 @@ admt_inversion, _ = invert_sparse_regularised_nnls(
 ################################################################################
 # Plot the inversion results.
 ################################################################################
-emiss2d = np.zeros((nx, ny))
+emiss2d = np.zeros((nr, nz))
 
 # Isotropic
 for index1d, indices2d in grid_index_1d_to_2d_map.items():
@@ -347,7 +347,7 @@ admt_inversion, _ = invert_sparse_regularised_nnls(
 )
 
 print("Plotting results...")
-emiss2d = np.zeros((nx, ny))
+emiss2d = np.zeros((nr, nz))
 
 # Isotropic
 for index1d, indices2d in grid_index_1d_to_2d_map.items():
