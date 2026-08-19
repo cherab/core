@@ -46,8 +46,8 @@ cdef class PythonFunction6D(Function6D):
     def __init__(self, object function):
         self.function = function
 
-    cdef double evaluate(self, double x, double y, double z, double u, double w, double v) except? -1e999:
-        return self.function(x, y, z, u, w, v)
+    cdef double evaluate(self, double x, double y, double z, double u, double v, double w) except? -1e999:
+        return self.function(x, y, z, u, v, w)
 
 
 cdef Function6D autowrap_function6d(object obj):

@@ -30,3 +30,13 @@ Distribution functions
    :special-members: __call__
    :show-inheritance:
 
+.. autoclass:: cherab.core.distribution.GenericDistribution
+   :members:
+   :special-members: __call__
+   :show-inheritance:
+
+.. autoclass:: cherab.core.distribution.ZeroDistribution
+   :members:
+   :special-members: __call__
+   :show-inheritance:
+

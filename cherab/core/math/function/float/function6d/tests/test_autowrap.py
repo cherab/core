@@ -33,5 +33,5 @@ class TestAutowrap6D(unittest.TestCase):
         self.assertIsInstance(function, Constant6D, "Autowrapped scalar float is not a Constant6D.")
 
     def test_python_function(self):
-        function = _autowrap_function6d(lambda x, y, z, u, w, v: 10*x + 5*y + 2*z + u + 3*w + 4*v)
+        function = _autowrap_function6d(lambda x, y, z, u, v, w: 10*x + 5*y + 2*z + u + 3*v + 4*w)
         self.assertIsInstance(function, PythonFunction6D, "Autowrapped function is not a PythonFunction6D.")

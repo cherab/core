@@ -29,7 +29,7 @@ from cherab.core.species cimport Species
 from cherab.core.plasma cimport Plasma
 from cherab.core.atomic.elements import hydrogen, deuterium, tritium
 from cherab.core.math.function cimport autowrap_function1d, autowrap_function2d
-from cherab.core.math.integrators cimport GaussianQuadrature
+from cherab.core.math.integrators cimport GaussianQuadrature1D
 from cherab.core.utility.constants cimport BOHR_MAGNETON, HC_EV_NM
 from cherab.core.model.lineshape.doppler cimport doppler_shift, thermal_broadening
 from cherab.core.model.lineshape.gaussian cimport add_gaussian_line
@@ -211,7 +211,7 @@ cdef class StarkBroadenedLine(ZeemanLineShapeModel):
                                            Default is None (will use
                                            `atomic_data.stark_model_coefficients`).
     :param Integrator1D integrator: Integrator1D instance to integrate the line shape
-        over the spectral bin. Default is `GaussianQuadrature()`.
+        over the spectral bin. Default is `GaussianQuadrature1D()`.
     :param str polarisation: Leaves only :math:`\pi`-/:math:`\sigma`-polarised components:
                              "pi" - leave only :math:`\pi`-polarised components,
                              "sigma" - leave only :math:`\sigma`-polarised components,
@@ -219,7 +219,7 @@ cdef class StarkBroadenedLine(ZeemanLineShapeModel):
     """
 
     def __init__(self, Line line, double wavelength, Species target_species, Plasma plasma, AtomicData atomic_data,
-                 tuple stark_model_coefficients=None, Integrator1D integrator=GaussianQuadrature(), polarisation='no'):
+                 tuple stark_model_coefficients=None, Integrator1D integrator=GaussianQuadrature1D(), polarisation='no'):
 
         super().__init__(line, wavelength, target_species, plasma, atomic_data, polarisation, integrator)
 

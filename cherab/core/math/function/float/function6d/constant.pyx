@@ -45,5 +45,5 @@ cdef class Constant6D(Function6D):
     def __init__(self, double value):
         self._value = value
 
-    cdef double evaluate(self, double x, double y, double z, double u, double w, double v) except? -1e999:
+    cdef double evaluate(self, double x, double y, double z, double u, double v, double w) except? -1e999:
         return self._value

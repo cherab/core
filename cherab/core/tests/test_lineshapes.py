@@ -27,7 +27,7 @@ from raysect.core.math.function.float import Arg1D, Constant1D
 from raysect.optical import Spectrum
 
 from cherab.core import Beam, Line, AtomicData
-from cherab.core.math.integrators import GaussianQuadrature
+from cherab.core.math.integrators import GaussianQuadrature1D
 from cherab.core.atomic import deuterium, nitrogen, ZeemanStructure
 from cherab.tools.plasmas.slab import build_constant_slab_plasma
 from cherab.core.model import GaussianLine, MultipletLineShape, StarkBroadenedLine, ZeemanTriplet, ParametrisedZeemanTriplet, ZeemanMultiplet
@@ -297,7 +297,7 @@ class TestLineShapes(unittest.TestCase):
         target_species = self.plasma.composition.get(line.element, line.charge)
         wavelength = 656.104
         relative_tolerance = 1.e-8
-        integrator = GaussianQuadrature(relative_tolerance=relative_tolerance)
+        integrator = GaussianQuadrature1D(relative_tolerance=relative_tolerance)
         stark_line = StarkBroadenedLine(line, wavelength, target_species, self.plasma, self.atomic_data, integrator=integrator)
 
         # spectrum parameters
