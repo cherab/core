@@ -125,7 +125,7 @@ shellcheck = "*"
 validate-pyproject = "*"
 cython-lint = "*"
 blacken-docs = "*"
-taplo = "*"
+tombi = "*"
 
 [feature.lint.tasks]
 lefthook = { cmd = "lefthook", description = "🔗 Run lefthook" }
@@ -133,9 +133,9 @@ hooks = { cmd = "lefthook install", description = "🔗 Install pre-commit hooks
 pre-commit = { cmd = "lefthook run pre-commit", description = "🔗 Run pre-commit checks" }
 ruff-check = { cmd = "ruff check", description = "Lint with ruff" }
 ruff-format = { cmd = "ruff format", description = "Format with ruff" }
+toml-format = { cmd = "tombi format", description = "Format TOML files" }
 dprint = { cmd = "dprint fmt", description = "Format with dprint" }
 typos = { cmd = "typos --write-changes --force-exclude", description = "Fix typos" }
-taplo = { cmd = "taplo fmt", description = "Format toml files with taplo" }
 actionlint = { cmd = "actionlint", description = "Lint actions with actionlint" }
 blacken-docs = { cmd = "blacken-docs", description = "Format Python markdown blocks with Black" }
 validate-pyproject = { cmd = "validate-pyproject pyproject.toml", description = "Validate pyproject.toml" }
