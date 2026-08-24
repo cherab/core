@@ -1,9 +1,10 @@
-# 🧰 Pixi developer guide
+# Pixi developer guide
 
 This document describes the development environments and tasks configured in
-[`pixi.toml`](../pixi.toml). Pixi manages the development dependencies in
-isolated environments and provides a common interface for running tests,
-building the documentation, and checking the source tree.
+[`pixi.toml`](https://github.com/cherab/core/blob/development/pixi.toml). Pixi
+manages the development dependencies in isolated environments and provides a
+common interface for running tests, building the documentation, and checking
+the source tree.
 
 Pixi installs or updates the selected environment automatically when a command
 is run. The workspace currently supports Linux x86-64, macOS x86-64, and macOS
@@ -40,8 +41,8 @@ explicitly.
 | `lint` | Run formatting and static-analysis tools without installing Cherab |
 
 See the [`pyoldest` and `pylatest` features and environment definitions in
-`pixi.toml`](../pixi.toml#L145-L159) for the Python versions used by each
-environment.
+`pixi.toml`](https://github.com/cherab/core/blob/development/pixi.toml#L146-L160)
+for the Python versions used by each environment.
 
 ## 🛠️ Basic development tasks
 
