@@ -41,7 +41,7 @@ explicitly.
 | `lint` | Run formatting and static-analysis tools without installing Cherab |
 
 See the [`pyoldest` and `pylatest` features and environment definitions in
-`pixi.toml`](https://github.com/cherab/core/blob/development/pixi.toml#L146-L160)
+`pixi.toml`](https://github.com/cherab/core/blob/development/pixi.toml#:~:text=Python%20Version%20Features)
 for the Python versions used by each environment.
 
 ## 🛠️ Basic development tasks
