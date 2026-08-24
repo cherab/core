@@ -97,6 +97,7 @@ cherab = { path = "." }
 sphinx = "*"
 sphinx_rtd_theme = "<1"
 sphinx-tabs = "*"
+myst-parser = "*"
 
 [feature.docs.tasks]
 doc-build = {
