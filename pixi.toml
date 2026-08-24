@@ -3,6 +3,9 @@ channels = ["conda-forge"]
 platforms = ["linux-64", "osx-arm64", "osx-64"]
 preview = ["pixi-build"]
 
+[workspace.build-variants]
+python = ["3.9.*", "3.10.*", "3.11.*", "3.12.*", "3.13.*", "3.14.*"]
+
 # -------------------------------
 # === Packaging Configuration ===
 # -------------------------------
@@ -10,15 +13,12 @@ preview = ["pixi-build"]
 name = "cherab"
 version = "dynamic"
 
-[package.build]
-backend = { name = "pixi-build-python", version = "*" }
+[package.build.backend]
+name = "pixi-build-python"
+version = "*"
 
 [package.build.config]
-noarch = false
 compilers = ["c"]
-
-[workspace.build-variants]
-python = ["3.9.*", "3.10.*", "3.11.*", "3.12.*", "3.13.*", "3.14.*"]
 
 [package.host-dependencies]
 python = "*"
@@ -30,6 +30,8 @@ raysect = "0.9.*"
 [package.run-dependencies]
 scipy = "*"
 matplotlib-base = "*"
+
+[package.extra-dependencies.opencl]
 pyopencl = "*"
 pocl = "*"
 
@@ -39,49 +41,40 @@ pocl = "*"
 [dependencies]
 ipython = "*"
 
+[dev]
+cherab = { path = "." }
+
 [tasks]
-clean = { cmd = [
-    "find",
-    "cherab/",
-    "-type",
-    "f",
-    "\\(",
-    "-name",
-    "'*.c'",
-    "-o",
-    "-name",
-    "'*.so'",
-    "-o",
-    "-name",
-    "'*.dylib'",
-    "-o",
-    "-name",
-    "'*.html'",
-    "\\)",
-    "-delete",
-], description = "🔥 Remove in-place build artifacts and temporary files (*.c, *.so, *.dylib)" }
+clean = {
+  cmd = "find cherab -type f \\( -name '*.c' -o -name '*.so' -o -name '*.pyd' -o -name '*.dll' -o -name '*.html' \\) -delete",
+  description = "🔥 Remove in-place build artifacts and temporary files (*.c, *.so, *.pyd, *.dll, *.html)",
+}
 
 # The documentation-related tasks below do not require the source package.
-doc-clean = { cmd = [
-    "rm",
-    "-rf",
-    "build",
-], cwd = "docs", description = "🔥 Clean the docs build directory" }
-doc-serve = { cmd = [
-    "python",
-    "-m",
-    "http.server",
-    "8000",
-    "--directory",
-    "build/html",
-], cwd = "docs", description = "🚀 Start a local server for the docs" }
+doc-clean = {
+  cmd = "rm -rf build",
+  cwd = "docs",
+  description = "🔥 Clean the docs build directory",
+}
 
 # === Testing feature ===
 [feature.test.dependencies]
 cherab = { path = "." }
 
 [feature.test.tasks]
-test = { cmd = "python -m unittest discover cherab -v", description = "🧪 Run the tests" }
+test = {
+  cmd = "python -m unittest discover cherab -v",
+  description = "🧪 Run the tests",
+}
+
+[feature.test-opencl.dependencies]
+cherab = { path = ".", extras = ["opencl"] }
+
+[feature.test-opencl.tasks]
+test-opencl = {
+  cmd = "python -m unittest cherab.tools.tests.test_sart_opencl -v",
+  description = "🧪 Run the OpenCL tests",
+}
 
 # === Documentation feature ===
 [feature.docs.dependencies]
@@ -91,15 +84,20 @@ sphinx_rtd_theme = "<1"
 sphinx-tabs = "*"
 
 [feature.docs.tasks]
-doc-build = { cmd = [
+doc-build = {
+  cmd = [
     "sphinx-build",
     "-b",
     "{{ target }}",
     "source",
     "build/{{ target }}",
-], cwd = "docs", args = [
+  ],
+  cwd = "docs",
+  args = [
     { arg = "target", default = "html" },
-], description = "📝 Build the docs" }
+  ],
+  description = "📝 Build the docs"
+}
 
 # === Linting feature ===
 [feature.lint.dependencies]
@@ -132,22 +130,15 @@ lint = { cmd = "lefthook run pre-commit --all-files --force", description = "�
 # === Python Version Features ===
 [feature.pyoldest.dependencies]
 python = "3.9.*"
+
 [feature.pylatest.dependencies]
 python = "3.14.*"
 
 [environments]
 default = { features = ["pylatest"], solve-group = "pylatest" }
 test = { features = ["test"], solve-group = "pylatest" }
-docs = { features = [
-    "pyoldest",
-    "docs",
-], solve-group = "pyoldest" } # TODO: change to pylatest when bumping RTD theme to >=1.0
-test-pylatest = { features = [
-    "pylatest",
-    "test",
-], solve-group = "pylatest" } # alias of test
-test-pyoldest = { features = [
-    "pyoldest",
-    "test",
-], solve-group = "pyoldest" }
+docs = { features = ["pyoldest", "docs"], solve-group = "pyoldest" }  # TODO: change to pylatest when bumping RTD theme to >=1.0
+test-pylatest = { features = ["pylatest", "test"], solve-group = "pylatest" }  # alias of test
+test-pyoldest = { features = ["pyoldest", "test"], solve-group = "pyoldest" }
+test-opencl = { features = ["test-opencl"], solve-group = "pyoldest" }
 lint = { features = ["lint"], no-default-feature = true }
