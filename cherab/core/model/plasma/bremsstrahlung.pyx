@@ -21,7 +21,7 @@
 import numpy as np
 from raysect.optical cimport Spectrum, Point3D, Vector3D
 from cherab.core cimport Plasma, AtomicData
-from cherab.core.math.integrators cimport GaussianQuadrature
+from cherab.core.math.integrators cimport GaussianQuadrature1D
 from cherab.core.species cimport Species
 from cherab.core.utility.constants cimport RECIP_4_PI, ELEMENTARY_CHARGE, SPEED_OF_LIGHT, PLANCK_CONSTANT, ELECTRON_REST_MASS, VACUUM_PERMITTIVITY
 from libc.math cimport sqrt, log, exp, M_PI
@@ -123,7 +123,7 @@ cdef class Bremsstrahlung(PlasmaModel):
                                             wavelength. If not provided,
                                             the `atomic_data` is used.
     :ivar Integrator1D integrator: Integrator1D instance to integrate Bremsstrahlung radiation
-                                   over the spectral bin. Default is `GaussianQuadrature`.
+                                   over the spectral bin. Default is `GaussianQuadrature1D`.
     """
 
     def __init__(self, Plasma plasma=None, AtomicData atomic_data=None, FreeFreeGauntFactor gaunt_factor=None, Integrator1D integrator=None):
@@ -132,7 +132,7 @@ cdef class Bremsstrahlung(PlasmaModel):
 
         self._brems_func = BremsFunction.__new__(BremsFunction)
         self.gaunt_factor = gaunt_factor
-        self.integrator = integrator or GaussianQuadrature()
+        self.integrator = integrator or GaussianQuadrature1D()
 
         # ensure that cache is initialised
         self._change()

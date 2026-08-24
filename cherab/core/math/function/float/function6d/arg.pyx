@@ -28,7 +28,7 @@ cdef class Arg6D(Function6D):
     This is used to pass coordinates through to other functions in the
     function framework which expect a Function6D object.
 
-    Valid options for argument are "x", "y", "z", "u", "w", or "v".
+    Valid options for argument are "x", "y", "z", "u", "v", or "w".
 
     >>> argx = Arg6D("x")
     >>> argx(2, 3, 5, 7, 11, 13)
@@ -42,14 +42,14 @@ cdef class Arg6D(Function6D):
     >>> argu = Arg6D("u")
     >>> argu(2, 3, 5, 7, 11, 13)
     7.0
-    >>> argw = Arg6D("w")
-    >>> argw(2, 3, 5, 7, 11, 13)
-    11.0
     >>> argv = Arg6D("v")
     >>> argv(2, 3, 5, 7, 11, 13)
+    11.0
+    >>> argw = Arg6D("w")
+    >>> argw(2, 3, 5, 7, 11, 13)
     13.0
 
-    :param str argument: either "x", "y", "z", "u", "w", or "v", the argument to return
+    :param str argument: either "x", "y", "z", "u", "v", or "w", the argument to return
     """
     def __init__(self, object argument):
         if argument == "x":
@@ -60,14 +60,14 @@ cdef class Arg6D(Function6D):
             self._argument = Z
         elif argument == "u":
             self._argument = U
-        elif argument == "w":
-            self._argument = W
         elif argument == "v":
             self._argument = V
+        elif argument == "w":
+            self._argument = W
         else:
-            raise ValueError("The argument to Arg6D must be either 'x', 'y', 'z', 'u', 'w' or 'v'")
+            raise ValueError("The argument to Arg6D must be either 'x', 'y', 'z', 'u', 'v' or 'w'")
 
-    cdef double evaluate(self, double x, double y, double z, double u, double w, double v) except? -1e999:
+    cdef double evaluate(self, double x, double y, double z, double u, double v, double w) except? -1e999:
         if self._argument == X:
             return x
         elif self._argument == Y:
@@ -76,7 +76,7 @@ cdef class Arg6D(Function6D):
             return z
         elif self._argument == U:
             return u
-        elif self._argument == W:
-            return w
-        else:  # V
+        elif self._argument == V:
             return v
+        else: # W
+            return w

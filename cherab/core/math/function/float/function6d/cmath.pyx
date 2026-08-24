@@ -32,8 +32,8 @@ cdef class Exp6D(Function6D):
     def __init__(self, object function):
         self._function = autowrap_function6d(function)
 
-    cdef double evaluate(self, double x, double y, double z, double u, double w, double v) except? -1e999:
-        return cmath.exp(self._function.evaluate(x, y, z, u, w, v))
+    cdef double evaluate(self, double x, double y, double z, double u, double v, double w) except? -1e999:
+        return cmath.exp(self._function.evaluate(x, y, z, u, v, w))
 
 
 cdef class Sin6D(Function6D):
@@ -45,8 +45,8 @@ cdef class Sin6D(Function6D):
     def __init__(self, object function):
         self._function = autowrap_function6d(function)
 
-    cdef double evaluate(self, double x, double y, double z, double u, double w, double v) except? -1e999:
-        return cmath.sin(self._function.evaluate(x, y, z, u, w, v))
+    cdef double evaluate(self, double x, double y, double z, double u, double v, double w) except? -1e999:
+        return cmath.sin(self._function.evaluate(x, y, z, u, v, w))
 
 
 cdef class Cos6D(Function6D):
@@ -58,8 +58,8 @@ cdef class Cos6D(Function6D):
     def __init__(self, object function):
         self._function = autowrap_function6d(function)
 
-    cdef double evaluate(self, double x, double y, double z, double u, double w, double v) except? -1e999:
-        return cmath.cos(self._function.evaluate(x, y, z, u, w, v))
+    cdef double evaluate(self, double x, double y, double z, double u, double v, double w) except? -1e999:
+        return cmath.cos(self._function.evaluate(x, y, z, u, v, w))
 
 
 cdef class Tan6D(Function6D):
@@ -71,8 +71,8 @@ cdef class Tan6D(Function6D):
     def __init__(self, object function):
         self._function = autowrap_function6d(function)
 
-    cdef double evaluate(self, double x, double y, double z, double u, double w, double v) except? -1e999:
-        return cmath.tan(self._function.evaluate(x, y, z, u, w, v))
+    cdef double evaluate(self, double x, double y, double z, double u, double v, double w) except? -1e999:
+        return cmath.tan(self._function.evaluate(x, y, z, u, v, w))
 
 
 cdef class Asin6D(Function6D):
@@ -84,8 +84,8 @@ cdef class Asin6D(Function6D):
     def __init__(self, object function):
         self._function = autowrap_function6d(function)
 
-    cdef double evaluate(self, double x, double y, double z, double u, double w, double v) except? -1e999:
-        cdef double val = self._function.evaluate(x, y, z, u, w, v)
+    cdef double evaluate(self, double x, double y, double z, double u, double v, double w) except? -1e999:
+        cdef double val = self._function.evaluate(x, y, z, u, v, w)
         if -1.0 <= val <= 1.0:
             return cmath.asin(val)
         raise ValueError("The function returned a value outside of the arcsine domain of [-1, 1].")
@@ -100,8 +100,8 @@ cdef class Acos6D(Function6D):
     def __init__(self, object function):
         self._function = autowrap_function6d(function)
 
-    cdef double evaluate(self, double x, double y, double z, double u, double w, double v) except? -1e999:
-        cdef double val = self._function.evaluate(x, y, z, u, w, v)
+    cdef double evaluate(self, double x, double y, double z, double u, double v, double w) except? -1e999:
+        cdef double val = self._function.evaluate(x, y, z, u, v, w)
         if -1.0 <= val <= 1.0:
             return cmath.acos(val)
         raise ValueError("The function returned a value outside of the arccosine domain of [-1, 1].")
@@ -116,8 +116,8 @@ cdef class Atan6D(Function6D):
     def __init__(self, object function):
         self._function = autowrap_function6d(function)
 
-    cdef double evaluate(self, double x, double y, double z, double u, double w, double v) except? -1e999:
-        return cmath.atan(self._function.evaluate(x, y, z, u, w, v))
+    cdef double evaluate(self, double x, double y, double z, double u, double v, double w) except? -1e999:
+        return cmath.atan(self._function.evaluate(x, y, z, u, v, w))
 
 
 cdef class Atan4Q6D(Function6D):
@@ -134,9 +134,9 @@ cdef class Atan4Q6D(Function6D):
         self._numerator = autowrap_function6d(numerator)
         self._denominator = autowrap_function6d(denominator)
 
-    cdef double evaluate(self, double x, double y, double z, double u, double w, double v) except? -1e999:
-        return cmath.atan2(self._numerator.evaluate(x, y, z, u, w, v),
-                          self._denominator.evaluate(x, y, z, u, w, v))
+    cdef double evaluate(self, double x, double y, double z, double u, double v, double w) except? -1e999:
+        return cmath.atan2(self._numerator.evaluate(x, y, z, u, v, w),
+                          self._denominator.evaluate(x, y, z, u, v, w))
 
 
 cdef class Sqrt6D(Function6D):
@@ -148,8 +148,8 @@ cdef class Sqrt6D(Function6D):
     def __init__(self, object function):
         self._function = autowrap_function6d(function)
 
-    cdef double evaluate(self, double x, double y, double z, double u, double w, double v) except? -1e999:
-        cdef double f = self._function.evaluate(x, y, z, u, w, v)
+    cdef double evaluate(self, double x, double y, double z, double u, double v, double w) except? -1e999:
+        cdef double f = self._function.evaluate(x, y, z, u, v, w)
         if f < 0: # complex values are not supported
             raise ValueError("Math domain error in sqrt({0}). Sqrt of a negative value is not supported.".format(f))
         return cmath.sqrt(f)
@@ -164,5 +164,5 @@ cdef class Erf6D(Function6D):
     def __init__(self, object function):
         self._function = autowrap_function6d(function)
 
-    cdef double evaluate(self, double x, double y, double z, double u, double w, double v) except? -1e999:
-        return cmath.erf(self._function.evaluate(x, y, z, u, w, v))
+    cdef double evaluate(self, double x, double y, double z, double u, double v, double w) except? -1e999:
+        return cmath.erf(self._function.evaluate(x, y, z, u, v, w))

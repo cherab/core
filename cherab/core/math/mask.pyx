@@ -65,6 +65,3 @@ cdef class PolygonMask2D(Function2D):
 
     cdef double evaluate(self, double x, double y) except? -1e999:
         return self._mesh.evaluate(x, y)
-
-
-
