@@ -56,6 +56,21 @@ doc-clean = {
   cwd = "docs",
   description = "🔥 Clean the docs build directory",
 }
+doc-serve = {
+  cmd = [
+    "python",
+    "-m",
+    "http.server",
+    "{{ port }}",
+    "--directory",
+    "build/html",
+  ],
+  cwd = "docs",
+  args = [
+    { arg = "port", default = "8000" },
+  ],
+  description = "🚀 Start a local server for the docs",
+}
 
 # === Testing feature ===
 [feature.test.dependencies]
