@@ -90,7 +90,7 @@ cpdef Spectrum add_lorentzian_line(double radiance, double wavelength, double la
     Adds a modified Lorentzian line to the given spectrum and returns the new spectrum.
 
     The modified Lorentzian:
-    :math:`L(\lambda-\lambda_0, \Delta\lambda_{1/2}^{(L)})=\frac{C_0(\Delta\lambda_{1/2}^{(L)})^{3/2}}{(\lambda-\lambda_0)^{5/2}+(\frac{\Delta\lambda_{1/2}^{(L)}}{2})^{5/2}},`
+    :math:`L(\lambda-\lambda_0, \Delta\lambda_{1/2}^{(L)})=\frac{C_0\left(\Delta\lambda_{1/2}^{(L)}\right)^{3/2}}{(\lambda-\lambda_0)^{5/2}+\left(\frac{\Delta\lambda_{1/2}^{(L)}}{2}\right)^{5/2}},`
 
     :math:`C_0=\frac{(1/2)^{3/2}}{4R{_2}F_1(\frac{2}{5},1,\frac{7}{5},-R^{5/2})},`
 
@@ -107,7 +107,7 @@ cpdef Spectrum add_lorentzian_line(double radiance, double wavelength, double la
     :param Spectrum spectrum: the current spectrum to which the Lorentzian line is added.
     :param Integrator1D integrator: Integrator1D instance to integrate the line shape
                                     over the spectral bin.
-    :return:
+    :return: the updated Spectrum instance.
     """
 
     cdef double cutoff_lower_wavelength, cutoff_upper_wavelength
@@ -170,7 +170,7 @@ cdef class StarkBroadenedLine(ZeemanLineShapeModel):
     :math:`C_0=\frac{(1/2)^{3/2}}{4R{_2}F_1(\frac{2}{5},1,\frac{7}{5},-R^{5/2})},`
 
     where :math:`\Delta\lambda_{1/2}^{(L)}=c_{ij}\frac{n_e^{a_{ij}}}{T_e^{b_{ij}}}` is the line FWHM,
-    :math:`{_2}F_1` is the hypergeometric function and :math:`R=50`. 
+    :math:`{_2}F_1` is the hypergeometric function and :math:`R=50`.
     The line shape is truncated at :math:`\lambda<R\Delta\lambda_{1/2}^{(L)}` and :math:`\lambda>R\Delta\lambda_{1/2}^{(L)}`.
     The :math:`a_{ij}`, :math:`b_{ij}` and :math:`c_{ij}` are the fitting coefficients.
 
@@ -178,7 +178,7 @@ cdef class StarkBroadenedLine(ZeemanLineShapeModel):
     and Doppler (Gauss), :math:`G(\lambda'-\lambda_0, \Delta\lambda_{1/2}^{(G)})` profiles:
 
       :math:`\eta L(\lambda-\lambda_0, \Delta\lambda_{1/2}^{(V)}) + (1-\eta)G(\lambda-\lambda_0, \Delta\lambda_{1/2}^{(V)})`,
-    
+
       with :math:`\Delta\lambda_{1/2}^{(V)}\equiv \Delta\lambda_{1/2}^{(V)}(\Delta\lambda_{1/2}^{(G)}, \Delta\lambda_{1/2}^{(L)})`
       and :math:`\eta\equiv \eta(\Delta\lambda_{1/2}^{(G)}, \Delta\lambda_{1/2}^{(L)})`.
 
@@ -192,26 +192,25 @@ cdef class StarkBroadenedLine(ZeemanLineShapeModel):
     :math:`\Delta\lambda_{1/2}^{(V)}=\sum_{n=0}^{6}b_n(\frac{\Delta\lambda_{1/2}^{(G)}}{\Delta\lambda_{1/2}^{(L)}})^n`
     for :math:`\frac{\Delta\lambda_{1/2}^{(L)}}{\Delta\lambda_{1/2}^{(G)}} > 1` with
 
-    `a` = [1., 0.15882, 1.04388, -1.38281, 0.46251, 0.82325, -0.58026] and
+    :math:`a_n \in \{1, 0.15882, 1.04388, -1.38281, 0.46251, 0.82325, -0.58026\}` and
 
-    `b` = [1., 0, 0.57575, 0.37902, -0.42519, -0.31525, 0.31718].
+    :math:`b_n \in \{1, 0, 0.57575, 0.37902, -0.42519, -0.31525, 0.31718\}`.
 
     While the :math:`\eta` function is fitted as:
-    :math:`\eta=exp(\sum_{n=0}^{5}c_n(ln(\frac{\Delta\lambda_{1/2}^{(L)}}{\Delta\lambda_{1/2}^{(V)}}))^n`
+    :math:`\eta=\exp\left(\sum_{n=0}^{5}c_n\left(\ln\left(\frac{\Delta\lambda_{1/2}^{(L)}}{\Delta\lambda_{1/2}^{(V)}}\right)\right)^n\right)`
     for :math:`0.01<\frac{\Delta\lambda_{1/2}^{(L)}}{\Delta\lambda_{1/2}^{(V)}}<0.999` with
 
-    `c` = [5.14820e-04, 1.38821e+00, -9.60424e-02, -3.83995e-02, -7.40042e-03, -5.47626e-04].
+    :math:`c_n \in \{5.14820\times 10^{-4}, 1.38821, -9.60424\times 10^{-2}, -3.83995\times 10^{-2}, -7.40042\times 10^{-3}, -5.47626\times 10^{-4}\}`.
 
     :param Line line: The emission line object for this line shape.
     :param float wavelength: The rest wavelength for this emission line.
     :param Species target_species: The target plasma species that is emitting.
     :param Plasma plasma: The emitting plasma object.
     :param AtomicData atomic_data: The atomic data provider.
-    :param tuple stark_model_coefficients: Stark model coefficients in the form (c_ij, a_ij, b_ij).
-                                           Default is None (will use
-                                           `atomic_data.stark_model_coefficients`).
+    :param tuple stark_model_coefficients: Stark model coefficients in the form (:math:`c_{ij}`, :math:`a_{ij}`, :math:`b_{ij}`).
+                                           Default is None (will use `~.AtomicData.stark_model_coefficients`).
     :param Integrator1D integrator: Integrator1D instance to integrate the line shape
-        over the spectral bin. Default is `GaussianQuadrature1D()`.
+        over the spectral bin. Default is `.GaussianQuadrature1D`.
     :param str polarisation: Leaves only :math:`\pi`-/:math:`\sigma`-polarised components:
                              "pi" - leave only :math:`\pi`-polarised components,
                              "sigma" - leave only :math:`\sigma`-polarised components,

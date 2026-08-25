@@ -26,13 +26,13 @@ cdef class ConstantSpectrum(LaserSpectrum):
     A laser spectrum with constant power.
 
     Has a constant, non-zero distribution of power spectral density
-    between the min_wavelength and max_wavelength. The integral value
+    between the `.min_wavelength` and `.max_wavelength`. The integral value
     of the power is 1 W.
 
     .. note::
-        The ConstantSpectrum class is suitable for approximation
+        The `.ConstantSpectrum` class is suitable for approximation
         of an infinitely thin laser spectrum, e.g.:
-        ConstantSpectrum(1063.9, 1064.1, 1)
+        ``ConstantSpectrum(1063.9, 1064.1, 1)``
     """
 
     def __init__(self, double min_wavelength, double max_wavelength, int bins):
@@ -45,7 +45,7 @@ cdef class ConstantSpectrum(LaserSpectrum):
 
         :param float x: Wavelength in nm.
 
-        :return: Power spectral density in W/nm. 
+        :return: Power spectral density in W/nm.
         """
 
         cdef:
@@ -69,7 +69,7 @@ cdef class GaussianSpectrum(LaserSpectrum):
       wavelength of the laser.
     :param float stddev: Standard deviation of the Gaussian
       distribution of the laser spectrum.
-    
+
     :ivar float stddev: Standard deviation of the Gaussian
       distribution of the laser spectrum.
     :ivar float mean: The mean value of the Gaussian distribution
@@ -114,7 +114,7 @@ cdef class GaussianSpectrum(LaserSpectrum):
 
         :param float x: Wavelength in nm.
 
-        :return: Power spectral density in W/nm. 
+        :return: Power spectral density in W/nm.
         """
         return self._normalisation * exp(-0.5 * ((x - self._mean) * self._recip_stddev) ** 2)
 
