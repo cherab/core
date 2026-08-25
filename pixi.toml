@@ -95,7 +95,7 @@ test-opencl = {
 [feature.docs.dependencies]
 cherab = { path = "." }
 sphinx = "*"
-sphinx_rtd_theme = "<1"
+sphinx_rtd_theme = "<1"  # TODO: change to >=1.0 when our docs layout is compatible with the new theme
 sphinx-tabs = "*"
 myst-parser = "*"
 
