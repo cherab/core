@@ -37,5 +37,5 @@ cdef class BeamLineShapeModel:
         self.atomic_data = atomic_data
 
     cpdef Spectrum add_line(self, double radiance, Point3D beam_point, Point3D plasma_point,
-                            Vector3D beam_direction, Vector3D observation_direction, Spectrum spectrum):
+                            Vector3D beam_velocity, Vector3D observation_direction, Spectrum spectrum):
         raise NotImplementedError('Child lineshape class must implement this method.')

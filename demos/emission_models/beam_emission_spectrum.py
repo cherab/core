@@ -10,8 +10,6 @@ from cherab.core.math import sample3d
 from cherab.core.atomic import hydrogen, deuterium, carbon, Line
 from cherab.core.model import SingleRayAttenuator, BeamEmissionLine, \
     ExcitationLine, RecombinationLine
-from cherab.core.model.beam.beam_emission import SIGMA_TO_PI, SIGMA1_TO_SIGMA0, \
-    PI2_TO_PI3, PI4_TO_PI3
 from cherab.tools.plasmas.slab import build_slab_plasma
 from cherab.openadas import OpenADAS
 
@@ -73,9 +71,7 @@ beam_divergence = 1.3  # degree
 beam_length = 3.0
 beam_temperature = 1.0
 
-bes_full_model = BeamEmissionLine(Line(deuterium, 0, (3, 2)),
-                                  sigma_to_pi=SIGMA_TO_PI, sigma1_to_sigma0=SIGMA1_TO_SIGMA0,
-                                  pi2_to_pi3=PI2_TO_PI3, pi4_to_pi3=PI4_TO_PI3)
+bes_full_model = BeamEmissionLine(Line(deuterium, 0, (3, 2)))
 
 beam_full = Beam(parent=world, transform=beam_transform)
 beam_full.plasma = plasma
@@ -93,9 +89,7 @@ beam_full.models = [bes_full_model]
 beam_full.integrator.step = integration_step
 beam_full.integrator.min_samples = 10
 
-bes_half_model = BeamEmissionLine(Line(deuterium, 0, (3, 2)),
-                                  sigma_to_pi=SIGMA_TO_PI, sigma1_to_sigma0=SIGMA1_TO_SIGMA0,
-                                  pi2_to_pi3=PI2_TO_PI3, pi4_to_pi3=PI4_TO_PI3)
+bes_half_model = BeamEmissionLine(Line(deuterium, 0, (3, 2)))
 
 beam_half = Beam(parent=world, transform=beam_transform)
 beam_half.plasma = plasma
@@ -113,9 +107,7 @@ beam_half.models = [bes_half_model]
 beam_half.integrator.step = integration_step
 beam_half.integrator.min_samples = 10
 
-bes_third_model = BeamEmissionLine(Line(deuterium, 0, (3, 2)),
-                                   sigma_to_pi=SIGMA_TO_PI, sigma1_to_sigma0=SIGMA1_TO_SIGMA0,
-                                   pi2_to_pi3=PI2_TO_PI3, pi4_to_pi3=PI4_TO_PI3)
+bes_third_model = BeamEmissionLine(Line(deuterium, 0, (3, 2)))
 
 beam_third = Beam(parent=world, transform=beam_transform)
 beam_third.plasma = plasma
