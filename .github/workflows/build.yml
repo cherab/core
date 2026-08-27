@@ -1,0 +1,78 @@
+name: Build wheels
+
+# We don't want to spend CI compute cycles on every commit, so restrict building
+# of wheels to releases and candidate releases. These are releases which will be
+# tagged manually with a vM.m.p[.rcN] version.
+# Builds can also be triggered by tagging with a .dev<n> version.
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  # Build a wheel for each Python version in a separate parallel job.
+  build_wheels:
+    name: Build wheels for ${{ matrix.py }} on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest]  # Only Linux for now, passive provision for other OS's.
+        python: [cp39, cp310, cp311, cp312, cp313, cp314]
+
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Build wheels
+        uses: pypa/cibuildwheel@v4.2.0
+        env:
+          CIBW_BUILD: ${{ matrix.python }}-manylinux_x86_64
+          # Build on manylinux2014 where possible for greatest compatibility,
+          # but need newer manylinux_2_28 for Python 3.14
+          CIBW_MANYLINUX_X86_64_IMAGE: >-
+            ${{ contains(matrix.python, 'cp314') && 'manylinux_2_28' || 'manylinux2014' }}
+          # Avoid trying to compile e.g. Pillow (raysect->matplotlib dependency) from
+          # source on older manylinux with newer Python. An old version is fine.
+          CIBW_ENVIRONMENT: 'PIP_PREFER_BINARY=1'
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cibw-wheels-${{ matrix.os }}-${{ matrix.python }}
+          path: ./wheelhouse/*.whl
+
+  make_sdist:
+    name: Make SDist
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Build sdist
+        run: pipx run build --sdist
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cibw-sdist
+          path: dist/*.tar.gz
+
+  # Wheels are built in parallel jobs: gather the outputs into a single artifact
+  # for more convenient retrieval. At some stage we may consider automatic
+  # upload to PyPI from this job (since its `needs` entry ensures the SDist and
+  # wheels all built successfully).
+  gather_artifacts:
+    name: Gather SDist and wheel outputs into a single artifact
+    runs-on: ubuntu-latest
+    needs: [build_wheels, make_sdist]
+    steps:
+      - uses: actions/download-artifact@v5
+        with:
+          pattern: cibw*
+          path: dist
+          merge-multiple: true
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: artifacts
+          path: dist/*
