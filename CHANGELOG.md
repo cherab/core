@@ -16,6 +16,7 @@ Bug fixes:
 * Fix the import statement for `netcdf_file` in `calcam.py` for compatibility with the upcoming `scipy` v2.0.0. (#510)
 
 New:
+* Add an optional Pixi workspace for package builds and isolated development environments, with tasks for testing, documentation, formatting, and static analysis, and include the corresponding developer guide in the Sphinx documentation. (#489)
 * Add GaussianQuadrature2D integrator. (#475)
 * Support Raysect 0.9. (#486)
 * Test against Python 3.9, 3.10, 3.11, 3.12, 3.13 and latest released Numpy. Drop Python 3.7, 3.8 and older Numpy from tests. (#486)
