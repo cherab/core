@@ -1,13 +1,11 @@
 name: Build wheels
 
 # We don't want to spend CI compute cycles on every commit, so restrict building
-# of wheels to releases and candidate releases. These are releases which will be
-# tagged manually with a vM.m.p[.rcN] version.
-# Builds can also be triggered by tagging with a .dev<n> version.
+# of wheels to published releases. This includes stable and beta/RC releases.
 on:
-  push:
-    tags:
-      - 'v*'
+  release:
+    types:
+      - published
 
 jobs:
   # Build a wheel for each Python version in a separate parallel job.
