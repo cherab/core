@@ -12,12 +12,37 @@ on:
 jobs:
   # Build a wheel for each Python version in a separate parallel job.
   build_wheels:
-    name: Build wheels for ${{ matrix.py }} on ${{ matrix.os }}
-    runs-on: ${{ matrix.os }}
+    name: Build wheels for ${{ matrix.python }} on ${{ matrix.target.name }}
+    runs-on: ${{ matrix.target.runner }}
     strategy:
       matrix:
-        os: [ubuntu-latest]  # Only Linux for now, passive provision for other OS's.
         python: [cp39, cp310, cp311, cp312, cp313, cp314]
+        target:
+          - name: Linux (x86-64)
+            runner: ubuntu-latest
+            platform: manylinux_x86_64
+            arch: x86_64
+
+          # TODO: add other platforms once Raysect provides wheels on them.
+          # - name: Linux (ARM)
+          #   runner: ubuntu-24.04-arm
+          #   platform: manylinux_aarch64
+          #   arch: aarch64
+
+          # - name: macOS (Apple Silicon)
+          #   runner: macos-latest
+          #   platform: macosx_arm64
+          #   arch: arm64
+
+          # - name: macOS (Intel)
+          #   runner: macos-15-intel
+          #   platform: macosx_x86_64
+          #   arch: x86_64
+
+          # - name: Windows
+          #   runner: windows-2022
+          #   platform: win_amd64
+          #   arch: AMD64
 
     steps:
       - uses: actions/checkout@v7
@@ -27,7 +52,8 @@ jobs:
       - name: Build wheels
         uses: pypa/cibuildwheel@v4.2.0
         env:
-          CIBW_BUILD: ${{ matrix.python }}-manylinux_x86_64
+          CIBW_BUILD: ${{ matrix.python }}-${{ matrix.target.platform }}
+          CIBW_ARCH: ${{ matrix.target.arch }}
           # Build on manylinux2014 where possible for greatest compatibility,
           # but need newer manylinux_2_28 for Python 3.14
           CIBW_MANYLINUX_X86_64_IMAGE: >-
@@ -38,7 +64,7 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: cibw-wheels-${{ matrix.os }}-${{ matrix.python }}
+          name: dist-wheel-${{ matrix.target.platform }}-${{ matrix.python }}
           path: ./wheelhouse/*.whl
 
   make_sdist:
@@ -54,7 +80,7 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: cibw-sdist
+          name: dist-sdist
           path: dist/*.tar.gz
 
   # Wheels are built in parallel jobs: gather the outputs into a single artifact
@@ -68,7 +94,7 @@ jobs:
     steps:
       - uses: actions/download-artifact@v5
         with:
-          pattern: cibw*
+          pattern: dist-*
           path: dist
           merge-multiple: true
 
