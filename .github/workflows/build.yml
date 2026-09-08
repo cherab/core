@@ -47,15 +47,28 @@ jobs:
         with:
           persist-credentials: false
 
+      - name: Determine manylinux image
+        if: ${{ contains(matrix.target.name, 'Linux') }}
+        # Build on manylinux2014 where possible for greatest compatibility,
+        # but need newer manylinux_2_28 for Python >=3.14.
+        # TODO: use cp314|cp315 if we provide Python 3.15 wheels before dropping
+        # manylinux2014 (RHEL7) support.
+        # TODO: remove this step entirely once we drop manylinux2014 support.
+        run: |
+          case ${{ matrix.python }} in
+          cp314)
+              echo "CIBW_MANYLINUX_X86_64_IMAGE=manylinux_2_28" >> "$GITHUB_ENV"
+              ;;
+          *)
+              echo "CIBW_MANYLINUX_X86_64_IMAGE=manylinux2014" >> "$GITHUB_ENV"
+              ;;
+          esac
+
       - name: Build wheels
         uses: pypa/cibuildwheel@v4.2.0
         env:
           CIBW_BUILD: ${{ matrix.python }}-${{ matrix.target.platform }}
           CIBW_ARCH: ${{ matrix.target.arch }}
-          # Build on manylinux2014 where possible for greatest compatibility,
-          # but need newer manylinux_2_28 for Python 3.14
-          CIBW_MANYLINUX_X86_64_IMAGE: >-
-            ${{ contains(matrix.python, 'cp314') && 'manylinux_2_28' || 'manylinux2014' }}
           # Avoid trying to compile e.g. Pillow (raysect->matplotlib dependency) from
           # source on older manylinux with newer Python. An old version is fine.
           CIBW_ENVIRONMENT: 'PIP_PREFER_BINARY=1'
