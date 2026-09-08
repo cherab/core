@@ -738,7 +738,7 @@ def generate_segmented_cylinder(radius, length):
     Generates a segmented cylindrical laser geometry
 
     Approximates a long cylinder with a cylindrical segments to optimize
-    targetted and importance sampling. The height of a cylinder segments is roughly
+    targeted and importance sampling. The height of a cylinder segments is roughly
     2 * cylinder radius.
 
     :return: List of cylinders

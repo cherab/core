@@ -22,3 +22,4 @@ utilities that Cherab provides for slicing, dicing and projecting these function
    mask
    samplers
    slice
+   integrators

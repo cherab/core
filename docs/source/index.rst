@@ -30,6 +30,14 @@ become stable until we have finished moving the source code to github.
 
 .. toctree::
    :maxdepth: 2
+   :caption: Development
+   :name: development
+
+   development/pixi
+
+
+.. toctree::
+   :maxdepth: 2
    :caption: Demonstrations
    :name: demonstrations
 
@@ -41,4 +49,3 @@ Indices and tables
 
 * :ref:`genindex`
 * :ref:`modindex`
-

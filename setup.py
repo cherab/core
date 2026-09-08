@@ -5,7 +5,7 @@ import os.path as path
 from pathlib import Path
 import multiprocessing
 import numpy
-from setuptools import setup, find_packages, Extension
+from setuptools import setup, find_namespace_packages, Extension
 from Cython.Build import cythonize
 
 multiprocessing.set_start_method('fork')
@@ -96,7 +96,6 @@ setup(
     name="cherab",
     version=version,
     license="EUPL 1.1",
-    namespace_packages=["cherab"],
     description="Cherab spectroscopy framework",
     classifiers=[
         "Development Status :: 5 - Production/Stable",
@@ -116,17 +115,19 @@ setup(
     ),
     long_description=long_description,
     long_description_content_type="text/markdown",
+    # Support Python versions where Raysect wheels are available.
+    requires_python=">=3.9",
     install_requires=[
-        "numpy>=1.14,<2.0",
+        "numpy>=2.0",
         "scipy",
         "matplotlib",
-        "raysect==0.8.1.*",
+        "raysect==0.9.1.*",
     ],
     extras_require={
         # Running ./dev/build_docs.sh runs setup.py, which requires cython.
-        "docs": ["cython~=3.0", "sphinx", "sphinx-rtd-theme", "sphinx-tabs"],
+        "docs": ["cython~=3.1", "sphinx", "sphinx-rtd-theme", "sphinx-tabs"],
     },
-    packages=find_packages(include=["cherab*"]),
+    packages=find_namespace_packages(include=["cherab*"]),
     package_data={"": [
         "**/*.pyx", "**/*.pxd",  # Needed to build Cython extensions.
         "**/*.json", "**/*.cl", "**/*.npy", "**/*.obj",  # Supplementary data

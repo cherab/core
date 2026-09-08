@@ -24,7 +24,7 @@ from raysect.core import Point3D, Vector3D
 from raysect.optical import World, Ray
 
 from cherab.core.atomic import AtomicData, MaxwellianFreeFreeGauntFactor
-from cherab.core.math.integrators import GaussianQuadrature
+from cherab.core.math.integrators import GaussianQuadrature1D
 from cherab.core.atomic import deuterium, nitrogen
 from cherab.tools.plasmas.slab import build_constant_slab_plasma
 from cherab.core.model import Bremsstrahlung
@@ -79,7 +79,7 @@ class TestBremsstrahlung(unittest.TestCase):
 
             return brems_const * ni_gff_z2 * ne / (np.sqrt(te) * wvl * wvl) * np.exp(- exp_factor / (te * wvl))
 
-        integrator = GaussianQuadrature(brems_func)
+        integrator = GaussianQuadrature1D(brems_func)
 
         test_samples = np.zeros(brems_spectrum.bins)
         delta_wavelength = (brems_spectrum.max_wavelength - brems_spectrum.min_wavelength) / brems_spectrum.bins

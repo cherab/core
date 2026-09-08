@@ -1,6 +1,36 @@
 Project Changelog
 =================
 
+Release 1.6.0 (Sep 2026)
+-------------------
+
+API changes:
+* Rename `GaussianQuadrature` to `GaussianQuadrature1D` to conform to Cherab's naming convention. Original name kept as an alias for backwards compatibility until the next minor release. (#475)
+* Rename `TargettedPixelGroup` to `TargetedPixelGroup` for correct spelling. Still keep `TargettedPixelGroup` as an alias for backwards compatibility until the next major release. (#487)
+* Add emission model attribute access to line and lineshape . (#294)
+* The `generate_derivative_operators` function in `admt_utils` can now return sparse matrices rather than dense if requested. (#427)
+* Only 1 of the 1D-to-2D or 2D-to-1D voxel mappings is now required for `admt_utils.generate_derivative_operators`: if the other is missing it is computed automatically. (#427)
+* The `calculate_admt` function in `admt_utils` will return a sparse matrix if the input derivative operators are themselves sparse. (#427)
+
+Bug fixes:
+* Fix the import statement for `netcdf_file` in `calcam.py` for compatibility with the upcoming `scipy` v2.0.0. (#510)
+
+New:
+* Add an optional Pixi workspace for package builds and isolated development environments, with tasks for testing, documentation, formatting, and static analysis, and include the corresponding developer guide in the Sphinx documentation. (#489)
+* Add GaussianQuadrature2D integrator. (#475)
+* Support Raysect 0.9. (#486)
+* Test against Python 3.9, 3.10, 3.11, 3.12, 3.13 and latest released Numpy. Drop Python 3.7, 3.8 and older Numpy from tests. (#486)
+* Add generic distribution function. (#481)
+* Add Function6D framework. (#478)
+* Add e_field attribute to Plasma object for electric field vector. (#465)
+* Add Integrator2D base class for integration of two-dimensional functions. (#472)
+* Support Raysect 0.9. (#486)
+* Make values in `cherab.core.utility.constants` accessible to Python. (#509)
+* Generomak now contains an example bolometer diagnostic. (#427)
+* The regularisation utilities in `admt_utils` are now in the HTML documention. (#427)
+* A new non-negative least squares inversion using sparse matrices, to complement the existing dense version. (#427)
+* A demo performing bolometry inversions using both isotropic and anisotropic regularisation. (#427)
+
 Release 1.5.0 (27 Aug 2024)
 -------------------
 
@@ -126,7 +156,7 @@ API changes:
 
 New:
 * Merged cherab-openadas package into the core cherab package to simplify installation.
-* Beam object uses a cone primitive instead of a cylinder for the bounding volume of divergent beams. 
+* Beam object uses a cone primitive instead of a cylinder for the bounding volume of divergent beams.
 * Added Clamp functions.
 * Added ThermalCXRate.
 * Added optimised ray transfer grid calculation tools.
@@ -154,7 +184,7 @@ New:
 
 Bug fixes:
 * Improved handling on non c-order arrays in various methods.
-* Numerous minor bug fixes (see commit history) 
+* Numerous minor bug fixes (see commit history)
 
 
 Release 1.0.1 (1 Oct 2018)
