@@ -67,13 +67,16 @@ Voxels
 Ray Transfer Objects
 --------------------
 
-Ray transfer objects accelerate the calculation of geometry matrices (or Ray Transfer Matrices as they were called 
-in `S. Kajita, et al. Contrib. Plasma Phys., 2016, 1-9 <https://onlinelibrary.wiley.com/doi/abs/10.1002/ctpp.201500124>`_) 
-in the case of regular spatial grids. As in the case of Voxels, the spectral array is used to store the data 
-for individual light sources (in this case the grid cells or their unions), however no voxels are created at all. 
+Ray transfer objects accelerate the calculation of geometry matrices (or Ray Transfer Matrices as they were called
+in `S. Kajita, et al. Contrib. Plasma Phys., 2016, 1-9 <https://onlinelibrary.wiley.com/doi/abs/10.1002/ctpp.201500124>`_)
+in the case of regular spatial grids. As in the case of Voxels, the spectral array is used to store the data
+for individual light sources (in this case the grid cells or their unions), however no voxels are created at all.
 Instead, a custom integration along the ray is implemented. Ray transfer objects allow to calculate geometry
-matrices for a single value of wavelength. Use `RayTransferBox` class for Cartesian grids 
+matrices for a single value of wavelength. Use `RayTransferBox` class for Cartesian grids
 and `RayTransferCylinder` class for cylindrical grids (3D or axisymmetrical).
+For arbitrary voxel shapes, use indexed ray transfer emitters where a callable index function
+maps a point in space to a source index, as used in
+`K. Munechika et al., Rev. Sci. Instrum. 96, 043509 (2025) <https://doi.org/10.1063/5.0225703>`_.
 
 Performance tips:
 
@@ -104,6 +107,10 @@ with other integrators is not guaranteed.
 .. autoclass:: cherab.tools.raytransfer.emitters.CylindricalRayTransferEmitter
 
 .. autoclass:: cherab.tools.raytransfer.emitters.CylindricalRayTransferIntegrator
+
+.. autoclass:: cherab.tools.raytransfer.emitters.IndexedRayTransferEmitter
+
+.. autoclass:: cherab.tools.raytransfer.emitters.IndexedRayTransferIntegrator
 
 **Pipelines**
 
