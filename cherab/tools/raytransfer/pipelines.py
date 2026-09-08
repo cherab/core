@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # Copyright 2016-2018 Euratom
 # Copyright 2016-2018 United Kingdom Atomic Energy Authority
@@ -34,8 +33,7 @@ import numpy as np
 from raysect.optical.observer.base import Pipeline0D, Pipeline1D, Pipeline2D, PixelProcessor
 
 
-class RayTransferPipelineBase():
-
+class RayTransferPipelineBase:
     def __init__(self, name=None, kind='power'):
 
         self.name = name
@@ -49,10 +47,10 @@ class RayTransferPipelineBase():
         """
         The kind of the pipeline. Can be 'power' or 'radiance'.
         In the case of 'power', the resulting matrix is multiplied by the sensitivity
-        of the detector, and the units of the matrix are [m^3 sr], which gives the units
+        of the detector, and the units of the matrix are [m\\ :sup:`3` sr], which gives the units
         of power [W] for the product of the ray transfer matrix and the emission profile.
         In case of 'radiance', the sensitivity is not taken into account and
-        the matrix is calculated in [m], which gives the units of radiance [W m^-2 sr^-1]
+        the matrix is calculated in [m], which gives the units of radiance [W m\\ :sup:`-2` sr\\ :sup:`-1`]
         for the product of the ray transfer matrix and the emission profile.
         """
         return self._kind
@@ -74,18 +72,18 @@ class RayTransferPipeline0D(Pipeline0D, RayTransferPipelineBase):
     """
     Simple 0D pipeline for ray transfer matrix (geometry matrix) calculation.
 
-    :param str name: The name of the pipeline. Default is 'RayTransferPipeline0D'.
+    :param str name: The name of the pipeline. Default is ``"RayTransferPipeline0D"``.
     :param str kind: The kind of the pipeline. Can be 'power' (default) or 'radiance'.
         In the case of 'power', the resulting matrix is multiplied by the sensitivity
-        of the detector, and the units of the matrix are [m^3 sr], which gives the units
+        of the detector, and the units of the matrix are [m\\ :sup:`3` sr], which gives the units
         of power [W] for the product of the ray transfer matrix and the emission profile.
         In case of 'radiance', the sensitivity is not taken into account and
-        the matrix is calculated in [m], which gives the units of radiance [W m^-2 sr^-1]
+        the matrix is calculated in [m], which gives the units of radiance [W m\\ :sup:`-2` sr\\ :sup:`-1`]
         for the product of the ray transfer matrix and the emission profile.
         Note that if the sensitivity of the detector is 1 (e.g. `PinholeCamera`, `VectorCamera`),
         the 'power' and 'radiance' give the same results.
 
-    :ivar np.ndarray matrix: Ray transfer matrix, a 1D array of size :math:`N_{bin}`.
+    :ivar np.ndarray matrix: Ray transfer matrix, a 1D array of size :math:`N_\\mathrm{bin}`.
 
     .. code-block:: pycon
 
@@ -120,18 +118,18 @@ class RayTransferPipeline1D(Pipeline1D, RayTransferPipelineBase):
     """
     Simple 1D pipeline for ray transfer matrix (geometry matrix) calculation.
 
-    :param str name: The name of the pipeline. Default is 'RayTransferPipeline0D'.
+    :param str name: The name of the pipeline. Default is ``"RayTransferPipeline1D"``.
     :param str kind: The kind of the pipeline. Can be 'power' (default) or 'radiance'.
         In the case of 'power', the resulting matrix is multiplied by the sensitivity
-        of the detector, and the units of the matrix are [m^3 sr], which gives the units
+        of the detector, and the units of the matrix are [m\\ :sup:`3` sr], which gives the units
         of power [W] for the product of the ray transfer matrix and the emission profile.
         In case of 'radiance', the sensitivity is not taken into account and
-        the matrix is calculated in [m], which gives the units of radiance [W m^-2 sr^-1]
+        the matrix is calculated in [m], which gives the units of radiance [W m\\ :sup:`-2` sr\\ :sup:`-1`]
         for the product of the ray transfer matrix and the emission profile.
         Note that if the sensitivity of the detector is 1 (e.g. `PinholeCamera`, `VectorCamera`),
         the 'power' and 'radiance' give the same results.
 
-    :ivar np.ndarray matrix: Ray transfer matrix, a 2D array of shape :math:`(N_{pixel}, N_{bin})`.
+    :ivar np.ndarray matrix: Ray transfer matrix, a 2D array of shape :math:`(N_\\mathrm{pixel}, N_\\mathrm{bin})`.
 
     .. code-block:: pycon
 
@@ -167,18 +165,18 @@ class RayTransferPipeline2D(Pipeline2D, RayTransferPipelineBase):
     """
     Simple 2D pipeline for ray transfer matrix (geometry matrix) calculation.
 
-    :param str name: The name of the pipeline. Default is 'RayTransferPipeline0D'.
+    :param str name: The name of the pipeline. Default is ``"RayTransferPipeline2D"``.
     :param str kind: The kind of the pipeline. Can be 'power' (default) or 'radiance'.
         In the case of 'power', the resulting matrix is multiplied by the sensitivity
-        of the detector, and the units of the matrix are [m^3 sr], which gives the units
+        of the detector, and the units of the matrix are [m\\ :sup:`3` sr], which gives the units
         of power [W] for the product of the ray transfer matrix and the emission profile.
         In case of 'radiance', the sensitivity is not taken into account and
-        the matrix is calculated in [m], which gives the units of radiance [W m^-2 sr^-1]
+        the matrix is calculated in [m], which gives the units of radiance [W m\\ :sup:`-2` sr\\ :sup:`-1`]
         for the product of the ray transfer matrix and the emission profile.
         Note that if the sensitivity of the detector is 1 (e.g. `PinholeCamera`, `VectorCamera`),
         the 'power' and 'radiance' give the same results.
 
-    :ivar np.ndarray matrix: Ray transfer matrix, a 3D array of shape :math:`(N_x, N_y, N_{bin})`.
+    :ivar np.ndarray matrix: Ray transfer matrix, a 3D array of shape :math:`(N_x, N_y, N_\\mathrm{bin})`.
 
     .. code-block:: pycon
 
@@ -233,7 +231,7 @@ class RadianceRayTransferPixelProcessor(RayTransferPixelProcessorBase):
 
 class PowerRayTransferPixelProcessor(RayTransferPixelProcessorBase):
     """
-    PixelProcessor that stores ray transfer matrix in the units of [m^3 sr] for each pixel.
+    PixelProcessor that stores ray transfer matrix in the units of [m\\ :sup:`3` sr] for each pixel.
     """
 
     def add_sample(self, spectrum, sensitivity):

@@ -41,12 +41,12 @@ cdef class ExcitationLine(PlasmaModel):
     :param Line line: Spectroscopic emission line object.
     :param Plasma plasma: The plasma to which this emission model is attached. Default is None.
     :param AtomicData atomic_data: The atomic data provider for this model. Default is None.
-    :param object lineshape: Line shape model class. Default is None (GaussianLine).
+    :param object lineshape: Line shape model class. Default is None (`.GaussianLine`).
     :param object lineshape_args: A list of line shape model arguments. Default is None.
     :param object lineshape_kwargs: A dictionary of line shape model keyword arguments. Default is None.
 
-    :ivar Plasma plasma: See parameter 'plasma'.
-    :ivar AtomicData atomic_data: See parameter 'atomic_data'.
+    :ivar Plasma plasma: See parameter `.plasma`.
+    :ivar AtomicData atomic_data: See parameter `.atomic_data`.
     :ivar Line line: The emission line object.
     :ivar LineShapeModel lineshape: The line shape model.
     """
@@ -80,11 +80,11 @@ cdef class ExcitationLine(PlasmaModel):
     @property
     def line(self) -> Line:
         return self._line
-    
+
     @property
     def lineshape(self) -> LineShapeModel:
         return self._lineshape
-    
+
     cpdef Spectrum emission(self, Point3D point, Vector3D direction, Spectrum spectrum):
 
         cdef double ne, ni, te, radiance
