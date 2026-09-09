@@ -12,15 +12,66 @@ for guidance on using the code.
 Installation
 ------------
 
-Cherab can be installed with pip from PyPI or with conda from conda-forge:
+Cherab is a large code framework consisting of a core package and feature
+packages. Users will generally install the core package and the specific
+feature packages they need for their work. For example, users working on the
+JET tokamak will require the `cherab-core` package, and the `cherab-jet`
+package.
 
-```sh
+Unless developing new code for a cherab package, most users should clone the
+master branch. When developing new features for cherab, the development branch
+should be used as the base.
+
+All cherab packages are standard python packages and basic installation is
+achieved with:
+
+```
 pip install cherab
 ```
+
+This will compile the Cherab cython extensions and install the package. If you
+don't have administrator access to install the package, add the `--user` flag
+to the above line to install the package under your own user account.
+Alternatively, consider creating a [virtual environment](https://docs.python.org/3/tutorial/venv.html)
+and installing `cherab` in the environment.
+
+Cherab can also be installed with conda from the conda-forge channel:
 
 ```sh
 conda install --channel conda-forge cherab
 ```
+
+When developing cherab it is usually preferred that the packages be installed
+in "editable" mode. Clone this repository and change directory to the root of
+the repository, then run:
+
+```
+pip install -e .
+```
+
+This will cause the original installation folder to be added to the site-package
+path. Modifications to the code will therefore be visible to python next time
+the code is imported. A virtual environment or the ``--user`` flag should be
+used if you do not have administrative permission for your python installation.
+If you make any changes to Cython files you will need to run `./dev/build.sh` to
+rebuild the relevant files.
+
+As all the Cherab packages are dependent on the ``cherab-core`` package, this
+package must be installed first. Note that other packages may have their own
+inter-dependencies, see the specific package documentation for more information.
+
+Cherab is organised as a namespace package, where each of the submodules is
+installed in the same location as the core package. Any submodules using Cython
+with a build-time dependency on Cherab need to use a Cython version newer than
+3.0a5, due to a [bug](https://github.com/cython/cython/issues/2918) in how
+earlier versions of Cython handle namespaces.
+
+By default, pip will install from wheel archives on PyPI. If a binary wheel is not
+available for your version of Python, or if you are installing in editable mode
+for development, the package will be compiled locally on your machine. Compilation
+is done in parallel by default, using all available processors, but can be
+overridden by setting the environment variable `CHERAB_NCPU` to the number of
+processors to use.
 
 Governance
 ----------
