@@ -61,7 +61,7 @@ Installation
 Users will generally just install the core package and the specific feature packages they
 need for their work. For example, users working on the JET tokamak will require the
 `cherab <https://pypi.org/project/cherab>`_ package and the `cherab-jet <https://github.com/cherab/jet>`_
-package. The core ``cherab`` package is available through pip. The additional fusion specific
+package. The core ``cherab`` package is available through pip and conda. The additional fusion specific
 packages, offering extra functionality, should be cloned from their respective repositories.
 
 
@@ -87,6 +87,20 @@ your version of Python, or if you are installing from source in editable mode fo
 below), the package will be compiled locally on your machine. Compilation is done in parallel by
 default, using all available processors, but can be overridden by setting the environment variable
 ``CHERAB_NCPU`` to the number of processors to use.
+
+
+Installing through conda
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+Pre-built Cherab packages are available from the
+`conda-forge channel <https://anaconda.org/conda-forge/cherab>`_ for Linux and macOS.
+To install Cherab with conda, run::
+
+    conda install --channel conda-forge cherab
+
+This installs Cherab and its dependencies, including Raysect, without requiring
+a local compiler. The OpenADAS module is included, but its atomic data files must
+be downloaded separately as described in `Configuring Atomic Data`_ below.
 
 
 Installing from source
