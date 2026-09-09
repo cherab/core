@@ -115,6 +115,8 @@ setup(
     ),
     long_description=long_description,
     long_description_content_type="text/markdown",
+    # Support Python versions where Raysect wheels are available.
+    requires_python=">=3.9",
     install_requires=[
         "numpy>=2.0",
         "scipy",

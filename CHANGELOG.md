@@ -1,7 +1,7 @@
 Project Changelog
 =================
 
-Release 1.6.0 (TBD)
+Release 1.6.0 (Sep 2026)
 -------------------
 
 API changes:
@@ -16,6 +16,7 @@ Bug fixes:
 * Fix the import statement for `netcdf_file` in `calcam.py` for compatibility with the upcoming `scipy` v2.0.0. (#510)
 
 New:
+* Add an optional Pixi workspace for package builds and isolated development environments, with tasks for testing, documentation, formatting, and static analysis, and include the corresponding developer guide in the Sphinx documentation. (#489)
 * Add GaussianQuadrature2D integrator. (#475)
 * Support Raysect 0.9. (#486)
 * Test against Python 3.9, 3.10, 3.11, 3.12, 3.13 and latest released Numpy. Drop Python 3.7, 3.8 and older Numpy from tests. (#486)
@@ -24,7 +25,6 @@ New:
 * Add e_field attribute to Plasma object for electric field vector. (#465)
 * Add Integrator2D base class for integration of two-dimensional functions. (#472)
 * Support Raysect 0.9. (#486)
-* Test against Python 3.9, 3.10, 3.11, 3.12, 3.13 and latest released Numpy. Drop Python 3.7, 3.8 and older Numpy from tests. (#486)
 * Make values in `cherab.core.utility.constants` accessible to Python. (#509)
 * Generomak now contains an example bolometer diagnostic. (#427)
 * The regularisation utilities in `admt_utils` are now in the HTML documention. (#427)
