@@ -35,6 +35,12 @@ to the above line to install the package under your own user account.
 Alternatively, consider creating a [virtual environment](https://docs.python.org/3/tutorial/venv.html)
 and installing `cherab` in the environment.
 
+Cherab can also be installed with conda from the conda-forge channel:
+
+```sh
+conda install --channel conda-forge cherab
+```
+
 When developing cherab it is usually preferred that the packages be installed
 in "editable" mode. Clone this repository and change directory to the root of
 the repository, then run:
