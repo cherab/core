@@ -1,7 +1,7 @@
 Project Changelog
 =================
 
-Release 1.6.0 (Sep 2026)
+Release 1.6.0 (12th Oct 2026)
 -------------------
 
 API changes:
