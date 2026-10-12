@@ -19,7 +19,7 @@
 
 from .sart import invert_sart, invert_constrained_sart
 from .opencl import SartOpencl
-from .nnls import invert_regularised_nnls
+from .nnls import invert_regularised_nnls, invert_sparse_regularised_nnls
 from .lstsq import invert_regularised_lstsq
 from .svd import invert_svd
 from .voxels import Voxel, AxisymmetricVoxel, VoxelCollection, ToroidalVoxelGrid, UnityVoxelEmitter

@@ -16,10 +16,10 @@
 # See the Licence for the specific language governing permissions and limitations
 # under the Licence.
 
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
 
-from core.math.caching import Caching2D
+from . import Caching2D
 
 
 def auto_caching2d_optimiser(function2d, space_area, threshold):
@@ -45,13 +45,12 @@ def auto_caching2d_optimiser(function2d, space_area, threshold):
     to_plot_resy = []
 
     while current_error >= threshold:
-
         resolutionx /= 2
         resolutiony /= 2
         to_plot_resx.append(resolutionx)
         to_plot_resy.append(resolutiony)
         cached_function = Caching2D(function2d, space_area, (resolutionx, resolutiony))
-        current_error = 0.
+        current_error = 0.0
         nb_zeros = 0
         for x in np.linspace(minx, maxx, nb_samplesx):
             for y in np.linspace(miny, maxy, nb_samplesy):
@@ -91,12 +90,11 @@ def mapping_caching2d_resolution(function2d, space_area):
 
     for i in range(20):
         for j in range(20):
-
             print(i, j)
             resolutionx = resolutionsx[i]
             resolutiony = resolutionsy[j]
             cached_function = Caching2D(function2d, space_area, (resolutionx, resolutiony))
-            error = 0.
+            error = 0.0
             nb_zeros = 0
             for x in np.linspace(minx, maxx, nb_samplesx):
                 for y in np.linspace(miny, maxy, nb_samplesy):

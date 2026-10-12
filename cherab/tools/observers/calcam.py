@@ -18,7 +18,7 @@
 # under the Licence.
 
 import numpy as np
-from scipy.io.netcdf import netcdf_file
+from scipy.io import netcdf_file
 from raysect.core import Point3D, Vector3D
 
 

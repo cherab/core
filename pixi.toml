@@ -1,0 +1,167 @@
+[workspace]
+channels = ["conda-forge"]
+platforms = ["linux-64", "osx-arm64", "osx-64"]
+preview = ["pixi-build"]
+
+[workspace.build-variants]
+python = [
+  "3.9.*",
+  "3.10.*",
+  "3.11.*",
+  "3.12.*",
+  "3.13.*",
+  "3.14.*",
+]
+
+# -------------------------------
+# === Packaging Configuration ===
+# -------------------------------
+[package]
+name = "cherab"
+version = "dynamic"
+
+[package.build.backend]
+name = "pixi-build-python"
+version = "*"
+
+[package.build.config]
+compilers = ["c"]
+
+[package.host-dependencies]
+python = "*"
+setuptools = "*"
+cython = ">=3.1"
+numpy = "*"
+raysect = "0.9.*"
+
+[package.run-dependencies]
+scipy = "*"
+matplotlib-base = "*"
+
+[package.extra-dependencies.opencl]
+pyopencl = "*"
+pocl = "*"
+
+# ---------------------------------
+# === Development Configuration ===
+# ---------------------------------
+[dependencies]
+ipython = "*"
+
+[dev]
+cherab = { path = "." }
+
+[tasks]
+clean = {
+  cmd = "find cherab -type f \\( -name '*.c' -o -name '*.so' -o -name '*.pyd' -o -name '*.dll' -o -name '*.html' \\) -delete",
+  description = "🔥 Remove in-place build artifacts and temporary files (*.c, *.so, *.pyd, *.dll, *.html)",
+}
+
+# The documentation-related tasks below do not require the source package.
+doc-clean = {
+  cmd = "rm -rf build",
+  cwd = "docs",
+  description = "🔥 Clean the docs build directory",
+}
+doc-serve = {
+  cmd = [
+    "python",
+    "-m",
+    "http.server",
+    "{{ port }}",
+    "--directory",
+    "build/html",
+  ],
+  cwd = "docs",
+  args = [
+    { arg = "port", default = "8000" },
+  ],
+  description = "🚀 Start a local server for the docs",
+}
+
+# === Testing feature ===
+[feature.test.dependencies]
+cherab = { path = "." }
+
+[feature.test.tasks]
+test = {
+  cmd = "python -m unittest discover cherab -v",
+  description = "🧪 Run the tests",
+}
+
+[feature.test-opencl.dependencies]
+cherab = { path = ".", extras = ["opencl"] }
+
+[feature.test-opencl.tasks]
+test-opencl = {
+  cmd = "python -m unittest cherab.tools.tests.test_sart_opencl -v",
+  description = "🧪 Run the OpenCL tests",
+}
+
+# === Documentation feature ===
+[feature.docs.dependencies]
+cherab = { path = "." }
+sphinx = "*"
+sphinx_rtd_theme = "<1"  # TODO: change to >=1.0 when our docs layout is compatible with the new theme
+sphinx-tabs = "*"
+myst-parser = "*"
+
+[feature.docs.tasks]
+doc-build = {
+  cmd = [
+    "sphinx-build",
+    "-b",
+    "{{ target }}",
+    "source",
+    "build/{{ target }}",
+  ],
+  cwd = "docs",
+  args = [
+    { arg = "target", default = "html" },
+  ],
+  description = "📝 Build the docs"
+}
+
+# === Linting feature ===
+[feature.lint.dependencies]
+dprint = "*"
+lefthook = "*"
+ruff = "*"
+typos = "*"
+actionlint = "*"
+shellcheck = "*"
+validate-pyproject = "*"
+cython-lint = "*"
+blacken-docs = "*"
+tombi = "*"
+
+[feature.lint.tasks]
+lefthook = { cmd = "lefthook", description = "🔗 Run lefthook" }
+hooks = { cmd = "lefthook install", description = "🔗 Install pre-commit hooks" }
+pre-commit = { cmd = "lefthook run pre-commit", description = "🔗 Run pre-commit checks" }
+ruff-check = { cmd = "ruff check", description = "Lint with ruff" }
+ruff-format = { cmd = "ruff format", description = "Format with ruff" }
+toml-format = { cmd = "tombi format", description = "Format TOML files" }
+dprint = { cmd = "dprint fmt", description = "Format with dprint" }
+typos = { cmd = "typos --write-changes --force-exclude", description = "Fix typos" }
+actionlint = { cmd = "actionlint", description = "Lint actions with actionlint" }
+blacken-docs = { cmd = "blacken-docs", description = "Format Python markdown blocks with Black" }
+validate-pyproject = { cmd = "validate-pyproject pyproject.toml", description = "Validate pyproject.toml" }
+cython-lint = { cmd = "cython-lint", description = "Lint Cython files" }
+lint = { cmd = "lefthook run pre-commit --all-files --force", description = "🧹 Run all linters" }
+
+# === Python Version Features ===
+[feature.pyoldest.dependencies]
+python = "3.9.*"
+
+[feature.pylatest.dependencies]
+python = "3.14.*"
+
+[environments]
+default = { features = ["pylatest"], solve-group = "pylatest" }
+test = { features = ["test"], solve-group = "pylatest" }
+docs = { features = ["pyoldest", "docs"], solve-group = "pyoldest" }  # TODO: change to pylatest when bumping RTD theme to >=1.0
+test-pylatest = { features = ["pylatest", "test"], solve-group = "pylatest" }  # alias of test
+test-pyoldest = { features = ["pyoldest", "test"], solve-group = "pyoldest" }
+test-opencl = { features = ["test-opencl"], solve-group = "pyoldest" }
+lint = { features = ["lint"], no-default-feature = true }

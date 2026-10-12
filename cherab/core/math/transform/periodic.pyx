@@ -306,7 +306,7 @@ cdef class VectorPeriodicTransform3D(VectorFunction3D):
 
     .. code-block:: pycon
 
-       >>> from cherab.core.math import PeriodicTransform3D
+       >>> from cherab.core.math import VectorPeriodicTransform3D
        >>>
        >>> def f1(x, y, z):
        >>>     return Vector3D(x, y, z)
@@ -327,7 +327,7 @@ cdef class VectorPeriodicTransform3D(VectorFunction3D):
     def __init__(self, object function3d, double period_x, double period_y, double period_z):
 
         if not callable(function3d):
-            raise TypeError("function2d is not callable.")
+            raise TypeError("function3d is not callable.")
 
         self.function3d = autowrap_vectorfunction3d(function3d)
 

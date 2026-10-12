@@ -1,0 +1,115 @@
+name: Build wheels
+
+# We don't want to spend CI compute cycles on every commit, so restrict building
+# of wheels to published releases. This includes stable and beta/RC releases.
+on:
+  release:
+    types:
+      - published
+
+jobs:
+  # Build a wheel for each Python version in a separate parallel job.
+  build_wheels:
+    name: Build wheels for ${{ matrix.python }} on ${{ matrix.target.name }}
+    runs-on: ${{ matrix.target.runner }}
+    strategy:
+      matrix:
+        python: [cp39, cp310, cp311, cp312, cp313, cp314]
+        target:
+          - name: Linux (x86-64)
+            runner: ubuntu-latest
+            platform: manylinux_x86_64
+            arch: x86_64
+
+          # TODO: add other platforms once Raysect provides wheels on them.
+          # - name: Linux (ARM)
+          #   runner: ubuntu-24.04-arm
+          #   platform: manylinux_aarch64
+          #   arch: aarch64
+
+          # - name: macOS (Apple Silicon)
+          #   runner: macos-latest
+          #   platform: macosx_arm64
+          #   arch: arm64
+
+          # - name: macOS (Intel)
+          #   runner: macos-15-intel
+          #   platform: macosx_x86_64
+          #   arch: x86_64
+
+          # - name: Windows
+          #   runner: windows-2022
+          #   platform: win_amd64
+          #   arch: AMD64
+
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Determine manylinux image
+        if: ${{ contains(matrix.target.name, 'Linux') }}
+        # Build on manylinux2014 where possible for greatest compatibility,
+        # but need newer manylinux_2_28 for Python >=3.14.
+        # TODO: use cp314|cp315 if we provide Python 3.15 wheels before dropping
+        # manylinux2014 (RHEL7) support.
+        # TODO: remove this step entirely once we drop manylinux2014 support.
+        run: |
+          case ${{ matrix.python }} in
+          cp314)
+              echo "CIBW_MANYLINUX_X86_64_IMAGE=manylinux_2_28" >> "$GITHUB_ENV"
+              ;;
+          *)
+              echo "CIBW_MANYLINUX_X86_64_IMAGE=manylinux2014" >> "$GITHUB_ENV"
+              ;;
+          esac
+
+      - name: Build wheels
+        uses: pypa/cibuildwheel@v4.2.0
+        env:
+          CIBW_BUILD: ${{ matrix.python }}-${{ matrix.target.platform }}
+          CIBW_ARCH: ${{ matrix.target.arch }}
+          # Avoid trying to compile e.g. Pillow (raysect->matplotlib dependency) from
+          # source on older manylinux with newer Python. An old version is fine.
+          CIBW_ENVIRONMENT: 'PIP_PREFER_BINARY=1'
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist-wheel-${{ matrix.target.platform }}-${{ matrix.python }}
+          path: ./wheelhouse/*.whl
+
+  make_sdist:
+    name: Make SDist
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Build sdist
+        run: pipx run build --sdist
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist-sdist
+          path: dist/*.tar.gz
+
+  # Wheels are built in parallel jobs: gather the outputs into a single artifact
+  # for more convenient retrieval. At some stage we may consider automatic
+  # upload to PyPI from this job (since its `needs` entry ensures the SDist and
+  # wheels all built successfully).
+  gather_artifacts:
+    name: Gather SDist and wheel outputs into a single artifact
+    runs-on: ubuntu-latest
+    needs: [build_wheels, make_sdist]
+    steps:
+      - uses: actions/download-artifact@v5
+        with:
+          pattern: dist-*
+          path: dist
+          merge-multiple: true
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: artifacts
+          path: dist/*

@@ -16,6 +16,8 @@
 # See the Licence for the specific language governing permissions and limitations
 # under the Licence.
 
+from cherab.core.math.function cimport float
+
 from raysect.core.math.function.float cimport Function1D, autowrap_function1d
 from raysect.core.math.function.float cimport Function2D, autowrap_function2d
 from raysect.core.math.function.float cimport Function3D, autowrap_function3d

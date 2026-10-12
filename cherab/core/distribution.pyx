@@ -25,6 +25,7 @@ from raysect.optical cimport Vector3D
 cimport cython
 
 from cherab.core.math cimport autowrap_function3d, autowrap_vectorfunction3d
+from cherab.core.math.function.float cimport autowrap_function6d
 from cherab.core.utility.constants cimport ELEMENTARY_CHARGE
 
 
@@ -301,3 +302,105 @@ cdef class Maxwellian(DistributionFunction):
         return self._density.evaluate(x, y, z)
 
 
+cdef class GenericDistribution(DistributionFunction):
+    """
+    A generic distribution function.
+
+    This class implements a generic distribution function. The user supplies a 6D function
+    that provides the phase space density at a given point in 6D phase space, 
+    a 3D function that provides the spatial density, a 3D function that provides the temperature,
+    and a 3D vector function that provides the bulk velocity.
+
+    .. warning::
+        The consistency of the provided functions is not checked and is the responsibilty of the user.
+
+    :param Function6D phase_space_density: 6D function defining the phase space density in s^3/m^6.
+    :param Function3D density: 3D function defining the spatial density in m^-3.
+    :param Function3D temperature: 3D function defining the temperature in eV.
+    :param VectorFunction3D velocity: 3D vector function defining the bulk velocity in meters per second.
+
+    .. code-block:: pycon
+
+       >>> from cherab.core import GenericDistribution
+       >>> from cherab.core.math import Function6D, Function3D, VectorFunction3D
+       >>>
+       >>> # Setup distribution for a slab of plasma in thermodynamic equilibrium
+       >>> phase_space_density = Function6D(lambda x, y, z, vx, vy, vz: 1E17 * exp(-(vx**2 + vy**2 + vz**2) / (2 * 1)))
+       >>> density = Function3D(lambda x, y, z: 1E17)
+       >>> temperature = Function3D(lambda x, y, z: 1)
+       >>> velocity = VectorFunction3D(lambda x, y, z: Vector3D(0, 0, 0))
+       >>> d0_distribution = GenericDistribution(phase_space_density, density, temperature, velocity)
+    """
+
+    def __init__(self, object phase_space_density, object density, object temperature, object velocity):
+
+        super().__init__()
+        self._phase_space_density = autowrap_function6d(phase_space_density)
+        self._density = autowrap_function3d(density)
+        self._temperature = autowrap_function3d(temperature)
+        self._velocity = autowrap_vectorfunction3d(velocity)
+
+    @cython.cdivision(True)
+    cdef double evaluate(self, double x, double y, double z, double vx, double vy, double vz) except? -1e999:
+        """
+        Evaluates the phase space density at the specified point in 6D phase space.
+
+        :param x: position in meters
+        :param y: position in meters
+        :param z: position in meters
+        :param vx: velocity in meters per second
+        :param vy: velocity in meters per second
+        :param vz: velocity in meters per second
+        :return: phase space density in s^3/m^6
+        """
+
+        return self._phase_space_density.evaluate(x, y, z, vx, vy, vz)
+
+    cpdef Vector3D bulk_velocity(self, double x, double y, double z):
+        """
+        Evaluates the species' bulk velocity at the specified 3D coordinate.
+
+        :param x: position in meters
+        :param y: position in meters
+        :param z: position in meters
+        :return: velocity vector in m/s
+        
+        .. code-block:: pycon
+
+           >>> d0_distribution.bulk_velocity(1, 0, 0)
+           Vector3D(0.0, 0.0, 0.0)
+        """
+
+        return self._velocity.evaluate(x, y, z)
+
+    cpdef double effective_temperature(self, double x, double y, double z) except? -1e999:
+        """
+
+        :param x: position in meters
+        :param y: position in meters
+        :param z: position in meters
+        :return: temperature in eV
+        
+        .. code-block:: pycon
+        
+           >>> d0_distribution.effective_temperature(1, 0, 0)
+           1.0
+        """
+
+        return self._temperature.evaluate(x, y, z)
+
+    cpdef double density(self, double x, double y, double z) except? -1e999:
+        """
+
+        :param x: position in meters
+        :param y: position in meters
+        :param z: position in meters
+        :return: density in m^-3
+
+        .. code-block:: pycon
+
+           >>> d0_distribution.density(1, 0, 0)
+           1e+17
+        """
+
+        return self._density.evaluate(x, y, z)

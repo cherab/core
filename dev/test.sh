@@ -1,3 +1,3 @@
 #!/bin/bash
 
-python -m unittest $1 $2 $3 $4 $5
+python -m unittest discover cherab $1 $2 $3 $4 $5

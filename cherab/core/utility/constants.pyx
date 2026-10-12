@@ -15,6 +15,11 @@
 #
 # See the Licence for the specific language governing permissions and limitations
 # under the Licence.
+import sys
+from types import ModuleType
+
+from libc.math cimport M_PI
+
 
 cdef:
 
@@ -35,3 +40,47 @@ cdef:
     double RYDBERG_CONSTANT_EV = 13.605693122994
     double VACUUM_PERMITTIVITY = 8.8541878128e-12
     double BOHR_MAGNETON = 5.78838180123e-5  # in eV/T
+
+
+# Make the constants available to Python too.
+# To ensure the Python and Cython constants do not got out of sync the exported
+# Python attributes of the module are made read only using module getattr.
+cdef dict _CONSTANTS = {
+    # c stdlib
+    "RECIP_2_PI": RECIP_2_PI,
+    "RECIP_4_PI": RECIP_4_PI,
+    "DEGREES_TO_RADIANS": DEGREES_TO_RADIANS,
+    "RADIANS_TO_DEGREES": RADIANS_TO_DEGREES,
+    # NIST 2018
+    "ATOMIC_MASS": ATOMIC_MASS,
+    "ELEMENTARY_CHARGE": ELEMENTARY_CHARGE,
+    "SPEED_OF_LIGHT": SPEED_OF_LIGHT,
+    "PLANCK_CONSTANT": PLANCK_CONSTANT,
+    "HC_EV_NM": HC_EV_NM,
+    "ELECTRON_CLASSICAL_RADIUS": ELECTRON_CLASSICAL_RADIUS,
+    "ELECTRON_REST_MASS": ELECTRON_REST_MASS,
+    "RYDBERG_CONSTANT_EV": RYDBERG_CONSTANT_EV,
+    "VACUUM_PERMITTIVITY": VACUUM_PERMITTIVITY,
+    "BOHR_MAGNETON": BOHR_MAGNETON,
+}
+
+
+def __getattr__(name):
+    if name not in _CONSTANTS:
+        raise AttributeError()
+    return _CONSTANTS[name]
+
+
+def __dir__():
+    return list(_CONSTANTS.keys())
+
+
+class ReadOnlyModule(ModuleType):
+    def __setattr__(self, attr, value):
+        raise AttributeError("Constants are read-only")
+
+    def __delattr__(self, attr):
+        raise AttributeError("Constants are read-only")
+
+
+sys.modules[__name__].__class__ = ReadOnlyModule

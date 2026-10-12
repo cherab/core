@@ -107,6 +107,10 @@ class TestADMT(unittest.TestCase):
         VOXEL_VERTICES, GRID_1D_TO_2D_MAP, GRID_2D_TO_1D_MAP
     )
 
+    SPARSE_DERIVATIVE_OPERATORS = generate_derivative_operators(
+        VOXEL_VERTICES, GRID_1D_TO_2D_MAP, GRID_2D_TO_1D_MAP, sparse=True,
+    )
+
     def test_dx(self):
         """D/Dx (Equations 37)"""
         DtestDx = self.DERIVATIVE_OPERATORS["Dx"] @ self.VOXEL_TEST_DATA
@@ -234,6 +238,35 @@ class TestADMT(unittest.TestCase):
             generate_derivative_operators(self.VOXEL_VERTICES, self.GRID_2D_TO_1D_MAP,
                                           self.TEST_DATA_2D)
 
+    def test_only_1d_2d_mapping_provided(self):
+        """Test auto-computing 2D-to-1D mapping"""
+        derivs = generate_derivative_operators(
+            voxel_vertices=self.VOXEL_VERTICES,
+            grid_index_1d_to_2d_map=self.GRID_1D_TO_2D_MAP,
+        )
+        for key in derivs.keys():
+            np.testing.assert_equal(derivs[key], self.DERIVATIVE_OPERATORS[key])
+
+    def test_only_2d_1d_mapping_provided(self):
+        """Test auto-computing 1D-to-2D mapping"""
+        derivs = generate_derivative_operators(
+            voxel_vertices=self.VOXEL_VERTICES,
+            grid_index_2d_to_1d_map=self.GRID_2D_TO_1D_MAP,
+        )
+        for key in derivs.keys():
+            np.testing.assert_equal(derivs[key], self.DERIVATIVE_OPERATORS[key])
+
+    def test_missing_mappings(self):
+        """Test for raising if neither mapping is provided."""
+        with self.assertRaises(ValueError):
+            generate_derivative_operators(self.VOXEL_VERTICES)
+
+    def test_sparse_derivatives(self):
+        """Test returning sparse arrays."""
+        for key in self.DERIVATIVE_OPERATORS.keys():
+            np.testing.assert_equal(self.SPARSE_DERIVATIVE_OPERATORS[key].toarray(),
+                                    self.DERIVATIVE_OPERATORS[key])
+
     def test_objective(self, debug=False):
         """Test that the objective function looks sensible."""
         # Make a test equilibrium and an emission vector which corresponds
@@ -283,6 +316,26 @@ class TestADMT(unittest.TestCase):
             print(kernel_2d.T)
             print(kernel.sum())  # Should be zero for large grids
             plot_kernel(kernel, self.VOXEL_VERTICES)
+
+    def test_sparse_objective(self):
+        theta = np.pi / 2  # Vertical field
+        points = self.VOXELS_2D.reshape((-1, 2))
+        test_field = sample2d_points(
+            lambda x, y: x * np.sin(theta) + y * np.cos(theta),
+            points
+        )
+        test_field_2d = test_field.reshape(self.VOXELS_2D[:, :, 0].shape)
+        voxel_radii = np.asarray(self.VOXEL_COORDS)[:, 0]
+        dense_admt_operator = calculate_admt(
+            voxel_radii, self.DERIVATIVE_OPERATORS, test_field,
+            self.DX, self.DY, anisotropy=10,
+        )
+        sparse_admt_operator = calculate_admt(
+            voxel_radii, self.SPARSE_DERIVATIVE_OPERATORS, test_field,
+            self.DX, self.DY, anisotropy=10,
+        )
+        # Sparse matrix math may differ from dense due to floating point precision.
+        np.testing.assert_allclose(dense_admt_operator, sparse_admt_operator.toarray(), rtol=1e-14)
 
 
 def plot_kernel(kernel, voxel_vertices):

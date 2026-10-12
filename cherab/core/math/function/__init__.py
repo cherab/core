@@ -16,6 +16,8 @@
 # See the Licence for the specific language governing permissions and limitations
 # under the Licence.
 
+from . import float
+
 from raysect.core.math.function.float import Function1D, Function2D, Function3D
 from raysect.core.math.function.float import Constant1D, Constant2D, Constant3D
 from raysect.core.math.function.float import Discrete2DMesh, Interpolator2DMesh

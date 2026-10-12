@@ -127,6 +127,9 @@ in the group.
 .. autoclass:: cherab.tools.observers.group.PixelGroup
    :members:
 
+.. autoclass:: cherab.tools.observers.group.TargetedPixelGroup
+   :members:
+
 .. autoclass:: cherab.tools.observers.group.TargettedPixelGroup
    :members:
 

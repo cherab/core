@@ -42,7 +42,7 @@ cpdef tuple sample1d(object function1d, tuple x_range):
     :param function1d: a Python function or Function1D object
     :param x_range: a tuple defining the sample range: (min, max, samples)
     :return: a tuple containing the sampled values: (x_points, function_samples)
-    
+
     .. code-block:: pycon
 
        >>> from cherab.core.math import sample1d
@@ -221,7 +221,7 @@ cpdef np.ndarray sample2d_points(object function2d, object points):
 
     .. code-block:: pycon
 
-       >>> from cherab.core.math import sample2d
+       >>> from cherab.core.math import sample2d_points
        >>>
        >>> def f1(x, y):
        >>>     return x**2 + y
@@ -316,7 +316,7 @@ cpdef tuple sample3d(object function3d, tuple x_range, tuple y_range, tuple z_ra
     """
     Samples a 3D function over the specified range.
 
-    :param function3d: a Python function or Function2D object
+    :param function3d: a Python function or Function3D object
     :param x_range: a tuple defining the x sample range: (x_min, x_max, x_samples)
     :param y_range: a tuple defining the y sample range: (y_min, y_max, y_samples)
     :param z_range: a tuple defining the z sample range: (z_min, z_max, z_samples)
@@ -335,7 +335,7 @@ cpdef tuple sample3d(object function3d, tuple x_range, tuple y_range, tuple z_ra
        >>> f_vals
        array([[[ 3.,  4.,  5.],
                [ 6.,  7.,  8.],
-               [11., 12., 13.]],       
+               [11., 12., 13.]],
               [[10., 11., 12.],
                [13., 14., 15.],
                [18., 19., 20.]],
@@ -415,7 +415,7 @@ cpdef np.ndarray sample3d_points(object function3d, object points):
     :param function3d: a Python function or Function3D object
     :param points: an Nx3 array of points at which to sample the function
     :return: a 1D array containing the sampled values at each point
-    
+
     .. code-block:: pycon
 
        >>> from cherab.core.math import sample3d_points
@@ -744,7 +744,7 @@ cpdef tuple samplevector3d(object function3d, tuple x_range, tuple y_range, tupl
     The function samples returns are an NxMxKx3 array where the last axis are the
     x, y, and z components of the vector respectively.
 
-    :param function3d: a Python function or Function2D object
+    :param function3d: a Python function or Function3D object
     :param x_range: a tuple defining the x sample range: (x_min, x_max, x_samples)
     :param y_range: a tuple defining the y sample range: (y_min, y_max, y_samples)
     :param z_range: a tuple defining the z sample range: (z_min, z_max, z_samples)

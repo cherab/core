@@ -33,6 +33,10 @@ cdef class Line:
       specify the n-levels with integers (e.g. (3,2)). For all other ions the full spectroscopic
       configuration string should be specified for both states. It is up to the atomic data
       provider package to define the exact notation.
+    
+    :ivar Element element: See parameter 'element'.
+    :ivar int charge: See parameter 'charge'.
+    :ivar tuple transition: See parameter 'transition'.
 
     .. code-block:: pycon
 

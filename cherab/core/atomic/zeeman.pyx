@@ -139,4 +139,4 @@ cdef class ZeemanStructure():
         if polarisation.lower() == 'sigma_minus':
             return np.asarray(self.evaluate(b, SIGMA_MINUS_POLARISATION))
 
-        raise ValueError('Argument "polarisation" must be "pi", "sigma_plus" or "sigma_minus", {} given.'.fotmat(polarisation))
+        raise ValueError('Argument "polarisation" must be "pi", "sigma_plus" or "sigma_minus", {} given.'.format(polarisation))

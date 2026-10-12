@@ -35,6 +35,12 @@ to the above line to install the package under your own user account.
 Alternatively, consider creating a [virtual environment](https://docs.python.org/3/tutorial/venv.html)
 and installing `cherab` in the environment.
 
+Cherab can also be installed with conda from the conda-forge channel:
+
+```sh
+conda install --channel conda-forge cherab
+```
+
 When developing cherab it is usually preferred that the packages be installed
 in "editable" mode. Clone this repository and change directory to the root of
 the repository, then run:
@@ -85,12 +91,19 @@ of code / physics algorithm quality standards.
 TMC Members
 -----------
 
+- Jack Lovell (Oak Ridge National Laboratory, USA)
+- Matej Tomes (Institute of Plasma Physics of the Czech Academy of Sciences, Czechia)
+- Koyo Munechika (ITER Organisation)
+- Jakub Svoboda (Institute of Plasma Physics of the Czech Academy of Sciences, Czechia)
+
+
+Former TMC Members
+-----------
+
 - Alys Brett (chairwoman, master account holder, responsible for delegation, UKAEA, UK)
 - Matt Carr (External consultant, diagnostic physics models)
-- Jack Lovell (Oak Ridge, USA)
 - Alex Meakins (External consultant, Architecture, software integrity)
 - Vlad Neverov (NRC Kurchatov Institute, Moscow)
-- Matej Tomes (Compass, IPP, Prague)
 
 
 Citing The Code

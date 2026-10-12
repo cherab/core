@@ -60,6 +60,7 @@ cdef class Plasma(Node):
 
         readonly object notifier
         VectorFunction3D _b_field
+        VectorFunction3D _e_field
         DistributionFunction _electron_distribution
         Composition _composition
         AtomicData _atomic_data
@@ -71,6 +72,8 @@ cdef class Plasma(Node):
     cdef object __weakref__
 
     cdef VectorFunction3D get_b_field(self)
+
+    cdef VectorFunction3D get_e_field(self)
 
     cdef DistributionFunction get_electron_distribution(self)
 

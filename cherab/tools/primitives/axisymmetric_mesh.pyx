@@ -23,10 +23,10 @@ from .toroidal_mesh import toroidal_mesh_from_polygon
 
 cpdef Mesh axisymmetric_mesh_from_polygon(object polygon, int num_toroidal_segments=500):
     """
-    Generates an Raysect Mesh primitive from the specified 2D polygon.
+    Generate a Raysect Mesh primitive from the specified 2D polygon.
 
-    :param object polygon: An object which can be converted to a numpy array with shape [N,2] 
-                           specifying the wall outline polygon in the R-Z plane. The polygon 
+    :param object polygon: An object which can be converted to a numpy array with shape [N,2]
+                           specifying the wall outline polygon in the R-Z plane. The polygon
                            should not be closed, i.e. vertex i = 0 and i = N should not be the
                            same vertex, but neighbours.
     :param int num_toroidal_segments: The number of repeating toroidal segments that will be used

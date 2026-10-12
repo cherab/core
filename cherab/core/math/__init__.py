@@ -39,3 +39,4 @@ from .slice import Slice2D, Slice3D
 from .transform import CylindricalTransform, VectorCylindricalTransform
 from .transform import PeriodicTransform1D, PeriodicTransform2D, PeriodicTransform3D
 from .transform import VectorPeriodicTransform1D, VectorPeriodicTransform2D, VectorPeriodicTransform3D
+from .function import *

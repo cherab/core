@@ -37,9 +37,9 @@ cdef class FreeFreeGauntFactor():
     The base class for temperature-averaged free-free Gaunt factors.
     """
 
-    cpdef double evaluate(self, double z, double temperature, double wavelength) except? -1e999:
+    cdef double evaluate(self, double z, double temperature, double wavelength) except? -1e999:
         """
-        Returns the temperature-averaged free-free Gaunt factor for the supplied parameters.
+        Return the temperature-averaged free-free Gaunt factor for the supplied parameters.
 
         :param double z: Species charge or effective plasma charge.
         :param double temperature: Electron temperature in eV.
@@ -51,7 +51,7 @@ cdef class FreeFreeGauntFactor():
 
     def __call__(self, double z, double temperature, double wavelength):
         """
-        Returns the temperature-averaged free-free Gaunt factor for the supplied parameters.
+        Return the temperature-averaged free-free Gaunt factor for the supplied parameters.
 
         :param double z: Species charge or effective plasma charge.
         :param double temperature: Electron temperature in eV.
@@ -106,9 +106,9 @@ cdef class InterpolatedFreeFreeGauntFactor(FreeFreeGauntFactor):
         self._gaunt_factor = Interpolator2DArray(np.log10(u), np.log10(gamma2), gaunt_factor, 'cubic', 'none', 0, 0)
 
     @cython.cdivision(True)
-    cpdef double evaluate(self, double z, double temperature, double wavelength) except? -1e999:
+    cdef double evaluate(self, double z, double temperature, double wavelength) except? -1e999:
         """
-        Returns the temperature-averaged free-free Gaunt factor for the supplied parameters.
+        Return the temperature-averaged free-free Gaunt factor for the supplied parameters.
 
         :param double z: Species charge or effective plasma charge.
         :param double temperature: Electron temperature in eV.
