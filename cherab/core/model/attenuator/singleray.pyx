@@ -110,33 +110,34 @@ cdef class SingleRayAttenuator(BeamAttenuator):
         The beam density is calculated as follows:
 
         .. math::
-            n(x, y, z) = \frac{R}{2\pi v_0 \sigma_x\sigma_y} exp\left(-\frac{1}{2}\left(\frac{x^2}{\sigma_x^2}+\frac{y^2}{\sigma_y^2}\right)\right)exp\left(-\int_{0}^{z}\frac{S(z')}{v_0}dz'\right),
+            n(x, y, z) = \frac{R}{2\pi v_0 \sigma_x\sigma_y} \exp\left(-\frac{1}{2}\left(\frac{x^2}{\sigma_x^2}+\frac{y^2}{\sigma_y^2}\right)\right)\exp\left(-\int_{0}^{z}\frac{S(z')}{v_0}dz'\right),
 
-            \sigma_x = \sqrt{\sigma^2 + (ztg(\alpha_x))^2}\hspace{0.5cm}\sigma_y = \sqrt{\sigma^2 + (ztg(\alpha_y))^2},
+            \sigma_x = \sqrt{\sigma^2 + (ztg(\alpha_x))^2},\quad\sigma_y = \sqrt{\sigma^2 + (ztg(\alpha_y))^2},
 
         where :math:`R=\frac{P}{E}` is the particle rate of the beam defined as the power
         of the beam divided by the kinetic energy of the single particle, :math:`v_0=\sqrt{2E/m}`
         is the particle speed, :math:`\sigma` is the Gaussian beam deviation at origin,
-        :math:`\alpha_x` and :math:`\alpha_y` are the beam divergence angles in the x and y
+        :math:`\alpha_x` and :math:`\alpha_y` are the beam divergence angles in the :math:`x` and :math:`y`
         dimensions respectively, :math:`S(z)` is the composite beam attenuation coefficient due to
         collisional-radiative interaction with the plasma species:
 
         .. math::
-            S(z) = \sum_{i=1}^{N}Z_i n_i S_i(E_{int}, n_{i,e}^{(eq)}, T_i),
+            S(z) = \sum_{i=1}^{N}Z_i n_i S_i(E_\mathrm{int}, n_{i,e}^{(\mathrm{eq})}, T_i),
 
-            n_{i,e}^{(eq)} = \frac{1}{Z_i}\sum_{j=1}^{N}Z_j^2 n_j.
+            n_{i,\mathrm{e}}^{(\mathrm{eq})} = \frac{1}{Z_i}\sum_{j=1}^{N}Z_j^2 n_j.
 
-        Here :math:`Z_i` is the charge of the i-th type of plasma ions,
+        Here :math:`Z_i` is the charge of the :math:`i` -th type of plasma ions,
         :math:`n_i` is density of the i-th type of plasma ions, :math:`N` is the number of type of plasma
-        ions, :math:`E_{int}` is the kinetic energy of the beam atoms in the frame of reference where
+        ions, :math:`E_\mathrm{int}` is the kinetic energy of the beam atoms in the frame of reference where
         ions of the i-th type are at rest, :math:`T_{i}` is the temperature of ions of the i-th type.
 
         The values of partial beam attenuation coefficients, :math:`S_i`, are provided by the atomic data source.
-        
-        :param x: x coordinate in meters.
-        :param y: y coordinate in meters. 
-        :param z: z coordinate in meters.
-        :return: Density in m^-3. 
+
+        :param float x: x coordinate in meters.
+        :param float y: y coordinate in meters.
+        :param float z: z coordinate in meters.
+        :returns: Density in m\ :sup:`-3`.
+        :rtype: float
         """
 
         cdef double sigma0_sqr, sigma_x, sigma_y, norm_radius_sqr, gaussian_sample
@@ -182,9 +183,9 @@ cdef class SingleRayAttenuator(BeamAttenuator):
     cdef void _calc_attenuation(self):
         """
         Attenuation is calculated along the beam axis and extrapolated across the beam.
-        
+
         Fill attribute '_density' with a 1D function taking meters as argument
-        and returning a linear density in m^-1, calculated along the beam axis.
+        and returning a linear density in m\\ :sup:`-1`, calculated along the beam axis.
         """
 
         cdef:
@@ -239,7 +240,7 @@ cdef class SingleRayAttenuator(BeamAttenuator):
         :param power: beam power in W
         :param mass: atomic mass in amu
         :param direction:
-        :return: a list of linear densities in m^-1
+        :return: a list of linear densities in m\\ :sup:`-1`
         """
 
         cdef:
@@ -271,7 +272,7 @@ cdef class SingleRayAttenuator(BeamAttenuator):
         :param y: position in meters
         :param z: position in meters
         :param beam_velocity: beam velocity in m/s
-        :return: a stopping coefficient in s^-1
+        :return: a stopping coefficient in s\\ :sup:`-1`
         """
 
         # see www.adas.ac.uk/man/chap3-04.pdf equation 4.4.7

@@ -163,18 +163,19 @@ cdef class ZeemanTriplet(ZeemanLineShapeModel):
 
 
 cdef class ParametrisedZeemanTriplet(ZeemanLineShapeModel):
-    r"""
-    Parametrised Doppler-Zeeman triplet. It takes into account additional broadening due to
+    r"""Parametrised Doppler-Zeeman triplet.
+
+    It takes into account additional broadening due to
     the line's fine structure without resolving the individual components of the fine
     structure. The model is described with three parameters: :math:`\alpha`,
     :math:`\beta` and :math:`\gamma`.
 
-    The distance between :math:`\sigma^+` and :math:`\sigma^-` peaks: 
-    :math:`\Delta \lambda_{\sigma} = \alpha B`, 
-    where `B` is the magnetic field strength.
-    The ratio between Zeeman and thermal broadening line widths: 
-    :math:`\frac{W_{Zeeman}}{W_{Doppler}} = \beta T^{\gamma}`,
-    where `T` is the species temperature in eV.
+    The distance between :math:`\sigma^+` and :math:`\sigma^-` peaks:
+    :math:`\Delta \lambda_{\sigma} = \alpha B`,
+    where :math:`B` is the magnetic field strength.
+    The ratio between Zeeman and thermal broadening line widths:
+    :math:`\frac{W_\mathrm{Zeeman}}{W_\mathrm{Doppler}} = \beta T^{\gamma}`,
+    where :math:`T` is the species temperature in eV.
 
     For details see A. Blom and C. Jupén, Parametrisation of the Zeeman effect
     for hydrogen-like spectra in high-temperature plasmas,
@@ -187,7 +188,7 @@ cdef class ParametrisedZeemanTriplet(ZeemanLineShapeModel):
     :param Plasma plasma: The emitting plasma object.
     :param AtomicData atomic_data: The atomic data provider.
     :param tuple line_parameters: Parameters of the model in the form (alpha, beta, gamma).
-                                  Default is None (will use `atomic_data.zeeman_triplet_parameters`).
+                                  Default is None (will use `~.AtomicData.zeeman_triplet_parameters`).
     :param str polarisation: Leaves only :math:`\pi`-/:math:`\sigma`-polarised components:
                              "pi" - leave central component,
                              "sigma" - leave side components,
@@ -286,7 +287,7 @@ cdef class ZeemanMultiplet(ZeemanLineShapeModel):
     :param zeeman_structure: A ``ZeemanStructure`` object that provides wavelengths and ratios
                              of :math:`\pi`-/:math:`\sigma^{+}`-/:math:`\sigma^{-}`-polarised
                              components for any given magnetic field strength.
-                             Default is None (will use atomic_data.zeeman_structure).
+                             Default is None (will use `~.AtomicData.zeeman_structure`).
     :param str polarisation: Leaves only :math:`\pi`-/:math:`\sigma`-polarised components:
                              "pi" - leave only :math:`\pi`-polarised components,
                              "sigma" - leave only :math:`\sigma`-polarised components,

@@ -2,7 +2,7 @@
 Custom emission models
 ----------------------
 
-Custom emitters are implemented as Raysect materials with the `VolumeEmitterInhomogeneous` class.
+Custom emitters are implemented as Raysect materials with the `~raysect.optical.material.emitter.inhomogeneous.InhomogeneousVolumeEmitter` class.
 You model should inherit from this base class, only two methods need to be implemented,
 the `__init__()` and `emission_function()` methods.
 
@@ -16,33 +16,33 @@ emission line. But this can change alot from application to application. We are 
 some atomic data from ADAS. You could optionally pass in the atomic data you want to use in
 the `__init__()`.
 
-The `step` parameter is the only parameter required by the parent `VolumeEmitterInhomogeneous`
+The `step` parameter is the only parameter required by the parent `~raysect.optical.material.emitter.inhomogeneous.InhomogeneousVolumeEmitter`
 class. This parameter determines the integration step size for sampling and will need to be
-adjusted based on your application's scale lengths. Make ure you call the parent init whith the
+adjusted based on your application's scale lengths. Make sure you call the parent init with the
 super method, e.g. `super().__init__(step=step)`.
 
 All the magic happens in the `emission_function()` method. This method is called at every point
 in space where the ray-tracer would like to know the emission. The arguments are fixed and are
 as follows:
 
-* `point` (`Point3D`) - current position in local primitive coordinates
-* `direction` (`Vector3D`) - current ray direction in local primitive coordinates
-* `spectrum` (`Spectrum`) - measured spectrum so far. Don't overwrite it. Add your local
+- `point` (`Point3D`) - current position in local primitive coordinates
+- `direction` (`Vector3D`) - current ray direction in local primitive coordinates
+- `spectrum` (`Spectrum`) - measured spectrum so far. Don't overwrite it. Add your local
   emission to the measured spectrum. Units are in spectral radiance (W/m3/str/nm).
-* `world` (`World`) - the world being ray-traced. You may have multiple worlds.
-* `ray` (`Ray`) - the current ray being traced.
-* `primitive` (`Primitive`) - the primitive container for this material. Could be a sphere,
+- `world` (`World`) - the world being ray-traced. You may have multiple worlds.
+- `ray` (`Ray`) - the current ray being traced.
+- `primitive` (`Primitive`) - the primitive container for this material. Could be a sphere,
   cyliner, or CAD mesh for example.
-* `to_local` (`AffineMatrix3D`) - Affine matrix for coordinate transformations to local coordinates.
-* `to_world` (`AffineMatrix3D`) - Affine matrix for coordinate transformations to world coordinates.
+- `to_local` (`AffineMatrix3D`) - Affine matrix for coordinate transformations to local coordinates.
+- `to_world` (`AffineMatrix3D`) - Affine matrix for coordinate transformations to world coordinates.
 
 .. WARNING::
    Don't override the spectrum parameter, you will loose all the previous ray samples. Instead you
    should add your local emission at the current point in space to the measured spectrum array.
 
-Here is an example class implementation of an excitation line. ::
+Here is an example class implementation of an excitation line. \:
 
-    class ExcitationLine(VolumeEmitterInhomogeneous):
+    class ExcitationLine(InhomogeneousVolumeEmitter):
 
         def __init__(self, line, electron_distribution, atom_species, step=0.005,
                      block=0, filename=None):

@@ -215,13 +215,13 @@ def build_constant_slab_plasma(length=5, width=1, height=1, electron_density=1e1
 
     If omitted, hydrogen distribution with properties equal to electrons is used:
         >>> plasma_species = [(hydrogen, 1, electron_density, electron_temperature, Vector3D(0, 0, 0))]
-    
+
     If an empty list is passed, plasma contains only electrons.
 
     :param float length: the overall length of the slab along x.
     :param float width: the y width of the slab.
     :param float height: the z height of the slab.
-    :param float electron_density: the electron density in m^-3 .
+    :param float electron_density: the electron density in m\\ :sup:`-3` .
     :param float electron_temperature: the electron temperature in eV.
     :param list plasma_species: an optional list of impurities to include.
     :param Vector3D b_field: vector giving the magnetic field
