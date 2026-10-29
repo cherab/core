@@ -18,7 +18,7 @@
 # See the Licence for the specific language governing permissions and limitations
 # under the Licence.
 
-from cherab.core.math cimport Function1D, Function2D
+from cherab.core.atomic.stark cimport StarkStructure
 from cherab.core.model.lineshape.beam.base cimport BeamLineShapeModel
 
 
@@ -26,5 +26,5 @@ cdef class BeamEmissionMultiplet(BeamLineShapeModel):
 
     cdef:
 
-        Function2D _sigma_to_pi
-        Function1D _sigma1_to_sigma0, _pi2_to_pi3, _pi4_to_pi3
+        StarkStructure _stark_structure
+        int _polarisation
