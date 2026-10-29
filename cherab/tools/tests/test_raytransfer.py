@@ -17,12 +17,24 @@
 # under the Licence.
 
 import unittest
+
 import numpy as np
-from raysect.optical import World, Ray, Point3D, Point2D, Vector3D, NumericalIntegrator, Spectrum
+from raysect.core.math.function.float.function3d.interpolate import Discrete3DMesh
+from raysect.optical import NumericalIntegrator, Point2D, Point3D, Ray, Spectrum, Vector3D, World
 from raysect.primitive import Box, Cylinder, Subtract
-from cherab.tools.raytransfer import RayTransferBox, RayTransferCylinder, CartesianRayTransferEmitter, CylindricalRayTransferEmitter
-from cherab.tools.raytransfer import RayTransferPipeline0D, RayTransferPipeline1D, RayTransferPipeline2D
+
 from cherab.tools.inversions import ToroidalVoxelGrid
+from cherab.tools.raytransfer import (
+    CartesianRayTransferEmitter,
+    CylindricalRayTransferEmitter,
+    IndexedRayTransferEmitter,
+    IndexedRayTransferIntegrator,
+    RayTransferBox,
+    RayTransferCylinder,
+    RayTransferPipeline0D,
+    RayTransferPipeline1D,
+    RayTransferPipeline2D,
+)
 
 
 class TestRayTransferCylinder(unittest.TestCase):
@@ -89,7 +101,7 @@ class TestRayTransferCylinder(unittest.TestCase):
         self.assertTrue(np.all(mask_ref == rtc.mask) and np.all(np.array(inv_vmap_ref) == np.array(rtc.invert_voxel_map())) and rtc.bins == 8)
 
     def test_integration_2d(self):
-        """ Testing against ToroidalVoxelGrid"""
+        """Testing against ToroidalVoxelGrid"""
         world = World()
         rtc = RayTransferCylinder(radius_outer=4., height=2., n_radius=2, n_height=2, radius_inner=2., parent=world)
         rtc.step = 0.001 * rtc.step
@@ -240,6 +252,125 @@ class TestCylindricalRayTransferEmitter(unittest.TestCase):
         spectrum_test = np.zeros(12)
         spectrum_test[2] = spectrum_test[9] = np.sqrt(2.)
         self.assertTrue(np.allclose(spectrum_test, spectrum.samples, atol=0.001))
+
+
+class TestIndexedRayTransferEmitter(unittest.TestCase):
+    """
+    Test cases for IndexedRayTransferEmitter class.
+    """
+
+    @staticmethod
+    def index_func(x, y, z):
+        if 0 <= x < 3 and 0 <= y < 3 and 0 <= z < 3:
+            return int(x) + 3 * int(y) + 9 * int(z)
+        return -1
+
+    @staticmethod
+    def _vertex_index(i, j, k):
+        return i + 4 * j + 16 * k
+
+    @classmethod
+    def _build_discrete3dmesh_index_function(cls):
+        # 4x4x4 grid vertices covering a 3x3x3 set of unit cells.
+        vertex_coords = np.array(
+            [[float(i), float(j), float(k)] for k in range(4) for j in range(4) for i in range(4)],
+            dtype=np.float64,
+        )
+
+        tetrahedra = []
+        tetrahedra_data = []
+        for i, j, k in np.ndindex(3, 3, 3):
+            cell_value = float(i + 3 * j + 9 * k)
+            v000 = cls._vertex_index(i, j, k)
+            v100 = cls._vertex_index(i + 1, j, k)
+            v010 = cls._vertex_index(i, j + 1, k)
+            v110 = cls._vertex_index(i + 1, j + 1, k)
+            v001 = cls._vertex_index(i, j, k + 1)
+            v101 = cls._vertex_index(i + 1, j, k + 1)
+            v011 = cls._vertex_index(i, j + 1, k + 1)
+            v111 = cls._vertex_index(i + 1, j + 1, k + 1)
+
+            # Split each cube into 6 tetrahedra using the 000 -> 111 body diagonal.
+            tetrahedra.extend(
+                [
+                    [v000, v100, v110, v111],
+                    [v000, v100, v101, v111],
+                    [v000, v001, v101, v111],
+                    [v000, v001, v011, v111],
+                    [v000, v010, v011, v111],
+                    [v000, v010, v110, v111],
+                ]
+            )
+            tetrahedra_data.extend([cell_value] * 6)
+
+        return Discrete3DMesh(
+            vertex_coords,
+            np.array(tetrahedra, dtype=np.int32),
+            np.array(tetrahedra_data, dtype=np.float64),
+            limit=False,
+            default_value=-1.0,
+        )
+
+    def test_evaluate_function(self):
+        """
+        Test IndexedRayTransferEmitter with NumericalIntegrator.
+        """
+        world = World()
+        material = IndexedRayTransferEmitter(self.index_func, bins=27, integrator=NumericalIntegrator(0.0001))
+        box = Box(lower=Point3D(0, 0, 0), upper=Point3D(2.99999, 2.99999, 2.99999), material=material, parent=world)
+        ray = Ray(origin=Point3D(4.0, 4.0, 4.0), direction=Vector3D(-1.0, -1.0, -1.0) / np.sqrt(3), min_wavelength=500.0, max_wavelength=501.0, bins=material.bins)
+        spectrum = ray.trace(world)
+        spectrum_test = np.zeros(material.bins)
+        spectrum_test[0] = spectrum_test[13] = spectrum_test[26] = np.sqrt(3.0)
+        self.assertTrue(np.allclose(spectrum_test, spectrum.samples, atol=0.001))
+
+    def test_default_integrator(self):
+        """
+        Test IndexedRayTransferEmitter with IndexedRayTransferIntegrator.
+        """
+        world = World()
+        material = IndexedRayTransferEmitter(self.index_func, bins=27)
+        self.assertTrue(isinstance(material.integrator, IndexedRayTransferIntegrator))
+        box = Box(lower=Point3D(0, 0, 0), upper=Point3D(2.99999, 2.99999, 2.99999), material=material, parent=world)
+        ray = Ray(origin=Point3D(4.0, 4.0, 4.0), direction=Vector3D(-1.0, -1.0, -1.0) / np.sqrt(3), min_wavelength=500.0, max_wavelength=501.0, bins=material.bins)
+        spectrum = ray.trace(world)
+        spectrum_test = np.zeros(material.bins)
+        spectrum_test[0] = spectrum_test[13] = spectrum_test[26] = np.sqrt(3.0)
+        self.assertTrue(np.allclose(spectrum_test, spectrum.samples, atol=0.001))
+
+    def test_discrete3dmesh_as_index_function(self):
+        """
+        Test IndexedRayTransferEmitter with a Discrete3DMesh index function　equivalent to index_func.
+        """
+        mesh_index_func = self._build_discrete3dmesh_index_function()
+
+        # Check representative points inside all voxels and outside the domain.
+        for i, j, k in np.ndindex(3, 3, 3):
+            x, y, z = i + 0.25, j + 0.25, k + 0.25
+            self.assertEqual(int(mesh_index_func(x, y, z)), self.index_func(x, y, z))
+        self.assertEqual(int(mesh_index_func(-0.1, 1.0, 1.0)), -1)
+        self.assertEqual(int(mesh_index_func(3.1, 1.0, 1.0)), -1)
+
+        # Check equivalent ray transfer matrix row from both index functions.
+        ray = Ray(
+            origin=Point3D(4.0, 4.0, 4.0),
+            direction=Vector3D(-1.0, -1.0, -1.0) / np.sqrt(3),
+            min_wavelength=500.0,
+            max_wavelength=501.0,
+            bins=27,
+        )
+
+        world_ref = World()
+        material_ref = IndexedRayTransferEmitter(self.index_func, bins=27, integrator=NumericalIntegrator(0.0001))
+        box_ref = Box(lower=Point3D(0, 0, 0), upper=Point3D(2.99999, 2.99999, 2.99999), material=material_ref, parent=world_ref)
+        spectrum_ref = ray.trace(world_ref)
+
+        world_mesh = World()
+        material_mesh = IndexedRayTransferEmitter(mesh_index_func, bins=27, integrator=NumericalIntegrator(0.0001))
+        box_mesh = Box(lower=Point3D(0, 0, 0), upper=Point3D(2.99999, 2.99999, 2.99999), material=material_mesh, parent=world_mesh)
+        spectrum_mesh = ray.trace(world_mesh)
+
+        self.assertTrue(np.allclose(spectrum_ref.samples, spectrum_mesh.samples, atol=0.001))
 
 
 class TestRayTransferPipeline0D(unittest.TestCase):
