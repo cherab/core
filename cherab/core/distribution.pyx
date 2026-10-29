@@ -56,21 +56,23 @@ cdef class DistributionFunction:
         :param float vx: velocity in meters per second
         :param float vy: velocity in meters per second
         :param float vz: velocity in meters per second
-        :return: phase space density in s^3/m^6
+        :return: phase space density in s\\ :sup:`3`/m\\ :sup:`6`
+        :rtype: float
         """
         return self.evaluate(x, y, z, vx, vy, vz)
 
     cdef double evaluate(self, double x, double y, double z, double vx, double vy, double vz) except? -1e999:
         """
         Evaluates the phase space density at the specified point in 6D phase space.
-        
+
         :param float x: position in meters
         :param float y: position in meters
         :param float z: position in meters
         :param float vx: velocity in meters per second
         :param float vy: velocity in meters per second
         :param float vz: velocity in meters per second
-        :return: phase space density in s^3/m^6
+        :return: phase space density in s\\ :sup:`3`/m\\ :sup:`6`
+        :rtype: float
         """
         raise NotImplementedError()
 
@@ -105,7 +107,7 @@ cdef class DistributionFunction:
         :param float x: position in meters
         :param float y: position in meters
         :param float z: position in meters
-        :return: density in m^-3
+        :return: density in m\\ :sup:`-3`
         :rtype: float
         """
         raise NotImplementedError()
@@ -133,21 +135,23 @@ cdef class ZeroDistribution(DistributionFunction):
         :param float vx: velocity in meters per second
         :param float vy: velocity in meters per second
         :param float vz: velocity in meters per second
-        :return: phase space density 0 s^3/m^6
+        :return: phase space density 0 s\\ :sup:`3`/m\\ :sup:`6`
+        :rtype: float
         """
         return self.evaluate(x, y, z, vx, vy, vz)
 
     cdef double evaluate(self, double x, double y, double z, double vx, double vy, double vz) except? -1e999:
         """
         Evaluates the phase space density at the specified point in 6D phase space.
-        
+
         :param float x: position in meters
         :param float y: position in meters
         :param float z: position in meters
         :param float vx: velocity in meters per second
         :param float vy: velocity in meters per second
         :param float vz: velocity in meters per second
-        :return: phase space density 0 s^3/m^6
+        :return: phase space density 0 s\\ :sup:`3`/m\\ :sup:`6`
+        :rtype: float
         """
         return 0.0
 
@@ -182,7 +186,7 @@ cdef class ZeroDistribution(DistributionFunction):
         :param float x: position in meters
         :param float y: position in meters
         :param float z: position in meters
-        :return: density 0 m^-3
+        :return: density 0 m\\ :sup:`-3`
         :rtype: float
         """
         return 0.0
@@ -235,7 +239,8 @@ cdef class Maxwellian(DistributionFunction):
         :param vx: velocity in meters per second
         :param vy: velocity in meters per second
         :param vz: velocity in meters per second
-        :return: phase space density in s^3/m^6
+        :return: phase space density in s\\ :sup:`3`/m\\ :sup:`6`
+        :rtype: float
         """
 
         cdef:
@@ -260,7 +265,7 @@ cdef class Maxwellian(DistributionFunction):
         :param y: position in meters
         :param z: position in meters
         :return: velocity vector in m/s
-        
+
         .. code-block:: pycon
 
            >>> d0_distribution.bulk_velocity(1, 0, 0)
@@ -276,9 +281,9 @@ cdef class Maxwellian(DistributionFunction):
         :param y: position in meters
         :param z: position in meters
         :return: temperature in eV
-        
+
         .. code-block:: pycon
-        
+
            >>> d0_distribution.effective_temperature(1, 0, 0)
            1.0
         """
@@ -291,7 +296,8 @@ cdef class Maxwellian(DistributionFunction):
         :param x: position in meters
         :param y: position in meters
         :param z: position in meters
-        :return: density in m^-3
+        :return: density in m\\ :sup:`-3`
+        :rtype: float
 
         .. code-block:: pycon
 
@@ -307,15 +313,15 @@ cdef class GenericDistribution(DistributionFunction):
     A generic distribution function.
 
     This class implements a generic distribution function. The user supplies a 6D function
-    that provides the phase space density at a given point in 6D phase space, 
+    that provides the phase space density at a given point in 6D phase space,
     a 3D function that provides the spatial density, a 3D function that provides the temperature,
     and a 3D vector function that provides the bulk velocity.
 
     .. warning::
         The consistency of the provided functions is not checked and is the responsibilty of the user.
 
-    :param Function6D phase_space_density: 6D function defining the phase space density in s^3/m^6.
-    :param Function3D density: 3D function defining the spatial density in m^-3.
+    :param Function6D phase_space_density: 6D function defining the phase space density in s\\ :sup:`3`/m\\ :sup:`6`.
+    :param Function3D density: 3D function defining the spatial density in m\\ :sup:`-3`.
     :param Function3D temperature: 3D function defining the temperature in eV.
     :param VectorFunction3D velocity: 3D vector function defining the bulk velocity in meters per second.
 
@@ -351,7 +357,8 @@ cdef class GenericDistribution(DistributionFunction):
         :param vx: velocity in meters per second
         :param vy: velocity in meters per second
         :param vz: velocity in meters per second
-        :return: phase space density in s^3/m^6
+        :return: phase space density in s\\ :sup:`3`/m\\ :sup:`6`
+        :rtype: float
         """
 
         return self._phase_space_density.evaluate(x, y, z, vx, vy, vz)
@@ -364,7 +371,7 @@ cdef class GenericDistribution(DistributionFunction):
         :param y: position in meters
         :param z: position in meters
         :return: velocity vector in m/s
-        
+
         .. code-block:: pycon
 
            >>> d0_distribution.bulk_velocity(1, 0, 0)
@@ -380,9 +387,10 @@ cdef class GenericDistribution(DistributionFunction):
         :param y: position in meters
         :param z: position in meters
         :return: temperature in eV
-        
+        :rtype: float
+
         .. code-block:: pycon
-        
+
            >>> d0_distribution.effective_temperature(1, 0, 0)
            1.0
         """
@@ -395,7 +403,8 @@ cdef class GenericDistribution(DistributionFunction):
         :param x: position in meters
         :param y: position in meters
         :param z: position in meters
-        :return: density in m^-3
+        :return: density in m\\ :sup:`-3`
+        :rtype: float
 
         .. code-block:: pycon
 

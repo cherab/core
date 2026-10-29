@@ -86,8 +86,8 @@ def _parameters_to_numpy(*parameters, free_variable=None):
             arrays.append(array)
         elif not isinstance(param, np.ndarray):  # well there are types which should not be treated
             raise ValueError(
-                "Parameters can be Iterable, scalar, list, Function1D, Function2D or None, {0} passed".format(
-                    type(param)))
+                f"Parameters can be Iterable, scalar, list, Function1D, Function2D or None, {type(param)} passed"
+            )
         else:
             arrays.append(param)
 
@@ -192,13 +192,13 @@ def _fractional_abundance_point(element: Element, n_e, t_e, coef_ion, coef_recom
 
     :param atomic_data: Any cherab AtomicData source
     :param element: Any cherab Element
-    :param n_e: Electron density in m^-3 to calculate the balance for
+    :param n_e: Electron density in m\\ :sup:`-3` to calculate the balance for
     :param t_e: Electron temperature in eV to calculate the balance for
     :param coef_ion: Dictionary with ionization rates
     :param coef_recom: Dictionary with recombination rates
     :param coef_tcx: Optional, dictionary with thermal cx rates
     :param tcx_donor: Optional, any cherab element. Specifies donating species in tcx collisions.
-    :param tcx_donor_density: Optional, mandatory if tcx_donor parameter passed. Specifies density of donors in m^-3
+    :param tcx_donor_density: Optional, mandatory if tcx_donor parameter passed. Specifies density of donors in m\\ :sup:`-3`
     :param tcx_donor_charge: Optional, specifies the charge of the donor. Default is 0.
     :return: array with fractional abundances of ionic charges. Array indexes correspond to ion charge state.
     """
@@ -234,7 +234,7 @@ def _fractional_abundance_point(element: Element, n_e, t_e, coef_ion, coef_recom
     matbal = np.concatenate((matbal, np.ones((1, matbal.shape[1]))), axis=0)
 
     # construct RHS of the balance steady-state equation
-    rhs = np.zeros((matbal.shape[0]))
+    rhs = np.zeros(matbal.shape[0])
     rhs[-1] = n_e
 
     abundance = lsq_linear(matbal, rhs, bounds=(0, n_e))["x"]
@@ -253,20 +253,20 @@ def _from_element_density_point(atomic_data: AtomicData, element: Element, eleme
     electron density and absolute element density using steady state ionization balance.
 
     If tcx_donor is specified, the balance equation will take into account effects of charge exchange
-    with the specified donor. The results are returned as density in m^-3.
+    with the specified donor. The results are returned as density in m\\ :sup:`-3`.
 
     :param atomic_data: Any cherab AtomicData source
     :param element: Any cherab Element
-    :param element_density: Density of the element in m^-3
-    :param n_e: Electron density in m^-3 to calculate the balance for
+    :param element_density: Density of the element in m\\ :sup:`-3`
+    :param n_e: Electron density in m\\ :sup:`-3` to calculate the balance for
     :param t_e: Electron temperature in eV to calculate the balance for
     :param tcx_donor: Optional, specifies donating species in tcx collisions.
-    :param tcx_donor_n: Optional, mandatory if tcx_donor parameter passed. Specifies density of donors in m^-3
+    :param tcx_donor_n: Optional, mandatory if tcx_donor parameter passed. Specifies density of donors in m\\ :sup:`-3`
     :param tcx_donor_charge: Optional, specifies the charge of the donor. Default is 0.
     :param coef_ion: Optional, ionization rates. If not passed rates will be loaded (slow).
     :param coef_recom: Optional, recombination rates. If not passed rates will be loaded (slow).
     :param coef_tcx: Optional, thermal cx rates. If not passed rates will be loaded (slow).
-    :return: array with densities in m^-3 of ion charge states. Array indexes correspond to ion charge state.
+    :return: array with densities in m\\ :sup:`-3` of ion charge states. Array indexes correspond to ion charge state.
     """
 
     # load atomic data for the element
@@ -291,7 +291,7 @@ def _from_element_density_point(atomic_data: AtomicData, element: Element, eleme
     # warn user if plasma neutrality is violated due to too low electron density for the specified element density
     n_e_fromions = np.sum(abundance)
     if n_e_fromions > n_e:
-        print("Plasma neutrality violated, {0} density too large".format(element.name))
+        print(f"Plasma neutrality violated, {element.name} density too large")
 
     return abundance
 
@@ -314,15 +314,15 @@ def _match_element_density_point(atomic_data: AtomicData, element: Element, n_sp
     :param atomic_data: Any cherab AtomicData source
     :param element: Any cherab element to calculate matching density for
     :param n_species: list of arrays or dictionaries with ion densities of the rest of the plasma elements
-    :param n_e: electron density in m^-3
+    :param n_e: electron density in m\\ :sup:`-3`
     :param t_e: electron temperature in eV
     :param tcx_donor: Optional, specifies donating species in tcx collisions.
-    :param tcx_donor_density: Optional, mandatory if tcx_donor parameter passed. Specifies density of donors in m^-3
+    :param tcx_donor_density: Optional, mandatory if tcx_donor parameter passed. Specifies density of donors in m\\ :sup:`-3`
     :param tcx_donor_charge: Optional, specifies the charge of the donor. Default is 0.
     :param coef_ion: Optional, ionization rates. If not passed rates will be loaded (slow).
     :param coef_recom: Optional, recombination rates. If not passed rates will be loaded (slow).
     :param coef_tcx: Optional, thermal cx rates. If not passed rates will be loaded (slow).
-    :return: array with densities in m^-3 of ion charge states. Array indexes correspond to ion charge state.
+    :return: array with densities in m\\ :sup:`-3` of ion charge states. Array indexes correspond to ion charge state.
     """
 
     # load atomic data for the element
@@ -347,8 +347,7 @@ def _match_element_density_point(atomic_data: AtomicData, element: Element, n_sp
             element_n_e -= index * value
 
     # avoid negative densities due to passed n_e being too small
-    if element_n_e < 0:
-        element_n_e = 0
+    element_n_e = max(element_n_e, 0)
 
     # calculate mean charge of the bulk element
     z_mean = 0
@@ -374,10 +373,10 @@ def _fractional_abundance(atomic_data: AtomicData, element: Element, n_e,
 
     :param atomic_data: Any cherab AtomicData source
     :param element: Any cherab element
-    :param n_e: numpy ndarray of values of electron density in m$^{-3}$
-    :param t_e: numpy ndarray of values of electron temperature in [ev]
+    :param n_e: numpy ndarray of values of electron density in m\\ :sup:`-3`
+    :param t_e: numpy ndarray of values of electron temperature in eV
     :param tcx_donor: Optional, specifies donating species in tcx collisions.
-    :param tcx_donor_n: Optional, mandatory if tcx_donor parameter passed. Numpy ndarray of values of electron density
+    :param tcx_donor_n: Optional, mandatory if `tcx_donor` parameter passed. Numpy ndarray of values of electron density
     :param tcx_donor_charge: Optional, specifies the charge of the donor. Default is 0.
     :param coef_ion: Optional, ionization rates. If not passed rates will be loaded (slow).
     :param coef_recom: Optional, recombination rates. If not passed rates will be loaded (slow).
@@ -413,13 +412,13 @@ def fractional_abundance(atomic_data: AtomicData, element: Element, n_e,
 
     :param atomic_data: Any cherab AtomicData source
     :param element: Any cherab element
-    :param n_e: Scalar, iterable or interpolating function of values of electron density in m$^{-3}$
-    :param t_e: Scalar, iterable or interpolating function of values of electron temperature in [ev]
+    :param n_e: Scalar, iterable or interpolating function of values of electron density in m\\ :sup:`-3`
+    :param t_e: Scalar, iterable or interpolating function of values of electron temperature in eV
     :param tcx_donor: Optional, specifies donating species in tcx collisions.
-    :param tcx_donor_n: Optional, mandatory if tcx_donor parameter passed. Scalar, iterable or interpolating function of values of electron density
+    :param tcx_donor_n: Optional, mandatory if `tcx_donor` parameter passed. Scalar, iterable or interpolating function of values of electron density
     :param tcx_donor_charge: Optional, specifies the charge of the donor. Default is 0.
-    :param free_variable: Mantadory if n_e, t_e or tcx_donor_n is an interpolating function. If 2D interpolator is passed
-     free_variable has to be list or tuple of 1D arrays with coordinates
+    :param free_variable: Mandatory if `n_e`, `t_e` or `tcx_donor_n` is an interpolating function. If 2D interpolator is passed
+     `free_variable` has to be list or tuple of 1D arrays with coordinates
     :return: Dictionary with values of fractional abundances in the form {charge: values}
     """
 
@@ -448,11 +447,11 @@ def _from_elementdensity(atomic_data: AtomicData, element: Element, element_dens
 
     :param atomic_data: Any cherab AtomicData source
     :param element: Any cherab element
-    :param element_density: Density profile of the element in m^-3
-    :param n_e: numpy ndarray of values of electron density in m$^{-3}$
-    :param t_e: numpy ndarray of values of electron temperature in [ev]
+    :param element_density: Density profile of the element in m\\ :sup:`-3`
+    :param n_e: numpy ndarray of values of electron density in m\\ :sup:`-3`
+    :param t_e: numpy ndarray of values of electron temperature in eV
     :param tcx_donor: Optional, specifies donating species in tcx collisions.
-    :param tcx_donor_n: Optional, mandatory if tcx_donor parameter passed. numpy ndarray of values of electron density
+    :param tcx_donor_n: Optional, mandatory if `tcx_donor` parameter passed. numpy ndarray of values of electron density
     :param tcx_donor_charge: Optional, specifies the charge of the donor. Default is 0.
     :return: dim 0 corresponds to element charge state, dim > 0 correspond to dimensions of provided values.
     """
@@ -484,14 +483,14 @@ def from_elementdensity(atomic_data: AtomicData, element: Element, element_densi
 
     :param atomic_data: Any cherab AtomicData source
     :param element: Any cherab element
-    :param element_density: Density profile of the element in m^-3
-    :param n_e: Scalar or iterable of values of electron density in m$^{-3}$
-    :param t_e: Scalar or iterable of values of electron temperature in [ev]
+    :param element_density: Density profile of the element in m\\ :sup:`-3`
+    :param n_e: Scalar or iterable of values of electron density in m\\ :sup:`-3`
+    :param t_e: Scalar or iterable of values of electron temperature in eV
     :param tcx_donor: Optional, specifies donating species in tcx collisions.
-    :param tcx_donor_n: Optional, mandatory if tcx_donor parameter passed. Scalar or iterable of values of donor density
+    :param tcx_donor_n: Optional, mandatory if `tcx_donor` parameter passed. Scalar or iterable of values of donor density
     :param tcx_donor_charge: Optional, specifies the charge of the donor. Default is 0.
-    :param free_variable: Mantadory if n_e, t_e or tcx_donor_n is an interpolating function.If 2D interpolator is passed
-     free_variable has to be list or tuple of 1D arrays with coordinates
+    :param free_variable: Mandatory if `n_e`, `t_e` or `tcx_donor_n` is an interpolating function. If 2D interpolator is passed
+     `free_variable` has to be list or tuple of 1D arrays with coordinates
     :return: Dictionary with density profiles of charge states of the element in the form {charge: profile}
     """
 
@@ -523,11 +522,11 @@ def _match_plasma_neutrality(atomic_data: AtomicData, element: Element, n_specie
 
     :param atomic_data: Any cherab AtomicData source
     :param element: Any cherab element
-    :param element_density_profile: Density profile of the element in m^-3
-    :param n_e: Scalar or iterable of values of electron density in m$^{-3}$
-    :param t_e: Scalar or iterable of values of electron temperature in [ev]
+    :param n_species: List of density profiles of all species in m\\ :sup:`-3`
+    :param n_e_profile: Scalar or iterable of values of electron density in m\\ :sup:`-3`
+    :param t_e_profile: Scalar or iterable of values of electron temperature in eV
     :param tcx_donor: Optional, specifies donating species in tcx collisions.
-    :param tcx_donor_n: Optional, mandatory if tcx_donor parameter passed. Scalar or iterable of values of donor density
+    :param tcx_donor_n: Optional, mandatory if `tcx_donor` parameter passed. Scalar or iterable of values of donor density
     :param tcx_donor_charge: Optional, specifies the charge of the donor. Default is 0.
     :return: Density profiles of charge states of the element. Dim 0 corresponds to charge of charge states.
     """
@@ -566,14 +565,14 @@ def match_plasma_neutrality(atomic_data: AtomicData, element: Element, n_species
 
     :param atomic_data: Any cherab AtomicData source
     :param element: Any cherab element
-    :param element_density_profile: Density profile of the element in m^-3
+    :param n_species: List of density profiles of all species in m\\ :sup:`-3`
     :param n_e: 1d profile giving values of electron density for free_variable
-    :param t_e: 1d profile giving values of electron density for free_variable
+    :param t_e: 1d profile giving values of electron temperature for free_variable
     :param tcx_donor: Optional, specifies donating species in tcx collisions.
-    :param tcx_donor_n: Optional, mandatory if tcx_donor parameter passed. 1d profile giving density of donors in m^-3
+    :param tcx_donor_n: Optional, mandatory if `tcx_donor` parameter passed. 1d profile giving density of donors in m\\ :sup:`-3`
     :param tcx_donor_charge: Optional, specifies the charge of the donor. Default is 0.
-    :param free_variable: Mantadory if n_e, t_e or tcx_donor_n is an interpolating function. If 2D interpolator is passed
-     free_variable has to be list or tuple of 1D arrays with coordinates
+    :param free_variable: Mandatory if `n_e`, `t_e` or `tcx_donor_n` is an interpolating function. If 2D interpolator is passed
+     `free_variable` has to be list or tuple of 1D arrays with coordinates
     :return: Dictionary with density profiles of charge states of the element in the form {charge: profile}
     """
 
@@ -610,13 +609,13 @@ def interpolators1d_fractional(atomic_data: AtomicData, element: Element, free_v
 
     :param atomic_data: Any cherab AtomicData source
     :param element: Any cherab element
-    :param free_variable: Free variable (coordinate) to calculate the 1d fractional abundance interpolators from.If 2D interpolator is passed
-     free_variable has to be list or tuple of 1D arrays with coordinates
-    :param n_e_interpolator: 1d iterable or interpolator giving values of electron density for free_variable
-    :param t_e_interpolator: 1d iterable or  interpolator giving values of electron density for free_variable
+    :param free_variable: Free variable (coordinate) to calculate the 1d fractional abundance interpolators from. If 2D interpolator is passed
+     `free_variable` has to be list or tuple of 1D arrays with coordinates
+    :param n_e: 1d iterable or interpolator giving values of electron density for `free_variable`
+    :param t_e: 1d iterable or  interpolator giving values of electron temperature for `free_variable`
     :param tcx_donor: Optional, specifies donating species in tcx collisions.
-    :param tcx_donor_n_interpolator: Optional, mandatory if tcx_donor parameter passed. 1d iterable interpolator giving
-     density of donors in m^-3
+    :param tcx_donor_n: Optional, mandatory if `tcx_donor` parameter passed. 1d iterable interpolator giving
+     density of donors in m\\ :sup:`-3` for `free_variable`
     :param tcx_donor_charge: Optional, specifies the charge of the donor. Default is 0.
     :return: dictionary with 1d interpolators of fractional abundance of charge states of the element in the form {charge: density}
     """
@@ -635,19 +634,19 @@ def interpolators1d_fractional(atomic_data: AtomicData, element: Element, free_v
 def interpolators2d_fractional(atomic_data: AtomicData, element: Element, free_variable, n_e,
                                t_e, tcx_donor: Element = None, tcx_donor_n=None, tcx_donor_charge=0):
     """
-    Creates 1d linear interpolators of fractional abundance of the specified element
+    Creates 2d linear interpolators of fractional abundance of the specified element
     for the specified electron densities and temperatures.
 
     For more information see _fractional_abundance function.
 
     :param atomic_data: Any cherab AtomicData source
     :param element: Any cherab element
-    :param free_variable: Free variable (coordinate) to calculate the 1d fractional abundance interpolators from.If 2D interpolator is passed
-     free_variable has to be list or tuple of 1D arrays with coordinates
-    :param n_e_interpolator: 1d interpolator giving values of electron density for free_variable
-    :param t_e_interpolator: 1d interpolator giving values of electron density for free_variable
+    :param free_variable: Free variable (coordinate) to calculate the 2d fractional abundance interpolators from. If 2D interpolator is passed
+     `free_variable` has to be list or tuple of 1D arrays with coordinates
+    :param n_e: 1d iterable or interpolator giving values of electron density for `free_variable`
+    :param t_e: 1d iterable or interpolator giving values of electron temperature for `free_variable`
     :param tcx_donor: Optional, specifies donating species in tcx collisions.
-    :param tcx_donor_n_interpolator: Optional, mandatory if tcx_donor parameter passed. 1d interpolator giving density of donors in m^-3
+    :param tcx_donor_n_interpolator: Optional, mandatory if tcx_donor parameter passed. 1d interpolator giving density of donors in m\\ :sup:`-3`
     :param tcx_donor_charge: Optional, specifies the charge of the donor. Default is 0.
     :return: dictionary with 1d interpolators of fractional abundance of charge states of the element in the form {charge: density}
     """
@@ -676,11 +675,11 @@ def interpolators1d_from_elementdensity(atomic_data: AtomicData, element: Elemen
     :param atomic_data: Any cherab AtomicData source
     :param element: Any cherab element
     :param free_variable: Free variable (coordinate) to calculate the 1d fractional abundance interpolators from.
-    :param element_density: 1d iterable or an interpolator giving values of element density for free_variable in m^-3
-    :param n_e_interpolator: 1d interpolator giving values of electron density for free_variable
-    :param t_e_interpolator: 1d interpolator giving values of electron density for free_variable
+    :param element_density: 1d iterable or an interpolator giving values of element density for free_variable in m\\ :sup:`-3`
+    :param n_e: 1d interpolator giving values of electron density for `free_variable`
+    :param t_e: 1d interpolator giving values of electron temperature for `free_variable`
     :param tcx_donor: Optional, specifies donating species in tcx collisions.
-    :param tcx_donor_n_interpolator: Optional, mandatory if tcx_donor parameter passed. 1d interpolator giving density of donors in m^-3
+    :param tcx_donor_n: Optional, mandatory if `tcx_donor` parameter passed. 1d interpolator giving density of donors in m\\ :sup:`-3` for `free_variable`
     :param tcx_donor_charge: Optional, specifies the charge of the donor. Default is 0.
     :return: dictionary with 1d interpolators of fractional abundance of charge states of the element in the form {charge: interpolator}
     """
@@ -710,11 +709,11 @@ def interpolators1d_match_plasma_neutrality(atomic_data: AtomicData, element: El
     :param atomic_data: Any cherab AtomicData source
     :param element: Any cherab element
     :param free_variable: Free variable (coordinate) to calculate the 1d fractional abundance interpolators from
-    :param species_density: 1d interpolator giving values of the element density for free_variable
+    :param species_density: 1d interpolator giving values of the element density for `free_variable`
     :param n_e: 1d interpolator giving values of electron density for free_variable
-    :param t_e: 1d interpolator giving values of electron density for free_variable
+    :param t_e: 1d interpolator giving values of electron temperature for `free_variable`
     :param tcx_donor: specifies donating species in tcx collisions.
-    :param tcx_donor_n: Optional, mandatory if tcx_donor parameter passed. 1d interpolator giving density of donors in m^-3
+    :param tcx_donor_n: Optional, mandatory if `tcx_donor` parameter passed. 1d interpolator giving density of donors in m\\ :sup:`-3` for `free_variable`
     :param tcx_donor_charge:  Optional, specifies the charge of the donor. Default is 0.
     :return: dictionary with 1d interpolators of fractional abundance of charge states of the element in the form {charge: interpolator}
     """
@@ -735,7 +734,7 @@ def interpolators2d_from_elementdensity(atomic_data: AtomicData, element: Elemen
                                         element_density, n_e, t_e, tcx_donor: Element = None,
                                         tcx_donor_n=None, tcx_donor_charge=0):
     """
-    Creates 1d linear interpolators of density profiles of the specified element
+    Creates 2d linear interpolators of density profiles of the specified element
     for the specified electron densities and temperatures.
 
     For more information see _from_element_density function.
@@ -743,11 +742,11 @@ def interpolators2d_from_elementdensity(atomic_data: AtomicData, element: Elemen
     :param atomic_data: Any cherab AtomicData source
     :param element: Any cherab element
     :param free_variable: A tupple containing two 1D arrays of coordinate points
-    :param element_density_interpolator: 1d interpolator giving values of element density for free_variable in m^-3
-    :param n_e_interpolator: 1d interpolator giving values of electron density for free_variable
-    :param t_e_interpolator: 1d interpolator giving values of electron density for free_variable
+    :param element_density: 1d interpolator giving values of element density for `free_variable` in m\\ :sup:`-3`
+    :param n_e: 1d interpolator giving values of electron density for `free_variable`
+    :param t_e: 1d interpolator giving values of electron temperature for `free_variable`
     :param tcx_donor: Optional, specifies donating species in tcx collisions.
-    :param tcx_donor_n_interpolator: Optional, mandatory if tcx_donor parameter passed. 1d interpolator giving density of donors in m^-3
+    :param tcx_donor_n: Optional, mandatory if `tcx_donor` parameter passed. 1d interpolator giving density of donors in m\\ :sup:`-3` for `free_variable`
     :param tcx_donor_charge: Optional, specifies the charge of the donor. Default is 0.
     :return: dictionary with 1d interpolators of fractional abundance of charge states of the element in the form {charge: interpolator}
     """
@@ -769,19 +768,19 @@ def interpolators2d_match_plasma_neutrality(atomic_data: AtomicData, element: El
                                             tcx_donor_n=None,
                                             tcx_donor_charge=0):
     """
-    Creates 1d linear interpolators of density profiles of the specified element
+    Creates 2d linear interpolators of density profiles of the specified element
     for the specified electron densities and temperatures.
 
     For more information see _match_element_density function.
 
     :param atomic_data: Any cherab AtomicData source
     :param element: Any cherab element
-    :param free_variable: A tupple containing two 1D arrays of coordinate poitns
+    :param free_variable: A tuple containing two 1D arrays of coordinate points
     :param species_density: 1d interpolator giving values of the element density for free_variable
     :param n_e: 1d interpolator giving values of electron density for free_variable
     :param t_e: 1d interpolator giving values of electron density for free_variable
     :param tcx_donor: specifies donating species in tcx collisions.
-    :param tcx_donor_n: Optional, mandatory if tcx_donor parameter passed. 1d interpolator giving density of donors in m^-3
+    :param tcx_donor_n: Optional, mandatory if tcx_donor parameter passed. 1d interpolator giving density of donors in m\\ :sup:`-3`
     :param tcx_donor_charge:  Optional, specifies the charge of the donor. Default is 0.
     :return: dictionary with 1d interpolators of fractional abundance of charge states of the element in the form {charge: interpolator}
     """
@@ -800,7 +799,7 @@ def interpolators2d_match_plasma_neutrality(atomic_data: AtomicData, element: El
 
 def abundance_axisymmetric_mapper(abundance):
     """
-    Convert 2d abundance interpolators into AxisymmetricMapper.
+    Convert 2d abundance interpolators into `.AxisymmetricMapper`.
 
     :param abundance: Dictionary with 2d Abundace/fractional abundance interpolators
     """
@@ -827,8 +826,8 @@ def equilibrium_map3d_fractional(atomic_data: AtomicData, element: Element, equi
     :param n_e_profile: 1d iterable or interpolator giving values of electron density
     :param t_e_profile: 1d iterable or interpolator giving values of electron temperature
     :param tcx_donor: Optional, specifies donating species in tcx collisions.
-    :param tcx_donor_n: Optional, mandatory if tcx_donor parameter passed. 1d iterable interpolator giving
-     density of donors in m^-3
+    :param tcx_donor_n: Optional, mandatory if `tcx_donor` parameter passed. 1d iterable interpolator giving
+     density of donors in m\\ :sup:`-3`
     :param tcx_donor_charge: Optional, specifies the charge of the donor. Default is 0.
     """
 
@@ -854,12 +853,12 @@ def equilibrium_map3d_from_elementdensity(atomic_data: AtomicData, element: Elem
     :param element: Any cherab element
     :param equilibrium: EFITEquilibrium object
     :param psin_1d:1D array with normalized poloidal flux coordinates
-    :param element_density: 1d iterable or an interpolator giving values of element density for free_variable in m^-3
+    :param element_density: 1d iterable or an interpolator giving values of element density for `free_variable` in m\\ :sup:`-3`
     :param n_e_profile: 1d iterable or interpolator giving values of electron density
     :param t_e_profile: 1d iterable or interpolator giving values of electron temperature
     :param tcx_donor: Optional, specifies donating species in tcx collisions.
     :param tcx_donor_n: Optional, mandatory if tcx_donor parameter passed. 1d iterable interpolator giving
-     density of donors in m^-3
+     density of donors in m\\ :sup:`-3`
     :param tcx_donor_charge: Optional, specifies the charge of the donor. Default is 0.
     """
 
@@ -885,12 +884,12 @@ def equilibrium_map3d_match_plasma_neutrality(atomic_data: AtomicData, element: 
     :param element: Any cherab element
     :param equilibrium: EFITEquilibrium object
     :param psin_1d:1D array with normalized poloidal flux coordinates
-    :param species_density: list of 1d iterables interpolators giving values of element density for the values of psi in m^-3
+    :param species_density: list of 1d iterables interpolators giving values of element density for the values of psi in m\\ :sup:`-3`
     :param n_e_profile: 1d iterable or interpolator giving values of electron density
     :param t_e_profile: 1d iterable or interpolator giving values of electron temperature
     :param tcx_donor: Optional, specifies donating species in tcx collisions.
-    :param tcx_donor_n: Optional, mandatory if tcx_donor parameter passed. 1d iterable interpolator giving
-     density of donors in m^-3
+    :param tcx_donor_n: Optional, mandatory if `tcx_donor` parameter passed. 1d iterable interpolator giving
+     density of donors in m\\ :sup:`-3`
     :param tcx_donor_charge: Optional, specifies the charge of the donor. Default is 0.
     """
 

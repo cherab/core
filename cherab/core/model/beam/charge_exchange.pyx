@@ -45,15 +45,14 @@ cdef double ms_to_evamu(double x):
 
 cdef class BeamCXLine(BeamModel):
     """
-    Calculates emission produced by charge-exchange of plasma ions
-    with beam species.
+    Calculates emission produced by charge-exchange of plasma ions with beam species.
 
     :param Line line: The emission line object.
     :param Beam beam: The beam object.
     :param Plasma plasma: The emitting plasma object.
     :param AtomicData atomic_data: The atomic data provider.
-    :param object lineshape: The spectral line shape class. Must be a subclass of `LineShapeModel`.
-                             Defaults to `GaussianLine`.
+    :param object lineshape: The spectral line shape class. Must be a subclass of `.LineShapeModel`.
+                             Defaults to `.GaussianLine`.
     :param object lineshape_args: The arguments of spectral line shape class. Defaults is None.
     :param object lineshape_kwargs: The keyword arguments of spectral line shape class.
                                     Defaults is None.
@@ -189,7 +188,7 @@ cdef class BeamCXLine(BeamModel):
         :param interaction_energy: The donor-receiver interaction energy in eV/amu.
         :param donor_velocity: A Vector defining the donor particle velocity in m/s.
         :param receiver_temperature: The receiver species temperature in eV.
-        :return: The composite charge exchange rate in W.m^3.
+        :return: The composite charge exchange rate in W m\\ :sup:`3`.
         """
 
         cdef:

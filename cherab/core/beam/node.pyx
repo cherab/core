@@ -124,7 +124,7 @@ cdef class Beam(Node):
     :ivar AtomicData atomic_data: The atomic data provider class for this beam.
       All beam emission and attenuation rates will be calculated from the same provider.
     :ivar BeamAttenuator attenuator: The method used for calculating the attenuation
-      of this beam into the plasma. Defaults to a SingleRayAttenuator().
+      of this beam into the plasma. Defaults to a `.SingleRayAttenuator`.
     :ivar float divergence_x: The beam profile divergence in the x dimension in beam
       coordinates (degrees).
     :ivar float divergence_y: The beam profile divergence in the y dimension in beam
@@ -133,7 +133,7 @@ cdef class Beam(Node):
     :ivar float energy: The beam energy in eV/amu.
     :ivar VolumeIntegrator integrator: The configurable method for doing
       volumetric integration through the beam along a Ray's path. Defaults to
-      a numerical integrator with 1mm step size, NumericalIntegrator(step=0.001).
+      a numerical integrator with 1mm step size, `NumericalIntegrator(step=0.001)`.
     :ivar float length: The approximate length of this beam from source to extinction
       in the plasma. This is used for setting the bounding geometry over which calculations
       will occur. Units of m.
@@ -213,15 +213,16 @@ cdef class Beam(Node):
 
     cpdef double density(self, double x, double y, double z) except? -1e999:
         """
-        Returns the bean density at the specified position in beam coordinates.
-        
-        Note: this function is only defined over the domain 0 < z < beam_length.
+        Return the beam density at the specified position in beam coordinates.
+
+        Note: this function is only defined over the domain `0 < z < beam_length`.
         Outside of this range the density is clamped to zero.
-        
-        :param x: x coordinate in meters.
-        :param y: y coordinate in meters.
-        :param z: z coordinate in meters.
-        :return: Beam density in m^-3
+
+        :param float x: x coordinate in meters.
+        :param float y: y coordinate in meters.
+        :param float z: z coordinate in meters.
+        :return: Beam density in m\\ :sup:`-3`.
+        :rtype: float
         """
 
         if self._attenuator is None:
@@ -240,11 +241,11 @@ cdef class Beam(Node):
         The beam direction (non-normalised) is calculated as follows (z > 0):
 
         .. math::
-            e_x = x\frac{(ztg(\alpha_x))^2}{\sigma^2 + (ztg(\alpha_x))^2},
+            e_x &= x\frac{(\mathrm{ztg}(\alpha_x))^2}{\sigma^2 + (\mathrm{ztg}(\alpha_x))^2},
 
-            e_y = y\frac{(ztg(\alpha_y))^2}{\sigma^2 + (ztg(\alpha_y))^2},
+            e_y &= y\frac{(\mathrm{ztg}(\alpha_y))^2}{\sigma^2 + (\mathrm{ztg}(\alpha_y))^2},
 
-            e_z = z,
+            e_z &= z,
 
         where :math:`\sigma` is the Gaussian beam deviation at origin,
         :math:`\alpha_x` and :math:`\alpha_y` are the beam divergence angles
@@ -253,14 +254,15 @@ cdef class Beam(Node):
         For z <= 0 the beam direction is (0, 0, 1).
 
         The function returns normalised beam direction.
-        
+
         Note the values of the beam outside of the beam envelope should be
         treated with caution.
-        
-        :param x: x coordinate in meters.
-        :param y: y coordinate in meters.
-        :param z: z coordinate in meters. 
+
+        :param float x: x coordinate in meters.
+        :param float y: y coordinate in meters.
+        :param float z: z coordinate in meters.
         :return: Direction vector.
+        :rtype: Vector3D
         """
 
         # if behind the beam just return the beam axis (for want of a better value)
@@ -416,7 +418,7 @@ cdef class Beam(Node):
     @property
     def attenuator(self):
         return self._attenuator
-    
+
     @attenuator.setter
     def attenuator(self, BeamAttenuator value not None):
 
