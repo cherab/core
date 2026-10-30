@@ -7,6 +7,11 @@ Release 1.6.1 (unreleased)
 Bug fixes:
 * Fix Error in GenericDistribution docstring example. (#522)
 * Fix OpenADAS data downloads failing with HTTP 404 by using HTTPS. (#526)
+* Fix `invert_sparse_regularised_nnls` failing when `tikhonov_matrix` is omitted (#523)
+* Fix `invert_sart` and `invert_constrained_sart` crashing when array-like initial guesses which were not Numpy arrays were provided.
+
+New:
+* Impove test coverage of tomographic inversion routines.
 
 Release 1.6.0 (12th Oct 2026)
 -------------------
