@@ -83,7 +83,7 @@ cpdef invert_sart(geometry_matrix, measurement_vector, object initial_guess=None
     elif isinstance(initial_guess, (float, int)):
         solution = np.zeros(n_sources) + initial_guess
     else:
-        solution = initial_guess
+        solution = np.array(initial_guess)
     solution_mv = solution
 
     solution_new = np.zeros(n_sources)
@@ -224,7 +224,7 @@ cpdef invert_constrained_sart(geometry_matrix, laplacian_matrix, measurement_vec
     elif isinstance(initial_guess, (float, int)):
         solution = np.zeros(n_sources) + initial_guess
     else:
-        solution = initial_guess
+        solution = np.array(initial_guess)
     solution_mv = solution
 
     solution_new = np.zeros(n_sources)
