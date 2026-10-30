@@ -1,6 +1,12 @@
 Project Changelog
 =================
 
+Release 1.6.1 (unreleased)
+--------------------------
+
+Bug fixes:
+* Fix OpenADAS data downloads failing with HTTP 404 by using HTTPS. (#526)
+
 Release 1.6.0 (12th Oct 2026)
 -------------------
 
