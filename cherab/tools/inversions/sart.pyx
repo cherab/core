@@ -34,7 +34,7 @@ cpdef invert_sart(geometry_matrix, measurement_vector, object initial_guess=None
 
     .. math::
 
-       x_l^{(i+1)} = f_{sart}(x_l^{(i)}) = x_l^{(i)} + \\frac{\omega}{W_{\oplus,l}} \sum_{k=1}^{N_d} \\frac{W_{k,l}}{W_{k,\oplus}} (\Phi_k - \hat{\Phi}_k),
+       x_l^{(i+1)} = f_{sart}(x_l^{(i)}) = x_l^{(i)} + \frac{\omega}{W_{\oplus,l}} \sum_{k=1}^{N_d} \frac{W_{k,l}}{W_{k,\oplus}} (\Phi_k - \hat{\Phi}_k),
 
     where
     
@@ -83,7 +83,7 @@ cpdef invert_sart(geometry_matrix, measurement_vector, object initial_guess=None
     elif isinstance(initial_guess, (float, int)):
         solution = np.zeros(n_sources) + initial_guess
     else:
-        solution = initial_guess
+        solution = np.array(initial_guess)
     solution_mv = solution
 
     solution_new = np.zeros(n_sources)
@@ -177,12 +177,12 @@ cpdef invert_constrained_sart(geometry_matrix, laplacian_matrix, measurement_vec
     
     .. math::
 
-       \hat{\mathcal{L}}_{iso}(x_l^{(i)}) = \\beta_L (Cx_l^{(i)} - \sum_{c=1}^C x_c^{(i)}).
+       \hat{\mathcal{L}}_{iso}(x_l^{(i)}) = \beta_L (Cx_l^{(i)} - \sum_{c=1}^C x_c^{(i)}).
 
     Here, :math:`c` is the index for the sum over the neighbouring voxels. The regularisation 
-    hyperparameter :math:`\\beta_L` determines the amount of local smoothness imposed on the
-    solution vector. When :math:`\\beta_L = 0`, the solution is fully determined by the 
-    measurements, and as :math:`\\beta_L \\rightarrow 1`, the solution is dominated by the 
+    hyperparameter :math:`\beta_L` determines the amount of local smoothness imposed on the
+    solution vector. When :math:`\beta_L = 0`, the solution is fully determined by the
+    measurements, and as :math:`\beta_L \rightarrow 1`, the solution is dominated by the
     smoothness operator.
     
     :param np.ndarray geometry_matrix: The sensitivity matrix describing the coupling between the detectors
@@ -224,7 +224,7 @@ cpdef invert_constrained_sart(geometry_matrix, laplacian_matrix, measurement_vec
     elif isinstance(initial_guess, (float, int)):
         solution = np.zeros(n_sources) + initial_guess
     else:
-        solution = initial_guess
+        solution = np.array(initial_guess)
     solution_mv = solution
 
     solution_new = np.zeros(n_sources)

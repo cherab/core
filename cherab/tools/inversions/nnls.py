@@ -108,7 +108,7 @@ def invert_sparse_regularised_nnls(w_matrix, b_vector, alpha=0.01, tikhonov_matr
     m, n = w_matrix.shape
 
     if tikhonov_matrix is None:
-        tikhonov_matrix = eye(n)
+        tikhonov_matrix = eye(n, format="csr")
 
     tikhonov_matrix = alpha * tikhonov_matrix
 
