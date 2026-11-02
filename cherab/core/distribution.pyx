@@ -321,8 +321,11 @@ cdef class GenericDistribution(DistributionFunction):
 
     .. code-block:: pycon
 
+       >>> from math import exp
+       >>> from raysect.core import Vector3D
        >>> from cherab.core import GenericDistribution
-       >>> from cherab.core.math import Function6D, Function3D, VectorFunction3D
+       >>> from cherab.core.math import Function3D, VectorFunction3D
+       >>> from cherab.core.math.function.float import Function6D
        >>>
        >>> # Setup distribution for a slab of plasma in thermodynamic equilibrium
        >>> phase_space_density = Function6D(lambda x, y, z, vx, vy, vz: 1E17 * exp(-(vx**2 + vy**2 + vz**2) / (2 * 1)))
