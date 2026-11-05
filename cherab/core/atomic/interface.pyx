@@ -17,6 +17,8 @@
 # under the Licence.
 
 from .gaunt import MaxwellianFreeFreeGauntFactor
+from .stark import InterpolatedStarkStructure
+from .elements import Isotope
 import json
 from os import path
 
@@ -194,6 +196,34 @@ cdef class AtomicData:
                                ' are not available.'.format(line.element.symbol, line.charge, line.transition))
 
         return tuple(coefficients)
+
+    cpdef StarkStructure stark_structure(self, Line line):
+        """
+        Returns interpolated ratios of linear Stark components of the MSE spectrum when
+        the observation direction is perependicular to the electric field.
+
+        Use data from A.V. Demura, D.S. Leontiev, V.S. Lisitsa. Polarization characteristics
+        of electrodynamic Stark effect. Accepted to J. Exp. Theor. Phys. (2024)
+        provided by Dmitry Leontiev.
+        """
+
+        element = line.element
+        if isinstance(element, Isotope):
+            element = element.element
+
+        symbol = element.symbol.lower()
+        upper, lower = line.transition
+        encoded_transition = '{} -> {}'.format(str(upper).lower(), str(lower).lower())
+
+        try:
+            with open(path.join(path.dirname(__file__), "data/lineshape/mse/{}/{}.json".format(symbol, line.charge))) as f:
+                data = json.load(f)
+            data = data[encoded_transition]
+        except (FileNotFoundError, KeyError):
+            raise RuntimeError('Requested MSE Stark component ratios (element={}, charge={}, transition={})'
+                               ' are not available.'.format(symbol, line.charge, line.transition))
+
+        return InterpolatedStarkStructure(data, extrapolate=True)
 
     cpdef FreeFreeGauntFactor free_free_gaunt_factor(self):
         """

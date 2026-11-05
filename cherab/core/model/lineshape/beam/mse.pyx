@@ -18,29 +18,25 @@
 # See the Licence for the specific language governing permissions and limitations
 # under the Licence.
 
-from libc.math cimport fabs, sqrt
+from libc.math cimport fabs, sqrt, M_PI
 from raysect.optical cimport Spectrum, Point3D, Vector3D
 
 from cherab.core.plasma cimport Plasma
 from cherab.core.beam cimport Beam
-from cherab.core.atomic cimport AtomicData
-from cherab.core.atomic cimport Line
-from cherab.core.math.function cimport autowrap_function1d, autowrap_function2d
-from cherab.core.utility.constants cimport ATOMIC_MASS, ELEMENTARY_CHARGE
+from cherab.core.atomic cimport Line, AtomicData
+from cherab.core.utility.constants cimport ELEMENTARY_CHARGE, ELECTRON_REST_MASS, VACUUM_PERMITTIVITY, PLANCK_CONSTANT, HC_EV_NM
 from cherab.core.model.lineshape.gaussian cimport add_gaussian_line
 from cherab.core.model.lineshape.doppler cimport thermal_broadening, doppler_shift
 
 cimport cython
 
 
-cdef double RECIP_ATOMIC_MASS = 1 / ATOMIC_MASS
+# (3/2 * e0 * h^2)/(2pi * Me * e^2) in [eV*m/V]
+cdef double STARK_ENERGY_SPLITTING_FACTOR = 3 * VACUUM_PERMITTIVITY * PLANCK_CONSTANT**2 / (2 * M_PI * ELECTRON_REST_MASS * ELEMENTARY_CHARGE**2)
 
-
-cdef double evamu_to_ms(double x):
-    return sqrt(2 * x * ELEMENTARY_CHARGE * RECIP_ATOMIC_MASS)
-
-
-DEF STARK_SPLITTING_FACTOR = 2.77e-8
+DEF PI_POLARISATION = 0
+DEF SIGMA_POLARISATION = 1
+DEF NO_POLARISATION = 2
 
 
 cdef class BeamEmissionMultiplet(BeamLineShapeModel):
@@ -49,27 +45,47 @@ cdef class BeamEmissionMultiplet(BeamLineShapeModel):
     """
 
     def __init__(self, Line line, double wavelength, Beam beam, AtomicData atomic_data,
-                 object sigma_to_pi, object sigma1_to_sigma0, object pi2_to_pi3, object pi4_to_pi3):
+                 StarkStructure stark_structure=None, polarisation='no'):
 
         super().__init__(line, wavelength, beam, atomic_data)
 
-        self._sigma_to_pi = autowrap_function2d(sigma_to_pi)
-        self._sigma1_to_sigma0 = autowrap_function1d(sigma1_to_sigma0)
-        self._pi2_to_pi3 = autowrap_function1d(pi2_to_pi3)
-        self._pi4_to_pi3 = autowrap_function1d(pi4_to_pi3)
+        self._stark_structure = stark_structure or self.atomic_data.stark_structure(line)
+
+        self.polarisation = polarisation
+
+    @property
+    def polarisation(self):
+        if self._polarisation == PI_POLARISATION:
+            return 'pi'
+        if self._polarisation == SIGMA_POLARISATION:
+            return 'sigma'
+        if self._polarisation == NO_POLARISATION:
+            return 'no'
+
+    @polarisation.setter
+    def polarisation(self, value):
+        if value.lower() == 'pi':
+            self._polarisation = PI_POLARISATION
+        elif value.lower() == 'sigma':
+            self._polarisation = SIGMA_POLARISATION
+        elif value.lower() == 'no':
+            self._polarisation = NO_POLARISATION
+        else:
+            raise ValueError('Select between "pi", "sigma" or "no", {} is unsupported.'.format(value))
 
     @cython.cdivision(True)
     cpdef Spectrum add_line(self, double radiance, Point3D beam_point, Point3D plasma_point,
-                            Vector3D beam_direction, Vector3D observation_direction, Spectrum spectrum):
+                            Vector3D beam_velocity, Vector3D observation_direction, Spectrum spectrum):
 
-        cdef double x, y, z
-        cdef Plasma plasma
-        cdef double te, ne, beam_energy, sigma, stark_split, beam_ion_mass, beam_temperature
-        cdef double natural_wavelength, central_wavelength
-        cdef double sigma_to_pi, d, intensity_sig, intensity_pi, e_field
-        cdef double s1_to_s0, intensity_s0, intensity_s1
-        cdef double pi2_to_pi3, pi4_to_pi3, intensity_pi2, intensity_pi3, intensity_pi4
-        cdef Vector3D b_field, beam_velocity
+        cdef:
+            int i, index
+            double x, y, z
+            Plasma plasma
+            double te, ne, beam_energy, sigma, stark_split, beam_ion_mass, beam_temperature, e_magn, b_magn
+            double shifted_wavelength, photon_energy
+            double cos_sqr, sin_sqr, sigma_to_total, intensity
+            double[:] ratios_mv
+            Vector3D b_field, e_field
 
         # extract for more compact code
         x = plasma_point.x
@@ -90,46 +106,59 @@ cdef class BeamEmissionMultiplet(BeamLineShapeModel):
 
         # calculate Stark splitting
         b_field = plasma.get_b_field().evaluate(x, y, z)
-        beam_velocity = beam_direction.normalise().mul(evamu_to_ms(beam_energy))
-        e_field = beam_velocity.cross(b_field).get_length()
-        stark_split = fabs(STARK_SPLITTING_FACTOR * e_field)  # TODO - calculate splitting factor? Reject other lines?
+        e_field = beam_velocity.cross(b_field)
+        e_magn = e_field.get_length()
+        stark_split = STARK_ENERGY_SPLITTING_FACTOR * e_magn
 
         # calculate emission line central wavelength, doppler shifted along observation direction
-        natural_wavelength = self.wavelength
-        central_wavelength = doppler_shift(natural_wavelength, observation_direction, beam_velocity)
+        shifted_wavelength = doppler_shift(self.wavelength, observation_direction, beam_velocity)
+        photon_energy = HC_EV_NM / shifted_wavelength
 
         # calculate doppler broadening
         beam_ion_mass = self.beam.get_element().atomic_weight
         beam_temperature = self.beam.get_temperature()
         sigma = thermal_broadening(self.wavelength, beam_temperature, beam_ion_mass)
 
-        # calculate relative intensities of sigma and pi lines
-        sigma_to_pi = self._sigma_to_pi.evaluate(ne, beam_energy)
-        d = 1 / (1 + sigma_to_pi)
-        intensity_sig = sigma_to_pi * d * radiance
-        intensity_pi = 0.5 * d * radiance
+        if e_magn == 0:
+            # no splitting if electric field strength is zero
+            if self._polarisation == NO_POLARISATION:
+                return add_gaussian_line(radiance, shifted_wavelength, sigma, spectrum)
+
+            return add_gaussian_line(0.5 * radiance, shifted_wavelength, sigma, spectrum)
+
+        # coefficients for intensities parallel and perpendicular to electric field
+        cos_sqr = e_field.normalise().dot(observation_direction.normalise())**2
+        sin_sqr = 1. - cos_sqr
+
+        # get relative ratios of Stark intensities perpendicular to electric field
+        b_magn = b_field.get_length()
+        ratios_mv = self._stark_structure.evaluate(beam_energy, ne, b_magn)
 
         # add Sigma lines to output
-        s1_to_s0 = self._sigma1_to_sigma0.evaluate(ne)
-        intensity_s0 = 1 / (s1_to_s0 + 1)
-        intensity_s1 = 0.5 * s1_to_s0 * intensity_s0
+        if self._polarisation != PI_POLARISATION:
+            sigma_to_total = 0
+            for i in range(ratios_mv.shape[0]):
+                if self._stark_structure.polarisation_mv[i] == SIGMA_POLARISATION:
+                    sigma_to_total += 2 * ratios_mv[i] if self._stark_structure.index_mv[i] else ratios_mv[i]
 
-        spectrum = add_gaussian_line(intensity_sig * intensity_s0, central_wavelength, sigma, spectrum)
-        spectrum = add_gaussian_line(intensity_sig * intensity_s1, central_wavelength + stark_split, sigma, spectrum)
-        spectrum = add_gaussian_line(intensity_sig * intensity_s1, central_wavelength - stark_split, sigma, spectrum)
+            if sigma_to_total:
+                intensity = (sin_sqr + cos_sqr / sigma_to_total) * radiance
+                for i in range(ratios_mv.shape[0]):
+                    if self._stark_structure.polarisation_mv[i] == SIGMA_POLARISATION:
+                        index = self._stark_structure.index_mv[i]
+                        if index == 0:
+                            spectrum = add_gaussian_line(intensity * ratios_mv[i], shifted_wavelength, sigma, spectrum)
+                        else:
+                            spectrum = add_gaussian_line(intensity * ratios_mv[i], HC_EV_NM / (photon_energy - index * stark_split), sigma, spectrum)
+                            spectrum = add_gaussian_line(intensity * ratios_mv[i], HC_EV_NM / (photon_energy + index * stark_split), sigma, spectrum)
 
         # add Pi lines to output
-        pi2_to_pi3 = self._pi2_to_pi3.evaluate(ne)
-        pi4_to_pi3 = self._pi4_to_pi3.evaluate(ne)
-        intensity_pi3 = 1 / (1 + pi2_to_pi3 + pi4_to_pi3)
-        intensity_pi2 = pi2_to_pi3 * intensity_pi3
-        intensity_pi4 = pi4_to_pi3 * intensity_pi3
-
-        spectrum = add_gaussian_line(intensity_pi * intensity_pi2, central_wavelength + 2 * stark_split, sigma, spectrum)
-        spectrum = add_gaussian_line(intensity_pi * intensity_pi2, central_wavelength - 2 * stark_split, sigma, spectrum)
-        spectrum = add_gaussian_line(intensity_pi * intensity_pi3, central_wavelength + 3 * stark_split, sigma, spectrum)
-        spectrum = add_gaussian_line(intensity_pi * intensity_pi3, central_wavelength - 3 * stark_split, sigma, spectrum)
-        spectrum = add_gaussian_line(intensity_pi * intensity_pi4, central_wavelength + 4 * stark_split, sigma, spectrum)
-        spectrum = add_gaussian_line(intensity_pi * intensity_pi4, central_wavelength - 4 * stark_split, sigma, spectrum)
+        if self._polarisation != SIGMA_POLARISATION:
+            intensity = sin_sqr * radiance
+            for i in range(ratios_mv.shape[0]):
+                if self._stark_structure.polarisation_mv[i] == PI_POLARISATION:
+                    index = self._stark_structure.index_mv[i]
+                    spectrum = add_gaussian_line(intensity * ratios_mv[i], HC_EV_NM / (photon_energy - index * stark_split), sigma, spectrum)
+                    spectrum = add_gaussian_line(intensity * ratios_mv[i], HC_EV_NM / (photon_energy + index * stark_split), sigma, spectrum)
 
         return spectrum
