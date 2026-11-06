@@ -31,11 +31,11 @@ cdef class LaserProfile:
     LaserProfile base class.
 
     This is an abstract class and cannot be used for observing.
-    
+
     Provides information about spatial properties of the laser beam:
-    direction of the laser propagation (direction 
+    direction of the laser propagation (direction
     of the Poynting vector), polarisation of the ligth as the direction
-    of the electric component vector and volumetric energy density of 
+    of the electric component vector and volumetric energy density of
     the laser light.
 
     All the laser properties are evaluated in the frame of reference of
@@ -80,7 +80,7 @@ cdef class LaserProfile:
         of the Poynting vector.
 
         :param VectorFunction3D function: A 3D vector function describing
-          the laser light propagation direction 
+          the laser light propagation direction
         """
         self._pointing3d = function
 
@@ -92,7 +92,7 @@ cdef class LaserProfile:
         energy density of the laser light.
         """
         self._energy_density3d = function
-    
+
     cpdef Vector3D get_pointing(self, double x, double y, double z):
         """
         Returns the laser light propagation direction.
@@ -102,7 +102,7 @@ cdef class LaserProfile:
         :param x: x coordinate in meters.
         :param y: y coordinate in meters.
         :param z: z coordinate in meters.
-        :return: Intensity in m^-3.
+        :return: Intensity in m\\ :sup:`-3`.
         """
 
         return self._pointing3d.evaluate(x, y, z)
@@ -118,21 +118,21 @@ cdef class LaserProfile:
         :param x: x coordinate in meters.
         :param y: y coordinate in meters.
         :param z: z coordinate in meters.
-        :return: power density in Wm^-3.
+        :return: power density in ·m\\ :sup:`-3`.
         """
 
-        return self._polarization3d(x, y, z)
+        return self._polarization3d.evaluate(x, y, z)
 
     cpdef double get_energy_density(self, double x, double y, double z):
         """
-        Returns the volumetric energy density of the laser light in W*m^-3.
-        
+        Returns the volumetric energy density of the laser light in W·m\\ :sup:`-3`.
+
         At the point (x, y, z) in the laser space.
 
         :param x: x coordinate in meters in the laser frame.
         :param y: y coordinate in meters in the laser frame.
         :param z: z coordinate in meters in the laser frame.
-        :return: power density in W*m^-3.
+        :return: power density in W·m\\ :sup:`-3`.
         """
 
         return self._energy_density3d.evaluate(x, y, z)
@@ -140,17 +140,17 @@ cdef class LaserProfile:
     cpdef list generate_geometry(self):
         """
         returns list of raysect primitives composing the laser geometry
-        
+
         This method is called from the Laser instance to which the instance
         of Profile is attached to. The Laser instance will be assigned as
-        the parent to the returned primitives in the Laser._configure method.
-        The Laser._configure method does not change any transforms. This is
+        the parent to the returned primitives in the `Laser._configure` method.
+        The `Laser._configure` method does not change any transforms. This is
         why the returned primitives have to have their transforms already
         initialised in the frame of the laser, when returned.
         """
 
-        raise NotImplementedError("Virtual function density not defined.")
-    
+        raise NotImplementedError("Virtual function `generate_geometry` not defined.")
+
     def _change(self):
         """
         Called if the laser properties change.

@@ -87,9 +87,9 @@ cdef class Composition:
         to the composition.
 
         :param Species species: A list containing the new species.
-        
+
         .. code-block:: pycon
-        
+
            >>> d0_species = Species(deuterium, 0, d0_distribution)
            >>> d1_species = Species(deuterium, 1, d1_distribution)
            >>> plasma.composition.set([d0_species, d1_species])
@@ -116,14 +116,14 @@ cdef class Composition:
     cpdef object add(self, Species species):
         """
         Adds a species to the plasma composition.
-        
+
         Replaces any existing species with the same element and charge
         state already in the composition.
-        
+
         :param Species species: A Species object.
-        
+
         .. code-block:: pycon
-        
+
            >>> d1_species = Species(deuterium, 1, d1_distribution)
            >>> plasma.composition.add(d1_species)
         """
@@ -137,13 +137,13 @@ cdef class Composition:
     cpdef Species get(self, Element element, int charge):
         """
         Get a specified plasma species.
-        
+
         Raises a ValueError if the specified species is not found in the composition.
-        
+
         :param Element element: The element object of the requested species.
         :param int charge: The charge state of the requested species.
         :return: The requested Species object.
-        
+
         .. code-block:: pycon
 
            >>> plasma.composition.get(deuterium, 1)
@@ -419,18 +419,19 @@ cdef class Plasma(Node):
         Calculates the effective Z of the plasma.
 
         .. math::
-            Z_{eff} = \sum_{j=1}^N n_{i(j)} Z_j^2 / \sum_{k=1}^N n_{i(k)} Z_k
+            Z_\mathrm{eff} = \sum_{j=1}^N n_{\mathrm{i}(j)} Z_j^2 / \sum_{k=1}^N n_{\mathrm{i}(k)} Z_k
 
         where n is the species density and Z is the ionisation of the species.
 
-        :param x: x coordinate in meters.
-        :param y: y coordinate in meters.
-        :param z: z coordinate in meters.
+        :param float x: x coordinate in meters.
+        :param float y: y coordinate in meters.
+        :param float z: z coordinate in meters.
         :return: Calculated Z effective.
+        :rtype: float
         :raises ValueError: If plasma does not contain any ionised species.
-        
+
         .. code-block:: pycon
-           
+
            >>> # With an already initialised plasma object...
            >>> plasma.z_effective(1, 1, 1)
            1.0
@@ -460,15 +461,16 @@ cdef class Plasma(Node):
         Calculates the total ion density of the plasma.
 
         .. math::
-            n_I = \sum_{k=1}^N n_i(k)
+            n_I = \sum_{k=1}^N n_{\mathrm{i}(k)}
 
-        :param x: x coordinate in meters.
-        :param y: y coordinate in meters.
-        :param z: z coordinate in meters.
-        :return: Total ion density in m^-3.
-        
+        :param float x: x coordinate in meters.
+        :param float y: y coordinate in meters.
+        :param float z: z coordinate in meters.
+        :return: Total ion density in m\ :sup:`-3`.
+        :rtype: float
+
         .. code-block:: pycon
-           
+
            >>> # With an already initialised plasma object...
            >>> plasma.ion_density(1, 1, 1)
            1.1e+18

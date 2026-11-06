@@ -89,7 +89,7 @@ cdef class BeamModel:
 
         Models implementing this method must add their spectral response to the
         supplied spectrum object. The spectrum units are spectral radiance per
-        meter (W/m^3/str/nm).
+        meter (W/m\\ :sup:`3`/str/nm).
 
         :param beam_point: Point in beam space.
         :param plasma_point: Point in plasma space.
@@ -187,10 +187,11 @@ cdef class BeamAttenuator:
 
         The point is specified in beam space.
 
-        :param x: x coordinate in meters.
-        :param y: y coordinate in meters.
-        :param z: z coordinate in meters.
-        :return: Density in m^-3.
+        :param float x: x coordinate in meters.
+        :param float y: y coordinate in meters.
+        :param float z: z coordinate in meters.
+        :return: Density in m\\ :sup:`-3`.
+        :rtype: float
         """
         raise NotImplementedError("Virtual function density not defined.")
 

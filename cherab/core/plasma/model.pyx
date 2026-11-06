@@ -25,11 +25,11 @@ cdef class PlasmaModel:
     for a particular point and viewing orientation in plasma space.
 
     A new emission model is implemented by inheriting from this class and specifying
-    the emission() function.
+    the `emission()` function.
 
     If it is necessary to cache data to speed up the emission
     calculation and there is a risk the cached data may be made stale by changes to the
-    plasma, the _change() method must be implemented to reset the cache. The _change()
+    plasma, the `_change()` method must be implemented to reset the cache. The `_change()`
     function is automatically called when changes occur on the Plasma object.
 
     The plasma and atomic data provider attributes will be automatically populated
@@ -45,7 +45,7 @@ cdef class PlasmaModel:
         self._plasma = plasma
         self._atomic_data = atomic_data
 
-        # setup change notification is we have been given a plasma object
+        # setup change notification if we have been given a plasma object
         if self._plasma:
             self._plasma.notifier.add(self._change)
 
@@ -85,11 +85,11 @@ cdef class PlasmaModel:
 
         Models implementing this method must add their spectral response to the
         supplied spectrum object. The spectrum units are spectral radiance per
-        meter (W/m^3/str/nm).
-        
+        meter (W/m\\ :sup:`3`/str/nm).
+
         If a model has a directional response, the model should pass through
-        its own reference axis e.g. Thomsen scattering laser direction. 
-                       
+        its own reference axis e.g. Thomsen scattering laser direction.
+
         :param point: Point in plasma space.
         :param direction: Direction in plasma space.
         :param spectrum: Spectrum to which emission should be added.

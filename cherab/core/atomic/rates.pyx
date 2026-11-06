@@ -35,9 +35,9 @@ cdef class IonisationRate:
     cpdef double evaluate(self, double density, double temperature) except? -1e999:
         """Returns an effective ionisation rate coefficient at the specified plasma conditions.
 
-        :param density: Electron density in m^-3.
+        :param density: Electron density in m\\ :sup:`-3`.
         :param temperature: Electron temperature in eV.
-        :return: The effective ionisation rate in m^3.s^-1.
+        :return: The effective ionisation rate in m\\ :sup:`3` s\\ :sup:`-1`.
         """
         raise NotImplementedError("The evaluate() virtual method must be implemented.")
 
@@ -57,9 +57,9 @@ cdef class RecombinationRate:
     cpdef double evaluate(self, double density, double temperature) except? -1e999:
         """Returns an effective recombination rate coefficient at the specified plasma conditions.
 
-        :param density: Electron density in m^-3.
+        :param density: Electron density in m\\ :sup:`-3`.
         :param temperature: Electron temperature in eV.
-        :return: The effective ionisation rate in m^3.s^-1.
+        :return: The effective ionisation rate in m\\ :sup:`3` s\\ :sup:`-1`.
         """
         raise NotImplementedError("The evaluate() virtual method must be implemented.")
 
@@ -79,9 +79,9 @@ cdef class ThermalCXRate:
     cpdef double evaluate(self, double density, double temperature) except? -1e999:
         """Returns an effective charge exchange rate coefficient at the specified plasma conditions.
 
-        :param density: Electron density in m^-3.
+        :param density: Electron density in m\\ :sup:`-3`.
         :param temperature: Electron temperature in eV.
-        :return: The effective charge exchange rate in m^3.s^-1.
+        :return: The effective charge exchange rate in m\\ :sup:`3` s\\ :sup:`-1`.
         """
         raise NotImplementedError("The evaluate() virtual method must be implemented.")
 
@@ -101,9 +101,9 @@ cdef class _PECRate:
     cpdef double evaluate(self, double density, double temperature) except? -1e999:
         """Returns a photon emissivity coefficient at given conditions.
 
-        :param density: Electron density in m^-3.
+        :param density: Electron density in m\\ :sup:`-3`.
         :param temperature: Electron temperature in eV.
-        :return: The effective PEC rate in W.m^3.
+        :return: The effective PEC rate in W m\\ :sup:`3`.
         """
         raise NotImplementedError("The evaluate() virtual method must be implemented.")
 
@@ -145,21 +145,21 @@ cdef class ThermalCXPEC:
     cpdef double evaluate(self, double electron_density, double electron_temperature, double donor_temperature) except? -1e999:
         """Returns a CX photon emissivity coefficient at given conditions.
 
-        :param electron_density: Electron density in m^-3.
+        :param electron_density: Electron density in m\\ :sup:`-3`.
         :param electron_temperature: Electron temperature in eV.
         :param donor_temperature: Donor temperature in eV.
-        :return: The effective CX PEC rate in W/m^3.
+        :return: The effective CX PEC rate in W/m\\ :sup:`3`.
         """
         raise NotImplementedError("The evaluate() virtual method must be implemented.")
 
 
 cdef class BeamCXPEC:
-    r""":math:`q^{eff}_{n\rightarrow n'}` [:math:`W.m^{3}`]
+    r""":math:`q^\mathrm{eff}_{n\rightarrow n'}` [W/m\\ :sup:`3`]
 
     Effective emission coefficient (or rate) for a charge-exchange line corresponding to a
     transition :math:`n\rightarrow n'` of ion :math:`Z^{(\alpha+1)+}` with electron donor
     :math:`H^0` in metastable state :math:`m_{i}`. Equivalent to
-    :math:`q^{eff}_{n\rightarrow n'}` in `adf12 <http://open.adas.ac.uk/adf12>_`.
+    :math:`q^\mathrm{eff}_{n\rightarrow n'}` in `adf12 <http://open.adas.ac.uk/adf12>_`.
 
     :param donor_metastable: The metastable state of the donor species for which the rate data applies.
     """
@@ -179,7 +179,7 @@ cdef class BeamCXPEC:
 
         :param float energy: Interaction energy in eV/amu.
         :param float temperature: Receiver ion temperature in eV.
-        :param float density: Plasma total ion density in m^-3
+        :param float density: Plasma total ion density in m\\ :sup:`-3`
         :param float z_effective: Plasma Z-effective.
         :param float b_field: Magnetic field magnitude in Tesla.
         :return: The effective rate
@@ -197,7 +197,7 @@ cdef class _BeamRate:
         Returns the beam coefficient for the supplied parameters.
 
         :param energy: Interaction energy in eV/amu.
-        :param density: Target electron density in m^-3
+        :param density: Target electron density in m\\ :sup:`-3`
         :param temperature: Target temperature in eV.
         :return: The beam coefficient
         """
@@ -208,34 +208,34 @@ cdef class _BeamRate:
 
 
 cdef class BeamStoppingRate(_BeamRate):
-    """:math:`S^{e, i}_{CR}` [:math:`m^3.s^{-1}`]
+    """:math:`S^{\\mathrm{e}, \\mathrm{i}}_\\mathrm{CR}` [m\\ :sup:`3` s\\ :sup:`-1`]
 
-    The effective collisional radiative stopping coefficient :math:`S^{e, i}_{CR}`
-    [:math:`m^3.s^{-1}`] for neutral atom :math:`X^0` in a mono-energetic beam by
+    The effective collisional radiative stopping coefficient :math:`S^{\\mathrm{e}, \\mathrm{i}}_\\mathrm{CR}`
+    [m\\ :sup:`3` s\\ :sup:`-1`] for neutral atom :math:`X^0` in a mono-energetic beam by
     fully stripped ions :math:`Y^i` and their electrons.
 
-    Equivalent to :math:`S^{e, i}_{CR}` as defined in ADAS `adf21 <http://open.adas.ac.uk/adf21>`_.
+    Equivalent to :math:`S^{\\mathrm{e}, \\mathrm{i}}_\\mathrm{CR}` as defined in ADAS `adf21 <http://open.adas.ac.uk/adf21>`_.
     """
     pass
 
 
 cdef class BeamPopulationRate(_BeamRate):
-    """:math:`bmp(X^0(m_i))` [dimensionless]
+    """:math:`\\mathrm{bmp}(X^0(m_i))` [dimensionless]
 
-    Relative beam population of excited state :math:`m_i` over ground state for atom :math:`X^0`, :math:`bmp(X^0(m_i))`.
+    Relative beam population of excited state :math:`m_i` over ground state for atom :math:`X^0`, :math:`\\mathrm{bmp}(X^0(m_i))`.
 
-    The rate :math:`bmp(X^0(m_i))` is equivalent to the :math:`BMP` rate as defined in
+    The rate :math:`\\mathrm{bmp}(X^0(m_i))` is equivalent to the :math:`BMP` rate as defined in
     `adf22 <http://open.adas.ac.uk/adf22>`_ and is dimensionless.
     """
     pass
 
 
 cdef class BeamEmissionPEC(_BeamRate):
-    """:math:`bme(X^0(m_i))` [:math:`W.m^3`]
+    """:math:`\\mathrm{bme}(X^0(m_i))` [W m\\ :sup:`3`]
 
-    The effective beam emission coefficient, :math:`bme(X^0(m_i))`.
+    The effective beam emission coefficient, :math:`\\mathrm{bme}(X^0(m_i))`.
 
-    The rate :math:`bme(X^0(m_i))` is equivalent to the :math:`BME` rate as defined in
+    The rate :math:`\\mathrm{bme}(X^0(m_i))` is equivalent to the :math:`BME` rate as defined in
     `adf22 <http://open.adas.ac.uk/adf22>`_.
     """
     pass
@@ -260,10 +260,10 @@ cdef class TotalRadiatedPower():
         """
         Evaluate the total radiated power rate at the given plasma conditions.
 
-        :param float electron_density: Electron density in m^-3.
+        :param float electron_density: Electron density in m\\ :sup:`-3`.
         :param float electron_temperature: Electron temperature in eV.
 
-        :return: The total radiated power rate in W.m^3.
+        :return: The total radiated power rate in W.m\\ :sup:`3`.
         """
         raise NotImplementedError("The evaluate() virtual method must be implemented.")
 
@@ -288,10 +288,10 @@ cdef class _RadiatedPower:
         """
         Evaluate the radiated power at the given plasma conditions.
 
-        :param float density: Electron density in m^-3.
+        :param float density: Electron density in m\\ :sup:`-3`.
         :param float temperature: Electron temperature in eV.
 
-        :return: The radiated power rate in W.m^3.
+        :return: The radiated power rate in W m\\ :sup:`3`.
         """
         raise NotImplementedError("The evaluate() virtual method must be implemented.")
 
@@ -345,7 +345,7 @@ cdef class FractionalAbundance:
         """
         Evaluate the fractional abundance of this ionisation stage at the given plasma conditions.
 
-        :param float electron_density: Electron density in m^-3.
+        :param float electron_density: Electron density in m\\ :sup:`-3`.
         :param float electron_temperature: Electron temperature in eV.
 
         :return: Fractional abundance.

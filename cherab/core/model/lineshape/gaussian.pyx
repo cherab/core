@@ -42,7 +42,7 @@ cpdef Spectrum add_gaussian_line(double radiance, double wavelength, double sigm
     Adds a Gaussian line to the given spectrum and returns the new spectrum.
 
     The formula used is based on the following definite integral:
-    :math:`\frac{1}{\sigma \sqrt{2 \pi}} \int_{\lambda_0}^{\lambda_1} \exp(-\frac{(x-\mu)^2}{2\sigma^2}) dx = \frac{1}{2} \left[ -Erf(\frac{a-\mu}{\sqrt{2}\sigma}) +Erf(\frac{b-\mu}{\sqrt{2}\sigma}) \right]`
+    :math:`\frac{1}{\sigma \sqrt{2 \pi}} \int_{\lambda_0}^{\lambda_1} \exp\left(-\frac{(x-\mu)^2}{2\sigma^2}\right) \mathrm{d}x = \frac{1}{2} \left[ -\mathrm{Erf}\left(\frac{a-\mu}{\sqrt{2}\sigma}\right) +\mathrm{Erf}\left(\frac{b-\mu}{\sqrt{2}\sigma}\right) \right]`
 
     :param float radiance: Intensity of the line in radiance.
     :param float wavelength: central wavelength of the line in nm.

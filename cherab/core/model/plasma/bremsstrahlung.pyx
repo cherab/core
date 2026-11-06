@@ -92,7 +92,7 @@ cdef class BremsFunction(Function1D):
 
 # todo: doppler shift?
 cdef class Bremsstrahlung(PlasmaModel):
-    """
+    r"""
     Emitter that calculates bremsstrahlung emission from a plasma object.
 
     The bremmstrahlung formula implemented is equation 5.3.40
@@ -100,22 +100,22 @@ cdef class Bremsstrahlung(PlasmaModel):
     Cambridge University Press, 2002, ISBN: 9780511613630,
     https://doi.org/10.1017/CBO9780511613630
 
-    Note that in eq. 5.3.40, the emissivity :math:`j(\\nu)` is given in (W/m^3/sr/Hz) with respect
-    to frequency, :math:`\\nu`. Here, the emissivity :math:`\\epsilon_{\\mathrm{ff}}(\\lambda)`
-    is given in (W/m^3/nm/sr) with respect to wavelength, :math:`\\lambda = \\frac{10^{9} c}{\\nu}`,
-    and taking into account that :math:`d\\nu=-\\frac{10^{9} c}{\\lambda^2}d\\lambda`.
+    Note that in eq. 5.3.40, the emissivity :math:`j(\nu)` is given in (W/m\ :sup:`3`/sr/Hz) with respect
+    to frequency, :math:`\nu`. Here, the emissivity :math:`\epsilon_{\mathrm{ff}}(\lambda)`
+    is given in (W/m\ :sup:`3`/nm/sr) with respect to wavelength, :math:`\lambda = \frac{10^{9} c}{\nu}`,
+    and taking into account that :math:`\mathrm{d}\nu=-\frac{10^{9} c}{\lambda^2}\mathrm{d}\lambda`.
 
     .. math::
-        \\epsilon_{\\mathrm{ff}}(\\lambda) = \\left( \\frac{e^2}{4 \\pi \\varepsilon_0} \\right)^3
-        \\frac{32 \\pi^2}{3 \\sqrt{3} m_\\mathrm{e}^2 c^3}
-        \\sqrt{\\frac{2 m_\\mathrm{e}^3}{\\pi e T_\\mathrm{e}}}
-        \\frac{10^{9} c}{4 \\pi \\lambda^2}
-        n_\\mathrm{e} \\sum_i \\left( n_\\mathrm{i} g_\\mathrm{ff} (Z_\\mathrm{i}, T_\\mathrm{e}, \\lambda) Z_\\mathrm{i}^2 \\right)
-        \\mathrm{e}^{-\\frac{10^9 hc}{e T_\\mathrm{e} \\lambda}}\\,,
+        \epsilon_{\mathrm{ff}}(\lambda) = \left( \frac{e^2}{4 \pi \varepsilon_0} \right)^3
+        \frac{32 \pi^2}{3 \sqrt{3} m_\mathrm{e}^2 c^3}
+        \sqrt{\frac{2 m_\mathrm{e}^3}{\pi e T_\mathrm{e}}}
+        \frac{10^{9} c}{4 \pi \lambda^2}
+        n_\mathrm{e} \sum_i \left( n_\mathrm{i} g_\mathrm{ff} (Z_\mathrm{i}, T_\mathrm{e}, \lambda) Z_\mathrm{i}^2 \right)
+        \exp\left(-\frac{10^9 hc}{e T_\mathrm{e} \lambda}\right)\,,
 
-    where :math:`T_\\mathrm{e}` is in eV and :math:`\\lambda` is in nm.
+    where :math:`T_\mathrm{e}` is in eV and :math:`\lambda` is in nm.
 
-    :math:`g_\\mathrm{ff} (Z_\\mathrm{i}, T_\\mathrm{e}, \\lambda)` is the free-free Gaunt factor.
+    :math:`g_\mathrm{ff} (Z_\mathrm{i}, T_\mathrm{e}, \lambda)` is the free-free Gaunt factor.
 
     :ivar Plasma plasma: The plasma to which this emission model is attached. Default is None.
     :ivar AtomicData atomic_data: The atomic data provider for this model. Default is None.
