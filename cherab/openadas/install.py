@@ -29,7 +29,7 @@ from cherab.core.atomic import hydrogen
 from cherab.core.utility import RecursiveDict, PerCm3ToPerM3, Cm3ToM3
 
 
-OPENADAS_FILE_URL = 'http://open.adas.ac.uk/download/'
+OPENADAS_FILE_URL = 'https://open.adas.ac.uk/download/'
 
 
 def install_files(configuration, download=False, repository_path=None, adas_path=None):

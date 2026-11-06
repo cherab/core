@@ -25,12 +25,23 @@ from cherab.tools.inversions.opencl import device_select
 try:
     import pyopencl as cl
 except ImportError:
-    _has_pyopencl = False
+    _has_opencl = False
 else:
-    _has_pyopencl = True
+    # Even if pyopencl is available, we may not be able to compile programs with it.
+    # See e.g. https://github.com/cherab/core/actions/runs/38272109035/job/114888627839
+    # where compilation failed due to an unsupported CPU type in Github Actions.
+    try:
+        cl.Program(
+            cl.create_some_context(),
+            "__kernel void test(__global float *a) { int gid = get_global_id(0); ++a[gid]; }",
+        ).build()
+    except cl.Error:
+        _has_opencl = False
+    else:
+        _has_opencl = True
 
 
-@unittest.skipUnless(_has_pyopencl, "the pyopencl module is required to use the SartOpencl solver")
+@unittest.skipUnless(_has_opencl, "a working OpenCL setup is required to use the SartOpencl solver")
 class TestSartOpencl(unittest.TestCase):
     """
     Test cases for SartOpencl solver.
