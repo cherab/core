@@ -34,7 +34,7 @@ cpdef invert_sart(geometry_matrix, measurement_vector, object initial_guess=None
 
     .. math::
 
-       x_l^{(i+1)} = f_{sart}(x_l^{(i)}) = x_l^{(i)} + \frac{\omega}{W_{\oplus,l}} \sum_{k=1}^{N_d} \frac{W_{k,l}}{W_{k,\oplus}} (\Phi_k - \hat{\Phi}_k),
+       x_l^{(i+1)} = f_\mathrm{sart}(x_l^{(i)}) = x_l^{(i)} + \frac{\omega}{W_{\oplus,l}} \sum_{k=1}^{N_d} \frac{W_{k,l}}{W_{k,\oplus}} (\Phi_k - \hat{\Phi}_k),
 
     where
     
@@ -171,13 +171,13 @@ cpdef invert_constrained_sart(geometry_matrix, laplacian_matrix, measurement_vec
 
     .. math::
 
-       x_l^{(i+1)} = f_{sart}(x_l^{(i)}) - \hat{\mathcal{L}}_{iso}(x_l^{(i)}).
+       x_l^{(i+1)} = f_\mathrm{sart}(x_l^{(i)}) - \hat{\mathcal{L}}_\mathrm{iso}(x_l^{(i)}).
 
     In this particular function we have implemented a isotropic Laplacian smoothness operator, 
     
     .. math::
 
-       \hat{\mathcal{L}}_{iso}(x_l^{(i)}) = \beta_L (Cx_l^{(i)} - \sum_{c=1}^C x_c^{(i)}).
+       \hat{\mathcal{L}}_\mathrm{iso}(x_l^{(i)}) = \beta_L (Cx_l^{(i)} - \sum_{c=1}^C x_c^{(i)}).
 
     Here, :math:`c` is the index for the sum over the neighbouring voxels. The regularisation 
     hyperparameter :math:`\beta_L` determines the amount of local smoothness imposed on the
